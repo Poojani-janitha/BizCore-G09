@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, NavLink, useNavigation } from 'react-router-dom';//use navigate pages usinsg javascript instead buttons or links
 
-import { Home, ShoppingCart, Package, DollarSign, Users, PlusCircle, LogOut } from 'react-feather';
+import { Home, ShoppingCart, Package, DollarSign, Users,  PlusCircle, LogOut } from 'react-feather';
 import 'bootstrap/dist/css/bootstrap.min.css'
 
 
@@ -13,7 +13,7 @@ const SlideBar = () => {
     const menuItems = [
         { name: 'Home', icon: <Home size={18} />, path: '/home' },
         { name: 'Inventory', icon: <Package size={18} />, path: '/inventory' },
-        { name: 'Sales', icon: <ShoppingCart size={18} />, path: '/sales' },
+        { name: 'POS', icon: <ShoppingCart size={18} />, path: '/pages/POS' },
         { name: 'HR', icon: <Users size={18} />, path: '/hr' },
         { name: 'Finance', icon: <DollarSign size={18} />, path: '/finance' },
        

@@ -1,5 +1,6 @@
-import SlideBar from './component/SlideBar/SlideBar'
+import SlideBar from './component/slideBar/SlideBar'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import POS from './pages/POS/POS'
 
 const App = () => {
   return (
@@ -11,7 +12,7 @@ const App = () => {
           <Routes>
             <Route path="/home" element={<div>Home Page</div>} />
             <Route path="/inventory" element={<div>Inventory Page</div>} />
-            <Route path="/sales" element={<div>Sales Page</div>} />
+            <Route path="/pages/POS" element={<POS />} />
             <Route path="/hr" element={<div>HR Page</div>} />
             <Route path="/finance" element={<div>Finance Page</div>} />
             {/* <Route path="/logout" eleme nt={<div>Logout Page</div>} /> */}
