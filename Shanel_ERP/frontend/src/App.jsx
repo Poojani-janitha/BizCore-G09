@@ -1,6 +1,6 @@
 import SlideBar from './component/SlideBar/SlideBar'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Inventory_Dashboard from './component/Inventory_Dashboard';
+import Inventory_Dashboard from './pages/Inventory/InventoryDashboard';
 
 const App = () => {
   return (
