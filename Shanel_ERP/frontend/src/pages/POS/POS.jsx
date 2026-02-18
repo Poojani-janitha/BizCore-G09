@@ -1,5 +1,6 @@
 import React from 'react'
 import CustomerInfo from '../../component/pos/customerInfo/CustomerInfo'
+import ItemTable from '../../component/pos/itemTable/ItemTable'
 
 const POS = () => {
   return (
@@ -7,6 +8,7 @@ const POS = () => {
       <div className='flex-grow-1 overflow-auto'>
         <div className='container-fluid p-4'>
           <CustomerInfo />
+          <ItemTable />
         </div>
       </div>
       
