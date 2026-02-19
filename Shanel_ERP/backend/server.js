@@ -1,6 +1,17 @@
 const express = require("express");
-const app = express();
+const cors = require("cors");
+const inventoryRoutes = require('./routes/inventory');
+require('dotenv').config();
 
-app.listen(3001,()=>{
-    console.log("Server running on port 3001");
+const app = express();
+app.use(cors());  //allow frontend to access backend
+app.use(express.json()); //parse json data
+
+//link my inventry routes
+app.use('/api/inventory', inventoryRoutes);
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT,()=>{
+    console.log(`Backend running on port ${PORT}`);
 })

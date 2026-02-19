@@ -1,0 +1,33 @@
+/* Sidebar Transitions */
+.transition-all { 
+    transition: all 0.3s ease-in-out; 
+}
+
+/* Menu Fade In Effect */
+.animate-fade-in { 
+    animation: fadeIn 0.4s ease; 
+}
+
+@keyframes fadeIn { 
+    from { opacity: 0; } 
+    to { opacity: 1; } 
+}
+
+/* Sub-menu Slide Down Effect */
+.animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Hover States */
+.hover-cyan:hover { 
+    color: #0ea5e9 !important; 
+}
+
+.cursor-pointer:hover {
+    color: white !important;
+}
