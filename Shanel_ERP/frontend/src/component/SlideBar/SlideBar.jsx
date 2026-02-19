@@ -1,123 +1,145 @@
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   Home, ShoppingCart, Package, DollarSign, Users, 
-  ChevronRight, ChevronDown, Box, Layers, Truck, 
-  RefreshCcw, Bell, Archive, Menu, LogOut 
+  ChevronRight, ChevronDown, Box, RefreshCcw, Bell, Archive, Menu, LogOut, Truck 
 } from 'react-feather';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const SlideBar = () => {
     const [inventoryOpen, setInventoryOpen] = useState(false);
-    const [isCollapsed, setIsCollapsed] = useState(false); // Sidebar collapse state
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [headerHover, setHeaderHover] = useState(false);
+    const navigate = useNavigate();
 
-    // Colors based on your requested palette
+    // Professional Slate Palette
     const colors = {
-        sidebarBg: '#1e293b', // Deep Dark Slate
-        activeBlue: '#0ea5e9', // Vibrant Cyan
-        textMuted: '#94a3b8', // Slate Grey
-        hoverBg: '#334155'    // Slightly lighter slate
+        sidebarBg: '#004445',   // Your requested Dark Slate/Blue-Green
+        itemHover: '#2c3e50',   // Slightly darker for hover states
+        activeAccent: '#41b883', // A soft emerald accent (Vue-style) that pairs perfectly with your color
+        textPrimary: '#ffffff',
+        textMuted: '#94a3b8',   // Muted slate for inactive text
+        borderLine: 'rgba(255, 255, 255, 0.1)' 
+    };
+
+    const handleInventoryClick = () => {
+        if (isCollapsed) {
+            setIsCollapsed(false); 
+            setInventoryOpen(true); 
+        } else {
+            setInventoryOpen(!inventoryOpen);
+        }
     };
 
     return (
-        <div className="d-flex flex-column vh-100 shadow-lg transition-all duration-300" 
+        <div className="d-flex flex-column shadow-lg transition-all" 
              style={{ 
                  backgroundColor: colors.sidebarBg, 
-                 width: isCollapsed ? '80px' : '260px',
-                 transition: 'width 0.3s ease'
+                 width: isCollapsed ? '70px' : '240px',
+                 transition: 'width 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                 zIndex: 1000,
+                 minHeight: '100vh',
+                 position: 'sticky',
+                 top: 0,
+                 overflowX: 'hidden',
+                 fontSize: '14px' 
              }}>
             
-            {/* Header: Brand & Toggle */}
-            <div className='d-flex align-items-center justify-content-between p-3 mb-4 border-bottom border-secondary'>
-                {!isCollapsed && (
-                    <div className='d-flex align-items-center animate-fade-in'>
-                        <div className='rounded-circle me-2' style={{ 
-                            height: '32px', width: '32px', 
-                            background: 'linear-gradient(135deg, #0ea5e9, #2563eb)' 
-                        }}></div>
-                        <span className='fs-5 fw-bold text-white'>Shanel</span>
-                    </div>
-                )}
-                <Menu 
-                    className="text-white cursor-pointer" 
-                    size={20} 
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    style={{ cursor: 'pointer' }}
-                />
+            {/* Header Section: Logo to Menu Swap on Hover */}
+            <div 
+                className={`d-flex align-items-center mb-4 border-bottom ${isCollapsed ? 'justify-content-center' : 'justify-content-between px-3'}`} 
+                style={{ height: '65px', cursor: 'pointer', position: 'relative', borderColor: colors.borderLine }}
+                onMouseEnter={() => setHeaderHover(true)}
+                onMouseLeave={() => setHeaderHover(false)}
+            >
+                {/* Logo & Brand Area */}
+                <div className="d-flex align-items-center" style={{ 
+                    opacity: (isCollapsed && headerHover) ? 0 : 1, 
+                    transition: 'opacity 0.2s ease',
+                    visibility: (isCollapsed && headerHover) ? 'hidden' : 'visible'
+                }}>
+                    <div style={{ 
+                        height: '26px', width: '26px', minWidth: '26px',
+                        border: `2px solid ${colors.activeAccent}`, 
+                        borderRadius: '4px',
+                        backgroundColor: 'transparent'
+                    }}></div>
+                    {!isCollapsed && (
+                        <span className='fw-bold text-white ms-3 text-nowrap' style={{ letterSpacing: '1px', fontSize: '15px' }}>
+                            SHANEL
+                        </span>
+                    )}
+                </div>
+                
+                {/* Menu Icon (Swaps in when hovered in collapsed mode) */}
+                <div 
+                    onClick={() => setIsCollapsed(!isCollapsed)} 
+                    style={{ 
+                        position: isCollapsed ? 'absolute' : 'relative',
+                        opacity: isCollapsed ? (headerHover ? 1 : 0) : 1,
+                        visibility: isCollapsed ? (headerHover ? 'visible' : 'hidden') : 'visible',
+                        transition: 'opacity 0.2s ease',
+                        color: colors.textPrimary
+                    }}
+                >
+                    <Menu size={18} />
+                </div>
             </div>
 
             {/* Navigation Menu */}
             <ul className="nav flex-column mb-auto px-2">
                 
                 {/* Home */}
-                <li className='nav-item mb-2'>
+                <li className='nav-item mb-1'>
                     <NavLink to="/home" className={({ isActive }) => 
-                        `nav-link d-flex align-items-center gap-3 py-2 rounded-3 transition-all ${isActive ? 'text-white bg-primary' : 'text-slate-400'}`}
-                        style={({ isActive }) => ({
-                            color: isActive ? '#fff' : colors.textMuted,
-                            backgroundColor: isActive ? colors.hoverBg : 'transparent'
+                        `nav-link d-flex align-items-center py-2 rounded-2 ${isCollapsed ? 'justify-content-center' : 'gap-3 px-3'}`}
+                        style={({ isActive }) => ({ 
+                            backgroundColor: isActive ? colors.itemHover : 'transparent',
+                            color: isActive ? colors.textPrimary : colors.textMuted,
+                            transition: 'all 0.2s'
                         })}>
-                        <Home size={20} />
+                        <Home size={18} />
                         {!isCollapsed && <span>Home</span>}
                     </NavLink>
                 </li>
 
-                {/* Inventory with Sub-menu */}
-                <li className='nav-item mb-2'>
-                    <div className="d-flex align-items-center justify-content-between rounded-3 px-1 transition-all"
-                        style={{ backgroundColor: inventoryOpen && !isCollapsed ? colors.hoverBg : 'transparent' }}>
+                {/* Inventory with Expansion Logic */}
+                <li className='nav-item mb-1'>
+                    <div className={`d-flex align-items-center rounded-2 ${isCollapsed ? 'justify-content-center' : 'justify-content-between px-3'}`}
+                         style={{ 
+                             backgroundColor: (inventoryOpen && !isCollapsed) ? colors.itemHover : 'transparent',
+                             cursor: 'pointer',
+                             color: (inventoryOpen && !isCollapsed) ? colors.textPrimary : colors.textMuted,
+                             transition: 'all 0.2s'
+                         }}
+                         onClick={handleInventoryClick}>
                         
-                        {/* NavLink to navigate to /inventory */}
-                        <NavLink 
-                            to="/inventory" 
-                            className={({ isActive }) => 
-                                `nav-link d-flex align-items-center gap-3 py-2 flex-grow-1 border-0 ${isActive ? 'text-white fw-bold' : 'text-slate-400'}`}
-                            style={{ color: 'inherit' }}
-                        >
-                            <Package size={20} />
+                        <div className={`d-flex align-items-center py-2 ${isCollapsed ? '' : 'gap-3'}`}>
+                            <Package size={18} />
                             {!isCollapsed && <span>Inventory</span>}
-                        </NavLink>
+                        </div>
 
-                        {/* Separate toggle button for the chevron */}
                         {!isCollapsed && (
-                            <div 
-                                className="p-2 cursor-pointer transition-all" 
-                                onClick={(e) => {
-                                    e.preventDefault(); // Stop navigation when just clicking the arrow
-                                    setInventoryOpen(!inventoryOpen);
-                                }}
-                                style={{ 
-                                    cursor: 'pointer', 
-                                    color: inventoryOpen ? '#fff' : '#94a3b8', // White when open, Slate when closed
-                                    display: 'flex',
-                                    alignItems: 'center'
-                                }}
-                            >
-                                {inventoryOpen ? (
-                                    <ChevronDown size={16} strokeWidth={3} /> // Increased weight for better visibility
-                                ) : (
-                                    <ChevronRight size={16} strokeWidth={3} />
-                                )}
+                            <div style={{ opacity: 0.5 }}>
+                                {inventoryOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                             </div>
                         )}
                     </div>
 
-                    {/* Sub-menu items */}
+                    {/* Sub-menu */}
                     {inventoryOpen && !isCollapsed && (
-                        <ul className="nav flex-column ms-4 mt-1 border-start border-secondary gap-1">
+                        <ul className="nav flex-column ms-4 mt-1 border-start gap-1" style={{ borderColor: colors.borderLine }}>
                             {[
                                 { to: "/inventory/products", icon: <Box size={14}/>, label: "Products" },
                                 { to: "/inventory/raw-materials", icon: <Archive size={14}/>, label: "Raw Materials" },
                                 { to: "/inventory/finished-goods", icon: <Truck size={14}/>, label: "Finished Goods" },
-                                { to: "/inventory/stock-transfer", icon: <RefreshCcw size={14}/>, label: "Stock Transfer" },
-                                { to: "/inventory/alerts", icon: <Bell size={14}/>, label: "Alerts" }
                             ].map((item) => (
                                 <li key={item.label}>
-                                    <NavLink to={item.to} className="nav-link py-1 small d-flex align-items-center gap-2"
-                                            style={({ isActive }) => ({ 
-                                                color: isActive ? colors.activeBlue : '#94a3b8',
-                                                transition: 'color 0.2s' 
-                                            })}>
+                                    <NavLink to={item.to} className="nav-link py-1 d-flex align-items-center gap-2"
+                                             style={({ isActive }) => ({ 
+                                                 color: isActive ? colors.activeAccent : colors.textMuted,
+                                                 fontSize: '13px' 
+                                             })}>
                                         {item.icon} {item.label}
                                     </NavLink>
                                 </li>
@@ -126,15 +148,18 @@ const SlideBar = () => {
                     )}
                 </li>
 
-                {/* Main Modules Loop */}
+                {/* Other Modules */}
                 {[
-                    { to: "/sales", icon: <ShoppingCart size={20} />, label: "Sales" },
-                    { to: "/hr", icon: <Users size={20} />, label: "HR" },
-                    { to: "/finance", icon: <DollarSign size={20} />, label: "Finance" }
+                    { to: "/sales", icon: <ShoppingCart size={18} />, label: "Sales" },
+                    { to: "/hr", icon: <Users size={18} />, label: "HR" },
+                    { to: "/finance", icon: <DollarSign size={18} />, label: "Finance" }
                 ].map((item) => (
-                    <li className='nav-item mb-2' key={item.label}>
-                        <NavLink to={item.to} className="nav-link d-flex align-items-center gap-3 py-2 text-slate-400"
-                                 style={({ isActive }) => ({ color: isActive ? '#fff' : colors.textMuted })}>
+                    <li className='nav-item mb-1' key={item.label}>
+                        <NavLink to={item.to} className={`nav-link d-flex align-items-center py-2 rounded-2 ${isCollapsed ? 'justify-content-center' : 'gap-3 px-3'}`}
+                                 style={({ isActive }) => ({ 
+                                     color: isActive ? colors.textPrimary : colors.textMuted,
+                                     backgroundColor: isActive ? colors.itemHover : 'transparent'
+                                 })}>
                             {item.icon}
                             {!isCollapsed && <span>{item.label}</span>}
                         </NavLink>
@@ -142,24 +167,13 @@ const SlideBar = () => {
                 ))}
             </ul>
 
-            {/* Bottom Profile Section */}
-            <div className="mt-auto p-3 border-top border-secondary">
-                <div className={`d-flex align-items-center ${isCollapsed ? 'justify-content-center' : 'gap-3'}`}>
-                    <div className="rounded-circle bg-info overflow-hidden" style={{ width: '38px', height: '38px' }}>
-                         <img src="https://ui-avatars.com/api/?name=Shanel+User&background=0ea5e9&color=fff" alt="user" />
-                    </div>
-                    {!isCollapsed && (
-                        <div className="d-flex flex-column overflow-hidden animate-fade-in">
-                            <span className="text-white small fw-bold">Shanel Admin</span>
-                            <span className="text-muted" style={{ fontSize: '10px' }}>Manager</span>
-                        </div>
-                    )}
-                </div>
-                {!isCollapsed && (
-                    <button className="btn btn-link text-danger p-0 mt-3 d-flex align-items-center gap-2 text-decoration-none small">
-                        <LogOut size={16} /> Logout
-                    </button>
-                )}
+            {/* Logout */}
+            <div className="mt-auto p-3 border-top" style={{ borderColor: colors.borderLine }}>
+                <NavLink to="/logout" className={`nav-link d-flex align-items-center transition-all ${isCollapsed ? 'justify-content-center' : 'gap-3 px-3'}`}
+                         style={{ color: '#e74c3c' }}> {/* Professional Red */}
+                    <LogOut size={18} />
+                    {!isCollapsed && <span className="fw-medium">Logout</span>}
+                </NavLink>
             </div>
         </div>
     );

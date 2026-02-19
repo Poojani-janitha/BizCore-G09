@@ -1,4 +1,26 @@
 /* Sidebar Transitions */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: #f8fafc; /* Matches your main content area */
+}
+
+/* Fix for the sidebar scroll if content is long */
+.nav.flex-column {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom scrollbar for a professional look */
+.nav.flex-column::-webkit-scrollbar {
+    width: 5px;
+}
+.nav.flex-column::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 10px;
+}
+
 .transition-all { 
     transition: all 0.3s ease-in-out; 
 }
@@ -30,4 +52,13 @@
 
 .cursor-pointer:hover {
     color: white !important;
+}
+
+.hover-light:hover {
+    background-color: #f1f5f9;
+    transition: background 0.2s;
+}
+
+header {
+    z-index: 10; /* Keeps header above page content */
 }
