@@ -1,4 +1,4 @@
-import SlideBar from './component/slideBar/SlideBar'
+import SlideBar from './component/SlideBar/SlideBar'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import POS from './pages/POS/POS'
 
