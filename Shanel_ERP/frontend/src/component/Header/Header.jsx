@@ -5,7 +5,6 @@ import { Search, Bell, ChevronDown } from 'react-feather';
 const Header = () => {
     const location = useLocation();
 
-    // Function to generate page title from URL path
     const getPageTitle = () => {
         const path = location.pathname;
         if (path === '/home') return 'Home';
@@ -20,16 +19,16 @@ const Header = () => {
     };
 
     return (
-        <header className="d-flex align-items-center justify-content-between px-4 py-2 bg-white border-bottom shadow-sm w-100" style={{ height: '70px' }}>
+        <header className="d-flex align-items-center px-4 py-2 bg-white border-bottom shadow-sm w-100" style={{ height: '70px' }}>
             
-            {/* Left: Dynamic Page Name */}
-            <div className="d-flex align-items-center">
-                <h4 className="mb-0 fw-bold" style={{ color: '#1e293b' }}>{getPageTitle()}</h4>
+            {/* Left: Dynamic Page Name - Fixed Width so center stays center */}
+            <div style={{ width: '250px' }}>
+                <h4 className="mb-0 fw-bold" style={{ color: '#1e293b', fontSize: '1.25rem' }}>{getPageTitle()}</h4>
             </div>
 
-            {/* Center: Search Bar */}
-            <div className="flex-grow-1 mx-5" style={{ maxWidth: '400px' }}>
-                <div className="input-group bg-light rounded-3 px-2 border">
+            {/* Center: Search Bar - Locked in Position */}
+            <div className="flex-grow-1 d-flex justify-content-center">
+                <div className="input-group bg-light rounded-3 px-2 border" style={{ maxWidth: '400px' }}>
                     <span className="input-group-text bg-transparent border-0 text-muted">
                         <Search size={18} />
                     </span>
@@ -42,27 +41,23 @@ const Header = () => {
                 </div>
             </div>
 
-            {/* Right: Notifications & User Profile (Moved from Sidebar) */}
-            <div className="d-flex align-items-center gap-3">
-                
-                {/* Notification Icon */}
-                <div className="position-relative p-2 rounded-circle hover-light cursor-pointer text-muted">
+            {/* Right: Notifications & Profile - Fixed Width */}
+            <div className="d-flex align-items-center justify-content-end gap-3" style={{ width: '250px' }}>
+                <div className="position-relative p-2 rounded-circle cursor-pointer text-muted">
                     <Bell size={20} />
                     <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style={{ marginTop: '8px', marginLeft: '-8px' }}></span>
                 </div>
 
-                {/* Vertical Divider */}
-                <div className="border-start h-100 mx-2" style={{ height: '30px' }}></div>
+                <div className="border-start mx-2" style={{ height: '30px' }}></div>
 
-                {/* User Profile Info */}
-                <div className="d-flex align-items-center gap-3 ps-2 cursor-pointer">
+                <div className="d-flex align-items-center gap-2 cursor-pointer">
                     <div className="text-end d-none d-sm-block">
                         <div className="fw-bold small text-dark" style={{ lineHeight: '1.2' }}>Shanel Admin</div>
                         <div className="text-muted small" style={{ fontSize: '11px' }}>Manager</div>
                     </div>
-                    <div className="rounded-circle bg-info overflow-hidden shadow-sm" style={{ width: '40px', height: '40px' }}>
+                    <div className="rounded-circle bg-info overflow-hidden shadow-sm" style={{ width: '38px', height: '38px' }}>
                         <img 
-                            src="https://ui-avatars.com/api/?name=Shanel+Admin&background=0ea5e9&color=fff" 
+                            src="https://ui-avatars.com/api/?name=Shanel+Admin&background=004445&color=fff" 
                             alt="user" 
                             className="w-100 h-100"
                         />

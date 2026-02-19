@@ -1,34 +1,36 @@
-import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, ShoppingCart, Package, DollarSign, Users, 
-  ChevronRight, ChevronDown, Box, RefreshCcw, Bell, Archive, Menu, LogOut, Truck 
+  ChevronRight, ChevronDown, Box, Archive, Menu, LogOut, Truck 
 } from 'react-feather';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const SlideBar = () => {
-    const [inventoryOpen, setInventoryOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [headerHover, setHeaderHover] = useState(false);
+    const location = useLocation();
     const navigate = useNavigate();
 
-    // Professional Slate Palette
-    const colors = {
-        sidebarBg: '#004445',   // Your requested Dark Slate/Blue-Green
-        itemHover: '#2c3e50',   // Slightly darker for hover states
-        activeAccent: '#41b883', // A soft emerald accent (Vue-style) that pairs perfectly with your color
-        textPrimary: '#ffffff',
-        textMuted: '#94a3b8',   // Muted slate for inactive text
-        borderLine: 'rgba(255, 255, 255, 0.1)' 
-    };
+    // Automatically keep inventory open if we are on an inventory sub-page
+    const [inventoryOpen, setInventoryOpen] = useState(location.pathname.startsWith('/inventory'));
 
-    const handleInventoryClick = () => {
-        if (isCollapsed) {
-            setIsCollapsed(false); 
-            setInventoryOpen(true); 
+    // Update sub-menu state when location changes (fixes the "stuck" color)
+    useEffect(() => {
+        if (location.pathname.startsWith('/inventory')) {
+            setInventoryOpen(true);
         } else {
-            setInventoryOpen(!inventoryOpen);
+            setInventoryOpen(false);
         }
+    }, [location]);
+
+    const colors = {
+        sidebarBg: '#004445', 
+        itemHover: '#2c7873', 
+        activeAccent: '#41b883', 
+        textPrimary: '#ffffff',
+        textMuted: '#94a3b8', 
+        borderLine: 'rgba(255, 255, 255, 0.1)' 
     };
 
     return (
@@ -45,105 +47,76 @@ const SlideBar = () => {
                  fontSize: '14px' 
              }}>
             
-            {/* Header Section: Logo to Menu Swap on Hover */}
+            {/* Header Section */}
             <div 
                 className={`d-flex align-items-center mb-4 border-bottom ${isCollapsed ? 'justify-content-center' : 'justify-content-between px-3'}`} 
                 style={{ height: '65px', cursor: 'pointer', position: 'relative', borderColor: colors.borderLine }}
                 onMouseEnter={() => setHeaderHover(true)}
                 onMouseLeave={() => setHeaderHover(false)}
             >
-                {/* Logo & Brand Area */}
                 <div className="d-flex align-items-center" style={{ 
                     opacity: (isCollapsed && headerHover) ? 0 : 1, 
                     transition: 'opacity 0.2s ease',
                     visibility: (isCollapsed && headerHover) ? 'hidden' : 'visible'
                 }}>
-                    <div style={{ 
-                        height: '26px', width: '26px', minWidth: '26px',
-                        border: `2px solid ${colors.activeAccent}`, 
-                        borderRadius: '4px',
-                        backgroundColor: 'transparent'
-                    }}></div>
-                    {!isCollapsed && (
-                        <span className='fw-bold text-white ms-3 text-nowrap' style={{ letterSpacing: '1px', fontSize: '15px' }}>
-                            SHANEL
-                        </span>
-                    )}
+                    <div style={{ height: '26px', width: '26px', minWidth: '26px', border: `2px solid ${colors.activeAccent}`, borderRadius: '4px' }}></div>
+                    {!isCollapsed && <span className='fw-bold text-white ms-3 text-nowrap' style={{ letterSpacing: '1px' }}>SHANEL</span>}
                 </div>
                 
-                {/* Menu Icon (Swaps in when hovered in collapsed mode) */}
-                <div 
-                    onClick={() => setIsCollapsed(!isCollapsed)} 
-                    style={{ 
-                        position: isCollapsed ? 'absolute' : 'relative',
-                        opacity: isCollapsed ? (headerHover ? 1 : 0) : 1,
-                        visibility: isCollapsed ? (headerHover ? 'visible' : 'hidden') : 'visible',
-                        transition: 'opacity 0.2s ease',
-                        color: colors.textPrimary
-                    }}
-                >
+                <div onClick={() => setIsCollapsed(!isCollapsed)} 
+                    style={{ position: isCollapsed ? 'absolute' : 'relative', opacity: isCollapsed ? (headerHover ? 1 : 0) : 1, visibility: isCollapsed ? (headerHover ? 'visible' : 'hidden') : 'visible', color: colors.textPrimary }}>
                     <Menu size={18} />
                 </div>
             </div>
 
-            {/* Navigation Menu */}
             <ul className="nav flex-column mb-auto px-2">
-                
-                {/* Home */}
+                {/* Home - used 'end' to prevent it from being active on all pages */}
                 <li className='nav-item mb-1'>
-                    <NavLink to="/home" className={({ isActive }) => 
+                    <NavLink to="/home" end className={({ isActive }) => 
                         `nav-link d-flex align-items-center py-2 rounded-2 ${isCollapsed ? 'justify-content-center' : 'gap-3 px-3'}`}
                         style={({ isActive }) => ({ 
                             backgroundColor: isActive ? colors.itemHover : 'transparent',
-                            color: isActive ? colors.textPrimary : colors.textMuted,
-                            transition: 'all 0.2s'
+                            color: isActive ? colors.textPrimary : colors.textMuted
                         })}>
                         <Home size={18} />
                         {!isCollapsed && <span>Home</span>}
                     </NavLink>
                 </li>
 
-                {/* Inventory with Expansion Logic */}
+                {/* Inventory Parent */}
                 <li className='nav-item mb-1'>
-                    <div className={`d-flex align-items-center rounded-2 ${isCollapsed ? 'justify-content-center' : 'justify-content-between px-3'}`}
-                         style={{ 
-                             backgroundColor: (inventoryOpen && !isCollapsed) ? colors.itemHover : 'transparent',
-                             cursor: 'pointer',
-                             color: (inventoryOpen && !isCollapsed) ? colors.textPrimary : colors.textMuted,
-                             transition: 'all 0.2s'
-                         }}
-                         onClick={handleInventoryClick}>
-                        
-                        <div className={`d-flex align-items-center py-2 ${isCollapsed ? '' : 'gap-3'}`}>
+                    <NavLink to="/inventory" className={({ isActive }) => 
+                        `nav-link d-flex align-items-center py-2 rounded-2 ${isCollapsed ? 'justify-content-center' : 'justify-content-between px-3'}`}
+                        style={({ isActive }) => ({ 
+                            backgroundColor: isActive ? colors.itemHover : 'transparent',
+                            color: (isActive || (inventoryOpen && !isCollapsed)) ? colors.textPrimary : colors.textMuted
+                        })}
+                        onClick={(e) => {
+                            if (isCollapsed) setIsCollapsed(false);
+                            // Sub-menu toggle logic handled by useEffect, but we navigate here
+                        }}
+                    >
+                        <div className="d-flex align-items-center gap-3">
                             <Package size={18} />
                             {!isCollapsed && <span>Inventory</span>}
                         </div>
-
                         {!isCollapsed && (
-                            <div style={{ opacity: 0.5 }}>
+                            <div onClick={(e) => { e.preventDefault(); setInventoryOpen(!inventoryOpen); }}>
                                 {inventoryOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                             </div>
                         )}
-                    </div>
+                    </NavLink>
 
-                    {/* Sub-menu */}
                     {inventoryOpen && !isCollapsed && (
                         <ul className="nav flex-column ms-4 mt-1 border-start gap-1" style={{ borderColor: colors.borderLine }}>
-                            {[
-                                { to: "/inventory/products", icon: <Box size={14}/>, label: "Products" },
-                                { to: "/inventory/raw-materials", icon: <Archive size={14}/>, label: "Raw Materials" },
-                                { to: "/inventory/finished-goods", icon: <Truck size={14}/>, label: "Finished Goods" },
-                            ].map((item) => (
-                                <li key={item.label}>
-                                    <NavLink to={item.to} className="nav-link py-1 d-flex align-items-center gap-2"
-                                             style={({ isActive }) => ({ 
-                                                 color: isActive ? colors.activeAccent : colors.textMuted,
-                                                 fontSize: '13px' 
-                                             })}>
-                                        {item.icon} {item.label}
-                                    </NavLink>
-                                </li>
-                            ))}
+                            <NavLink to="/inventory/products" className="nav-link py-1 d-flex align-items-center gap-2"
+                                style={({ isActive }) => ({ color: isActive ? colors.activeAccent : colors.textMuted, fontSize: '13px' })}>
+                                <Box size={14}/> Products
+                            </NavLink>
+                            <NavLink to="/inventory/raw-materials" className="nav-link py-1 d-flex align-items-center gap-2"
+                                style={({ isActive }) => ({ color: isActive ? colors.activeAccent : colors.textMuted, fontSize: '13px' })}>
+                                <Archive size={14}/> Raw Materials
+                            </NavLink>
                         </ul>
                     )}
                 </li>
@@ -167,10 +140,9 @@ const SlideBar = () => {
                 ))}
             </ul>
 
-            {/* Logout */}
             <div className="mt-auto p-3 border-top" style={{ borderColor: colors.borderLine }}>
                 <NavLink to="/logout" className={`nav-link d-flex align-items-center transition-all ${isCollapsed ? 'justify-content-center' : 'gap-3 px-3'}`}
-                         style={{ color: '#e74c3c' }}> {/* Professional Red */}
+                         style={{ color: '#ff7e67' }}> 
                     <LogOut size={18} />
                     {!isCollapsed && <span className="fw-medium">Logout</span>}
                 </NavLink>
