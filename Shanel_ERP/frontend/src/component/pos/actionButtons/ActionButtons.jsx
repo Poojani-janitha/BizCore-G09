@@ -16,7 +16,7 @@ const ActionButtons = () => {
         </div>
         
         <div className='col-6'>
-          <button className='btn btn-outline-secondary text-white w-100 h-100 d-flex flex-column align-items-center justify-content-center action-btn' style={{ minHeight: '60px' }}>
+          <button className='btn btn-secondary text-white w-100 h-100 d-flex flex-column align-items-center justify-content-center action-btn' style={{ minHeight: '60px' }}>
             <Printer size={18} className='mb-1' />
             <div className='small '>Print Invoice</div>
           </button>
@@ -37,9 +37,18 @@ const ActionButtons = () => {
         </div>
 
         <div className='col-6'>
-          <button className='btn btn-warning text-white w-100 h-100 d-flex flex-column align-items-center justify-content-center action-btn' style={{ minHeight: '60px' }}>
+          <button className='btn btn-info text-white w-100 h-100 d-flex flex-column align-items-center justify-content-center action-btn' style={{ minHeight: '60px' }}>
             <Pause size={18} className='mb-1' />
-            <div className='small '>Hold Invoice</div>
+            <div className='small '>Print</div>
+
+          </button>
+        </div>
+
+          <div className='col-6'>
+          <button className='btn btn-dark text-white w-100 h-100 d-flex flex-column align-items-center justify-content-center action-btn' style={{ minHeight: '60px' }}>
+            <Pause size={18} className='mb-1' />
+            <div className='small '>Print</div>
+
           </button>
         </div>
 
