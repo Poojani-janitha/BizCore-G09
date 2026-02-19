@@ -1,4 +1,4 @@
-import SlideBar from './component/SlideBar/SlideBar'
+import SlideBar from './component/SlideBar/SlideBar.jsx'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Inventory_Dashboard from './pages/Inventory/InventoryDashboard';
 import Header from './component/Header/Header';
