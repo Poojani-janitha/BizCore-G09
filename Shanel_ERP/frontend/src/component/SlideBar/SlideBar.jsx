@@ -27,13 +27,13 @@ const SlideBar = () => {
             ]
         },
         { 
-            label: 'Sales', 
+            label: 'POS', 
             icon: <ShoppingCart size={18} />, 
-            to: '/sales',
-            subItems: [
-                { label: 'Orders', to: '/sales/orders', icon: <PieChart size={14} /> },
-                { label: 'Customers', to: '/sales/customers', icon: <Users size={14} /> },
-            ]
+            to: '/POS',
+            // subItems: [
+            //     { label: 'Orders', to: '/sales/orders', icon: <PieChart size={14} /> },
+            //     { label: 'Customers', to: '/sales/customers', icon: <Users size={14} /> },
+            // ]
         },
         { label: 'HR', icon: <Users size={18} />, to: '/hr' },
         { label: 'Finance', icon: <DollarSign size={18} />, to: '/finance' },
