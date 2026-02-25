@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   Home, ShoppingCart, Package, DollarSign, Users, 
-  ChevronRight, ChevronDown, Box, Archive, Menu, LogOut, Truck, Settings, PieChart
+  ChevronRight, ChevronDown, Box, Archive, Menu, 
+  LogOut, Truck, Settings, FileText, RefreshCw, 
+  Sliders, CornerUpLeft, BarChart2, Bell, PieChart 
 } from 'react-feather';
 import 'bootstrap/dist/css/bootstrap.min.css';
+
 
 const SlideBar = () => {
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -24,16 +27,25 @@ const SlideBar = () => {
                 { label: 'Products', to: '/inventory/products', icon: <Box size={14} /> },
                 { label: 'Raw Materials', to: '/inventory/raw-materials', icon: <Archive size={14} /> },
                 { label: 'Finished Goods', to: '/inventory/finished-goods', icon: <Truck size={14} /> },
+                { label: 'Store Inventory', to: '/inventory/store-inventory', icon: <Home size={14} /> },
+                { label: 'Suppliers', to: '/inventory/suppliers', icon: <Users size={14} /> },
+                { label: 'Purchase Orders', to: '/inventory/purchase-orders', icon: <FileText size={14} /> },
+                { label: 'Production', to: '/inventory/production', icon: <Settings size={14} /> },
+                { label: 'Stock Transfer', to: '/inventory/refresh-cw', icon: <RefreshCw size={14} /> },
+                { label: 'Stock Adjustments', to: '/inventory/stock-adjustments', icon: <Sliders size={14} /> },
+                { label: 'Returns', to: '/inventory/return', icon: <CornerUpLeft size={14} /> },
+                { label: 'Reports', to: '/inventory/reports', icon: <BarChart2 size={14} /> },
+                { label: 'Alerts', to: '/inventory/alerts', icon: <Bell size={14} /> },
             ]
         },
         { 
-            label: 'Sales', 
+            label: 'POS', 
             icon: <ShoppingCart size={18} />, 
-            to: '/sales',
-            subItems: [
-                { label: 'Orders', to: '/sales/orders', icon: <PieChart size={14} /> },
-                { label: 'Customers', to: '/sales/customers', icon: <Users size={14} /> },
-            ]
+            to: '/POS',
+            // subItems: [
+            //     { label: 'Orders', to: '/sales/orders', icon: <PieChart size={14} /> },
+            //     { label: 'Customers', to: '/sales/customers', icon: <Users size={14} /> },
+            // ]
         },
         { label: 'HR', icon: <Users size={18} />, to: '/hr' },
         { label: 'Finance', icon: <DollarSign size={18} />, to: '/finance' },
