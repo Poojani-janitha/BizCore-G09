@@ -60,4 +60,30 @@ router.get("/dashboard-stats", async (req, res) => {
     res.status(500).json({ message: "Database error", detail: err.message });
   }
 });
+
+// Fetch all products with detailed pricing and stock for the Product Table
+router.get("/products", async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        p.P_ID as id, 
+        p.P_Name as name, 
+        p.P_Type as type, 
+        p.Barcode as barcode, 
+        p.Cost_Price as costPrice, 
+        p.Wholesale_Price as wholesalePrice, 
+        p.Retail_Price as retailPrice, 
+        p.Min_Stock as minStock, 
+        p.Status as status,
+        COALESCE(SUM(i.Qty), 0) as stockCount
+      FROM PRODUCT p
+      LEFT JOIN INVENTORY i ON p.P_ID = i.P_ID
+      GROUP BY p.P_ID
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching products:", err);
+    res.status(500).json({ message: "Database error", detail: err.message });
+  }
+});
 module.exports = router;
