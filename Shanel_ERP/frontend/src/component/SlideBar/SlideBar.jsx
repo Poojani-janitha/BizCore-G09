@@ -24,7 +24,8 @@ const SlideBar = () => {
             icon: <Package size={18} />, 
             to: '/inventory',
             subItems: [
-                { label: 'Products', to: '/inventory/products', icon: <Box size={14} /> },
+                { label: 'Company Items', to: '/inventory/company-items', icon: <Box size={14} /> },
+                { label: 'Other Items', to: '/inventory/other-items', icon: <Box size={14} /> },
                 { label: 'Raw Materials', to: '/inventory/raw-materials', icon: <Archive size={14} /> },
                 { label: 'Finished Goods', to: '/inventory/finished-goods', icon: <Truck size={14} /> },
                 { label: 'Store Inventory', to: '/inventory/store-inventory', icon: <Home size={14} /> },

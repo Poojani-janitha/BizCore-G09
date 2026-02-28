@@ -4,7 +4,7 @@ import ProductHeader from '../../component/Inventory/Product/ProductHeader';
 import ProductFilters from '../../component/Inventory/Product/ProductFilters';
 import ProductTable from '../../component/Inventory/Product/ProductTable';
 
-const ProductPage = () => {
+const ProductPage = ({ typeFilter, pageTitle }) => {
 
     //Filtering status
     const [searchTerm, setSearchTerm] = useState('');
@@ -32,13 +32,15 @@ const ProductPage = () => {
             }
         }
         fetchProducts();
-    }, []);
+    }, [ typeFilter ]); //Refetch when typeFilter changes (if needed for future type-based filtering)
 
     
     //Filtering Logic
     // useMemo - optimize performance so filtering only happens when inputs change
     const filteredProducts = useMemo(() => {
         return products.filter(product => {
+            const matchesType = product.type === typeFilter;
+
             const name = product.name?.toLowerCase() || '';
             const id = product.id?.toString().toLowerCase() || '';
             const barcode = product.barcode?.toLowerCase() || '';
@@ -47,15 +49,14 @@ const ProductPage = () => {
                                  id.includes(searchTerm.toLowerCase()) ||
                                  barcode.includes(searchTerm.toLowerCase());
                                  
-            const matchesType = selectedType === '' || product.type === selectedType;
             
             return matchesSearch && matchesType;
         });
-    }, [searchTerm, selectedType, products]);
+    }, [searchTerm, selectedType, products, typeFilter]); // Re-run filtering when any of these change
 
     //Handlers for filter inputs
     const handleAddProduct = () => {
-        conssole.log("Opening Add Product Modal...");
+        console.log(`Opening Add ${typeFilter} Product Modal...`);
         //Model logic
     }
 
@@ -63,7 +64,10 @@ const ProductPage = () => {
     <div className='p-4 bg-light min-vh-100'>
         <div className='container-fluid px-0'>
 
-            <ProductHeader onAddClick={handleAddProduct} />
+            <ProductHeader 
+                title={typeFilter === 'Other' ? 'Non-Company Items' : `${typeFilter} Items`} 
+                onAddClick={handleAddProduct} 
+            />
             <ProductFilters onSearchChange={setSearchTerm} onTypeChange={setSelectedType} />
             
             {error && (
@@ -77,21 +81,20 @@ const ProductPage = () => {
                     <span className='badge bg-white text-dark border shadow-sm py-2 px-3 fw-normal'>
                         <span className='text-muted fw-normal'>Total Results:</span> {products.length}                            
                     </span>
-                    {selectedType && (
+                    {/* {selectedType && (
                         <span className='badge bg-info-subtle text-info border border-info-subtle py-2 px-3 fw-normal'>
                             Found: {filteredProducts.length}
                         </span>
-                    )}
+                    )} */}
                 </div>
             </div>
 
             <ProductTable products={filteredProducts} isLoading={isLoading}/>
 
             {/* Indicate emepty state */}
-            {filteredProducts.length === 0 && (
+            {filteredProducts.length === 0 && !isLoading && (
                 <div className='text-center py-5 bg-white rounded-3 shadow-sm mt-3'>
                     <h5 className='text-muted'>No products found matching your criteria.</h5>
-                    <p className='text-muted'>Try adjusting your search or filter to find what you're looking for.</p>
                 </div>
             )}
         </div>
