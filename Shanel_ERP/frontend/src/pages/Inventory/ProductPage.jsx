@@ -3,6 +3,7 @@ import axios from 'axios';
 import ProductHeader from '../../component/Inventory/Product/ProductHeader';
 import ProductFilters from '../../component/Inventory/Product/ProductFilters';
 import ProductTable from '../../component/Inventory/Product/ProductTable';
+import ProductModal from '../../component/Inventory/Product/ProductModal';
 
 const ProductPage = ({ typeFilter, pageTitle }) => {
 
@@ -14,11 +15,21 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const [showModal, setShowModal] = useState(false);
 
+    const [editingProduct, setEditingProduct] = useState(null);
 
-    //Database fetching 
-    useEffect(() => {
-        const fetchProducts = async () => {
+    const handleEdit = (product) => {
+        setEditingProduct(product); // Set the selected product data
+        setShowModal(true); // Open the modal
+    };
+
+    const handleCloseModal = () => {
+        setEditingProduct(null); // Clear editing state on close
+        setShowModal(false);
+    };
+    
+    const fetchProducts = async () => {
             try {
                 setIsLoading(true);
                 const response = await axios.get('http://localhost:5000/api/inventory/products');
@@ -31,8 +42,9 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                 setIsLoading(false);
             }
         }
-        fetchProducts();
-    }, [ typeFilter ]); //Refetch when typeFilter changes (if needed for future type-based filtering)
+
+    //Database fetching 
+    useEffect(() => { fetchProducts(); }, [ typeFilter ]); //Refetch when typeFilter changes (if needed for future type-based filtering)
 
     
     //Filtering Logic
@@ -56,18 +68,27 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
 
     //Handlers for filter inputs
     const handleAddProduct = () => {
-        console.log(`Opening Add ${typeFilter} Product Modal...`);
-        //Model logic
+        setEditingProduct(null); // Clear editing state when adding a new product
+        setShowModal(true);
     }
+
+    const handleDelete = async (id) => {
+        if (window.confirm("Are you sure you want to delete this product?")) {
+            try {
+                await axios.delete(`http://localhost:5000/api/inventory/products/${id}`);
+                fetchProducts(); 
+            } catch (error) {
+                console.error("Delete failed", error);
+            }
+        }
+    };
 
   return (
     <div className='p-4 bg-light min-vh-100'>
         <div className='container-fluid px-0'>
 
-            <ProductHeader 
-                title={typeFilter === 'Other' ? 'Non-Company Items' : `${typeFilter} Items`} 
-                onAddClick={handleAddProduct} 
-            />
+            <ProductHeader title={pageTitle} onAddClick={handleAddProduct} />
+            <ProductModal show={showModal} onHide={handleCloseModal} typeFilter={typeFilter} refreshData={fetchProducts} editData={editingProduct} />
             <ProductFilters onSearchChange={setSearchTerm} onTypeChange={setSelectedType} />
             
             {error && (
@@ -89,7 +110,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                 </div>
             </div>
 
-            <ProductTable products={filteredProducts} isLoading={isLoading}/>
+            <ProductTable products={filteredProducts} isLoading={isLoading} onDelete={handleDelete} onEdit={handleEdit} />
 
             {/* Indicate emepty state */}
             {filteredProducts.length === 0 && !isLoading && (

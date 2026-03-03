@@ -81,4 +81,96 @@ const getProducts = async (req, res) => {
   }
 };
 
-module.exports = { getDashboardStats, getProducts };
+
+//add products 
+const addProduct = async (req, res) => {
+    const { 
+        P_Name, 
+        P_Type, 
+        Base_Unit, 
+        Cost_Price, 
+        Retail_Price, 
+        Wholesale_Price, 
+        Min_Stock, 
+        Tax_Rate,  
+        Barcode,
+        Status 
+    } = req.body;
+
+    try {
+        const query = `
+            INSERT INTO PRODUCT 
+            (P_Name, P_Type, Base_Unit, Cost_Price, Retail_Price, Wholesale_Price, Min_Stock, Tax_Rate, Barcode, Status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        await db.query(query, [
+            P_Name, 
+            P_Type, 
+            Base_Unit, 
+            Cost_Price || 0, 
+            Retail_Price || 0, 
+            Wholesale_Price || 0, 
+            Min_Stock || 0, 
+            Tax_Rate || 0, 
+            Barcode || null,
+            Status || 'Active'
+        ]);
+
+        res.status(201).json({ message: "Product created successfully!" });
+    } catch (err) {
+        console.error("Error inserting product:", err);
+        res.status(500).json({ message: "Database insertion failed", detail: err.message });
+    }
+};
+
+const deleteProduct = async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query('DELETE FROM PRODUCT WHERE P_ID = ?', [id]);
+        res.status(200).json({ message: "Product deleted successfully!" });
+    } catch (err) {
+        console.error("Error deleting product:", err);
+        res.status(500).json({ message: "Database deletion failed", detail: err.message });
+    }
+};
+
+const updateProduct = async (req, res) => {
+    const { id } = req.params;
+    const { 
+        P_Name, 
+        P_Type, 
+        Base_Unit, 
+        Cost_Price, 
+        Retail_Price, 
+        Wholesale_Price, 
+        Min_Stock, 
+        Tax_Rate, 
+        Barcode, 
+        Status 
+    } = req.body;
+
+    try {
+        const query = `
+            UPDATE PRODUCT 
+            SET P_Name = ?, P_Type = ?, Base_Unit = ?, Cost_Price = ?, 
+                Retail_Price = ?, Wholesale_Price = ?, Min_Stock = ?, 
+                Tax_Rate = ?, Barcode = ?, Status = ?
+            WHERE P_ID = ?
+        `;
+        
+        await db.query(query, [
+            P_Name, P_Type, Base_Unit, Cost_Price || 0, 
+            Retail_Price || 0, Wholesale_Price || 0, Min_Stock || 0, 
+            Tax_Rate || 0, Barcode, Status, id
+        ]);
+
+        res.status(200).json({ message: "Product updated successfully!" });
+    } catch (err) {
+        console.error("Error updating product:", err);
+        res.status(500).json({ message: "Database update failed", detail: err.message });
+    }
+};
+
+
+module.exports = { getDashboardStats, getProducts, addProduct, deleteProduct, updateProduct };
