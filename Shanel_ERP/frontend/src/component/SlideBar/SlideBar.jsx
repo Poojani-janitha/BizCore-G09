@@ -47,7 +47,16 @@ const SlideBar = () => {
                 { label: 'Customers', to: '/sales/customers', icon: <Users size={14} /> },
             ]
         },
-        { label: 'HR', icon: <Users size={18} />, to: '/hr' },
+        { 
+            label: 'HR', 
+            icon: <Users size={18} />, 
+            to: '/hr',
+            subItems: [
+                { label: 'Employees', to: '/hr/employees', icon: <Users size={14} /> },
+                { label: 'Attendance', to: '/hr/attendance', icon: <FileText size={14} /> },
+                { label: 'Payroll', to: '/hr/payroll', icon: <DollarSign size={14} /> },
+            ]
+        },
         { label: 'Finance', icon: <DollarSign size={18} />, to: '/finance' },
     ];
 

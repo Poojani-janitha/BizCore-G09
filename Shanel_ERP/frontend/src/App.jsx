@@ -1,6 +1,9 @@
 import SlideBar from './component/SlideBar/SlideBar.jsx'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Inventory_Dashboard from './pages/Inventory/InventoryDashboard';
+import Hrdashboardpage from './pages/HR/Hrdashboardpage';
+import EmployeesPage from './pages/HR/EmployeesPage';
+import EmployeeDetail from './pages/HR/EmployeeDetail';
 import Header from './component/Header/Header';
 import './App.css';
 
@@ -26,7 +29,9 @@ const App = () => {
                 <Route path="/inventory/finished-goods" element={<div>Finished Goods Page</div>} />
               
               <Route path="/sales" element={<div>Sales Page</div>} />
-              <Route path="/hr" element={<div>HR Page</div>} />
+              <Route path="/hr" element={<Hrdashboardpage />} />
+                <Route path="/hr/employees" element={<EmployeesPage />} />
+                <Route path="/hr/employees/:id" element={<EmployeeDetail />} />
               <Route path="/finance" element={<div>Finance Page</div>} />
               <Route path="/logout" element={<div>Logout Page</div>} />
             </Routes>
