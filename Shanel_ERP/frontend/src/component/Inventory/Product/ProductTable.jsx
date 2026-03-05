@@ -1,7 +1,17 @@
 import React from 'react'
-import{ Edit2, MoreVertical, Eye } from 'react-feather';
+import{ Edit2, MoreVertical, Eye, Trash2 } from 'react-feather';
 
-const ProductTable = ({ products, isLoading }) => {
+const thStyle = {
+    color: '#fff',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    borderBottom: '2px solid rgba(255,255,255,0.15)',
+    background: 'transparent',
+    '--bs-table-bg': 'transparent',
+};
+
+const ProductTable = ({ products, isLoading, onDelete, onEdit }) => {
     if(isLoading){
         return(
             <div className='text-center py-5 bg-white rounded-3 shadow-sm'>
@@ -16,18 +26,18 @@ const ProductTable = ({ products, isLoading }) => {
     <div className='card border-0 shadow-sm rounded-3 overflow-hidden'>
         <div className='table-responsive'>
             <table className='table table-hover align-middle mb-0'>
-                <thead className='bg-light border-bottom'>
-                    <tr>
-                        <th className='ps-4 text-muted small text-uppercase py-3'>ID</th>
-                        <th className='text-muted small text-uppercase py-3'>Product Name</th>
-                        <th className='text-muted small text-uppercase py-3'>Type</th>
-                        <th className='text-muted small text-uppercase py-3'>Barcode</th>
-                        <th className='text-muted small text-uppercase py-3 text-end'>Cost Price</th>
-                        <th className='text-muted small text-uppercase py-3 text-end'>Retail Price</th>
-                        <th className='text-muted small text-uppercase py-3 text-end'>Wholesale Price</th>
-                        <th className='text-muted small text-uppercase py-3 text-center'>Stock</th>
-                        <th className='text-muted small text-uppercase py-3'>Status</th>
-                        <th className='text-end pe-4 py-3'>Actions</th>
+                <thead>
+                    <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
+                        <th className='ps-4 text-uppercase py-3' style={thStyle}>ID</th>
+                        <th className='text-uppercase py-3' style={thStyle}>Product Name</th>
+                        <th className='text-uppercase py-3' style={thStyle}>Type</th>
+                        <th className='text-uppercase py-3' style={thStyle}>Barcode</th>
+                        <th className='text-uppercase py-3 text-end' style={thStyle}>Cost Price</th>
+                        <th className='text-uppercase py-3 text-end' style={thStyle}>Retail Price</th>
+                        <th className='text-uppercase py-3 text-end' style={thStyle}>Wholesale Price</th>
+                        <th className='text-uppercase py-3 text-center' style={thStyle}>Stock</th>
+                        <th className='text-uppercase py-3' style={thStyle}>Status</th>
+                        <th className='text-end pe-4 py-3' style={{ ...thStyle, color: 'rgba(255,255,255,0.85)' }}>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -58,9 +68,10 @@ const ProductTable = ({ products, isLoading }) => {
                                 </td>
                                 <td className='text-end pe-4'>
                                     <div className='btn-group shadow-sm'>
-                                        <button className='btn btn-sm btn-light border p-1'><Eye size={14} className='text-muted'/></button>
-                                        <button className='btn btn-sm btn-light border p-1'><Edit2 size={14} className='text-muted'/></button>
-                                        <button className='btn btn-sm btn-light border p-1'><MoreVertical size={14} className='text-muted'/></button>
+                                        {/* <button className='btn btn-sm btn-light border p-1'><Eye size={15} className='text-muted'/></button> */}
+                                        <button className='btn btn-sm btn-light border p-1' onClick={() => onEdit(p)}><Edit2 size={15} className='text-muted'/></button>
+                                        <button className='btn btn-sm btn-light border p-1' onClick={() => onDelete(p.id)}><Trash2 size={15} className='text-danger'/></button>
+                                        {/* <button className='btn btn-sm btn-light border p-1'><MoreVertical size={15} className='text-muted'/></button> */}
                                     </div>
                                 </td>
                             </tr>

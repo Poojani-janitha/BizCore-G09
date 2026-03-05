@@ -17,23 +17,10 @@ const ProductFilters = ({ onSearchChange, onTypeChange }) => {
                 </div>
             </div>
 
-            {/* Filter Dropdown */}
-            <div className='col-md-3'>
-                <div className='d-flex align-items-center gap-2'>
-                    <Filter size={16} className="text-muted" />
-                    <select 
-                        className='form-select border-1 shadow-none bg-white'
-                        onChange={ (e) => onTypeChange(e.target.value)}>
-                        <option value="">All Products</option>
-                        <option value="Finished">Finished Goods</option>
-                        <option value="Raw">Raw Materials</option>
-                        <option value="Packaging">Packaging</option>
-                    </select>
-                </div>
-            </div>
+            
 
             {/* Status Toggle */}
-            <div className='col-md-2 text-end'>
+            <div className='col-md-5 text-end'>
                 <div className='form-check form-switch d-inline-block'>
                     <input className='form-check-input' type="checkbox" id='activeOnly' defaultChecked />
                     <label className='form-check-label small fw-medium' htmlFor='activeOnly'>Active Only</label>
