@@ -18,4 +18,4 @@ const InvoiceOption = () => {
   )
 }
 
-export default InvoiceOptionut
+export default InvoiceOption
