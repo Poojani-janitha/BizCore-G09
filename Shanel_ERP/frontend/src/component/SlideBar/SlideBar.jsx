@@ -24,7 +24,8 @@ const SlideBar = () => {
             icon: <Package size={18} />, 
             to: '/inventory',
             subItems: [
-                { label: 'Products', to: '/inventory/products', icon: <Box size={14} /> },
+                { label: 'Company Items', to: '/inventory/company-items', icon: <Box size={14} /> },
+                { label: 'Other Items', to: '/inventory/other-items', icon: <Box size={14} /> },
                 { label: 'Raw Materials', to: '/inventory/raw-materials', icon: <Archive size={14} /> },
                 { label: 'Finished Goods', to: '/inventory/finished-goods', icon: <Truck size={14} /> },
                 { label: 'Store Inventory', to: '/inventory/store-inventory', icon: <Home size={14} /> },
@@ -39,13 +40,13 @@ const SlideBar = () => {
             ]
         },
         { 
-            label: 'Sales', 
+            label: 'POS', 
             icon: <ShoppingCart size={18} />, 
-            to: '/sales',
-            subItems: [
-                { label: 'Orders', to: '/sales/orders', icon: <PieChart size={14} /> },
-                { label: 'Customers', to: '/sales/customers', icon: <Users size={14} /> },
-            ]
+            to: '/POS',
+            // subItems: [
+            //     { label: 'Orders', to: '/sales/orders', icon: <PieChart size={14} /> },
+            //     { label: 'Customers', to: '/sales/customers', icon: <Users size={14} /> },
+            // ]
         },
         { 
             label: 'HR', 
