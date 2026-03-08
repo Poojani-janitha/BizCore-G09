@@ -32,6 +32,8 @@ const App = () => {
             <Route path="/inventory/raw-materials" element={<ProductPage pageTitle="Raw Materials" typeFilter="Raw" />} />
             <Route path="/inventory/production-stock" element={<ProductionStock />} />
 
+            <Route path="/hr/employees" element={<EmployeesPage />} />
+            <Route path="/hr/employees/:id" element={<EmployeeDetail />} />
             <Route path="/POS" element={<POS />} />
             <Route path="/hr" element={<div>HR Page</div>} />
             <Route path="/finance" element={<div>Finance Page</div>} />
