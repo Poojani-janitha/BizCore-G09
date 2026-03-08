@@ -1,5 +1,5 @@
-const { Product, Inventory, Production } = require('../models');
-const sequelize = require('../config/db');
+const { Product, Inventory, Production } = require('../../models/index');
+const sequelize = require('../../config/db');
 const { Op } = require('sequelize');
 
 // 1. Get Dashboard Stats

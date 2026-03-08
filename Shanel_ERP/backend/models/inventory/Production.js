@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/db');
+const sequelize = require('../../config/db');
 
 const Production = sequelize.define('Production', {
     PR_ID: { 
@@ -27,7 +27,7 @@ const Production = sequelize.define('Production', {
     Total_Qty_Produced: { 
         type: DataTypes.DECIMAL(10, 2), 
         allowNull: false },
-        
+
     Status: { 
         type: DataTypes.ENUM('In_Progress', 'Completed', 'Quality_Check', 'Approved', 'Rejected'), 
         defaultValue: 'In_Progress' 

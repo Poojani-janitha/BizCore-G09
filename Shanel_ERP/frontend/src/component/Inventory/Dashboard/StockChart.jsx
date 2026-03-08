@@ -14,7 +14,7 @@ const CustomizedAxisTick = ({ x, y, payload }) => {
   );
 };
 
-const StockChart = ({ data }) => (
+const StockChart = ({ data = [] }) => (
   <div className="bg-white p-4 rounded shadow-sm border h-100">
     <h5 className="mb-3 fw-bold" style={{ color: '#7c5d47' }}>Stock Levels (Current vs Min)</h5>
     <ResponsiveContainer width="100%" height={300}>

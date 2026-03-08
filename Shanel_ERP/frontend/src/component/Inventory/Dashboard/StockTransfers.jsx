@@ -1,6 +1,6 @@
 import React from 'react';
 
-const StockTransfers = ({ transfers }) => (
+const StockTransfers = ({ transfers = [] }) => (
   <div className="card border-0 shadow-sm p-4 h-100">
     <div className="d-flex justify-content-between align-items-center mb-4">
       <h6 className="fw-bold mb-0"><span className="text-primary me-2">⇄</span> Recent Stock Transfers</h6>

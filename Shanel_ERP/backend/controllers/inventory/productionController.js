@@ -1,0 +1,1 @@
+const {Production, Product, Inventory} = require('../../models/inventory');

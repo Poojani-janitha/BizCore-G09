@@ -1,6 +1,6 @@
-const Product = require('./Product');
-const Production = require('./Production');
-const Inventory = require('./Inventory');
+const Product = require('./inventory/Product');
+const Production = require('./inventory/Production');
+const Inventory = require('./inventory/Inventory');
 
 // Product <-> Inventory
 Product.hasMany(Inventory, { foreignKey: 'P_ID' });
