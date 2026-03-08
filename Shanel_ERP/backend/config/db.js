@@ -1,13 +1,11 @@
-const mysql = require('mysql2');
-require('dotenv').config();
+const {Sequelize} = require('sequelize');
 
-const pool = mysql.createPool({
+const databasecon = new Sequelize({
+    dialect: 'mysql',
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10
-});
+    database: process.env.DB_NAME
+}); 
 
-module.exports = pool.promise();
+module.exports = databasecon;
