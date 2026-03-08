@@ -1,7 +1,7 @@
 import React from 'react'
 import { Search, Filter } from 'react-feather';
 
-const ProductFilters = ({ onSearchChange, onTypeChange }) => {
+const ProductFilters = ({ onSearchChange, onTypeChange , onActiveToggle={setActiveOnly}}) => {
   return (
     <div className='card border-0 shadow-sm p-3 mb-4'>
         <div className='row g-3 align-items-center'>
@@ -22,8 +22,8 @@ const ProductFilters = ({ onSearchChange, onTypeChange }) => {
             {/* Status Toggle */}
             <div className='col-md-5 text-end'>
                 <div className='form-check form-switch d-inline-block'>
-                    <input className='form-check-input' type="checkbox" id='activeOnly' defaultChecked />
-                    <label className='form-check-label small fw-medium' htmlFor='activeOnly'>Active Only</label>
+                    <input className='form-check-input' type="checkbox" id='activeOnly'  onChange={(e) => onActiveToggle(e.target.checked)} style={{cursor: 'pointer'}}/>
+                    <label className='form-check-label small fw-medium' htmlFor='activeOnly' style={{ cursor: 'pointer'}}>Active Only</label>
                 </div>
             </div>
         </div>

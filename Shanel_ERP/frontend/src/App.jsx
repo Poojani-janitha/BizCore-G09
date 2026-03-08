@@ -29,7 +29,8 @@ const App = () => {
             <Route path="/inventory/company-items" element={<ProductPage pageTitle="Company Items" typeFilter="Company" />} />
             <Route path="/inventory/other-items" element={<ProductPage pageTitle="Other Items" typeFilter="Other" />} />
             <Route path="/inventory/raw-materials" element={<ProductPage pageTitle="Raw Materials" typeFilter="Raw" />} />
-
+            <Route path="/hr/employees" element={<EmployeesPage />} />
+            <Route path="/hr/employees/:id" element={<EmployeeDetail />} />
             <Route path="/POS" element={<POS />} />
             <Route path="/hr" element={<div>HR Page</div>} />
             <Route path="/finance" element={<div>Finance Page</div>} />
