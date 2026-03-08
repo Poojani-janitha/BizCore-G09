@@ -4,6 +4,7 @@ import Inventory_Dashboard from './pages/Inventory/InventoryDashboard';
 import Hrdashboardpage from './pages/HR/Hrdashboardpage';
 import EmployeesPage from './pages/HR/EmployeesPage';
 import EmployeeDetail from './pages/HR/EmployeeDetail';
+import Attendance from './pages/HR/AttendancePage.jsx';
 import Header from './component/Header/Header';
 import ProductPage from './pages/Inventory/ProductPage.jsx';
 import './App.css';
@@ -35,6 +36,7 @@ const App = () => {
             <Route path="/hr" element={<Hrdashboardpage />} />
             <Route path="/hr/employees" element={<EmployeesPage pageTitle="Employees" typeFilter="Employees" />} />
             <Route path="/hr/employee/:id" element={<EmployeeDetail />} />
+            <Route path="/hr/attendance" element={<Attendance />} />
             <Route path="/finance" element={<div>Finance Page</div>} />
             <Route path="/logout" element={<div>Logout Page</div>} />
           </Routes>
