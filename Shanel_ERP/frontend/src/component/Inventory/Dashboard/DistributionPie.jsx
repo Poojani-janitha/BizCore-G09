@@ -6,7 +6,7 @@ const DistributionPie = ({ data = [] }) => {
 
   return (
     <div className="bg-white p-4 rounded shadow-sm border h-100">
-      <h5 className="mb-3 fw-bold" style={{ color: '#7c5d47' }}>Inventory Distribution</h5>
+      <h6 className="mb-3 fw-bold" style={{ color: '#7c5d47', fontSize: '13px' }}>Inventory Distribution</h6>
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie data={data} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">

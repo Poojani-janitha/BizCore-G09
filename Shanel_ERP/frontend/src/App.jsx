@@ -15,14 +15,14 @@ const App = () => {
   return (
 
 
-    <div className="d-flex w-100" style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
+    <div className="d-flex w-100" style={{ height: '100vh', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
       <SlideBar />
 
       {/* Main content Warapper */}
-      <div className="flex-grow-1 d-flex flex-column">
+      <div className="flex-grow-1 d-flex flex-column" style={{ height: '100vh', overflow: 'hidden' }}>
         <Header />
 
-        <main className='p-4 flex-grow-1'>
+        <main className='p-4 flex-grow-1' style={{ overflowY: 'auto' }}>
           <Routes>
             <Route path="/home" element={<div>Home Page</div>} />
 

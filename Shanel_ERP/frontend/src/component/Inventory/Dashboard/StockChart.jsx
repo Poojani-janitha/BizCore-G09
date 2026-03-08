@@ -16,7 +16,7 @@ const CustomizedAxisTick = ({ x, y, payload }) => {
 
 const StockChart = ({ data = [] }) => (
   <div className="bg-white p-4 rounded shadow-sm border h-100">
-    <h5 className="mb-3 fw-bold" style={{ color: '#7c5d47' }}>Stock Levels (Current vs Min)</h5>
+    <h6 className="mb-3 fw-bold" style={{ color: '#7c5d47', fontSize: '13px' }}>Stock Levels (Current vs Min)</h6>
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data} margin={{ bottom: 30 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />

@@ -91,7 +91,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     };
 
   return (
-    <div className='p-4 bg-light min-vh-100'>
+    <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
         <div className='container-fluid px-0'>
 
             <ProductHeader title={pageTitle} onAddClick={handleAddProduct} />

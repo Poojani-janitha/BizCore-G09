@@ -1,6 +1,6 @@
 import React, { use, useEffect, useState } from 'react'
 import axios from 'axios'
-import StockTabel from '../../component/Inventory/Production/StockTabel'
+import StockTable from '../../component/Inventory/Production/StockTable'
 import { Package, Activity, Loader } from 'react-feather';
 
 const ProductionStock = () => {
@@ -30,23 +30,20 @@ const ProductionStock = () => {
         </div>
     );
   return (
-    <div className='p-4 bg-light min-vh-100'>
-        <h4 className='fw-bold mb-1'>Production Stock</h4>
-        <p className='text-muted small mb-4'>Raw materials are work in progress inventory</p>
+    <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
 
-        {/* Table for row matrial */}
-        <StockTabel
+        <StockTable
             title="Raw Materials Inventory"
             icon={<Package size={18} className="me-2 text-primary"/>}
             columns={['ID', 'Material Name', 'Quantity', 'Status']}
             data={data.materials}
             type="raw"   
         />
-        {/* Table for wip */}
-        <StockTabel
+
+        <StockTable
             title="Work in Progress"
             icon={<Activity size={18} className="me-2 text-warning"/>}
-            columns={['Batch ID', 'Product', 'Qty', 'Stage']}
+            columns={['Batch ID', 'Product', 'Qty', 'Completion', 'Stage']} 
             data={data.wip}
             type="wip"
         />

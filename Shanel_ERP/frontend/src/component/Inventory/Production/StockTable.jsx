@@ -1,6 +1,6 @@
-import React from 'react'
+import React from 'react';
 
-const StockTabel = ({ title, icon, columns, data, type }) => {
+const StockTable = ({ title, icon, columns, data, type }) => {
   return (
     <div className='card border-0 shadow-sm rounded-4 mb-4 overflow-hidden'>
         <div className='card-header bg-white border-0 pt-4 px-4'>
@@ -14,7 +14,7 @@ const StockTabel = ({ title, icon, columns, data, type }) => {
                     </tr>
                 </thead>
                 <tbody>
-                    {data.length >0 ? data.map(( item, idx) => (
+                    {data.length > 0 ? data.map((item, idx) => (
                         <tr key={idx}>
                             {type === 'raw' ? (
                                 <>
@@ -23,7 +23,7 @@ const StockTabel = ({ title, icon, columns, data, type }) => {
                                     <td>{item.Qty} {item.Base_Unit}</td>
                                     <td>
                                         <span className={`badge ${parseFloat(item.Qty) <= parseFloat(item.Min_Stock) ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success'} px-2`}>
-                                            {parseFloat (item.Qty) <= parseFloat(item.Min_Stock) ? 'Low Stock' : 'Sufficient'}
+                                            {parseFloat(item.Qty) <= parseFloat(item.Min_Stock) ? 'Low Stock' : 'Sufficient'}
                                         </span>
                                     </td>
                                 </>
@@ -32,7 +32,24 @@ const StockTabel = ({ title, icon, columns, data, type }) => {
                                     <td className='text-primary small fw-medium'>{item.Batch_No}</td>
                                     <td className='fw-bold'>{item.P_Name}</td>
                                     <td>{item.Total_Qty_Produced}</td>
-                                    <td><span className='badge bg-warning-subtle text-warning px-2'>{item.Status}</span> </td>
+                                    {/* PROGRESS BAR COLUMN */}
+                                    <td style={{ minWidth: '150px' }}>
+                                        <div className="d-flex align-items-center">
+                                            <div className="progress flex-grow-1 me-2" style={{ height: '8px', borderRadius: '10px', backgroundColor: '#e9ecef' }}>
+                                                <div 
+                                                    className={`progress-bar ${item.Completion >= 90 ? 'bg-success' : 'bg-warning'}`} 
+                                                    role="progressbar" 
+                                                    style={{ width: `${item.Completion}%`, borderRadius: '10px' }}
+                                                ></div>
+                                            </div>
+                                            <span className="small fw-bold">{item.Completion}%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span className={`badge ${item.Status === 'Quality_Check' ? 'bg-info-subtle text-info' : 'bg-warning-subtle text-warning'} px-2`}>
+                                            {item.Status.replace('_', ' ')}
+                                        </span> 
+                                    </td>
                                 </>
                             )}
                         </tr>
@@ -50,4 +67,4 @@ const StockTabel = ({ title, icon, columns, data, type }) => {
   )
 }
 
-export default StockTabel
+export default StockTable;
