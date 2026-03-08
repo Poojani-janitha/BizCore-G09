@@ -6,6 +6,7 @@ import EmployeesPage from './pages/HR/EmployeesPage';
 import EmployeeDetail from './pages/HR/EmployeeDetail';
 import Header from './component/Header/Header';
 import ProductPage from './pages/Inventory/ProductPage.jsx';
+import ProductionStock from './pages/Inventory/ProductionStock.jsx';
 import './App.css';
 import POS from './pages/POS/POS.jsx';
 
@@ -29,6 +30,7 @@ const App = () => {
             <Route path="/inventory/company-items" element={<ProductPage pageTitle="Company Items" typeFilter="Company" />} />
             <Route path="/inventory/other-items" element={<ProductPage pageTitle="Other Items" typeFilter="Other" />} />
             <Route path="/inventory/raw-materials" element={<ProductPage pageTitle="Raw Materials" typeFilter="Raw" />} />
+            <Route path="/inventory/production-stock" element={<ProductionStock />} />
 
             <Route path="/POS" element={<POS />} />
             <Route path="/hr" element={<div>HR Page</div>} />
