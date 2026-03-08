@@ -1,1 +1,1 @@
-const {Production, Product, Inventory} = require('../../models/inventory');
+const {Production, Product, Inventory} = require('../../models/index');
