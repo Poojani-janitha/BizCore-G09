@@ -19,6 +19,8 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
 
     const [editingProduct, setEditingProduct] = useState(null);
 
+    const [activeOnly, setActiveOnly] = useState(false);
+
     const handleEdit = (product) => {
         setEditingProduct(product); // Set the selected product data
         setShowModal(true); // Open the modal
@@ -51,8 +53,13 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     // useMemo - optimize performance so filtering only happens when inputs change
     const filteredProducts = useMemo(() => {
         return products.filter(product => {
+            //filter by page type(Company, other, Raw)
             const matchesType = product.type === typeFilter;
 
+            //filter by active status(If toggle is ON )
+            const matchesStatus = activeOnly ? product.status === 'Active' : true;
+
+            //Search logic
             const name = product.name?.toLowerCase() || '';
             const id = product.id?.toString().toLowerCase() || '';
             const barcode = product.barcode?.toLowerCase() || '';
@@ -62,9 +69,9 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                                  barcode.includes(searchTerm.toLowerCase());
                                  
             
-            return matchesSearch && matchesType;
+            return matchesSearch && matchesType && matchesStatus;
         });
-    }, [searchTerm, selectedType, products, typeFilter]); // Re-run filtering when any of these change
+    }, [searchTerm, selectedType, products, typeFilter, activeOnly]); // Re-run filtering when any of these change
 
     //Handlers for filter inputs
     const handleAddProduct = () => {
@@ -89,7 +96,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
 
             <ProductHeader title={pageTitle} onAddClick={handleAddProduct} />
             <ProductModal show={showModal} onHide={handleCloseModal} typeFilter={typeFilter} refreshData={fetchProducts} editData={editingProduct} />
-            <ProductFilters onSearchChange={setSearchTerm} onTypeChange={setSelectedType} />
+            <ProductFilters onSearchChange={setSearchTerm} onTypeChange={setSelectedType} onActiveToggle={setActiveOnly} />
             
             {error && (
                     <div className="alert alert-danger d-flex align-items-center" role="alert">
