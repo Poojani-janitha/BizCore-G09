@@ -1,4 +1,4 @@
-const db = require("../config/db");
+const db = require("../../config/db");
 
 // Get Dashboard charts data
 const getDashboardStats = async (req, res) => {
