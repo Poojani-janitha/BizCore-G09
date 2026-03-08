@@ -1,176 +1,110 @@
-const db = require("../../config/db");
+const { Product, Inventory, Production } = require('../models');
+const sequelize = require('../config/db');
+const { Op } = require('sequelize');
 
-// Get Dashboard charts data
+// 1. Get Dashboard Stats
 const getDashboardStats = async (req, res) => {
-  try {
-    const [stockLevel] = await db.query(
-      `SELECT P_Name as name, Stock_Qty as current, Min_Stock as min, (Stock_Qty - Min_Stock) as gap
-      FROM v_current_stock
-      WHERE Min_Stock > 0 
-      ORDER BY gap ASC
-      LIMIT 5`
-    );
+    try {
+        // Fetch products with their total inventory count
+        const products = await Product.findAll({
+            attributes: [
+                'P_Name', 
+                'Min_Stock',
+                [sequelize.fn('SUM', sequelize.col('Inventories.Qty')), 'totalStock']
+            ],
+            include: [{
+                model: Inventory,
+                attributes: []
+            }],
+            group: ['Product.P_ID'],
+            having: sequelize.where(sequelize.col('Min_Stock'), '>', 0)
+        });
 
-    const [distribution] = await db.query(
-      `SELECT P_Type as name, COUNT(*) as value 
-      FROM PRODUCT GROUP BY P_Type`
-    );
+        // Distribution by Type
+        const distribution = await Product.findAll({
+            attributes: ['P_Type', [sequelize.fn('COUNT', sequelize.col('P_ID')), 'value']],
+            group: ['P_Type']
+        });
 
-    const [alerts] = await db.query(`
-      SELECT p.P_Name as name, a.Alert_Type as type, a.Current_Stock as current, a.Min_Stock as min, a.Status
-      FROM STOCK_ALERT_LOGS a
-      JOIN PRODUCT p ON a.P_ID = p.P_ID
-      WHERE a.Status = 'Active'
-      ORDER BY a.Alert_Date DESC LIMIT 3
-    `);
+        // Summary Counts
+        const activeProducts = await Product.count({ where: { Status: 'Active' } });
+        
+        const productionStock = await Inventory.sum('Qty', { where: { Location: 'Production' } });
+        const storeStock = await Inventory.sum('Qty', { where: { Location: 'Shop' } });
 
-    const [transfers] = await db.query(`
-      SELECT p.P_Name as name, t.From_Location, t.To_Location, t.Qty, t.Status, t.Transfer_Date
-      FROM STOCK_TRANSFER t
-      JOIN PRODUCT p ON t.P_ID = p.P_ID
-      ORDER BY t.Transfer_Date DESC LIMIT 3
-    `);
-
-    const [[{ activeProducts }]] = await db.query('SELECT COUNT(*) as activeProducts FROM PRODUCT');
-    const [[{ alertsCount }]] = await db.query('SELECT COUNT(*) as alertsCount FROM STOCK_ALERT_LOGS WHERE Status = "Active"');
-    const [[{ productionStock }]] = await db.query('SELECT SUM(Qty) as productionStock FROM INVENTORY WHERE Location = "Production"');
-    const [[{ storeStock }]] = await db.query('SELECT SUM(Qty) as storeStock FROM INVENTORY WHERE Location = "Store"');
-
-    res.json({
-      stockLevel,
-      distribution,
-      alerts,
-      transfers,
-      summary: {
-        activeProducts,
-        alertsCount,
-        productionStock: productionStock || 0,
-        storeStock: storeStock || 0,
-        pendingOrders: 1
-      }
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Database error", detail: err.message });
-  }
+        res.json({
+            success: true,
+            distribution,
+            summary: {
+                activeProducts,
+                productionStock: productionStock || 0,
+                storeStock: storeStock || 0,
+                pendingOrders: 1 // Placeholder for now
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
 };
 
-// Fetch all products with detailed pricing and stock
+// 2. Fetch All Products (with joined Stock Count)
 const getProducts = async (req, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT 
-        p.P_ID as id, 
-        p.P_Name as name, 
-        p.P_Type as type, 
-        p.Barcode as barcode, 
-        p.Cost_Price as costPrice, 
-        p.Wholesale_Price as wholesalePrice, 
-        p.Retail_Price as retailPrice, 
-        p.Min_Stock as minStock, 
-        p.Status as status,
-        COALESCE(SUM(i.Qty), 0) as stockCount
-      FROM PRODUCT p
-      LEFT JOIN INVENTORY i ON p.P_ID = i.P_ID
-      GROUP BY p.P_ID
-    `);
-    res.json(rows);
-  } catch (err) {
-    console.error("Error fetching products:", err);
-    res.status(500).json({ message: "Database error", detail: err.message });
-  }
+    try {
+        const products = await Product.findAll({
+            attributes: [
+                ['P_ID', 'id'], 
+                ['P_Name', 'name'], 
+                ['P_Type', 'type'], 
+                ['Barcode', 'barcode'],
+                ['Cost_Price', 'costPrice'],
+                ['Wholesale_Price', 'wholesalePrice'],
+                ['Retail_Price', 'retailPrice'],
+                ['Min_Stock', 'minStock'],
+                ['Status', 'status'],
+                [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('Inventories.Qty')), 0), 'stockCount']
+            ],
+            include: [{
+                model: Inventory,
+                attributes: []
+            }],
+            group: ['Product.P_ID']
+        });
+        res.json(products);
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
 };
 
-
-//add products 
+// 3. Add Product
 const addProduct = async (req, res) => {
-    const { 
-        P_Name, 
-        P_Type, 
-        Base_Unit, 
-        Cost_Price, 
-        Retail_Price, 
-        Wholesale_Price, 
-        Min_Stock, 
-        Tax_Rate,  
-        Barcode,
-        Status 
-    } = req.body;
-
     try {
-        const query = `
-            INSERT INTO PRODUCT 
-            (P_Name, P_Type, Base_Unit, Cost_Price, Retail_Price, Wholesale_Price, Min_Stock, Tax_Rate, Barcode, Status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        
-        await db.query(query, [
-            P_Name, 
-            P_Type, 
-            Base_Unit, 
-            Cost_Price || 0, 
-            Retail_Price || 0, 
-            Wholesale_Price || 0, 
-            Min_Stock || 0, 
-            Tax_Rate || 0, 
-            Barcode || null,
-            Status || 'Active'
-        ]);
-
-        res.status(201).json({ message: "Product created successfully!" });
+        const newProduct = await Product.create(req.body);
+        res.status(201).json({ success: true, message: "Product created!", data: newProduct });
     } catch (err) {
-        console.error("Error inserting product:", err);
-        res.status(500).json({ message: "Database insertion failed", detail: err.message });
+        res.status(500).json({ success: false, message: "Creation failed", error: err.message });
     }
 };
 
-const deleteProduct = async (req, res) => {
-    const { id } = req.params;
-    try {
-        await db.query('DELETE FROM PRODUCT WHERE P_ID = ?', [id]);
-        res.status(200).json({ message: "Product deleted successfully!" });
-    } catch (err) {
-        console.error("Error deleting product:", err);
-        res.status(500).json({ message: "Database deletion failed", detail: err.message });
-    }
-};
-
+// 4. Update Product
 const updateProduct = async (req, res) => {
-    const { id } = req.params;
-    const { 
-        P_Name, 
-        P_Type, 
-        Base_Unit, 
-        Cost_Price, 
-        Retail_Price, 
-        Wholesale_Price, 
-        Min_Stock, 
-        Tax_Rate, 
-        Barcode, 
-        Status 
-    } = req.body;
-
     try {
-        const query = `
-            UPDATE PRODUCT 
-            SET P_Name = ?, P_Type = ?, Base_Unit = ?, Cost_Price = ?, 
-                Retail_Price = ?, Wholesale_Price = ?, Min_Stock = ?, 
-                Tax_Rate = ?, Barcode = ?, Status = ?
-            WHERE P_ID = ?
-        `;
-        
-        await db.query(query, [
-            P_Name, P_Type, Base_Unit, Cost_Price || 0, 
-            Retail_Price || 0, Wholesale_Price || 0, Min_Stock || 0, 
-            Tax_Rate || 0, Barcode, Status, id
-        ]);
-
-        res.status(200).json({ message: "Product updated successfully!" });
+        const { id } = req.params;
+        await Product.update(req.body, { where: { P_ID: id } });
+        res.json({ success: true, message: "Product updated successfully!" });
     } catch (err) {
-        console.error("Error updating product:", err);
-        res.status(500).json({ message: "Database update failed", detail: err.message });
+        res.status(500).json({ success: false, error: err.message });
     }
 };
 
+// 5. Delete Product
+const deleteProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Product.destroy({ where: { P_ID: id } });
+        res.json({ success: true, message: "Product deleted!" });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
 
 module.exports = { getDashboardStats, getProducts, addProduct, deleteProduct, updateProduct };
