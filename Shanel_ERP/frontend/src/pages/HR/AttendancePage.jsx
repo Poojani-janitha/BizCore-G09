@@ -1,41 +1,34 @@
-import React, { useState } from 'react';
-
-const employees = [
-  { id: 1, name: 'Kumari Perera', role: 'Production Worker' },
-  { id: 2, name: 'Nimal Silva', role: 'Production Worker' },
-  { id: 3, name: 'Sunethra Fernando', role: 'Production Worker' },
-  { id: 4, name: 'Amal Jayasinghe', role: 'Production Worker' },
-  { id: 5, name: 'Manel Kumari', role: 'Production Worker' },
-  { id: 6, name: 'Sumudu Rathnayake', role: 'Production Worker' },
-  { id: 7, name: 'Chamari Wijesinghe', role: 'Production Worker' },
-  { id: 8, name: 'Niluka Bandara', role: 'Production Worker' },
-  { id: 9, name: 'Priyanka Dissanayake', role: 'Production Worker' },
-  { id: 10, name: 'Kamal Weerasinghe', role: 'Production Worker' },
-  { id: 11, name: 'Priya Senaratne', role: 'Production Worker' },
-  { id: 12, name: 'Ruwan Dissanayake', role: 'Production Worker' },
-  { id: 13, name: 'Sandya Gunawardena', role: 'Production Worker' },
-  { id: 14, name: 'Lasith Perera', role: 'Production Worker' },
-  { id: 15, name: 'Dilani Jayawardena', role: 'Production Worker' },
-  { id: 16, name: 'Chatura Bandara', role: 'Production Worker' },
-  { id: 17, name: 'Iresha Madushani', role: 'Production Worker' },
-  { id: 18, name: 'Thilina Rajapaksha', role: 'Production Worker' },
-  { id: 19, name: 'Samanthi Wickrama', role: 'Production Worker' },
-  { id: 20, name: 'Nuwan Senanayake', role: 'Production Worker' },
-  { id: 21, name: 'Ranjith Fernando', role: 'Monthly Salaried' },
-  { id: 22, name: 'Anjali Gunasekara', role: 'Monthly Salaried' },
-];
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import HrStatsCard from '../../component/HR/Dashboard/HrStatsCard';
+import { generateEmployees, EMP_KEY } from '../../storeContext/employeesData';
 
 const Attendance = () => {
+  const navigate = useNavigate();
   const today = new Date().toISOString().split('T')[0];
+  const [employees, setEmployees] = useState([]);
   const [date, setDate] = useState(today);
-  const [attendance, setAttendance] = useState(
-    Object.fromEntries(
-      employees.map(emp => [
-        emp.id,
-        { status: 'present', timeIn: '08:00', timeOut: '16:00', otHours: 0 },
-      ])
-    )
-  );
+  const [attendance, setAttendance] = useState({});
+
+  useEffect(() => {
+    const stored = localStorage.getItem(EMP_KEY);
+    let list = [];
+    if (stored) {
+      try { list = JSON.parse(stored); } catch { list = generateEmployees(); }
+    } else {
+      list = generateEmployees();
+      localStorage.setItem(EMP_KEY, JSON.stringify(list));
+    }
+    setEmployees(list);
+    setAttendance(
+      Object.fromEntries(
+        list.map(emp => [
+          emp.id,
+          { status: 'present', timeIn: '08:00', timeOut: '16:00', otHours: 0 },
+        ])
+      )
+    );
+  }, []);
   const [submitted, setSubmitted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -84,10 +77,10 @@ const Attendance = () => {
   };
 
   const summary = {
-    present: employees.filter(e => attendance[e.id].status === 'present' && !isHalfDay(e.id)).length,
+    present: employees.filter(e => attendance[e.id]?.status === 'present' && !isHalfDay(e.id)).length,
     halfDay: employees.filter(e => isHalfDay(e.id)).length,
-    leave: employees.filter(e => attendance[e.id].status === 'leave').length,
-    absent: employees.filter(e => attendance[e.id].status === 'absent').length,
+    leave: employees.filter(e => attendance[e.id]?.status === 'leave').length,
+    absent: employees.filter(e => attendance[e.id]?.status === 'absent').length,
   };
 
   const filtered = employees.filter(e =>
@@ -123,26 +116,12 @@ const Attendance = () => {
         </p>
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary Cards - HrStatsCard */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginBottom: '22px' }}>
-        {[
-          { label: 'Present', value: summary.present, color: '#22c55e', bg: 'rgba(34,197,94,0.08)', icon: '✅' },
-          { label: 'Half Day', value: summary.halfDay, color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', icon: '🕐' },
-          { label: 'On Leave', value: summary.leave, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', icon: '📋' },
-          { label: 'Absent', value: summary.absent, color: '#ef4444', bg: 'rgba(239,68,68,0.08)', icon: '❌' },
-        ].map(card => (
-          <div key={card.label} style={{
-            flex: '1 1 140px', background: '#fff', borderRadius: '12px',
-            border: '1px solid #e8e8e8', borderTop: `3px solid ${card.color}`,
-            padding: '16px 20px', boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{card.label}</span>
-              <span style={{ fontSize: '18px' }}>{card.icon}</span>
-            </div>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: '#1a1a2e', marginTop: '6px' }}>{card.value}</div>
-          </div>
-        ))}
+        <HrStatsCard title="Present Today" value={summary.present} subtitle="Fingerprint verified" icon="✅" color="green" />
+        <HrStatsCard title="Half Day" value={summary.halfDay} subtitle="Less than 4 hours" icon="🕐" color="blue" />
+        <HrStatsCard title="On Leave" value={summary.leave} subtitle="Approved leaves" icon="📋" color="amber" />
+        <HrStatsCard title="Absent" value={summary.absent} subtitle="No show" icon="❌" color="red" />
       </div>
 
       {/* Controls */}
@@ -199,11 +178,11 @@ const Attendance = () => {
         {/* Table Header */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '40px 1fr 120px 140px 110px 110px 100px 120px',
+          gridTemplateColumns: '40px 1fr 90px 120px 140px 110px 110px 100px 120px',
           background: '#f8fafc', borderBottom: '2px solid #e8e8e8',
           padding: '12px 20px', gap: '12px', alignItems: 'center',
         }}>
-          {['#', 'Employee', 'Role', 'Status', 'Time In', 'Time Out', 'OT Hours', 'Tea Cost'].map(h => (
+          {['#', 'Employee', 'Profile', 'Role', 'Status', 'Time In', 'Time Out', 'OT Hours', 'Tea Cost'].map(h => (
             <div key={h} style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
           ))}
         </div>
