@@ -1,4 +1,4 @@
-const Customer = require('../models/customer/customer');
+const Customer = require('../../models/customer/customer');
 const { Op, where } = require('sequelize');
 
 

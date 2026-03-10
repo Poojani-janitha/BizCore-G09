@@ -1,7 +1,7 @@
 const express = require("express");
 const applyMiddleware = require('./middleware/appMiddleware');
 const inventoryRoutes = require('./routes/inventory');
-const customerRoutes = require('./routes/CustomerRoutes')
+const customerRoutes = require('./routes/customer/CustomerRoutes')
 require('dotenv').config();
 
 const app = express();
