@@ -27,12 +27,13 @@ const EmployeesPage = () => {
       padding: '28px 32px',
       fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
     }}>
-      <div style={{ marginBottom: '18px' }}>
+      <div style={{ marginBottom: '28px' }}>
         <h1 style={{
           margin: 0,
-          fontSize: '22px',
-          fontWeight: 700,
-          color: '#1a1a2e'
+          fontSize: '26px',
+          fontWeight: 800,
+          color: '#1a1a2e',
+          letterSpacing: '-0.5px',
         }}>
           <span style={{
             background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
@@ -40,6 +41,9 @@ const EmployeesPage = () => {
             WebkitTextFillColor: 'transparent',
           }}>Employees</span>
         </h1>
+        <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
+          Employee directory · Manage profiles and roles
+        </p>
       </div>
 
       <div className="mb-2 text-muted">Tip: drag cards to rearrange employee order.</div>
