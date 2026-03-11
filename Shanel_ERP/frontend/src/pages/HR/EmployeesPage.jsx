@@ -4,6 +4,8 @@ import { generateEmployees, EMP_KEY } from '../../storeContext/employeesData';
 const EmployeesPage = () => {
   const [employees, setEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addForm, setAddForm] = useState({ name: '', role: 'Staff', email: '', phone: '', department: 'HR', image: '' });
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const dragItem = useRef();
@@ -84,6 +86,35 @@ const EmployeesPage = () => {
     setEditForm(prev => ({ ...prev, [field]: value }));
   };
 
+  const updateAddFormField = (field, value) => {
+    setAddForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const addEmployee = (e) => {
+    e?.stopPropagation();
+    if (!addForm.name?.trim()) return;
+    const maxId = employees.reduce((m, emp) => Math.max(m, Number(emp.id) || 0), 0);
+    const newEmp = {
+      id: String(maxId + 1),
+      name: addForm.name.trim(),
+      role: addForm.role || 'Staff',
+      email: addForm.email?.trim() || `${addForm.name.trim().split(' ')[0].toLowerCase()}@shanel.local`,
+      phone: addForm.phone?.trim() || '',
+      department: addForm.department || 'HR',
+      image: addForm.image || '',
+    };
+    const updated = [...employees, newEmp];
+    setEmployees(updated);
+    localStorage.setItem(EMP_KEY, JSON.stringify(updated));
+    setAddForm({ name: '', role: 'Staff', email: '', phone: '', department: 'HR', image: '' });
+    setShowAddForm(false);
+  };
+
+  const cancelAdd = () => {
+    setShowAddForm(false);
+    setAddForm({ name: '', role: 'Staff', email: '', phone: '', department: 'HR', image: '' });
+  };
+
   const filteredEmployees = employees.filter(emp =>
     emp.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -134,8 +165,54 @@ const EmployeesPage = () => {
             minWidth: '220px',
           }}
         />
+        <button
+          className="btn btn-success btn-sm"
+          onClick={() => setShowAddForm(!showAddForm)}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          ➕ Add Employee
+        </button>
         <span style={{ fontSize: '13px', color: '#64748b' }}>Tip: drag cards to rearrange · Click picture to change photo · Click Edit to update profile.</span>
       </div>
+
+      {showAddForm && (
+        <div style={{
+          marginBottom: '22px',
+          background: '#fff',
+          borderRadius: '12px',
+          padding: '20px',
+          border: '1px solid #e8e8e8',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        }}>
+          <h5 style={{ margin: '0 0 16px 0', color: '#1a1a2e', fontSize: '15px' }}>Add New Employee</h5>
+          <div className="row g-2">
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Name *</label>
+              <input className="form-control form-control-sm" placeholder="Full name" value={addForm.name} onChange={e => updateAddFormField('name', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Role</label>
+              <input className="form-control form-control-sm" placeholder="e.g. Staff, Manager" value={addForm.role} onChange={e => updateAddFormField('role', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Department</label>
+              <input className="form-control form-control-sm" placeholder="e.g. HR" value={addForm.department} onChange={e => updateAddFormField('department', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-6">
+              <label className="form-label small mb-0">Email</label>
+              <input className="form-control form-control-sm" type="email" placeholder="email@shanel.local" value={addForm.email} onChange={e => updateAddFormField('email', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-6">
+              <label className="form-label small mb-0">Phone</label>
+              <input className="form-control form-control-sm" placeholder="+94-71-555-1234" value={addForm.phone} onChange={e => updateAddFormField('phone', e.target.value)} />
+            </div>
+          </div>
+          <div className="d-flex gap-2 mt-3">
+            <button className="btn btn-primary btn-sm" onClick={addEmployee} disabled={!addForm.name?.trim()}>Save Employee</button>
+            <button className="btn btn-secondary btn-sm" onClick={cancelAdd}>Cancel</button>
+          </div>
+        </div>
+      )}
       <input
         ref={fileInputRef}
         type="file"
