@@ -6,6 +6,7 @@ import EmployeesPage from './pages/HR/EmployeesPage';
 import Attendance from './pages/HR/AttendancePage.jsx';
 import Header from './component/Header/Header';
 import ProductPage from './pages/Inventory/ProductPage.jsx';
+import ProductionStock from './pages/Inventory/ProductionStock.jsx';
 import './App.css';
 import POS from './pages/POS/POS.jsx';
 
@@ -14,14 +15,14 @@ const App = () => {
   return (
 
 
-    <div className="d-flex w-100" style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
+    <div className="d-flex w-100" style={{ height: '100vh', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
       <SlideBar />
 
-      {/* Main content Wrapper - minWidth:0 prevents flex overflow over sidebar */}
-      <div className="flex-grow-1 d-flex flex-column" style={{ minWidth: 0, overflow: 'auto' }}>
+      {/* Main content Warapper */}
+      <div className="flex-grow-1 d-flex flex-column" style={{ height: '100vh', overflow: 'hidden' }}>
         <Header />
 
-        <main className='p-4 flex-grow-1' style={{ minWidth: 0, overflow: 'auto' }}>
+        <main className='p-4 flex-grow-1' style={{ overflowY: 'auto' }}>
           <Routes>
             <Route path="/home" element={<div>Home Page</div>} />
 
@@ -29,6 +30,8 @@ const App = () => {
             <Route path="/inventory/company-items" element={<ProductPage pageTitle="Company Items" typeFilter="Company" />} />
             <Route path="/inventory/other-items" element={<ProductPage pageTitle="Other Items" typeFilter="Other" />} />
             <Route path="/inventory/raw-materials" element={<ProductPage pageTitle="Raw Materials" typeFilter="Raw" />} />
+            <Route path="/inventory/production-stock" element={<ProductionStock />} />
+
             <Route path="/hr/employees" element={<EmployeesPage />} />
             <Route path="/POS" element={<POS />} />
             <Route path="/hr" element={<Hrdashboardpage />} />

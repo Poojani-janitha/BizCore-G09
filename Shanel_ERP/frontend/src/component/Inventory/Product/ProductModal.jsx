@@ -98,7 +98,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
                         
                         <div className="modal-header bg-white border-0 px-4 pt-4 pb-0">
                             <div>
-                                <h5 className="modal-title fw-bold text-dark">{editData ? 'Edit Product' : `Add New ${typeFilter} Item`}</h5>
+                                <h6 className="modal-title fw-bold text-dark" style={{ fontSize: '14px' }}>{editData ? 'Edit Product' : `Add New ${typeFilter} Item`}</h6>
                                 <p className="text-muted small">Enter item details below</p>
                             </div>
                             <button type="button" className="btn-close shadow-none" onClick={handleClose}></button>
