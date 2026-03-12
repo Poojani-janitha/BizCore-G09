@@ -1,8 +1,8 @@
 import React from 'react';
 
 const AttendanceSummary = () => {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const attendance = [20, 18, 22, 19, 21, 15];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const attendance = [20, 18, 22, 19, 21, 15, 0];
   const maxVal = 22;
 
   return (

@@ -1,12 +1,11 @@
-const Customer             = require('./customer');
-const CreditTranscation    = require('./CreditTranscation');
-const CustomerNotification = require('./CustomerNotification');
-const CustomerBuyingPattern = require('./CustomerBuyingPattern');
+import Customer from './customer';
+import CreditTranscation from './CreditTranscation';
+import CustomerNofification from './CustomerNotification';
+import CustomerBuyingPattern from './CustomerBuyingPattern';
 
-module.exports = {
+export default {
     Customer,
     CreditTranscation,
-    CustomerNotification,
+    CustomerNofification,
     CustomerBuyingPattern
-};
-
+}

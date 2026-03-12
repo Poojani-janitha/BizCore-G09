@@ -20,7 +20,7 @@ const POS = () => {
       </div>
 
       {/* Section 3: Bottom Grid */}
-      <div className='row g-3' style={{ minWidth: '1102px' }}>
+      <div className='row g-3' minWidth="1102px">
         <div className='col-lg-4'>
           <div className='card border-0 shadow-sm p-3 h-100'>
             <InvoiceTotal />
