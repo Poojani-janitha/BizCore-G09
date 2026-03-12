@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Inventory_Dashboard from './pages/Inventory/InventoryDashboard';
 import Hrdashboardpage from './pages/HR/Hrdashboardpage';
 import EmployeesPage from './pages/HR/EmployeesPage';
-import EmployeeDetail from './pages/HR/EmployeeDetail';
+import Attendance from './pages/HR/AttendancePage.jsx';
 import Header from './component/Header/Header';
 import ProductPage from './pages/Inventory/ProductPage.jsx';
 import ProductionStock from './pages/Inventory/ProductionStock.jsx';
@@ -33,11 +33,9 @@ const App = () => {
             <Route path="/inventory/production-stock" element={<ProductionStock />} />
 
             <Route path="/hr/employees" element={<EmployeesPage />} />
-            <Route path="/hr/employees/:id" element={<EmployeeDetail />} />
             <Route path="/POS" element={<POS />} />
             <Route path="/hr" element={<Hrdashboardpage />} />
-            <Route path="/hr/employees" element={<EmployeesPage pageTitle="Employees" typeFilter="Employees" />} />
-            <Route path="/hr/employee/:id" element={<EmployeeDetail />} />
+            <Route path="/hr/attendance" element={<Attendance />} />
             <Route path="/finance" element={<div>Finance Page</div>} />
             <Route path="/logout" element={<div>Logout Page</div>} />
           </Routes>
