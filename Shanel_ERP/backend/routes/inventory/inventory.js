@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { getDashboardStats, getProducts, addProduct, deleteProduct, updateProduct } = require("../controllers/inventoryController");
+const { getDashboardStats, getProducts, addProduct, deleteProduct, updateProduct } = require("../../controllers/inventory/inventoryController");
 
 router.get("/dashboard-stats", getDashboardStats);
 router.get("/products", getProducts);
