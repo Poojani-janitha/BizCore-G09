@@ -94,10 +94,10 @@ const searchCustomers = async (req, res) => {
             where: {
                 Status: 'Active',
                 [Op.or]: [
-                    { C_Name: { [Op.like]: `%${searchTerm}%` } },
-                    { Phone1: { [Op.like]: `%${searchTerm}%` } },
-                    { Phone2: { [Op.like]: `%${searchTerm}` } },
-                    { Customer_Code: { [Op.like]: `%${searchTerm}` } }
+                    { C_Name: { [Op.like]: `${searchTerm}%` } },
+                    { Phone1: { [Op.like]: `${searchTerm}%` } },
+                    { Phone2: { [Op.like]: `${searchTerm}` } },
+                    { Customer_Code: { [Op.like]: `${searchTerm}` } }
                 ]
             }, attributes: [
                 'C_ID',

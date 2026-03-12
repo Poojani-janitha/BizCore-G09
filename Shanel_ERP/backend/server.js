@@ -20,6 +20,11 @@ app.use('/api/production', productionRoutes);
 
 //Customer routes
 app.use('/api/customer',customerRoutes);
+
+
+//Sales routes
+
+
 //HR routes
 
 //Finance routes
