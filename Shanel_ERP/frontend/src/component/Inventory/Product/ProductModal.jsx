@@ -14,7 +14,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
         Min_Stock: 0,
         Tax_Rate: 0,
         Barcode: '',
-        Status: 'Active'
+        Status: 'In Stock'
     };
 
     const [formData, setFormData] = useState(initialState);
@@ -34,7 +34,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
                     Min_Stock: editData.minStock ?? 0,
                     Tax_Rate: editData.taxRate ?? 0,
                     Barcode: editData.barcode || '',
-                    Status: editData.status || 'Active'
+                    Status: editData.status || 'In Stock'
                 });
             } else {
                 setFormData({ ...initialState, P_Type: typeFilter });
@@ -132,8 +132,9 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
                                     <label className="form-label mb-1 small fw-semibold text-muted">Status</label>
                                     <select name="Status" className="form-select form-select-sm bg-light border-0 py-2 shadow-none" 
                                             value={formData.Status} onChange={handleChange}>
-                                        <option value="Active">Active</option>
-                                        <option value="Inactive">Inactive</option>
+                                        <option value="In Stock">In Stock</option>
+                                        <option value="Low Stock">Low Stock</option>
+                                        <option value="Out of Stock">Out of Stock</option>
                                     </select>
                                 </div>
 

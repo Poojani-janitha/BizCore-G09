@@ -57,7 +57,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
             const matchesType = product.type === typeFilter;
 
             //filter by active status(If toggle is ON )
-            const matchesStatus = activeOnly ? product.status === 'Active' : true;
+            const matchesStatus = activeOnly ? product.status === 'In Stock' : true;
 
             //Search logic
             const name = product.name?.toLowerCase() || '';
@@ -90,11 +90,40 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
         }
     };
 
+    const printBarcodes = (items, showName) => {
+        const withBarcode = (items || []).filter(p => p.barcode);
+        if (withBarcode.length === 0) { alert('No barcodes available to print.'); return; }
+        const rows = withBarcode.map(p => `
+            <div class="bc-item">
+                <svg class="bc" jsbarcode-value="${p.barcode}" jsbarcode-width="2" jsbarcode-height="60" jsbarcode-fontsize="13"></svg>
+                ${showName ? `<p class="nm">${p.name}</p>` : ''}
+            </div>`).join('');
+        const win = window.open('', '_blank');
+        win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Barcodes</title>
+            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
+            <style>
+                *{box-sizing:border-box;margin:0;padding:0}
+                body{font-family:Arial,sans-serif;background:#fff}
+                .grid{display:flex;flex-wrap:wrap;gap:12px;padding:20px}
+                .bc-item{border:1px solid #ddd;padding:10px 14px;text-align:center;border-radius:4px}
+                .nm{font-size:11px;margin-top:5px;color:#333;font-weight:600}
+                @media print{.grid{padding:8px;gap:8px}}
+            </style></head><body>
+            <div class="grid">${rows}</div>
+            <script>window.onload=function(){JsBarcode('.bc').init();window.print();};<\/script>
+        </body></html>`);
+        win.document.close();
+    };
+
+    const handlePrintSingle   = (product) => printBarcodes([product], true);
+    const handlePrintWithName = () => printBarcodes(filteredProducts, true);
+    const handlePrintBarcodesOnly = () => printBarcodes(filteredProducts, false);
+
   return (
     <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
         <div className='container-fluid px-0'>
 
-            <ProductHeader title={pageTitle} onAddClick={handleAddProduct} />
+            <ProductHeader title={pageTitle} onAddClick={handleAddProduct} onPrintWithName={handlePrintWithName} onPrintBarcodesOnly={handlePrintBarcodesOnly} />
             <ProductModal show={showModal} onHide={handleCloseModal} typeFilter={typeFilter} refreshData={fetchProducts} editData={editingProduct} />
             <ProductFilters onSearchChange={setSearchTerm} onTypeChange={setSelectedType} onActiveToggle={setActiveOnly} />
             
@@ -117,7 +146,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                 </div>
             </div>
 
-            <ProductTable products={filteredProducts} isLoading={isLoading} onDelete={handleDelete} onEdit={handleEdit} />
+            <ProductTable products={filteredProducts} isLoading={isLoading} onDelete={handleDelete} onEdit={handleEdit} onPrint={handlePrintSingle} />
 
             {/* Indicate emepty state */}
             {filteredProducts.length === 0 && !isLoading && (

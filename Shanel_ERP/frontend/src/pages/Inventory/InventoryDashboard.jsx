@@ -17,7 +17,11 @@ const InventoryDashboard = () => {
 
   useEffect(() => {
     axios.get("http://localhost:5000/api/inventory/dashboard-stats")
-      .then((res) => setData(res.data))
+      .then((res) => {
+        if (res.data.success) {
+          setData(res.data);
+        }
+      })
       .catch((err) => console.error("Error fetching data:", err));
   }, []);
 
