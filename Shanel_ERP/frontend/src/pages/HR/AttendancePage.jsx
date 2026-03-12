@@ -33,22 +33,54 @@ const Attendance = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const updateField = (id, field, value) => {
-    setAttendance(prev => ({
-      ...prev,
-      [id]: { ...prev[id], [field]: value },
-    }));
+    setAttendance(prev => {
+      const current = prev[id] || {};
+      if (field !== 'status') {
+        return {
+          ...prev,
+          [id]: { ...current, [field]: value },
+        };
+      }
+
+      const nextStatus = value;
+      const next = { ...current, status: nextStatus };
+
+      // Absent: clear times + OT
+      if (nextStatus === 'absent') {
+        next.timeIn = '';
+        next.timeOut = '';
+        next.otHours = 0;
+      }
+
+      // Present: set defaults (not editable)
+      if (nextStatus === 'present') {
+        next.timeIn = '08:00';
+        next.timeOut = '16:00';
+        next.otHours = 0;
+      }
+
+      // Leave: clear so user can enter arrival/leaving time
+      if (nextStatus === 'leave') {
+        next.timeIn = next.timeIn || '';
+        next.timeOut = next.timeOut || '';
+        next.otHours = 0;
+      }
+
+      return { ...prev, [id]: next };
+    });
   };
 
   const markAll = (status) => {
     setAttendance(prev => {
       const updated = { ...prev };
       employees.forEach(emp => {
+        const existing = updated[emp.id] || {};
         updated[emp.id] = {
-          ...updated[emp.id],
+          ...existing,
           status,
-          timeIn: status === 'present' ? '08:00' : '',
-          timeOut: status === 'present' ? '16:00' : '',
-          otHours: 0,
+          timeIn: status === 'present' ? '08:00' : (status === 'absent' ? '' : (existing.timeIn || '')),
+          timeOut: status === 'present' ? '16:00' : (status === 'absent' ? '' : (existing.timeOut || '')),
+          otHours: status === 'present' ? (existing.otHours ?? 0) : 0,
         };
       });
       return updated;
@@ -88,9 +120,9 @@ const Attendance = () => {
   );
 
   const statusColors = {
-    present: { bg: 'rgba(34,197,94,0.1)', border: '#22c55e', color: '#16a34a' },
-    leave: { bg: 'rgba(245,158,11,0.1)', border: '#f59e0b', color: '#d97706' },
-    absent: { bg: 'rgba(239,68,68,0.1)', border: '#ef4444', color: '#dc2626' },
+    present: { bg: 'rgba(34,197,94,0.15)', border: '#22c55e', color: '#16a34a' },
+    leave: { bg: 'rgba(59,130,246,0.15)', border: '#3b82f6', color: '#2563eb' },
+    absent: { bg: 'rgba(239,68,68,0.15)', border: '#ef4444', color: '#dc2626' },
   };
 
   return (
@@ -183,7 +215,10 @@ const Attendance = () => {
           padding: '12px 20px', gap: '12px', alignItems: 'center',
         }}>
           {['#', 'Employee', 'Profile', 'Role', 'Status', 'Time In', 'Time Out', 'OT Hours', 'Tea Cost'].map(h => (
-            <div key={h} style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
+            <div key={h} style={{
+              fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+              ...(h === 'Status' ? { color: '#1e40af', background: 'rgba(59,130,246,0.12)', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(59,130,246,0.3)' } : { color: '#64748b' }),
+            }}>{h}</div>
           ))}
         </div>
 
@@ -222,47 +257,51 @@ const Attendance = () => {
                 color: emp.role === 'Monthly Salaried' ? '#8b5cf6' : '#64748b',
               }}>{emp.role}</div>
 
-              {/* Status */}
-              <div style={{ display: 'flex', gap: '4px' }}>
+              {/* Status - highlighted column */}
+              <div style={{
+                display: 'flex', gap: '6px',
+                padding: '8px 10px', borderRadius: '8px',
+                background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)',
+              }}>
                 {['present', 'leave', 'absent'].map(s => (
                   <button key={s} onClick={() => updateField(emp.id, 'status', s)} style={{
-                    padding: '4px 8px', borderRadius: '6px', border: 'none',
-                    fontSize: '10px', fontWeight: 600, cursor: 'pointer',
-                    background: rec.status === s ? statusColors[s].bg : '#f1f5f9',
-                    color: rec.status === s ? statusColors[s].color : '#94a3b8',
-                    outline: rec.status === s ? `1.5px solid ${statusColors[s].border}` : 'none',
+                    padding: '6px 12px', borderRadius: '6px', border: `2px solid ${statusColors[s].border}`,
+                    fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                    background: rec.status === s ? statusColors[s].bg : `${statusColors[s].border}15`,
+                    color: rec.status === s ? statusColors[s].color : statusColors[s].border,
+                    boxShadow: rec.status === s ? `0 2px 4px ${statusColors[s].border}30` : 'none',
                   }}>
                     {s === 'present' ? '✓' : s === 'leave' ? 'L' : 'A'}
                   </button>
                 ))}
               </div>
 
-              {/* Time In */}
+              {/* Time In - enterable only when Leave */}
               <input
                 type="time"
                 value={rec.timeIn}
-                disabled={rec.status !== 'present'}
+                disabled={rec.status !== 'leave'}
                 onChange={e => updateField(emp.id, 'timeIn', e.target.value)}
                 style={{
                   padding: '5px 8px', borderRadius: '6px',
                   border: '1px solid #d1d5db', fontSize: '12px',
-                  background: rec.status !== 'present' ? '#f1f5f9' : '#fff',
-                  color: rec.status !== 'present' ? '#94a3b8' : '#1a1a2e',
+                  background: rec.status !== 'leave' ? '#f1f5f9' : '#fff',
+                  color: rec.status !== 'leave' ? '#94a3b8' : '#1a1a2e',
                   outline: 'none', width: '90px',
                 }}
               />
 
-              {/* Time Out */}
+              {/* Time Out - enterable only when Leave */}
               <input
                 type="time"
                 value={rec.timeOut}
-                disabled={rec.status !== 'present'}
+                disabled={rec.status !== 'leave'}
                 onChange={e => updateField(emp.id, 'timeOut', e.target.value)}
                 style={{
                   padding: '5px 8px', borderRadius: '6px',
                   border: '1px solid #d1d5db', fontSize: '12px',
-                  background: rec.status !== 'present' ? '#f1f5f9' : '#fff',
-                  color: rec.status !== 'present' ? '#94a3b8' : '#1a1a2e',
+                  background: rec.status !== 'leave' ? '#f1f5f9' : '#fff',
+                  color: rec.status !== 'leave' ? '#94a3b8' : '#1a1a2e',
                   outline: 'none', width: '90px',
                 }}
               />

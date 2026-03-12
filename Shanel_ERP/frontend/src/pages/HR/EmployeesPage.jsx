@@ -139,9 +139,6 @@ const EmployeesPage = () => {
             WebkitTextFillColor: 'transparent',
           }}>Employees</span>
         </h1>
-        <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-          Employee directory · Manage profiles and roles
-        </p>
       </div>
 
       <div style={{
@@ -172,7 +169,6 @@ const EmployeesPage = () => {
         >
           ➕ Add Employee
         </button>
-        <span style={{ fontSize: '13px', color: '#64748b' }}>Tip: drag cards to rearrange · Click picture to change photo · Click Edit to update profile.</span>
       </div>
 
       {showAddForm && (
