@@ -1,15 +1,20 @@
 const express = require("express");
 const applyMiddleware = require('./middleware/appMiddleware');
-const inventoryRoutes = require('./routes/inventory');
+const inventoryRoutes = require('./routes/inventory/inventory');
 const customerRoutes = require('./routes/customer/CustomerRoutes')
+const productionRoutes = require('./routes/inventory/productionRoutes');
+
 require('dotenv').config();
+
+
 
 const app = express();
 
 applyMiddleware(app);
 
-//Inventry routes
+//Inventory routes
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/production', productionRoutes);
 
 //Sales routes
 
