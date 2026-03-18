@@ -1,18 +1,31 @@
 const express = require("express");
-const applyMiddleware = require('./middleware/appMiddleware');
-const inventoryRoutes = require('./routes/inventory');
+const cors = require('cors');
 require('dotenv').config();
 
-const app = express();
+const applyMiddleware = require('./middleware/appMiddleware');
+const inventoryRoutes = require('./routes/inventory/inventory');
+const productionRoutes = require('./routes/inventory/productionRoutes');
 
+const app = express();
+app.use(cors());
+app.use(express.json());
 applyMiddleware(app);
 
-//Inventry routes
+//Inventory routes
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/production', productionRoutes);
 
 //Sales routes
 
 //Customer routes
+<<<<<<< HEAD
+=======
+app.use('/api/customer',customerRoutes);
+
+
+//Sales routes
+
+>>>>>>> ef9f1afad0ba7f63341702a9ec7c023026477ffa
 
 //HR routes
 
