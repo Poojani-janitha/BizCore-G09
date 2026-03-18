@@ -8,8 +8,6 @@ const productionRoutes = require('./routes/inventory/productionRoutes');
 const customerRoutes = require('./routes/customer/CustomerRoutes');
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 applyMiddleware(app);
 
 //Inventory routes
