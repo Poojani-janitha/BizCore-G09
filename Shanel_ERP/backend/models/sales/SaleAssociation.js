@@ -1,12 +1,11 @@
-const Sale = require('../sales/Sale');
-const SaleItem = require('../sales/SaleItem');
+const Sale = require('../sales/Sales');
+const SaleItem = require('../sales/SalesItem');
 const Payment = require('../sales/Payment');
 const CreditTranscation = require('../customer/CreditTranscation');
 const Customer = require('../customer/customer');
 const SalesSummaryDaily = require('../sales/SalesSummaryDaily');
 const User = require('../user/User');
 const Product = require('../inventory/Product');
-const UnitConversion = require('../inventory/UnitConversion');
 
 // const Production = require('../production/Production');
 
@@ -37,8 +36,7 @@ module.exports = () =>{
     SaleItem.belongsTo(Product, { foreignKey: 'P_ID' });
 
     // SaleItem → UnitConversion
-    UnitConversion.hasMany(SaleItem, { foreignKey: 'U_ID' });
-    SaleItem.belongsTo(UnitConversion, { foreignKey: 'U_ID' });
+    // UnitConversion model is not available yet.
 
     // SaleItem → Production batch (uncomment when Production model is added)
     // Production.hasMany(SaleItem, { foreignKey: 'PR_ID' });
