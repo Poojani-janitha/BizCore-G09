@@ -24,11 +24,13 @@ const Attendance = () => {
       Object.fromEntries(
         list.map(emp => [
           emp.id,
-          { status: 'present', timeIn: '08:00', timeOut: '16:00', otHours: 0 },
+          // ✅ FIX: timeIn and timeOut start empty — only user can fill them
+          { status: 'present', timeIn: '', timeOut: '', otHours: 0 },
         ])
       )
     );
   }, []);
+
   const [submitted, setSubmitted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -52,17 +54,13 @@ const Attendance = () => {
         next.otHours = 0;
       }
 
-      // Present: set defaults (not editable)
+      // ✅ FIX: Present — preserve whatever the user has typed, never auto-fill
       if (nextStatus === 'present') {
-        next.timeIn = '08:00';
-        next.timeOut = '16:00';
-        next.otHours = 0;
+        if (typeof next.otHours !== 'number') next.otHours = 0;
       }
 
-      // Leave: clear so user can enter arrival/leaving time
+      // ✅ FIX: Leave — preserve whatever the user has typed, clear OT only
       if (nextStatus === 'leave') {
-        next.timeIn = next.timeIn || '';
-        next.timeOut = next.timeOut || '';
         next.otHours = 0;
       }
 
@@ -78,8 +76,9 @@ const Attendance = () => {
         updated[emp.id] = {
           ...existing,
           status,
-          timeIn: status === 'present' ? '08:00' : (status === 'absent' ? '' : (existing.timeIn || '')),
-          timeOut: status === 'present' ? '16:00' : (status === 'absent' ? '' : (existing.timeOut || '')),
+          // ✅ FIX: When marking all absent, clear times; otherwise preserve user's entries
+          timeIn: status === 'absent' ? '' : (existing.timeIn || ''),
+          timeOut: status === 'absent' ? '' : (existing.timeOut || ''),
           otHours: status === 'present' ? (existing.otHours ?? 0) : 0,
         };
       });
@@ -95,10 +94,11 @@ const Attendance = () => {
   };
 
   const isHalfDay = (id) => {
-    const { timeIn, timeOut, status } = attendance[id];
+    const { timeIn, timeOut, status } = attendance[id] || {};
     if (status !== 'present') return false;
     const hours = getWorkHours(timeIn, timeOut);
-    return hours < 4;
+    // Only flag as half-day if times are actually entered and hours < 4
+    return timeIn && timeOut && hours > 0 && hours < 4;
   };
 
   const handleSubmit = () => {
@@ -148,7 +148,7 @@ const Attendance = () => {
         </p>
       </div>
 
-      {/* Summary Cards - HrStatsCard */}
+      {/* Summary Cards */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginBottom: '22px' }}>
         <HrStatsCard title="Present Today" value={summary.present} subtitle="Fingerprint verified" icon="✅" color="green" />
         <HrStatsCard title="Half Day" value={summary.halfDay} subtitle="Less than 4 hours" icon="🕐" color="blue" />
@@ -207,32 +207,42 @@ const Attendance = () => {
         background: '#fff', borderRadius: '12px', border: '1px solid #e8e8e8',
         boxShadow: '0 1px 4px rgba(0,0,0,0.05)', overflow: 'hidden', marginBottom: '20px',
       }}>
-        {/* Table Header */}
+        {/* ✅ FIX: Header and row grids now both use the same 8-column layout (removed duplicate Profile column) */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '40px 1fr 90px 120px 140px 110px 110px 100px 120px',
+          gridTemplateColumns: '40px 1fr 120px 160px 110px 110px 100px 120px',
           background: '#f8fafc', borderBottom: '2px solid #e8e8e8',
           padding: '12px 20px', gap: '12px', alignItems: 'center',
         }}>
-          {['#', 'Employee', 'Profile', 'Role', 'Status', 'Time In', 'Time Out', 'OT Hours', 'Tea Cost'].map(h => (
+          {['#', 'Employee', 'Role', 'Status', 'Time In', 'Time Out', 'OT Hours', 'Tea Cost'].map(h => (
             <div key={h} style={{
               fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
-              ...(h === 'Status' ? { color: '#1e40af', background: 'rgba(59,130,246,0.12)', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(59,130,246,0.3)' } : { color: '#64748b' }),
+              color: '#1e40af',
+              background: 'rgba(59,130,246,0.12)',
+              padding: '8px 10px',
+              borderRadius: '8px',
+              border: '1px solid rgba(59,130,246,0.3)',
             }}>{h}</div>
           ))}
         </div>
 
         {/* Table Rows */}
         {filtered.map((emp, index) => {
-          const rec = attendance[emp.id];
+          const rec = attendance[emp.id] || { status: 'present', timeIn: '', timeOut: '', otHours: 0 };
           const halfDay = isHalfDay(emp.id);
-          const teaCost = rec.status === 'present' && !halfDay ? 'Rs 60' : '—';
+
+          // ✅ FIX: Tea cost = Rs 60 automatically when status is 'present' (half-day gets Rs 30)
+          const teaCost =
+            rec.status === 'present' && !halfDay ? 'Rs 60' :
+            rec.status === 'present' && halfDay ? 'Rs 30' :
+            '—';
+
           const rowBg = index % 2 === 0 ? '#fff' : '#fafbfc';
 
           return (
             <div key={emp.id} style={{
               display: 'grid',
-              gridTemplateColumns: '40px 1fr 120px 140px 110px 110px 100px 120px',
+              gridTemplateColumns: '40px 1fr 120px 160px 110px 110px 100px 120px',
               padding: '12px 20px', gap: '12px', alignItems: 'center',
               background: rowBg, borderBottom: '1px solid #f1f5f9',
               transition: 'background 0.15s',
@@ -257,7 +267,7 @@ const Attendance = () => {
                 color: emp.role === 'Monthly Salaried' ? '#8b5cf6' : '#64748b',
               }}>{emp.role}</div>
 
-              {/* Status - highlighted column */}
+              {/* Status */}
               <div style={{
                 display: 'flex', gap: '6px',
                 padding: '8px 10px', borderRadius: '8px',
@@ -276,32 +286,34 @@ const Attendance = () => {
                 ))}
               </div>
 
-              {/* Time In - enterable only when Leave */}
+              {/* Time In — placeholder only, no default value */}
               <input
                 type="time"
                 value={rec.timeIn}
-                disabled={rec.status !== 'leave'}
+                disabled={rec.status === 'absent'}
                 onChange={e => updateField(emp.id, 'timeIn', e.target.value)}
+                placeholder="--:--"
                 style={{
                   padding: '5px 8px', borderRadius: '6px',
                   border: '1px solid #d1d5db', fontSize: '12px',
-                  background: rec.status !== 'leave' ? '#f1f5f9' : '#fff',
-                  color: rec.status !== 'leave' ? '#94a3b8' : '#1a1a2e',
+                  background: rec.status === 'absent' ? '#f1f5f9' : '#fff',
+                  color: rec.status === 'absent' ? '#94a3b8' : '#1a1a2e',
                   outline: 'none', width: '90px',
                 }}
               />
 
-              {/* Time Out - enterable only when Leave */}
+              {/* Time Out — placeholder only, no default value */}
               <input
                 type="time"
                 value={rec.timeOut}
-                disabled={rec.status !== 'leave'}
+                disabled={rec.status === 'absent'}
                 onChange={e => updateField(emp.id, 'timeOut', e.target.value)}
+                placeholder="--:--"
                 style={{
                   padding: '5px 8px', borderRadius: '6px',
                   border: '1px solid #d1d5db', fontSize: '12px',
-                  background: rec.status !== 'leave' ? '#f1f5f9' : '#fff',
-                  color: rec.status !== 'leave' ? '#94a3b8' : '#1a1a2e',
+                  background: rec.status === 'absent' ? '#f1f5f9' : '#fff',
+                  color: rec.status === 'absent' ? '#94a3b8' : '#1a1a2e',
                   outline: 'none', width: '90px',
                 }}
               />
@@ -324,10 +336,13 @@ const Attendance = () => {
                 }}
               />
 
-              {/* Tea Cost */}
+              {/* ✅ Tea Cost — auto-applied for present employees */}
               <div style={{
-                fontSize: '12px', fontWeight: 600,
-                color: teaCost === 'Rs 60' ? '#16a34a' : '#94a3b8',
+                fontSize: '12px', fontWeight: 700,
+                color: teaCost === 'Rs 60' ? '#16a34a' : teaCost === 'Rs 30' ? '#2563eb' : '#94a3b8',
+                background: teaCost !== '—' ? (teaCost === 'Rs 60' ? 'rgba(34,197,94,0.1)' : 'rgba(59,130,246,0.1)') : 'transparent',
+                padding: teaCost !== '—' ? '4px 8px' : '0',
+                borderRadius: '6px',
               }}>{teaCost}</div>
             </div>
           );
