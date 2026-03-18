@@ -52,5 +52,6 @@ module.exports = {
     Sale,
     SaleItem,
     Payment,
-    SalesSummary
+    SalesSummary,
+    Customer
 };

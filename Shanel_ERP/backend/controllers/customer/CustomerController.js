@@ -77,14 +77,13 @@ const searchCustomers = async (req, res) => {
         const { q, limit = 10 } = req.query;
 
 
-        //validate search term
+        // Return an empty list for blank search text to avoid noisy frontend errors.
         if (!q || q.trim() === '') {
-            return res.status(422).json({
-                success: false,
-                message: "query is empty",
-                error: "EMPTY_QUERY"
-
-            })
+            return res.status(200).json({
+                success: true,
+                count: 0,
+                customers: []
+            });
         }
 
         const searchTerm = q.trim();

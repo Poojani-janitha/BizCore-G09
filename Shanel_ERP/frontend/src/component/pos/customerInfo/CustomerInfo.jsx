@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { useState } from 'react'
 import axios from 'axios';
 import { Search } from 'lucide-react';
@@ -34,10 +34,19 @@ const CustomerInfo = () => {
 
   const[result,setResult]= useState([]);
   const[query,setQuery]= useState('');
-  const[setected,setSelected]= useState(null);
+  const[,setSelected]= useState(null);
   const searchCustomers = async (value) =>{
+    const term = value.trim();
+
+    if (!term) {
+      setResult([]);
+      return;
+    }
+
     try{
-      const res = await axios.get(`http://localhost:5000/api/customer/search?q=${value}`);
+      const res = await axios.get('http://localhost:5000/api/customer/search', {
+        params: { q: term }
+      });
       if(res.data.success){
         setResult(res.data.customers);
       }
@@ -64,7 +73,18 @@ const CustomerInfo = () => {
           <div className='input-group input-group-sm' style={{ maxWidth: '400px', position: 'relative' }}>
             <div style={{ position: 'relative', width: '100%' }}>
               <Search size={14} style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: '#6c757d', pointerEvents: 'none' }} />
-              <input type="text" className='form-control' value={query} placeholder='Search customer...' style={{ paddingLeft: '28px' }} onChange={(e) => {searchCustomers(e.target.value),setQuery(e.target.value)}} />
+              <input
+                type="text"
+                className='form-control'
+                value={query}
+                placeholder='Search customer...'
+                style={{ paddingLeft: '28px' }}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setQuery(value);
+                  searchCustomers(value);
+                }}
+              />
             </div>
             {result.length > 0 && (
               <ul style={{
