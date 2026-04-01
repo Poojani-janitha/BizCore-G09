@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Play, Trash2, CheckCircle, Loader } from 'react-feather';
+import { Play, Trash2, CheckCircle, Loader, Activity } from 'react-feather';
 import ProductionModal from '../../component/Inventory/Production/ProductionModal';
 
-const ProductionPage = () => {
+const ProductionStock = () => {
     const [wip, setWip] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -87,4 +87,4 @@ const ProductionPage = () => {
     );
 };
 
-export default ProductionPage;
+export default ProductionStock;
