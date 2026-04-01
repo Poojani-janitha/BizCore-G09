@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const inventoryRoutes = require('./routes/inventory');
-const productionRoutes = require('./routes/production');
+const productionRoutes = require('./routes/productionRoutes');
 require('dotenv').config();
 
 const app = express();
