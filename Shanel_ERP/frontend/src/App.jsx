@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Inventory_Dashboard from './pages/Inventory/InventoryDashboard';
 import Header from './component/Header/Header';
 import ProductPage from './pages/Inventory/ProductPage.jsx';
+import ProductionPage from './pages/Inventory/ProductionPage.jsx';
 import './App.css';
 import POS from './pages/POS/POS.jsx';
 
@@ -26,6 +27,7 @@ const App = () => {
             <Route path="/inventory/company-items" element={<ProductPage pageTitle="Company Items" typeFilter="Company" />} />
             <Route path="/inventory/other-items" element={<ProductPage pageTitle="Other Items" typeFilter="Other" />} />
             <Route path="/inventory/raw-materials" element={<ProductPage pageTitle="Raw Materials" typeFilter="Raw" />} />
+            <Route path="/inventory/production-stock" element={<ProductionPage />} />
 
             <Route path="/POS" element={<POS />} />
             <Route path="/hr" element={<div>HR Page</div>} />
