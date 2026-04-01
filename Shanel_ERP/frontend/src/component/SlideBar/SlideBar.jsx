@@ -3,8 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { 
   Home, ShoppingCart, Package, DollarSign, Users, 
   ChevronRight, ChevronDown, Box, Archive, Menu, 
-  LogOut, Truck, Settings, FileText, RefreshCw, 
-  Sliders, CornerUpLeft, BarChart2, Bell, PieChart 
+  LogOut, Truck, Settings, FileText, RefreshCw, Sliders, CornerUpLeft, BarChart2, Bell, PieChart 
 } from 'react-feather';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
