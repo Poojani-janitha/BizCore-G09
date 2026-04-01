@@ -25,7 +25,7 @@ const SlideBar = () => {
                 { label: 'Other Items', to: '/inventory/other-items', icon: <Box size={14} /> },
                 { label: 'Raw Materials', to: '/inventory/raw-materials', icon: <Archive size={14} /> },
                 { label: 'Production Stock', to: '/inventory/production-stock', icon: <Truck size={14} /> },
-                { label: 'Sales Stock', to: '/inventory/sales-stock', icon: <Home size={14} /> },
+                { label: 'Sales Stock', to: '/inventory/salesStock', icon: <Home size={14} /> },
                 { label: 'Purchase Orders', to: '/inventory/purchase-orders', icon: <FileText size={14} /> },
                 { label: 'Production', to: '/inventory/production', icon: <Settings size={14} /> },
                 { label: 'Stock Transfer', to: '/inventory/refresh-cw', icon: <RefreshCw size={14} /> },

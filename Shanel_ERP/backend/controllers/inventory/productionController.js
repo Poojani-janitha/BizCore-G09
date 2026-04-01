@@ -12,9 +12,16 @@ exports.getProductionData = async (req, res) => {
 
         const formattedWip = wipData.map(item => {
             let completionVal = 0;
-            if (item.Status === 'In_Progress') completionVal = 50;
-            else if (item.Status === 'Quality_Check') completionVal = 85;
-            else if (item.Status === 'Approved' || item.Status === 'Completed') completionVal = 100;
+            if (item.Status === 'In_Progress') {
+                // New batches remain at 0% until user explicitly marks them In Progress.
+                const createdAt = item.Created_At ? new Date(item.Created_At) : null;
+                const updatedAt = item.Updated_At ? new Date(item.Updated_At) : null;
+                completionVal = (createdAt && updatedAt && updatedAt.getTime() > createdAt.getTime()) ? 50 : 0;
+            } else if (item.Status === 'Quality_Check') {
+                completionVal = 85;
+            } else if (item.Status === 'Approved' || item.Status === 'Completed') {
+                completionVal = 100;
+            }
 
             return {
                 PR_ID: item.PR_ID,
@@ -62,7 +69,6 @@ exports.updateProductionStatus = async (req, res) => {
 
         if (!batch) throw new Error("Batch not found");
 
-        // Status එක Approved නම් පමණක් Stock එක වැඩි කරන්න
         if (status === 'Approved' && batch.Status !== 'Approved') {
             const [inventory] = await Inventory.findOrCreate({
                 where: { P_ID: batch.P_ID, Location: 'Main_Warehouse' },
@@ -72,7 +78,16 @@ exports.updateProductionStatus = async (req, res) => {
             await inventory.update({ Qty: parseFloat(inventory.Qty) + parseFloat(batch.Total_Qty_Produced) }, { transaction: t });
         }
 
-        await batch.update({ Status: status }, { transaction: t });
+        if (status === 'In_Progress') {
+            // Even when status is unchanged, bump Updated_At so UI can show 50%.
+            await sequelize.query(
+                'UPDATE production SET Status = ?, Updated_At = NOW() WHERE PR_ID = ?',
+                { replacements: [status, id], transaction: t }
+            );
+        } else {
+            await batch.update({ Status: status }, { transaction: t });
+        }
+
         await t.commit();
         res.json({ success: true, message: "Production updated and Stock synced!" });
     } catch (error) {
