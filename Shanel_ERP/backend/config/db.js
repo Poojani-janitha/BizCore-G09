@@ -1,13 +1,26 @@
-const mysql = require('mysql2');
+const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10
-});
+const sequelize = new Sequelize(
+    process.env.DB_NAME || 'shanel_erp', //
+    process.env.DB_USER || 'root',
+    process.env.DB_PASS || 'your_password',
+    {
+        host: process.env.DB_HOST || 'localhost',
+        dialect: 'mysql',
+        logging: false, // Set to true if you want to see the SQL in the terminal
+        pool: {
+            max: 5,
+            min: 0,
+            acquire: 30000,
+            idle: 10000
+        }
+    }
+);
 
-module.exports = pool.promise();
+// Test the connection
+sequelize.authenticate()
+    .then(() => console.log('✅ Database connected with Sequelize'))
+    .catch(err => console.error('❌ Unable to connect to the database:', err));
+
+module.exports = sequelize;

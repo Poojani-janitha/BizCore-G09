@@ -8,7 +8,7 @@ import ActionButtons from '../../component/pos/actionButtons/ActionButtons'
 const POS = () => {
   return (
     // Remove vh-100 and the extra relative positioning
-    <div className='pos-wrapper'>
+    <div className='pos-wrapper w-100' style={{ overflowX: 'hidden'}}>
       {/* Section 1: Customer Info */}
       <div className='card border-0 shadow-sm p-4 mb-3'>
         <CustomerInfo />
@@ -21,19 +21,19 @@ const POS = () => {
 
       {/* Section 3: Bottom Grid */}
       <div className='row g-3'>
-        <div className='col-lg-4'>
+        <div className='col-xl-4 col-lg-6'>
           <div className='card border-0 shadow-sm p-3 h-100'>
             <InvoiceTotal />
           </div>
         </div>
 
-        <div className='col-lg-4'>
+        <div className='col-xl-4 col-lg-6'>
           <div className='card border-0 shadow-sm p-3 h-100'>
             <PaymentMethod />
           </div>
         </div>
 
-        <div className='col-lg-4'>
+        <div className='col-xl-4 col-lg-12'>
           <div className='card border-0 shadow-sm p-3 h-100'>
             <ActionButtons />
           </div>

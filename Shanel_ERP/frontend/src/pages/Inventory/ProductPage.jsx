@@ -57,7 +57,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
             const matchesType = product.type === typeFilter;
 
             //filter by active status(If toggle is ON )
-            const matchesStatus = activeOnly ? product.status === 'Active' : true;
+            const matchesStatus = activeOnly ? product.status === 'In Stock' : true;
 
             //Search logic
             const name = product.name?.toLowerCase() || '';
@@ -90,8 +90,125 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
         }
     };
 
+    // ---------- Barcode Print ----------
+    const [printTarget, setPrintTarget]   = useState(null);  // product to print
+    const [printQty, setPrintQty]         = useState(1);     // requested copies
+    const [showPrintDialog, setShowPrintDialog] = useState(false);
+
+    const handlePrintSingle = (product) => {
+        if (!product.barcode) { alert('This product has no barcode assigned.'); return; }
+        setPrintTarget(product);
+        setPrintQty(1);
+        setShowPrintDialog(true);
+    };
+
+    const executePrint = () => {
+        const qty = parseInt(printQty, 10);
+        if (!qty || qty < 1 || qty > 10000) { alert('Please enter a valid quantity (1 – 10,000).'); return; }
+        setShowPrintDialog(false);
+
+        // Build qty copies of the barcode in one print page
+        const copies = Array.from({ length: qty }, (_, i) => `
+            <div class="bc-item">
+                <svg class="bc"
+                    jsbarcode-value="${printTarget.barcode}"
+                    jsbarcode-width="1.8"
+                    jsbarcode-height="50"
+                    jsbarcode-fontsize="11"
+                    jsbarcode-margin="3">
+                </svg>
+                <p class="nm">${printTarget.name}</p>
+                <p class="copy-num">${i + 1} / ${qty}</p>
+            </div>`).join('');
+
+        const win = window.open('', '_blank');
+        win.document.write(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Print Barcodes – ${printTarget.name}</title>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,sans-serif;background:#f0f0f0}
+
+  /* ── Screen preview banner ── */
+  .info{
+    background:#1e293b;color:#f1f5f9;
+    padding:10px 18px;font-size:12px;
+    display:flex;align-items:center;gap:12px;
+  }
+  .info strong{color:#fff}
+  .print-btn{
+    margin-left:auto;
+    background:#3b82f6;color:#fff;border:none;
+    padding:5px 14px;border-radius:4px;cursor:pointer;font-size:12px;
+  }
+
+  /* ── Label grid ── */
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap:0;
+    padding:10mm;
+    background:#f0f0f0;
+  }
+
+  /* ── Single label ── */
+  .bc-item{
+    background:#fff;
+    border:1px dashed #bbb;      /* dashed = easy cut guide */
+    padding:8px 6px 6px;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:28mm;
+    page-break-inside:avoid;
+  }
+  .bc-item svg{ max-width:100%; height:auto; }
+  .nm{
+    font-size:9px;
+    margin-top:4px;
+    color:#111;
+    font-weight:700;
+    letter-spacing:0.03em;
+    max-width:100%;
+    word-break:break-word;
+    line-height:1.3;
+  }
+  .copy-num{
+    font-size:8px;
+    color:#999;
+    margin-top:2px;
+  }
+
+  /* ── Print overrides ── */
+  @media print{
+    body{background:#fff}
+    .info{display:none}
+    .grid{
+      padding:5mm;
+      background:#fff;
+      gap:0;
+    }
+    .bc-item{
+      border:1px dashed #aaa;
+    }
+  }
+</style></head><body>
+<div class="info">
+  Printing <strong>${qty}&nbsp;cop${qty === 1 ? 'y' : 'ies'}</strong> of
+  &nbsp;<strong>${printTarget.name}</strong>
+  &nbsp;·&nbsp; Barcode:&nbsp;${printTarget.barcode}
+  <button class="print-btn" onclick="window.print()">🖨 Print</button>
+</div>
+<div class="grid">${copies}</div>
+<script>window.onload=function(){JsBarcode('.bc').init();};<\/script>
+</body></html>`);
+        win.document.close();
+    };
+
   return (
-    <div className='p-4 bg-light min-vh-100'>
+    <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
         <div className='container-fluid px-0'>
 
             <ProductHeader title={pageTitle} onAddClick={handleAddProduct} />
@@ -117,7 +234,44 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                 </div>
             </div>
 
-            <ProductTable products={filteredProducts} isLoading={isLoading} onDelete={handleDelete} onEdit={handleEdit} />
+            <ProductTable products={filteredProducts} isLoading={isLoading} onDelete={handleDelete} onEdit={handleEdit} onPrint={handlePrintSingle} />
+
+            {/* Barcode Qty Print Dialog */}
+            {showPrintDialog && printTarget && (
+                <div className='modal d-block' style={{ backgroundColor: 'rgba(15,23,42,0.6)', zIndex: 1055 }}
+                     onClick={(e) => { if (e.target === e.currentTarget) setShowPrintDialog(false); }}>
+                    <div className='modal-dialog modal-dialog-centered' style={{ maxWidth: '360px' }}>
+                        <div className='modal-content border-0 shadow-lg rounded-4 overflow-hidden'>
+                            <div className='modal-header border-0 px-4 pt-4 pb-2'>
+                                <div>
+                                    <h6 className='fw-bold mb-0'>Print Barcode</h6>
+                                    <p className='text-muted small mb-0 mt-1' style={{ fontSize: '12px' }}>
+                                        {printTarget.name} &nbsp;·&nbsp; <span className='text-secondary'>{printTarget.barcode}</span>
+                                    </p>
+                                </div>
+                                <button className='btn-close shadow-none ms-auto' onClick={() => setShowPrintDialog(false)} />
+                            </div>
+                            <div className='modal-body px-4 py-3'>
+                                <label className='form-label small fw-semibold text-muted mb-1'>How many copies do you want to print?</label>
+                                <input
+                                    type='number'
+                                    className='form-control form-control-sm bg-light border-0 py-2 shadow-none'
+                                    min='1' max='10000'
+                                    value={printQty}
+                                    autoFocus
+                                    onChange={(e) => setPrintQty(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && executePrint()}
+                                />
+                                <p className='text-muted mt-2 mb-0' style={{ fontSize: '11px' }}>All copies will be formatted in a single printable sheet.</p>
+                            </div>
+                            <div className='modal-footer border-0 px-4 pb-4 pt-1 gap-2'>
+                                <button className='btn btn-outline-secondary btn-sm px-4 rounded-3' onClick={() => setShowPrintDialog(false)}>Cancel</button>
+                                <button className='btn btn-dark btn-sm px-4 rounded-3 shadow-sm' onClick={executePrint}>Print</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Indicate emepty state */}
             {filteredProducts.length === 0 && !isLoading && (
