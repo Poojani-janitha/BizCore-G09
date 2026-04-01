@@ -69,8 +69,6 @@ const SlideBar = () => {
         setOpenMenus(newOpenMenus);
     }, [location.pathname]);
 
-    
-
     const toggleSubMenu = (label) => {
         if (isCollapsed) setIsCollapsed(false);
         setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }));

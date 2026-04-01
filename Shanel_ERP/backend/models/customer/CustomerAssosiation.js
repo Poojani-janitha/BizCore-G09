@@ -1,5 +1,5 @@
 const Customer  = require('./customer');
-const Sale = require('../sales/Sales');
+const Sale = require('../sales/Sale');
 const CreditTranscation = require('./CreditTranscation');
 const CustomerNofification = require('./CustomerNotification');
 const CustomerBuyingPattern = require('./CustomerBuyingPattern');

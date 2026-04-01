@@ -1,8 +1,6 @@
-const Customer = require('./customer');
-const sequelize = require('../../config/db');
-const {DataTypes} = require('sequelize');
-const Product = require('../inventory/Product');
-
+const sequelize = require('../db')
+const { DataTypes } = require('sequelize')
+const Customer = require('./customer')
 
 
 
@@ -78,7 +76,7 @@ const CustomerBuyingPattern = sequelize.define('CustomerBuyingPattern', {
     }
 
 },{
-    tableName: 'customer_buying_pattern',
+    tableName: 'customer_buying_pattern ',
     timestamps: false,
     createdAt: false,
     updatedAt: 'Updated_At'

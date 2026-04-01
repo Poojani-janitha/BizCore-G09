@@ -1,8 +1,6 @@
 const sequlize = require('../../config/db');
 const {DataTypes} =require('sequelize');
 const Customer = require('./customer');
-const Product = require('../inventory/Product');
-const User = require('../user/User');
 
 //Model for Notifications
 const CustomerNofification = sequlize.define('CustomerNotification',{
