@@ -5,44 +5,77 @@ const { Op } = require('sequelize');
 // 1. Get Dashboard Stats
 const getDashboardStats = async (req, res) => {
     try {
-        // Fetch products with their total inventory count
-        const products = await Product.findAll({
+        // --- 1. STOCK LEVELS (For Bar Chart) ---
+        // We fetch name, total sum of inventory, and min_stock
+        const stockLevelData = await Product.findAll({
             attributes: [
-                'P_Name', 
-                'Min_Stock',
-                [sequelize.fn('SUM', sequelize.col('Inventories.Qty')), 'totalStock']
+                ['P_Name', 'name'], 
+                ['Min_Stock', 'min'],
+                [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('Inventories.Qty')), 0), 'current']
             ],
             include: [{
                 model: Inventory,
-                attributes: []
+                attributes: [],
+                required: false
             }],
             group: ['Product.P_ID'],
-            having: sequelize.where(sequelize.col('Min_Stock'), '>', 0)
+            where: {
+                Min_Stock: { [Op.gt]: 0 } // Only include products that have a min stock defined
+            },
+            subQuery: false
         });
 
-        // Distribution by Type
+        // --- 2. LOW STOCK ALERTS ---
+        // Logic: Find products where Total Inventory <= Min_Stock
+        const products = await Product.findAll({
+            attributes: ['P_Name', 'Min_Stock', 'P_Type'],
+            include: [{ model: Inventory, attributes: ['Qty'] }]
+        });
+
+        const alerts = [];
+        products.forEach(p => {
+            const total = p.Inventories.reduce((sum, inv) => sum + parseFloat(inv.Qty), 0);
+            if (total <= parseFloat(p.Min_Stock) && p.Min_Stock > 0) {
+                alerts.push({
+                    name: p.P_Name,
+                    type: p.P_Type,
+                    current: total,
+                    min: p.Min_Stock
+                });
+            }
+        });
+
+        // --- 3. DISTRIBUTION BY TYPE ---
         const distribution = await Product.findAll({
-            attributes: ['P_Type', [sequelize.fn('COUNT', sequelize.col('P_ID')), 'value']],
+            attributes: [['P_Type', 'name'], [sequelize.fn('COUNT', sequelize.col('P_ID')), 'value']],
             group: ['P_Type']
         });
 
-        // Summary Counts
-        const activeProducts = await Product.count({ where: { Status: 'Active' } });
-        
-        const productionStock = await Inventory.sum('Qty', { where: { Location: 'Production' } });
-        const storeStock = await Inventory.sum('Qty', { where: { Location: 'Shop' } });
+        // --- 4. RECENT TRANSFERS (Placeholder until you build Transfer Model) ---
+        // If you don't have a Transfer table yet, we send an empty array to prevent frontend errors
+        const transfers = []; 
 
+        // --- 5. SUMMARY COUNTS ---
+        const activeProducts = await Product.count({ where: { Status: 'In Stock' } });
+        const productionStock = await Inventory.sum('Qty', { where: { Location: 'Production' } }) || 0;
+        const storeStock = await Inventory.sum('Qty', { where: { Location: 'Shop' } }) || 0;
+
+        // --- FINAL RESPONSE ---
         res.json({
             success: true,
+            stockLevel: stockLevelData, // Fixed: Added this
             distribution,
+            alerts: alerts.slice(0, 5),  // Fixed: Added this
+            transfers: transfers,       // Fixed: Added this
             summary: {
                 activeProducts,
-                productionStock: productionStock || 0,
-                storeStock: storeStock || 0,
-                pendingOrders: 1 // Placeholder for now
+                productionStock,
+                storeStock,
+                pendingOrders: 0
             }
         });
     } catch (err) {
+        console.error("Dashboard Error:", err);
         res.status(500).json({ success: false, message: err.message });
     }
 };

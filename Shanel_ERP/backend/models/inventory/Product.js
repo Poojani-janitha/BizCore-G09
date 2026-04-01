@@ -28,8 +28,8 @@ const Product = sequelize.define(
             allowNull: false },
 
         Status: {
-            type: DataTypes.ENUM("Active", "Inactive", "Discontinued"),
-            defaultValue: "Active",
+            type: DataTypes.ENUM("In Stock", "Low Stock", "Out of Stock"),
+            defaultValue: "In Stock",
         },
 
         Cost_Price: { 
