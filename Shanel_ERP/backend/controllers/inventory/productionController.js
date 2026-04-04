@@ -23,15 +23,27 @@ exports.getProductionData = async (req, res) => {
                 completionVal = 100;
             }
 
+            // Calculate days to expiry
+            let daysToExpire = null;
+            if (item.Exp_Date) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const expDate = new Date(item.Exp_Date);
+                expDate.setHours(0, 0, 0, 0);
+                daysToExpire = Math.floor((expDate - today) / (1000 * 60 * 60 * 24));
+            }
+
             return {
                 PR_ID: item.PR_ID,
                 P_ID: item.P_ID,
                 Batch_No: item.Batch_No,
                 P_Name: item.Product ? item.Product.P_Name : 'Unknown',
                 Total_Qty_Produced: item.Total_Qty_Produced,
+                Production_Date: item.Production_Date,
+                Exp_Date: item.Exp_Date,
                 Status: item.Status,
                 Completion: completionVal,
-                Exp_Date: item.Exp_Date
+                DaysToExpire: daysToExpire
             };
         });
 
@@ -44,12 +56,12 @@ exports.getProductionData = async (req, res) => {
 // 2. Start New Production (Add WIP)
 exports.startProduction = async (req, res) => {
     try {
-        const { P_ID, Batch_No, Total_Qty_Produced, Exp_Date } = req.body;
+        const { P_ID, Batch_No, Total_Qty_Produced, Production_Date, Exp_Date } = req.body;
         const newBatch = await Production.create({
             P_ID,
             Batch_No,
             Total_Qty_Produced,
-            Production_Date: new Date(),
+            Production_Date,
             Exp_Date,
             Status: 'In_Progress'
         });

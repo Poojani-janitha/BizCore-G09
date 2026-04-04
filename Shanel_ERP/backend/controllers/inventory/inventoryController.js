@@ -140,4 +140,31 @@ const deleteProduct = async (req, res) => {
     }
 };
 
-module.exports = { getDashboardStats, getProducts, addProduct, deleteProduct, updateProduct };
+// 6. Get Product Inventory by Location
+const getProductLocationInventory = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const inventories = await Inventory.findAll({
+            attributes: ['Location', 'Qty'],
+            where: { P_ID: productId }
+        });
+        
+        const result = {
+            'Main_Warehouse': 0,
+            'Production': 0,
+            'Shop': 0
+        };
+        
+        inventories.forEach(inv => {
+            if (inv.Location && result.hasOwnProperty(inv.Location)) {
+                result[inv.Location] += parseFloat(inv.Qty) || 0;
+            }
+        });
+        
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+module.exports = { getDashboardStats, getProducts, addProduct, deleteProduct, updateProduct, getProductLocationInventory };
