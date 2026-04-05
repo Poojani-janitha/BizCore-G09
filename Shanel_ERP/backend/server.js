@@ -7,6 +7,7 @@ const inventoryRoutes = require('./routes/inventory/inventory');
 const productionRoutes = require('./routes/inventory/productionRoutes');
 const salesRoutes = require('./routes/inventory/salesRoutes');
 const transferRoutes = require('./routes/inventory/transferRoutes');
+const reportRoutes = require('./routes/inventory/reportRoutes');
 
 const app = express();
 app.use(cors());
@@ -18,6 +19,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/production', productionRoutes);
 app.use('/api/sales', salesRoutes);
 app.use('/api/inventory/transfers', transferRoutes);
+app.use('/api/inventory/reports', reportRoutes);
 //Sales routes
 
 //Customer routes

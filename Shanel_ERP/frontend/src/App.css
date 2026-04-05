@@ -3,19 +3,18 @@ html, body {
     margin: 0;
     padding: 0;
     height: 100%;
-    background-color: #f8fafc; /* Matches your main content area */
+    background-color: #f8fafc;
 }
 
-/* Fix for the sidebar scroll if content is long */
 .nav.flex-column {
     overflow-y: auto;
     overflow-x: hidden;
 }
 
-/* Custom scrollbar for a professional look */
 .nav.flex-column::-webkit-scrollbar {
     width: 5px;
 }
+
 .nav.flex-column::-webkit-scrollbar-thumb {
     background: #334155;
     border-radius: 10px;
@@ -25,7 +24,6 @@ html, body {
     transition: all 0.3s ease-in-out; 
 }
 
-/* Menu Fade In Effect */
 .animate-fade-in { 
     animation: fadeIn 0.4s ease; 
 }
@@ -35,7 +33,6 @@ html, body {
     to { opacity: 1; } 
 }
 
-/* Sub-menu Slide Down Effect */
 .animate-slide-down {
     animation: slideDown 0.3s ease-out;
 }
@@ -45,7 +42,6 @@ html, body {
     to { transform: translateY(0); opacity: 1; }
 }
 
-/* Hover States */
 .hover-cyan:hover { 
     color: #0ea5e9 !important; 
 }
@@ -60,5 +56,98 @@ html, body {
 }
 
 header {
-    z-index: 10; /* Keeps header above page content */
+    z-index: 10;
+}
+
+.report-card {
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.report-card-title {
+    transition: opacity 0.3s ease;
+    height: auto;
+}
+
+.report-card:hover .report-card-title {
+    opacity: 0;
+    display: none;
+}
+
+.report-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+.main-content-wrapper {
+    width: 100%;
+    overflow-x: hidden;
+}
+
+.report-data-container {
+    max-height: 600px;
+    overflow-y: auto;
+    border-radius: 12px;
+}
+
+.report-data-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.report-data-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.report-data-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.report-data-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ===== MINIMAL PRINT STYLES ===== */
+@media print {
+    @page {
+        size: A4;
+        margin: 12mm;
+    }
+
+    body, html {
+        margin: 0;
+        padding: 0;
+        background: white;
+    }
+
+    .table {
+        border-collapse: collapse;
+    }
+
+    .table thead th {
+        border-bottom: 2px solid #f97316;
+        color: #000;
+        font-weight: bold;
+        padding: 10px 5px;
+    }
+
+    .table tbody tr {
+        page-break-inside: avoid;
+    }
+
+    .table tbody td {
+        padding: 8px 5px;
+        color: #000;
+    }
+
+    table, tr {
+        page-break-inside: avoid;
+    }
+
+    thead {
+        display: table-header-group;
+    }
 }
