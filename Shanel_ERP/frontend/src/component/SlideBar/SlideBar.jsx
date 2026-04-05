@@ -28,7 +28,7 @@ const SlideBar = () => {
                 { label: 'Sales Stock', to: '/inventory/salesStock', icon: <Home size={14} /> },
                 { label: 'Stock Transfer', to: '/inventory/stock-transfers', icon: <RefreshCw size={14} /> },
                 { label: 'Stock Adjustments', to: '/inventory/stock-adjustments', icon: <Sliders size={14} /> },
-                { label: 'Returns', to: '/inventory/return', icon: <CornerUpLeft size={14} /> },
+                { label: 'Returns', to: '/inventory/returns', icon: <CornerUpLeft size={14} /> },
                 { label: 'Reports', to: '/inventory/reports', icon: <BarChart2 size={14} /> },
                 { label: 'Alerts', to: '/inventory/alerts', icon: <Bell size={14} /> },
             ]

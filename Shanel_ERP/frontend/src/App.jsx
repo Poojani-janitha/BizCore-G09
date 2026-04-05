@@ -10,6 +10,7 @@ import ProductionStock from './pages/Inventory/ProductionStock.jsx';
 import SalesStock from './pages/Inventory/SalesStock.jsx';
 import StockTransfer from './pages/Inventory/StockTransfer.jsx';
 import StockAdjustment from './pages/Inventory/StockAdjustment.jsx';
+import ReturnsManagement from './pages/Inventory/ReturnsManagement.jsx';
 import './App.css';
 import POS from './pages/POS/POS.jsx';
 
@@ -37,7 +38,7 @@ const App = () => {
             <Route path="/inventory/salesStock" element={<SalesStock />} />
             <Route path="/inventory/stock-transfers" element={<StockTransfer />} />
             <Route path="/inventory/stock-adjustments" element={<StockAdjustment />} />
-
+            <Route path="/inventory/returns" element={<ReturnsManagement />} />
 
             <Route path="/hr/employees" element={<EmployeesPage />} />
             <Route path="/hr/employees/:id" element={<EmployeeDetail />} />
