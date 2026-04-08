@@ -52,42 +52,39 @@ const StockAdjustment = () => {
 
     return (
         <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h4 className='fw-bold mb-0'>Stock Adjustment</h4>
-                <button className="btn btn-primary rounded-3 px-3 shadow-sm" onClick={() => setShowModal(true)}>
-                    <Plus size={16} className="me-2"/> New Adjustment
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className='fw-bold text-dark mb-0'>Stock Adjustment</h6>
+                <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm" onClick={() => setShowModal(true)}>
+                    <Plus size={14}/> New Adjustment
                 </button>
             </div>
 
             {/* Metric Cards */}
             <div className="row g-3 mb-4">
-                <AdjustmentCard title="Expired" value={cardTotals.Expired.toFixed(2)} icon={<Archive color="red"/>} />
-                <AdjustmentCard title="Damaged" value={cardTotals.Damage.toFixed(2)} icon={<AlertTriangle color="orange"/>} />
-                <AdjustmentCard title="Stolen" value={cardTotals.Theft.toFixed(2)} icon={<ShieldOff color="purple"/>} />
-                <AdjustmentCard title="Total Adjustments" value={logs.length} icon={<Package color="blue"/>} />
+                <AdjustmentCard title="Expired" value={cardTotals.Expired.toFixed(2)} icon={<Archive size={20} className="text-danger"/>} borderColor="border-danger" label="Units expired" />
+                <AdjustmentCard title="Damaged" value={cardTotals.Damage.toFixed(2)} icon={<AlertTriangle size={20} className="text-warning"/>} borderColor="border-warning" label="Units damaged" />
+                <AdjustmentCard title="Stolen" value={cardTotals.Theft.toFixed(2)} icon={<ShieldOff size={20} className="text-info"/>} borderColor="border-info" label="Units stolen" />
+                <AdjustmentCard title="Total Adjustments" value={logs.length} icon={<Package size={20} className="text-primary"/>} borderColor="border-primary" label="All adjustment logs" />
             </div>
 
-            <div className="card border-0 shadow-sm rounded-4">
-                <div className="card-header bg-white border-0 pt-4 px-4">
-                    <h6 className="fw-bold mb-0">Adjustment Logs</h6>
-                </div>
-                <div className="table-responsive p-4">
-                    <table className="table align-middle">
-                        <thead className="text-muted small text-uppercase">
-                            <tr>
-                                <th>Date</th>
-                                <th>Item</th>
-                                <th>Reason</th>
-                                <th>Quantity</th>
-                                <th>Stock Change</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+            <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div className="table-responsive">
+                    <table className="table align-middle mb-0">
+                        <thead>
+                            <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
+                                <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Date</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Item</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Reason</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Quantity</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Stock Change</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Status</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {logs.map(log => (
                                 <tr key={log.Adjustment_ID}>
-                                    <td>{log.Adjustment_Date}</td>
+                                    <td className='ps-4'>{log.Adjustment_Date}</td>
                                     <td>
                                         <div className="fw-bold">{log.Product?.P_Name}</div>
                                         <small className="text-muted">{log.Product?.P_Code}</small>
@@ -132,16 +129,15 @@ const StockAdjustment = () => {
     );
 };
 
-const AdjustmentCard = ({ title, value, icon }) => (
+const AdjustmentCard = ({ title, value, icon, borderColor, label }) => (
     <div className="col-md-3">
-        <div className="card border-0 shadow-sm rounded-4 p-3 h-100">
-            <div className="d-flex align-items-center gap-3">
-                <div className="p-3 rounded-3 bg-light">{icon}</div>
-                <div>
-                    <div className="text-muted small fw-bold">{title}</div>
-                    <h4 className="fw-bold mb-0">{value}</h4>
-                </div>
+        <div className={`card border-0 border-top border-4 ${borderColor} shadow-sm p-3 h-100`}>
+            <div className="d-flex justify-content-between align-items-start mb-2">
+                <small className="text-muted fw-bold text-uppercase" style={{ fontSize: '11px' }}>{title}</small>
+                {icon}
             </div>
+            <h6 className="fw-bold mb-0">{value}</h6>
+            <small className="text-muted" style={{ fontSize: '11px' }}>{label}</small>
         </div>
     </div>
 );

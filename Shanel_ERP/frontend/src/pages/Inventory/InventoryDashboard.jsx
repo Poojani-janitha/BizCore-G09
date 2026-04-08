@@ -26,11 +26,14 @@ const InventoryDashboard = () => {
   }, []);
 
   return (
-    <div className="p-4" style={{ backgroundColor: "#faf9f6", minHeight: "100vh", fontSize: '13px' }}>
-      <h6 className="mb-3 fw-bold" style={{ color: "#7c5d47", fontSize: '14px' }}>Inventory Overview</h6>
+    <div className="p-4 bg-light min-vh-100" style={{ fontSize: '13px' }}>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h6 className="fw-bold text-dark mb-0">Inventory Dashboard</h6>
+      </div>
       
       {/* Summary Metrics */}
       <InventoryMetrics metrics={data.summary} />
+
       
       {/* Charts Section */}
       <div className="row g-4 mb-4">

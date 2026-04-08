@@ -98,22 +98,19 @@ const StockTransfer = () => {
 
     return (
         <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h4 className='fw-bold mb-1'>Stock Transfer</h4>
-                    <p className='text-muted small mb-0'>Transfer inventory between locations and stock types</p>
-                </div>
-                <button className="btn btn-primary rounded-3 shadow-sm px-3 d-flex align-items-center" onClick={() => setShowModal(true)}>
-                    <Plus size={16} className="me-2"/> New Transfer
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className='fw-bold text-dark mb-0'>Stock Transfer</h6>
+                <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm" onClick={() => setShowModal(true)}>
+                    <Plus size={14}/> New Transfer
                 </button>
             </div>
 
             {/* Metrics Row */}
             <div className="row g-3 mb-4">
-                <MetricBox title="Total Transfers" value={data.metrics?.totalTransfers || 0} color="text-dark" />
-                <MetricBox title="Pending Approval" value={data.metrics?.pending || 0} color="text-danger" />
-                <MetricBox title="Completed Today" value={data.metrics?.completedToday || 0} color="text-success" />
-                <MetricBox title="Items Transferred" value={data.metrics?.totalItems || 0} color="text-dark" />
+                <MetricBox title="Total Transfers" value={data.metrics?.totalTransfers || 0} borderColor="border-primary" label="All time transfers" />
+                <MetricBox title="Pending Approval" value={data.metrics?.pending || 0} borderColor="border-danger" label="Awaiting approval" />
+                <MetricBox title="Completed Today" value={data.metrics?.completedToday || 0} borderColor="border-success" label="Done today" />
+                <MetricBox title="Items Transferred" value={data.metrics?.totalItems || 0} borderColor="border-warning" label="Total units moved" />
             </div>
 
             {/* Inventory Breakdown by Location */}
@@ -124,15 +121,16 @@ const StockTransfer = () => {
                 </button>
             </div>
             {inventory && inventory.length > 0 ? (
+                <div className="card border-0 shadow-sm rounded-3 overflow-hidden mb-4">
                 <div className="table-responsive mb-4">
                     <table className="table table-sm table-hover mb-0">
-                        <thead className="table-light">
-                            <tr>
-                                <th className="fw-bold" style={{fontSize: '13px', borderBottom: '2px solid #333'}}>PRODUCT</th>
-                                <th className="text-center fw-bold" style={{fontSize: '13px', borderBottom: '2px solid #333'}}>MAIN WAREHOUSE</th>
-                                <th className="text-center fw-bold" style={{fontSize: '13px', borderBottom: '2px solid #333'}}>SHOP</th>
-                                <th className="text-center fw-bold" style={{fontSize: '13px', borderBottom: '2px solid #333'}}>PRODUCTION</th>
-                                <th className="text-center fw-bold" style={{fontSize: '13px', borderBottom: '2px solid #333'}}>TOTAL</th>
+                        <thead>
+                            <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
+                                <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>PRODUCT</th>
+                                <th className='text-uppercase py-3 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>MAIN WAREHOUSE</th>
+                                <th className='text-uppercase py-3 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>SHOP</th>
+                                <th className='text-uppercase py-3 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>PRODUCTION</th>
+                                <th className='text-uppercase py-3 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>TOTAL</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -163,6 +161,7 @@ const StockTransfer = () => {
                         </tbody>
                     </table>
                 </div>
+                </div>
             ) : (
                 <div className="alert alert-warning mb-4" role="alert">
                     <small>No inventory data loaded. Click "Refresh" to load data or check backend connection.</small>
@@ -191,11 +190,14 @@ const StockTransfer = () => {
     );
 };
 
-const MetricBox = ({ title, value, color }) => (
+const MetricBox = ({ title, value, borderColor, label }) => (
     <div className="col-md-3">
-        <div className="card border-0 shadow-sm rounded-4 p-3 h-100">
-            <p className="text-muted mb-1 fw-semibold" style={{ fontSize: '10px' }}>{title.toUpperCase()}</p>
-            <h4 className={`fw-bold mb-0 ${color}`}>{value}</h4>
+        <div className={`card border-0 border-top border-4 ${borderColor} shadow-sm p-3 h-100`}>
+            <div className="d-flex justify-content-between align-items-start mb-2">
+                <small className="text-muted fw-bold text-uppercase" style={{ fontSize: '11px' }}>{title}</small>
+            </div>
+            <h6 className="fw-bold mb-0">{value}</h6>
+            <small className="text-muted" style={{ fontSize: '11px' }}>{label}</small>
         </div>
     </div>
 );

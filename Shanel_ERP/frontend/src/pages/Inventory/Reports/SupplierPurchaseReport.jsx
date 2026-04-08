@@ -15,20 +15,28 @@ const SupplierPurchaseReport = () => {
     };
 
     return (
-        <div className='p-4 bg-light min-vh-100 no-print'>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h4 className='fw-bold mb-0'>Supplier Purchase Report</h4>
-                <button className="btn btn-primary btn-sm rounded-3 shadow-sm px-3" style={{ backgroundColor: '#f97316', borderColor: '#f97316' }} onClick={handleExportPDF}>Export PDF</button>
+        <div className='p-4 bg-light min-vh-100 no-print' style={{ fontSize: '13px' }}>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className='fw-bold text-dark mb-0'>Supplier Purchase Report</h6>
+                <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm" onClick={handleExportPDF}>Export PDF</button>
             </div>
-            <div className="card border-0 shadow-sm rounded-4 p-4">
-                <table className="table align-middle">
-                    <thead><tr className="small text-muted text-uppercase"><th>Supplier</th><th>Total Orders</th><th>Total Expenditure</th></tr></thead>
+            <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div className="table-responsive">
+                <table className="table align-middle mb-0">
+                    <thead>
+                        <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
+                            <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Supplier</th>
+                            <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Total Orders</th>
+                            <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Total Expenditure</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         {reportData.map((item, i) => (
-                            <tr key={i}><td className="fw-bold">{item.S_Name}</td><td>{item.Total_Orders} orders</td><td className="fw-bold text-dark">LKR {parseFloat(item.Total_Spent || 0).toLocaleString()}</td></tr>
+                            <tr key={i}><td className='ps-4 fw-bold'>{item.S_Name}</td><td>{item.Total_Orders} orders</td><td className="fw-bold text-dark">LKR {parseFloat(item.Total_Spent || 0).toLocaleString()}</td></tr>
                         ))}
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     );

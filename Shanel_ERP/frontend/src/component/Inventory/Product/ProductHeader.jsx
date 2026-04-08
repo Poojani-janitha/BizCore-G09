@@ -10,7 +10,7 @@ const ProductHeader = ({ title, onAddClick }) => {
                     <Download size={14}/> Export
                 </button>
                 <button
-                    className='btn btn-dark btn-sm d-flex align-items-center gap-2 px-3 shadow-sm'
+                    className='btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm'
                     onClick={onAddClick}>
                     <Plus size={14}/> Add New Product
                 </button>

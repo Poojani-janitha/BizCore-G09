@@ -15,20 +15,30 @@ const TransferReport = () => {
     };
 
     return (
-        <div className='p-4 bg-light min-vh-100 no-print'>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h4 className='fw-bold mb-0'>Stock Transfer Report</h4>
-                <button className="btn btn-primary btn-sm rounded-3 shadow-sm px-3" style={{ backgroundColor: '#f97316', borderColor: '#f97316' }} onClick={handleExportPDF}>Export PDF</button>
+        <div className='p-4 bg-light min-vh-100 no-print' style={{ fontSize: '13px' }}>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className='fw-bold text-dark mb-0'>Stock Transfer Report</h6>
+                <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm" onClick={handleExportPDF}>Export PDF</button>
             </div>
-            <div className="card border-0 shadow-sm rounded-4 p-4">
-                <table className="table">
-                    <thead><tr className="small text-muted text-uppercase"><th>Date</th><th>Item</th><th>From</th><th>To</th><th>Qty</th></tr></thead>
+            <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div className="table-responsive">
+                <table className="table align-middle mb-0">
+                    <thead>
+                        <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
+                            <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Date</th>
+                            <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Item</th>
+                            <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>From</th>
+                            <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>To</th>
+                            <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Qty</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         {reportData.map((item, i) => (
-                            <tr key={i}><td>{item.Transfer_Date}</td><td className="fw-bold">{item.P_Name}</td><td>{item.From_Location}</td><td>{item.To_Location}</td><td className="text-primary">{item.Qty}</td></tr>
+                            <tr key={i}><td className='ps-4'>{item.Transfer_Date}</td><td className="fw-bold">{item.P_Name}</td><td>{item.From_Location}</td><td>{item.To_Location}</td><td className="text-primary">{item.Qty}</td></tr>
                         ))}
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     );

@@ -80,43 +80,36 @@ const ReturnsManagement = () => {
 
     return (
         <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h4 className='fw-bold mb-1'>Returns Management</h4>
-                    <p className='text-muted small mb-0'>Handle customer returns and supplier returns</p>
-                </div>
-                <button className="btn btn-primary rounded-3 px-4 shadow-sm fw-bold" 
-                        style={{ backgroundColor: '#f97316', borderColor: '#f97316' }}
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className='fw-bold text-dark mb-0'>Returns Management</h6>
+                <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm"
                         onClick={() => setShowModal(true)}>
-                    <Plus size={18} className="me-1"/> Process Return
+                    <Plus size={14}/> Process Return
                 </button>
             </div>
 
             {/* Metrics Row */}
             <div className="row g-3 mb-4">
-                <MetricCard title="Total Returns" value={groupedReturnsList.length} icon={<RotateCcw size={20} color="#ef4444"/>} />
-                <MetricCard title="Customer Returns" value={customerReturnsCount} icon={<RotateCcw size={20} color="#3b82f6"/>} />
-                <MetricCard title="Supplier Returns" value={groupedReturnsList.filter(r => r.Return_Type === 'Supplier').length} icon={<RotateCcw size={20} color="#6366f1"/>} />
-                <MetricCard title="Total Refund Value" value={`LKR ${totalRefund.toLocaleString()}`} icon={<DollarSign size={20} color="#10b981"/>} />
+                <MetricCard title="Total Returns" value={groupedReturnsList.length} icon={<RotateCcw size={20} className="text-danger"/>} borderColor="border-danger" label="All return records" />
+                <MetricCard title="Customer Returns" value={customerReturnsCount} icon={<RotateCcw size={20} className="text-primary"/>} borderColor="border-primary" label="From customers" />
+                <MetricCard title="Supplier Returns" value={groupedReturnsList.filter(r => r.Return_Type === 'Supplier').length} icon={<RotateCcw size={20} className="text-info"/>} borderColor="border-info" label="To suppliers" />
+                <MetricCard title="Total Refund Value" value={`LKR ${totalRefund.toLocaleString()}`} icon={<DollarSign size={20} className="text-success"/>} borderColor="border-success" label="Total refunded" />
             </div>
 
             {/* Return Logs Table */}
-            <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                <div className="card-header bg-white border-0 pt-4 px-4 pb-3">
-                    <h6 className="fw-bold mb-0">Return Logs</h6>
-                </div>
+            <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
                 <div className="table-responsive">
                     <table className="table table-hover align-middle mb-0" style={{ fontSize: '13px' }}>
-                        <thead className="bg-light border-top border-bottom" style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.5px' }}>
-                            <tr>
-                                <th className="px-4 py-3">Date</th>
-                                <th className="px-4 py-3">Invoice & Customer</th>
-                                <th className="px-4 py-3">Item Details</th>
-                                <th className="px-4 py-3 text-end">Good Qty</th>
-                                <th className="px-4 py-3 text-end">Bad Qty</th>
-                                <th className="px-4 py-3 text-end">Total Refund</th>
-                                <th className="px-4 py-3 text-center">Status</th>
-                                <th className="px-4 py-3 text-center">Actions</th>
+                        <thead>
+                            <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
+                                <th className='text-uppercase py-3 px-4 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Date</th>
+                                <th className='text-uppercase py-3 px-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Invoice & Customer</th>
+                                <th className='text-uppercase py-3 px-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Item Details</th>
+                                <th className='text-uppercase py-3 px-4 text-end' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Good Qty</th>
+                                <th className='text-uppercase py-3 px-4 text-end' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Bad Qty</th>
+                                <th className='text-uppercase py-3 px-4 text-end' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Total Refund</th>
+                                <th className='text-uppercase py-3 px-4 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Status</th>
+                                <th className='text-uppercase py-3 px-4 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -285,19 +278,15 @@ const ReturnsManagement = () => {
     );
 };
 
-// Reusable Metric Card Component
-const MetricCard = ({ title, value, icon }) => (
+const MetricCard = ({ title, value, icon, borderColor, label }) => (
     <div className="col-md-3">
-        <div className="card border-0 shadow-sm rounded-4 p-3 h-100">
-            <div className="d-flex align-items-center gap-3">
-                <div className="p-3 rounded-4" style={{ backgroundColor: '#f8fafc' }}>
-                    {icon}
-                </div>
-                <div>
-                    <div className="text-muted small fw-bold">{title.toUpperCase()}</div>
-                    <h5 className="fw-bold mb-0">{value}</h5>
-                </div>
+        <div className={`card border-0 border-top border-4 ${borderColor} shadow-sm p-3 h-100`}>
+            <div className="d-flex justify-content-between align-items-start mb-2">
+                <small className="text-muted fw-bold text-uppercase" style={{ fontSize: '11px' }}>{title}</small>
+                {icon}
             </div>
+            <h6 className="fw-bold mb-0">{value}</h6>
+            <small className="text-muted" style={{ fontSize: '11px' }}>{label}</small>
         </div>
     </div>
 );

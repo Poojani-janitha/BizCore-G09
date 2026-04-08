@@ -30,41 +30,36 @@ const CurrentStockReport = () => {
     };
 
     return (
-        <div className='p-4 bg-light min-vh-100 no-print'>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h4 className='fw-bold mb-1'>Current Stock Report</h4>
-                    <p className='text-muted small'>As of {new Date().toLocaleDateString()}</p>
-                </div>
+        <div className='p-4 bg-light min-vh-100 no-print' style={{ fontSize: '13px' }}>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className='fw-bold text-dark mb-0'>Current Stock Report</h6>
                 <div className="d-flex gap-2">
                     <button className="btn btn-outline-secondary btn-sm rounded-3" onClick={handlePrint}>
-                        <Printer size={16} className="me-2"/> Print
+                        <Printer size={14} className="me-1"/> Print
                     </button>
-                    <button className="btn btn-primary btn-sm rounded-3 shadow-sm px-3" 
-                            style={{ backgroundColor: '#f97316', borderColor: '#f97316' }}
-                            onClick={handleExportPDF}>
-                        <Download size={16} className="me-2"/> Export PDF
+                    <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm" onClick={handleExportPDF}>
+                        <Download size={14}/> Export PDF
                     </button>
                 </div>
             </div>
 
-            <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                <div className="table-responsive p-4">
-                    <table className="table align-middle">
-                        <thead className="text-muted small text-uppercase">
-                            <tr>
-                                <th>Item ID</th>
-                                <th>Item Name</th>
-                                <th>Production Stock</th>
-                                <th>Sales Stock</th>
-                                <th>Total Stock</th>
-                                <th>Status</th>
+            <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div className="table-responsive">
+                    <table className="table align-middle mb-0">
+                        <thead>
+                            <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
+                                <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Item ID</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Item Name</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Production Stock</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Sales Stock</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Total Stock</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             {reportData.map((item, i) => (
                                 <tr key={i}>
-                                    <td className="fw-bold">{item.P_Code || `P-${item.P_ID}`}</td>
+                                    <td className="fw-bold ps-4">{item.P_Code || `P-${item.P_ID}`}</td>
                                     <td>{item.P_Name}</td>
                                     <td>{item.productionStock}</td>
                                     <td>{item.salesStock}</td>

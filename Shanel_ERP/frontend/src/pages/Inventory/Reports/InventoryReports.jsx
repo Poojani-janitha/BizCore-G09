@@ -9,12 +9,12 @@ const InventoryReports = () => {
     const [isLoading, setIsLoading] = useState(false);
 
     const reportCards = [
-        { title: "Current Stock", desc: "Real-time inventory", icon: <Box color="#10b981"/>, key: "current-stock", endpoint: "/api/inventory/reports/current-stock" },
-        { title: "Production", desc: "Daily production output", icon: <Activity color="#3b82f6"/>, key: "daily-production", endpoint: "/api/inventory/reports/production" },
-        { title: "Purchase", desc: "Supplier purchases", icon: <ShoppingCart color="#6366f1"/>, key: "purchases", endpoint: "/api/inventory/reports/purchases" },
-        { title: "Stock Transfer", desc: "Stock movements", icon: <RefreshCcw color="#a855f7"/>, key: "transfers", endpoint: "/api/inventory/reports/transfers" },
-        { title: "Expiry", desc: "Items nearing expiry", icon: <AlertCircle color="#ef4444"/>, key: "expiry", endpoint: "/api/inventory/reports/expiry" },
-        { title: "Supplier Spend", desc: "Purchase by supplier", icon: <Users color="#f59e0b"/>, key: "supplier-purchases", endpoint: "/api/inventory/reports/supplier-purchases" },
+        { title: "Current Stock", desc: "Real-time inventory", icon: <Box size={20} className="text-success"/>, key: "current-stock", endpoint: "/api/inventory/reports/current-stock", borderColor: "border-success" },
+        { title: "Production", desc: "Daily production output", icon: <Activity size={20} className="text-primary"/>, key: "daily-production", endpoint: "/api/inventory/reports/production", borderColor: "border-primary" },
+        { title: "Purchase", desc: "Supplier purchases", icon: <ShoppingCart size={20} className="text-info"/>, key: "purchases", endpoint: "/api/inventory/reports/purchases", borderColor: "border-info" },
+        { title: "Stock Transfer", desc: "Stock movements", icon: <RefreshCcw size={20} className="text-warning"/>, key: "transfers", endpoint: "/api/inventory/reports/transfers", borderColor: "border-warning" },
+        { title: "Expiry", desc: "Items nearing expiry", icon: <AlertCircle size={20} className="text-danger"/>, key: "expiry", endpoint: "/api/inventory/reports/expiry", borderColor: "border-danger" },
+        { title: "Supplier Spend", desc: "Purchase by supplier", icon: <Users size={20} className="text-secondary"/>, key: "supplier-purchases", endpoint: "/api/inventory/reports/supplier-purchases", borderColor: "border-secondary" },
     ];
 
     const loadReport = async (report) => {
@@ -56,32 +56,28 @@ const InventoryReports = () => {
     };
 
     return (
-        <div className='p-4 bg-light min-vh-100'>
-            <h4 className='fw-bold mb-1 d-print-none'>Inventory Reports</h4>
+        <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
+            <h6 className='fw-bold text-dark mb-0 d-print-none'>Inventory Reports</h6>
             <p className='text-muted small mb-4 d-print-none'>Click any report card to view data</p>
 
             {/* Report Cards Grid - Hide on print */}
             <div className="row g-3 mb-5 d-print-none">
                 {reportCards.map((card, i) => (
                     <div key={i} className="col-lg-2 col-md-3 col-sm-4 col-6">
-                        <div 
-                            className={`card border-0 rounded-3 p-3 h-100 cursor-pointer report-card transition-all ${selectedReport?.key === card.key ? 'shadow-lg' : 'shadow-sm'}`}
+                        <div
+                            className={`card border-0 border-top border-4 ${selectedReport?.key === card.key ? card.borderColor : 'border-transparent'} shadow-sm p-3 h-100`}
                             onClick={() => loadReport(card)}
-                            style={{ 
+                            style={{
                                 cursor: 'pointer',
-                                backgroundColor: selectedReport?.key === card.key ? '#e8f5ff' : 'white',
-                                borderLeft: selectedReport?.key === card.key ? '4px solid #3b82f6' : 'none',
-                                minHeight: '100px',
-                                transition: 'all 0.3s ease'
+                                backgroundColor: selectedReport?.key === card.key ? '#f0f9ff' : 'white',
+                                transition: 'all 0.2s ease'
                             }}
                         >
-                            <div className="d-flex flex-column align-items-center text-center">
-                                <div className="p-2 rounded-2 mb-2" style={{ backgroundColor: '#f8fafc' }}>
-                                    {card.icon}
-                                </div>
-                                <h6 className="fw-bold mb-1 report-card-title small">{card.title}</h6>
-                                <p className="text-muted small mb-0">{card.desc}</p>
+                            <div className="d-flex justify-content-between align-items-start mb-2">
+                                <small className="text-muted fw-bold text-uppercase" style={{ fontSize: '11px' }}>{card.title}</small>
+                                {card.icon}
                             </div>
+                            <p className="text-muted mb-0" style={{ fontSize: '11px' }}>{card.desc}</p>
                         </div>
                     </div>
                 ))}
@@ -89,21 +85,14 @@ const InventoryReports = () => {
 
             {/* Report Data Display */}
             {selectedReport && (
-                <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                    <div className="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 className="fw-bold mb-0">{selectedReport.title} Report</h5>
-                            <p className="text-muted small mb-0">Generated on {new Date().toLocaleDateString()}</p>
-                        </div>
-                        <div className="d-flex gap-2 d-print-none">
-                            <button className="btn btn-primary btn-sm rounded-3 shadow-sm px-3" 
-                                    style={{ backgroundColor: '#f97316', borderColor: '#f97316' }}
-                                    onClick={handleExportPDF}>
-                                <Download size={16} className="me-2"/> Export PDF
-                            </button>
-                        </div>
-                    </div>
-
+                <>
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h6 className="fw-bold text-dark mb-0">{selectedReport.title} Report</h6>
+                    <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm d-print-none" onClick={handleExportPDF}>
+                        <Download size={14}/> Export PDF
+                    </button>
+                </div>
+                <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
                     {/* Loading State */}
                     {isLoading ? (
                         <div className="text-center p-5">
@@ -116,20 +105,22 @@ const InventoryReports = () => {
                             <p>No data available for this report</p>
                         </div>
                     ) : (
-                        <div className="table-responsive p-4">
+                        <div className="table-responsive">
                             <table className="table align-middle mb-0">
-                                <thead className="text-muted small text-uppercase">
-                                    <tr>
-                                        {getTableColumns(selectedReport.key).map(col => (
-                                            <th key={col}>{col.replace(/_/g, ' ')}</th>
+                                <thead>
+                                    <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
+                                        {getTableColumns(selectedReport.key).map((col, idx) => (
+                                            <th key={col} className={`text-uppercase py-3 ${idx === 0 ? 'ps-4' : ''}`} style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>
+                                                {col.replace(/_/g, ' ')}
+                                            </th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {reportData.map((row, i) => (
                                         <tr key={i}>
-                                            {getTableColumns(selectedReport.key).map(col => (
-                                                <td key={col} className={col === 'Total_Stock' || col === 'Total_Spent' ? 'fw-bold' : ''}>
+                                            {getTableColumns(selectedReport.key).map((col, idx) => (
+                                                <td key={col} className={`${idx === 0 ? 'ps-4' : ''} ${col === 'Total_Stock' || col === 'Total_Spent' ? 'fw-bold' : ''}`}>
                                                     {typeof row[col] === 'number' ? row[col].toFixed(2) : row[col]}
                                                 </td>
                                             ))}
@@ -140,6 +131,7 @@ const InventoryReports = () => {
                         </div>
                     )}
                 </div>
+                </>
             )}
         </div>
     );
