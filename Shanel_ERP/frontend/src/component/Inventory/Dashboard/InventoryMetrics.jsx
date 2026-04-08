@@ -49,8 +49,8 @@ const InventoryMetrics = ({ metrics = {} }) => {
                         <small className="text-muted fw-bold text-uppercase" style={{ fontSize: '11px' }}>{card.title}</small>
                         {card.icon}
                     </div>
-                    <h6 className="fw-bold mb-0">{card.value}</h6>
-                    <small className="text-muted" style={{ fontSize: '11px' }}>{card.label}</small>
+                    <h4 className="fw-bold mb-0">{card.value}</h4>
+                    <small className="text-muted" style={{ fontSize: '12px' }}>{card.label}</small>
                 </div>
             </div>
         ))}

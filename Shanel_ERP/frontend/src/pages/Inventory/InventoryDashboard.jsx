@@ -22,8 +22,8 @@ const InventoryDashboard = () => {
   }, []);
 
   return (
-    <div className="p-4" style={{ backgroundColor: "#faf9f6", minHeight: "100vh", fontSize: '13px' }}>
-      <h6 className="mb-3 fw-bold" style={{ color: "#7c5d47", fontSize: '14px' }}>Inventory Overview</h6>
+    <div className="p-4" style={{ backgroundColor: "#faf9f6", minHeight: "100vh" }}>
+      <h2 className="mb-4 fw-bold" style={{ color: "#7c5d47" }}>Inventory Overview</h2>
       
       {/* Summary Metrics */}
       <InventoryMetrics metrics={data.summary} />

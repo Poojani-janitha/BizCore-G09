@@ -9,16 +9,12 @@ const Header = () => {
         const path = location.pathname;
         if (path === '/home') return 'Home';
         if (path === '/inventory') return 'Inventory Dashboard';
-        if (path.includes('/inventory/company-items')) return 'Company Items';
-        if (path.includes('/inventory/other-items')) return 'Other Items';
+        if (path.includes('/inventory/products')) return 'Products Management';
         if (path.includes('/inventory/raw-materials')) return 'Raw Materials';
-        if (path.includes('/inventory/production-stock')) return 'Production Stock';
-        if (path === '/POS') return 'Point of Sale';
+        if (path.includes('/inventory/finished-goods')) return 'Finished Goods';
+        if (path === '/sales') return 'Sales';
         if (path === '/hr') return 'Human Resources';
-        if (path.includes('/hr/employees')) return 'Employees';
-        if (path.includes('/hr/attendance')) return 'Attendance';
         if (path === '/finance') return 'Finance';
-        if (path === '/logout') return 'Logout';
         return 'Dashboard';
     };
 
