@@ -83,6 +83,7 @@ const SalesStock = () => {
             <div className='row g-4'>
                 {/* Recent Stock In */}
                 <div className='col-lg-6'>
+                    <h6 className='fw-bold text-dark mb-2'>Recent Stock In</h6>
                     <div className='card border-0 shadow-sm rounded-3 overflow-hidden'>
                         <div className='table-responsive'>
                             <table className='table table-sm align-middle mb-0'>
@@ -124,6 +125,7 @@ const SalesStock = () => {
 
                 {/* Recent Stock Out */}
                 <div className='col-lg-6'>
+                    <h6 className='fw-bold text-dark mb-2'>Recent Stock Out</h6>
                     <div className='card border-0 shadow-sm rounded-3 overflow-hidden'>
                         <div className='table-responsive'>
                             <table className='table table-sm align-middle mb-0'>

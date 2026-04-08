@@ -211,14 +211,15 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
         <div className='container-fluid px-0'>
 
-            <ProductHeader title={pageTitle} onAddClick={handleAddProduct} />
+            <ProductHeader title={pageTitle} onAddClick={handleAddProduct} products={filteredProducts} />
             <ProductModal show={showModal} onHide={handleCloseModal} typeFilter={typeFilter} refreshData={fetchProducts} editData={editingProduct} />
             <ProductFilters onSearchChange={setSearchTerm} onTypeChange={setSelectedType} onActiveToggle={setActiveOnly} />
             
             {error && (
-                    <div className="alert alert-danger d-flex align-items-center" role="alert">
-                        <div>{error}</div>
-                    </div>
+                <div className="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+                    <div className="flex-grow-1">{error}</div>
+                    <button type="button" className="btn-close" onClick={() => setError(null)}></button>
+                </div>
             )}
 
             <div className='d-flex align-items-center justify-content-between mb-3 px-1'>
@@ -234,7 +235,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                 </div>
             </div>
 
-            <ProductTable products={filteredProducts} isLoading={isLoading} onDelete={handleDelete} onEdit={handleEdit} onPrint={handlePrintSingle} />
+            <ProductTable products={filteredProducts} isLoading={isLoading} onDelete={handleDelete} onEdit={handleEdit} onPrint={handlePrintSingle} error={error} />
 
             {/* Barcode Qty Print Dialog */}
             {showPrintDialog && printTarget && (

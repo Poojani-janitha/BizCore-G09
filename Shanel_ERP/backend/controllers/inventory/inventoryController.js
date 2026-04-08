@@ -1,4 +1,4 @@
-const { Product, Inventory, Production, UnitConversion } = require('../../models/index');
+const { Product, Inventory, Production, UnitConversion, StockTransfer } = require('../../models/index');
 const sequelize = require('../../config/db');
 const { Op } = require('sequelize');
 
@@ -52,27 +52,38 @@ const getDashboardStats = async (req, res) => {
             group: ['P_Type']
         });
 
-        // --- 4. RECENT TRANSFERS (Placeholder until you build Transfer Model) ---
-        // If you don't have a Transfer table yet, we send an empty array to prevent frontend errors
-        const transfers = []; 
+        // --- 4. RECENT TRANSFERS ---
+        const transfers = await StockTransfer.findAll({
+            attributes: ['ST_ID', 'P_ID', 'From_Location', 'To_Location', 'Qty', 'Transfer_Date', 'Status'],
+            include: [{
+                model: Product,
+                as: 'product',
+                attributes: ['P_Name']
+            }],
+            order: [['Transfer_Date', 'DESC']],
+            limit: 5
+        }); 
 
         // --- 5. SUMMARY COUNTS ---
-        const activeProducts = await Product.count({ where: { Status: 'In Stock' } });
+        const companyItems = await Product.count({ where: { P_Type: 'Company' } });
+        const otherItems = await Product.count({ where: { P_Type: 'Other' } });
         const productionStock = await Inventory.sum('Qty', { where: { Location: 'Production' } }) || 0;
-        const storeStock = await Inventory.sum('Qty', { where: { Location: 'Shop' } }) || 0;
+        const salesStock = await Inventory.sum('Qty', { where: { Location: 'Shop' } }) || 0;
+        const alertsCount = alerts.length;
 
         // --- FINAL RESPONSE ---
         res.json({
             success: true,
-            stockLevel: stockLevelData, // Fixed: Added this
+            stockLevel: stockLevelData,
             distribution,
-            alerts: alerts.slice(0, 5),  // Fixed: Added this
-            transfers: transfers,       // Fixed: Added this
+            alerts: alerts.slice(0, 5),
+            transfers: transfers,
             summary: {
-                activeProducts,
+                companyItems,
+                otherItems,
                 productionStock,
-                storeStock,
-                pendingOrders: 0
+                salesStock,
+                alertsCount
             }
         });
     } catch (err) {

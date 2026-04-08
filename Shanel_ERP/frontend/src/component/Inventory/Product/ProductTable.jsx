@@ -11,7 +11,14 @@ const thStyle = {
     '--bs-table-bg': 'transparent',
 };
 
-const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint }) => {
+const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint, error = null }) => {
+    // Calculate correct status based on stock levels
+    const getStatus = (stockCount, minStock) => {
+        if (stockCount === 0) return 'Out of Stock';
+        if (stockCount < minStock) return 'Low Stock';
+        return 'In Stock';
+    };
+
     if(isLoading){
         return(
             <div className='text-center py-5 bg-white rounded-3 shadow-sm'>
@@ -19,6 +26,14 @@ const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint }) => {
                     <span className='visually-hidden'>Loading...</span>
                 </div>
                 <p className='text-muted mt-2'>Loading products from database...</p>
+            </div>
+        )
+    }
+    
+    if(error){
+        return(
+            <div className='alert alert-danger rounded-3 py-4 text-center' role='alert'>
+                <p className='mb-0'><strong>Error:</strong> {error}</p>
             </div>
         )
     }
@@ -53,8 +68,8 @@ const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint }) => {
                                 </td>
                                 <td className='text-muted small'>{p.barcode || 'N/A'}</td>
                                 <td className='text-end fw-medium'>{(p.costPrice || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}</td>
-                                <td className='text-end fw-medium text-primary'>{(p.wholesalePrice || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}</td>
                                 <td className='text-end fw-bold text-success'>{(p.retailPrice || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}</td>
+                                <td className='text-end fw-medium text-primary'>{(p.wholesalePrice || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}</td>
                                 <td className='text-center'>
                                     <span className={p.minStock < 100 ? 'text-danger fw-bold' : ''}>
                                         {p.stockCount || 0} 
@@ -62,12 +77,18 @@ const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint }) => {
                                     <div className='text-muted' style={{fontSize: '10px'}}>Min: {p.minStock}</div>
                                 </td>
                                 <td>
-                                    <span className={`badge rounded-pill ${
-                                        p.status === 'In Stock' ? 'bg-success-subtle text-success' :
-                                        p.status === 'Low Stock' ? 'bg-warning-subtle text-warning' :
-                                        'bg-danger-subtle text-danger'
-                                    } px-3`}>
-                                        {p.status}
+                                    <span className={`badge rounded-pill fw-semibold ${
+                                        getStatus(p.stockCount, p.minStock) === 'In Stock' ? 'bg-success-subtle text-success border border-success-subtle' :
+                                        getStatus(p.stockCount, p.minStock) === 'Low Stock' ? 'bg-warning-subtle text-warning border border-warning-subtle' :
+                                        'bg-danger text-white border border-danger shadow-sm'
+                                    } px-3 py-2`} style={{
+                                        fontSize: '11px',
+                                        fontWeight: 600,
+                                        letterSpacing: '0.5px',
+                                        textTransform: 'uppercase'
+                                    }}>
+                                        {getStatus(p.stockCount, p.minStock) === 'Out of Stock' && '⚠️ '}
+                                        {getStatus(p.stockCount, p.minStock)}
                                     </span>
                                 </td>
                                 <td className='text-end pe-4'>

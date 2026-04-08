@@ -18,6 +18,7 @@ import ProductionReport from './pages/Inventory/Reports/ProductionReport.jsx';
 import PurchaseReport from './pages/Inventory/Reports/PurchaseReport.jsx';
 import SupplierPurchaseReport from './pages/Inventory/Reports/SupplierPurchaseReport.jsx';
 import TransferReport from './pages/Inventory/Reports/TransferReport.jsx';
+import AlertsPage from './pages/Inventory/AlertsPage.jsx';
 import './App.css';
 import POS from './pages/POS/POS.jsx';
 
@@ -46,6 +47,7 @@ const App = () => {
             <Route path="/inventory/stock-transfers" element={<StockTransfer />} />
             <Route path="/inventory/stock-adjustments" element={<StockAdjustment />} />
             <Route path="/inventory/returns" element={<ReturnsManagement />} />
+            <Route path="/inventory/alerts" element={<AlertsPage />} />
             <Route path="/inventory/reports" element={<InventoryReports />} />
             <Route path="/inventory/reports/current-stock" element={<CurrentStockReport />} />
             <Route path="/inventory/reports/expiry" element={<ExpiryReport />} />
