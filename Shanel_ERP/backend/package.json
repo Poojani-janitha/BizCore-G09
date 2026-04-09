@@ -1,16 +1,17 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon server.js",
     "dev": "nodemon server.js"
-
-   },
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  },
   "dependencies": {
     "axios": "^1.13.4",
     "bcrypt": "^6.0.0",
@@ -22,12 +23,11 @@
     "multer": "^2.0.2",
     "mysql2": "^3.19.0",
     "nodemon": "^3.1.11",
+    "react-barcode": "^1.6.1",
     "react-router-dom": "^7.13.0",
     "react-toastify": "^11.0.5",
     "sequelize": "^6.37.8",
     "stripe": "^20.3.1",
     "validator": "^13.15.26"
-  },
-  "keywords": [],
-  "type": "commonjs"
+  }
 }
