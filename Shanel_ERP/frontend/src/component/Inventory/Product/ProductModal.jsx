@@ -65,9 +65,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
                 retailPrice: parseFloat(formData.Retail_Price) || 0,
                 wholesalePrice: parseFloat(formData.Wholesale_Price) || 0,
                 minStock: parseInt(formData.Min_Stock) || 0,
-                taxRate: parseFloat(formData.Tax_Rate) || 0,
-                barcode: formData.Barcode,
-                status: formData.Status
+                barcode: formData.Barcode
             };
 
             if (editData) {

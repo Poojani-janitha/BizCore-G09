@@ -1,5 +1,27 @@
 import React from 'react'
-import { Edit2, Trash2, Printer } from 'react-feather';
+import { Edit2, Trash2, Printer, AlertCircle } from 'react-feather';
+
+// Utility functions for stock status
+const getStockStatus = (stockCount, minStock) => {
+    const stock = parseFloat(stockCount) || 0;
+    const min = parseFloat(minStock) || 0;
+    if (stock <= 0) return 'Out of Stock';
+    if (stock < min) return 'Low Stock';
+    return 'In Stock';
+};
+
+const getStatusBadgeClass = (status) => {
+    switch (status) {
+        case 'In Stock':
+            return 'bg-success-subtle text-success border border-success-subtle';
+        case 'Low Stock':
+            return 'bg-warning text-dark border border-warning shadow-lg';
+        case 'Out of Stock':
+            return 'bg-danger text-white border border-danger shadow-sm';
+        default:
+            return 'bg-secondary-subtle text-secondary';
+    }
+};
 
 const thStyle = {
     color: '#fff',
@@ -12,13 +34,6 @@ const thStyle = {
 };
 
 const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint, error = null }) => {
-    // Calculate correct status based on stock levels
-    const getStatus = (stockCount, minStock) => {
-        if (stockCount === 0) return 'Out of Stock';
-        if (stockCount < minStock) return 'Low Stock';
-        return 'In Stock';
-    };
-
     if(isLoading){
         return(
             <div className='text-center py-5 bg-white rounded-3 shadow-sm'>
@@ -78,17 +93,20 @@ const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint, error = 
                                 </td>
                                 <td>
                                     <span className={`badge rounded-pill fw-semibold ${
-                                        getStatus(p.stockCount, p.minStock) === 'In Stock' ? 'bg-success-subtle text-success border border-success-subtle' :
-                                        getStatus(p.stockCount, p.minStock) === 'Low Stock' ? 'bg-warning-subtle text-warning border border-warning-subtle' :
-                                        'bg-danger text-white border border-danger shadow-sm'
-                                    } px-3 py-2`} style={{
+                                        getStatusBadgeClass(getStockStatus(p.stockCount, p.minStock))
+                                    }`} style={{
                                         fontSize: '11px',
-                                        fontWeight: 600,
+                                        fontWeight: 700,
                                         letterSpacing: '0.5px',
-                                        textTransform: 'uppercase'
+                                        textTransform: 'uppercase',
+                                        padding: '6px 12px',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
                                     }}>
-                                        {getStatus(p.stockCount, p.minStock) === 'Out of Stock' && '⚠️ '}
-                                        {getStatus(p.stockCount, p.minStock)}
+                                        {getStockStatus(p.stockCount, p.minStock) === 'Low Stock' && <AlertCircle size={13} />}
+                                        {getStockStatus(p.stockCount, p.minStock) === 'Out of Stock' && '⚠️ '}
+                                        {getStockStatus(p.stockCount, p.minStock)}
                                     </span>
                                 </td>
                                 <td className='text-end pe-4'>

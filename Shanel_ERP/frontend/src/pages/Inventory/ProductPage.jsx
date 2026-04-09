@@ -5,6 +5,15 @@ import ProductFilters from '../../component/Inventory/Product/ProductFilters';
 import ProductTable from '../../component/Inventory/Product/ProductTable';
 import ProductModal from '../../component/Inventory/Product/ProductModal';
 
+// Utility function for stock status
+const getStockStatus = (stockCount, minStock) => {
+    const stock = parseFloat(stockCount) || 0;
+    const min = parseFloat(minStock) || 0;
+    if (stock <= 0) return 'Out of Stock';
+    if (stock < min) return 'Low Stock';
+    return 'In Stock';
+};
+
 const ProductPage = ({ typeFilter, pageTitle }) => {
 
     //Filtering status
@@ -56,8 +65,9 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
             //filter by page type(Company, other, Raw)
             const matchesType = product.type === typeFilter;
 
-            //filter by active status(If toggle is ON )
-            const matchesStatus = activeOnly ? product.status === 'In Stock' : true;
+            //filter by active status(If toggle is ON ) - calculate status dynamically
+            const calculatedStatus = getStockStatus(product.stockCount, product.minStock);
+            const matchesStatus = activeOnly ? calculatedStatus === 'In Stock' : true;
 
             //Search logic
             const name = product.name?.toLowerCase() || '';

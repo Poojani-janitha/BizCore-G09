@@ -125,7 +125,20 @@ const getProducts = async (req, res) => {
 // 3. Add Product
 const addProduct = async (req, res) => {
     try {
-        const newProduct = await Product.create(req.body);
+        // Transform camelCase field names to database column names
+        const productData = {
+            P_Name: req.body.name,
+            P_Type: req.body.type,
+            Base_Unit: req.body.baseUnit,
+            Cost_Price: req.body.costPrice,
+            Retail_Price: req.body.retailPrice,
+            Wholesale_Price: req.body.wholesalePrice,
+            Min_Stock: req.body.minStock,
+            Barcode: req.body.barcode
+            // Status will default to "In Stock" as per model definition
+        };
+
+        const newProduct = await Product.create(productData);
         res.status(201).json({ success: true, message: "Product created!", data: newProduct });
     } catch (err) {
         res.status(500).json({ success: false, message: "Creation failed", error: err.message });
@@ -136,7 +149,21 @@ const addProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        await Product.update(req.body, { where: { P_ID: id } });
+        
+        // Transform camelCase field names to database column names
+        const updateData = {
+            P_Name: req.body.name,
+            P_Type: req.body.type,
+            Base_Unit: req.body.baseUnit,
+            Cost_Price: req.body.costPrice,
+            Retail_Price: req.body.retailPrice,
+            Wholesale_Price: req.body.wholesalePrice,
+            Min_Stock: req.body.minStock,
+            Barcode: req.body.barcode
+            // Status is NOT updated as it's calculated dynamically based on stock levels
+        };
+
+        await Product.update(updateData, { where: { P_ID: id } });
         res.json({ success: true, message: "Product updated successfully!" });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
