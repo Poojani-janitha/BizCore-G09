@@ -1,7 +1,7 @@
 import React from 'react'
 import { Search, Filter } from 'react-feather';
 
-const ProductFilters = ({ onSearchChange, onTypeChange , onActiveToggle={setActiveOnly}}) => {
+const ProductFilters = ({ onSearchChange, onTypeChange, onActiveToggle }) => {
   return (
     <div className='card border-0 shadow-sm p-3 mb-4'>
         <div className='row g-3 align-items-center'>
@@ -12,7 +12,7 @@ const ProductFilters = ({ onSearchChange, onTypeChange , onActiveToggle={setActi
                     <input 
                         type="text"
                         className='form-control border-0 bg-transparent shadow-none py-2'
-                        placeholder='Search by product name, SKU or barcode...'
+                        placeholder='Search by product name or barcode...'
                         onChange={(e) => onSearchChange(e.target.value)} />
                 </div>
             </div>
@@ -23,7 +23,7 @@ const ProductFilters = ({ onSearchChange, onTypeChange , onActiveToggle={setActi
             <div className='col-md-5 text-end'>
                 <div className='form-check form-switch d-inline-block'>
                     <input className='form-check-input' type="checkbox" id='activeOnly'  onChange={(e) => onActiveToggle(e.target.checked)} style={{cursor: 'pointer'}}/>
-                    <label className='form-check-label small fw-medium' htmlFor='activeOnly' style={{ cursor: 'pointer'}}>Active Only</label>
+                    <label className='form-check-label small fw-medium' htmlFor='activeOnly' style={{ cursor: 'pointer'}}>In Stock Only</label>
                 </div>
             </div>
         </div>
