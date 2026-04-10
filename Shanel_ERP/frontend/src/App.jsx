@@ -4,6 +4,7 @@ import Inventory_Dashboard from './pages/Inventory/InventoryDashboard';
 import Hrdashboardpage from './pages/HR/Hrdashboardpage';
 import EmployeesPage from './pages/HR/EmployeesPage';
 import Attendance from './pages/HR/AttendancePage.jsx';
+import Payroll from './pages/HR/Payroll.jsx';
 import Header from './component/Header/Header';
 import ProductPage from './pages/Inventory/ProductPage.jsx';
 import ProductionStock from './pages/Inventory/ProductionStock.jsx';
@@ -33,9 +34,10 @@ const App = () => {
             <Route path="/inventory/production-stock" element={<ProductionStock />} />
 
             <Route path="/hr/employees" element={<EmployeesPage />} />
+            <Route path="/hr/attendance" element={<Attendance />} />
+            <Route path="/hr/payroll" element={<Payroll />} />
             <Route path="/POS" element={<POS />} />
             <Route path="/hr" element={<Hrdashboardpage />} />
-            <Route path="/hr/attendance" element={<Attendance />} />
             <Route path="/finance" element={<div>Finance Page</div>} />
             <Route path="/logout" element={<div>Logout Page</div>} />
           </Routes>
