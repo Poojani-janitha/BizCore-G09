@@ -1,6 +1,4 @@
 const express = require("express");
-const cors = require("cors");
-const inventoryRoutes = require('./routes/inventory');
 require('dotenv').config();
 
 const applyMiddleware = require('./middleware/appMiddleware');

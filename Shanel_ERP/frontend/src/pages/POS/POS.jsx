@@ -14,8 +14,10 @@ const POS = () => {
         <CustomerInfo />
       </div>
 
-        <div className='flex-grow-1 overflow-auto'>
-          <div className='container-fluid p-4'>
+      {/* Section 2: Item Table */}
+      <div className='card border-0 shadow-sm p-3 mb-3'>
+        <ItemTable />
+      </div>
 
       {/* Section 3: Bottom Grid */}
       <div className='row g-3'>
