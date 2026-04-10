@@ -5,7 +5,8 @@ const applyMiddleware = require('./middleware/appMiddleware');
 const inventoryRoutes = require('./routes/inventory/inventory');
 const productionRoutes = require('./routes/inventory/productionRoutes');
 const customerRoutes = require('./routes/customer/CustomerRoutes');
-const salesRoutes = require('./routes/inventory/salesRoutes');
+const inventorySalesRoutes = require('./routes/inventory/salesRoutes');
+const productSalesRoutes = require('./routes/sales/SalesRoutes');
 const transferRoutes = require('./routes/inventory/transferRoutes');
 const reportRoutes = require('./routes/inventory/reportRoutes');
 const accountingRoutes = require('./routes/Accounting/SalesAccountRoutes');
@@ -17,11 +18,12 @@ applyMiddleware(app);
 //link my inventry routes
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/production', productionRoutes);
-app.use('/api/sales', salesRoutes);
+app.use('/api/sales', inventorySalesRoutes);
+app.use('/api/sales', productSalesRoutes);
 app.use('/api/inventory/transfers', transferRoutes);
 app.use('/api/inventory/reports', reportRoutes);
 //Sales routes
-app.use('/api/sales',saleRoutes);
+app.use('/api/accounting/sales', accountingRoutes);
 
 //Customer routes
 app.use('/api/customer',customerRoutes);

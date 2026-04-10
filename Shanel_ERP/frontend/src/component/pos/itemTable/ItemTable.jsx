@@ -8,16 +8,20 @@ const ItemTable = () => {
     // These colors match the professional mint-green entry style
     const inputRowBg = '#f1f5f2';
     const inputBorder = '#d1d9d4';
-
-
-    const [result, setResult] = useState([]);
+    const [searchResults, setSearchResults] = useState([]);
+    const [selectedProduct, setSelectedProduct] = useState(null);
     const [query, setQuery] = useState('');
+
+    const handleUnitChange = (event) => {
+        const unit = event.target.value;
+        setSelectedProduct(prev => ({ ...(prev || {}), p_unit: unit }));
+    };
 
     const handleSearch = async (value) => {
 
         const term = value.trim();
         if (!term) {
-            setResult([]);
+            setSearchResults([]);
             return;
         }
 
@@ -29,7 +33,7 @@ const ItemTable = () => {
 
 
             if (res.data.success) {
-                setResult(res.data.products);
+                setSearchResults(res.data.products);
             }
         } catch (error) {
             console.error(error);
@@ -61,7 +65,7 @@ const ItemTable = () => {
                         <tr >
                             <td style={{ backgroundColor: inputRowBg }} className='text-center text-success fw-bold'>+</td>
                             <td style={{ backgroundColor: inputRowBg }}>
-                                <input type="text" className='form-control form-control-sm border-1' style={{ borderColor: inputBorder }} placeholder='Item Code' value={result.p_code|| ''} />
+                                <input type="text" className='form-control form-control-sm border-1' style={{ borderColor: inputBorder }} placeholder='Item Code' value={selectedProduct?.p_code || ''} readOnly />
                             </td>
                             <td style={{ backgroundColor: inputRowBg }}>
                                 <div style={{ position: 'relative' }}>
@@ -75,7 +79,7 @@ const ItemTable = () => {
 
                                     />
 
-                                    {result.length > 0 && (
+                                    {searchResults.length > 0 && (
                                         <ul style={{
                                             position: 'absolute',
                                             top: '100%',
@@ -92,12 +96,13 @@ const ItemTable = () => {
                                             maxHeight: '220px',
                                             overflowY: 'auto',
                                         }}>
-                                            {result.map((p) => (
+                                            {searchResults.map((p) => (
                                                 <li
                                                     key={p.p_id}
                                                     onClick={() => {
                                                         setQuery(p.p_name);
-                                                        setResult([]);
+                                                        setSelectedProduct(p);
+                                                        setSearchResults([]);
                                                     }}
                                                     style={{
                                                         cursor: 'pointer',
@@ -117,10 +122,10 @@ const ItemTable = () => {
                                 </div>
                             </td>
                             <td style={{ backgroundColor: inputRowBg }}>
-                                <select className='form-select form-select-sm border-1' style={{ borderColor: inputBorder }} value={result.p_unit || ''}>
+                                <select className='form-select form-select-sm border-1' style={{ borderColor: inputBorder }} value={selectedProduct?.p_unit || ''} onChange={handleUnitChange}>
                                     <option value="">Packet</option>
-                                    <option value="">Pieces</option>
-                                    <option value="">kg</option>
+                                    <option value="Pieces">Pieces</option>
+                                    <option value="kg">kg</option>
                                 </select>
                             </td>
                             <td style={{ backgroundColor: inputRowBg }}>

@@ -1,5 +1,5 @@
-const Sale = require('../sales/Sale');
-const SaleItem = require('../sales/SaleItem');
+const Sale = require('../sales/Sales');
+const SaleItem = require('../sales/SalesItem');
 const Payment = require('../sales/Payment');
 const CreditTranscation = require('../customer/CreditTranscation');
 const Customer = require('../customer/customer');
