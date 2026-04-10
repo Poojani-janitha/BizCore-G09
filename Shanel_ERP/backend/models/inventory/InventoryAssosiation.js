@@ -30,6 +30,10 @@ module.exports = () => {
     Product.hasMany(StockAdjustment, { foreignKey: 'P_ID', as: 'adjustments' });
     StockAdjustment.belongsTo(Product, { foreignKey: 'P_ID' });
 
+    // Product <-> StockTransfer
+    Product.hasMany(StockTransfer, { foreignKey: 'P_ID', as: 'stockTransfers' });
+    StockTransfer.belongsTo(Product, { foreignKey: 'P_ID', as: 'product' });
+
     // ===== PRODUCTION ASSOCIATIONS =====
     
     // Production <-> Inventory (One Batch has Many Inventory Records)

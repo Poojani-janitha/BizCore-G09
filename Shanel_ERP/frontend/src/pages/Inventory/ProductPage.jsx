@@ -5,6 +5,15 @@ import ProductFilters from '../../component/Inventory/Product/ProductFilters';
 import ProductTable from '../../component/Inventory/Product/ProductTable';
 import ProductModal from '../../component/Inventory/Product/ProductModal';
 
+// Utility function for stock status
+const getStockStatus = (stockCount, minStock) => {
+    const stock = parseFloat(stockCount) || 0;
+    const min = parseFloat(minStock) || 0;
+    if (stock <= 0) return 'Out of Stock';
+    if (stock < min) return 'Low Stock';
+    return 'In Stock';
+};
+
 const ProductPage = ({ typeFilter, pageTitle }) => {
 
     //Filtering status
@@ -56,8 +65,9 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
             //filter by page type(Company, other, Raw)
             const matchesType = product.type === typeFilter;
 
-            //filter by active status(If toggle is ON )
-            const matchesStatus = activeOnly ? product.status === 'In Stock' : true;
+            //filter by active status(If toggle is ON ) - calculate status dynamically
+            const calculatedStatus = getStockStatus(product.stockCount, product.minStock);
+            const matchesStatus = activeOnly ? calculatedStatus === 'In Stock' : true;
 
             //Search logic
             const name = product.name?.toLowerCase() || '';
@@ -211,14 +221,15 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
         <div className='container-fluid px-0'>
 
-            <ProductHeader title={pageTitle} onAddClick={handleAddProduct} />
+            <ProductHeader title={pageTitle} onAddClick={handleAddProduct} products={filteredProducts} />
             <ProductModal show={showModal} onHide={handleCloseModal} typeFilter={typeFilter} refreshData={fetchProducts} editData={editingProduct} />
             <ProductFilters onSearchChange={setSearchTerm} onTypeChange={setSelectedType} onActiveToggle={setActiveOnly} />
             
             {error && (
-                    <div className="alert alert-danger d-flex align-items-center" role="alert">
-                        <div>{error}</div>
-                    </div>
+                <div className="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+                    <div className="flex-grow-1">{error}</div>
+                    <button type="button" className="btn-close" onClick={() => setError(null)}></button>
+                </div>
             )}
 
             <div className='d-flex align-items-center justify-content-between mb-3 px-1'>
@@ -234,7 +245,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                 </div>
             </div>
 
-            <ProductTable products={filteredProducts} isLoading={isLoading} onDelete={handleDelete} onEdit={handleEdit} onPrint={handlePrintSingle} />
+            <ProductTable products={filteredProducts} isLoading={isLoading} onDelete={handleDelete} onEdit={handleEdit} onPrint={handlePrintSingle} error={error} />
 
             {/* Barcode Qty Print Dialog */}
             {showPrintDialog && printTarget && (

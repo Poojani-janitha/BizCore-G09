@@ -25,40 +25,39 @@ const SalesStock = () => {
     }, []);
 
     return (
-        <div className='p-4 bg-light min-vh-100'>
-            <h4 className='fw-bold mb-1'>Sales Stock</h4>
-            <p className='text-muted small mb-4'>Finished goods ready for sale</p>
+        <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className='fw-bold text-dark mb-0'>Sales Stock</h6>
+            </div>
 
             {/* top row */}
             <div className='row g-3 mb-4'>
-                <SalesMetricCard title="Total Items" value={data.metrics.totalItems} icon={<Package size={20}/>} color="#f97316"/>
-                <SalesMetricCard title="Available" value={data.metrics.availableUnits} icon={<CheckCircle size={20}/>} color="#22c55e"/>
-                <SalesMetricCard title="Stock Value" value={`LKR ${data.metrics.totalValue ? data.metrics.totalValue.toLocaleString() : '0'}`} icon={<DollarSign size={20}/>} color="#a855f7"/>
-                <SalesMetricCard title="Reserved" value={data.metrics.totalReserved} icon={<Clock size={20}/>} color="#f59e0b"/>
+                <SalesMetricCard title="Total Items" value={data.metrics.totalItems} icon={<Package size={20} className="text-warning"/>} borderColor="border-warning" label="Products in stock" />
+                <SalesMetricCard title="Available" value={data.metrics.availableUnits} icon={<CheckCircle size={20} className="text-success"/>} borderColor="border-success" label="Units available" />
+                <SalesMetricCard title="Stock Value" value={`LKR ${data.metrics.totalValue ? data.metrics.totalValue.toLocaleString() : '0'}`} icon={<DollarSign size={20} className="text-info"/>} borderColor="border-info" label="Total inventory value" />
+                <SalesMetricCard title="Reserved" value={data.metrics.totalReserved} icon={<Clock size={20} className="text-danger"/>} borderColor="border-danger" label="Units reserved" />
             </div>
 
             {/* Inventory Table */}
-            <div className='card border-0 shadow-sm rounded-4 mb-4'>
-                <div className='card-header bg-white border-0 pt-4 px-4'>
-                    <h6 className='fw-bold mb-0'>Finished Good Inventory</h6>
-                </div>
-                <div className='table-responsive p-4'>
-                    <table className='table align-middle'>
-                        <thead className='text-muted small text-uppercase' style={{fontSize:'11px'}}>
-                            <tr>
-                                <th>Item Details</th>
-                                <th>Type</th>
-                                <th>Total Quantity</th>
-                                <th>Reserved</th>
-                                <th>Available</th>
-                                <th>Stock Value</th>
-                                <th>Expiry Date</th>
+            <h6 className='fw-bold text-dark mb-2'>Finished Good Inventory</h6>
+            <div className='card border-0 shadow-sm rounded-3 overflow-hidden mb-4'>
+                <div className='table-responsive'>
+                    <table className='table align-middle mb-0'>
+                        <thead>
+                            <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
+                                <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Item Details</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Type</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Total Quantity</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Reserved</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Available</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Stock Value</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Expiry Date</th>
                             </tr>
                         </thead>
                         <tbody style={{ fontSize: '13px'}}>
                             {data.tableData.map((item, index) => (
                                 <tr key={index}>
-                                    <td>
+                                    <td className='ps-4'>
                                         <div className='fw-bold text-dark'>{item.name}</div>
                                         <div className='text-muted' style={{fontSize:'11px'}}>{item.code}</div>
                                         <div className='text-muted' style={{fontSize:'10px'}}>Batch: {item.batchNo}</div>
@@ -84,19 +83,16 @@ const SalesStock = () => {
             <div className='row g-4'>
                 {/* Recent Stock In */}
                 <div className='col-lg-6'>
-                    <div className='card border-0 shadow-sm rounded-4'>
-                        <div className='card-header bg-white border-0 pt-4 px-4 d-flex align-items-center'>
-                            <TrendingUp size={20} className='text-success me-2'/>
-                            <h6 className='fw-bold mb-0'>Recent Stock In</h6>
-                        </div>
+                    <h6 className='fw-bold text-dark mb-2'>Recent Stock In</h6>
+                    <div className='card border-0 shadow-sm rounded-3 overflow-hidden'>
                         <div className='table-responsive'>
                             <table className='table table-sm align-middle mb-0'>
-                                <thead className='bg-light text-muted small text-uppercase' style={{fontSize:'11px'}}>
+                                <thead style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
                                     <tr>
-                                        <th className='border-0 ps-4'>Product</th>
-                                        <th className='border-0'>Source</th>
-                                        <th className='border-0 text-end'>Qty</th>
-                                        <th className='border-0 text-end pe-4'>Date</th>
+                                        <th className='text-uppercase py-2 ps-4 border-0' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Product</th>
+                                        <th className='text-uppercase py-2 border-0' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Source</th>
+                                        <th className='text-uppercase py-2 text-end border-0' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Qty</th>
+                                        <th className='text-uppercase py-2 text-end pe-4 border-0' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Date</th>
                                     </tr>
                                 </thead>
                                 <tbody style={{ fontSize: '12px'}}>
@@ -129,19 +125,16 @@ const SalesStock = () => {
 
                 {/* Recent Stock Out */}
                 <div className='col-lg-6'>
-                    <div className='card border-0 shadow-sm rounded-4'>
-                        <div className='card-header bg-white border-0 pt-4 px-4 d-flex align-items-center'>
-                            <TrendingDown size={20} className='text-danger me-2'/>
-                            <h6 className='fw-bold mb-0'>Recent Stock Out</h6>
-                        </div>
+                    <h6 className='fw-bold text-dark mb-2'>Recent Stock Out</h6>
+                    <div className='card border-0 shadow-sm rounded-3 overflow-hidden'>
                         <div className='table-responsive'>
                             <table className='table table-sm align-middle mb-0'>
-                                <thead className='bg-light text-muted small text-uppercase' style={{fontSize:'11px'}}>
+                                <thead style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
                                     <tr>
-                                        <th className='border-0 ps-4'>Product</th>
-                                        <th className='border-0'>To</th>
-                                        <th className='border-0 text-end'>Qty</th>
-                                        <th className='border-0 text-end pe-4'>Date</th>
+                                        <th className='text-uppercase py-2 ps-4 border-0' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Product</th>
+                                        <th className='text-uppercase py-2 border-0' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>To</th>
+                                        <th className='text-uppercase py-2 text-end border-0' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Qty</th>
+                                        <th className='text-uppercase py-2 text-end pe-4 border-0' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Date</th>
                                     </tr>
                                 </thead>
                                 <tbody style={{ fontSize: '12px'}}>

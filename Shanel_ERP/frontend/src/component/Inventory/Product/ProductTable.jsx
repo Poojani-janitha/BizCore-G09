@@ -1,5 +1,27 @@
 import React from 'react'
-import { Edit2, Trash2, Printer } from 'react-feather';
+import { Edit2, Trash2, Printer, AlertCircle } from 'react-feather';
+
+// Utility functions for stock status
+const getStockStatus = (stockCount, minStock) => {
+    const stock = parseFloat(stockCount) || 0;
+    const min = parseFloat(minStock) || 0;
+    if (stock <= 0) return 'Out of Stock';
+    if (stock < min) return 'Low Stock';
+    return 'In Stock';
+};
+
+const getStatusBadgeClass = (status) => {
+    switch (status) {
+        case 'In Stock':
+            return 'bg-success-subtle text-success border border-success-subtle';
+        case 'Low Stock':
+            return 'bg-warning text-dark border border-warning shadow-lg';
+        case 'Out of Stock':
+            return 'bg-danger text-white border border-danger shadow-sm';
+        default:
+            return 'bg-secondary-subtle text-secondary';
+    }
+};
 
 const thStyle = {
     color: '#fff',
@@ -11,7 +33,7 @@ const thStyle = {
     '--bs-table-bg': 'transparent',
 };
 
-const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint }) => {
+const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint, error = null }) => {
     if(isLoading){
         return(
             <div className='text-center py-5 bg-white rounded-3 shadow-sm'>
@@ -19,6 +41,14 @@ const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint }) => {
                     <span className='visually-hidden'>Loading...</span>
                 </div>
                 <p className='text-muted mt-2'>Loading products from database...</p>
+            </div>
+        )
+    }
+    
+    if(error){
+        return(
+            <div className='alert alert-danger rounded-3 py-4 text-center' role='alert'>
+                <p className='mb-0'><strong>Error:</strong> {error}</p>
             </div>
         )
     }
@@ -53,8 +83,8 @@ const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint }) => {
                                 </td>
                                 <td className='text-muted small'>{p.barcode || 'N/A'}</td>
                                 <td className='text-end fw-medium'>{(p.costPrice || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}</td>
-                                <td className='text-end fw-medium text-primary'>{(p.wholesalePrice || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}</td>
                                 <td className='text-end fw-bold text-success'>{(p.retailPrice || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}</td>
+                                <td className='text-end fw-medium text-primary'>{(p.wholesalePrice || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}</td>
                                 <td className='text-center'>
                                     <span className={p.minStock < 100 ? 'text-danger fw-bold' : ''}>
                                         {p.stockCount || 0} 
@@ -62,12 +92,21 @@ const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint }) => {
                                     <div className='text-muted' style={{fontSize: '10px'}}>Min: {p.minStock}</div>
                                 </td>
                                 <td>
-                                    <span className={`badge rounded-pill ${
-                                        p.status === 'In Stock' ? 'bg-success-subtle text-success' :
-                                        p.status === 'Low Stock' ? 'bg-warning-subtle text-warning' :
-                                        'bg-danger-subtle text-danger'
-                                    } px-3`}>
-                                        {p.status}
+                                    <span className={`badge rounded-pill fw-semibold ${
+                                        getStatusBadgeClass(getStockStatus(p.stockCount, p.minStock))
+                                    }`} style={{
+                                        fontSize: '11px',
+                                        fontWeight: 700,
+                                        letterSpacing: '0.5px',
+                                        textTransform: 'uppercase',
+                                        padding: '6px 12px',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                    }}>
+                                        {getStockStatus(p.stockCount, p.minStock) === 'Low Stock' && <AlertCircle size={13} />}
+                                        {getStockStatus(p.stockCount, p.minStock) === 'Out of Stock' && '⚠️ '}
+                                        {getStockStatus(p.stockCount, p.minStock)}
                                     </span>
                                 </td>
                                 <td className='text-end pe-4'>

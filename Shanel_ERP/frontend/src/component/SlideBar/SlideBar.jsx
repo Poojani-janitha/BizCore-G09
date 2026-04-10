@@ -21,14 +21,15 @@ const SlideBar = () => {
             icon: <Package size={18} />, 
             to: '/inventory',
             subItems: [
-                { label: 'Company Items', to: '/inventory/company-items', icon: <Box size={14} /> },
+                { label: 'Dashboard', to: '/inventory', icon: <BarChart2 size={14} /> },
+                { label: 'Company Items', to: '/inventory/company-items', icon: <Package size={14} /> },
                 { label: 'Other Items', to: '/inventory/other-items', icon: <Box size={14} /> },
                 { label: 'Raw Materials', to: '/inventory/raw-materials', icon: <Archive size={14} /> },
                 { label: 'Production Stock', to: '/inventory/production-stock', icon: <Truck size={14} /> },
-                { label: 'Sales Stock', to: '/inventory/salesStock', icon: <Home size={14} /> },
+                { label: 'Sales Stock', to: '/inventory/salesStock', icon: <ShoppingCart size={14} /> },
                 { label: 'Stock Transfer', to: '/inventory/stock-transfers', icon: <RefreshCw size={14} /> },
                 { label: 'Stock Adjustments', to: '/inventory/stock-adjustments', icon: <Sliders size={14} /> },
-                { label: 'Returns', to: '/inventory/return', icon: <CornerUpLeft size={14} /> },
+                { label: 'Returns', to: '/inventory/returns', icon: <CornerUpLeft size={14} /> },
                 { label: 'Reports', to: '/inventory/reports', icon: <BarChart2 size={14} /> },
                 { label: 'Alerts', to: '/inventory/alerts', icon: <Bell size={14} /> },
             ]
@@ -39,11 +40,11 @@ const SlideBar = () => {
             icon: <Users size={18} />, 
             to: '/hr',
             subItems: [
-                { label: 'Employees', to: '/hr/employees', icon: <Users size={14} /> },
-                { label: 'Attendance', to: '/hr/attendance', icon: <FileText size={14} /> },
-                { label: 'Payroll', to: '/hr/payroll', icon: <DollarSign size={14} /> },
+                { label: 'Orders', to: '/sales/orders', icon: <PieChart size={14} /> },
+                { label: 'Customers', to: '/sales/customers', icon: <Users size={14} /> },
             ]
         },
+        { label: 'HR', icon: <Users size={18} />, to: '/hr' },
         { label: 'Finance', icon: <DollarSign size={18} />, to: '/finance' },
     ];
 

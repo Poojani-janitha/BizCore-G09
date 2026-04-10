@@ -4,7 +4,7 @@ const sequelize = require('../../config/db');
 const ProductReturn = sequelize.define('ProductReturn', {
     RT_ID: { 
         type: DataTypes.INTEGER, 
-        primaryKey: true, 
+        primaryKey: true, // Ensured correct camelCase
         autoIncrement: true 
     },
     P_ID: { 
@@ -45,9 +45,9 @@ const ProductReturn = sequelize.define('ProductReturn', {
         type: DataTypes.DECIMAL(10, 2) 
     },
     Restock: { 
-        type: DataTypes.BOOLEAN, 
-        defaultValue: true,
-        comment: 'Add back to inventory?' 
+        type: DataTypes.TINYINT(1), // Changed to TINYINT to match your MySQL 'tinyint(1)'
+        defaultValue: 1,
+        comment: '1 = Add back to inventory, 0 = Waste/Throw' 
     },
     Status: { 
         type: DataTypes.ENUM('Pending', 'Approved', 'Rejected', 'Completed'), 
@@ -68,8 +68,8 @@ const ProductReturn = sequelize.define('ProductReturn', {
 }, {
     tableName: 'product_return',
     timestamps: true,
-    createdAt: 'Created_At',
-    updatedAt: 'Updated_At'
+    createdAt: 'Created_At', 
+    updatedAt: 'Updated_At'  
 });
 
 module.exports = ProductReturn;

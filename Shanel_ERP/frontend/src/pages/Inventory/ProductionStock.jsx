@@ -56,34 +56,34 @@ const ProductionStock = () => {
 
     return (
         <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h4 className='fw-bold mb-0'>Work in Progress</h4>
-                <button className="btn btn-primary btn-sm rounded-3 shadow-sm px-3" onClick={() => setShowModal(true)}>
-                    <Play size={14} className="me-2"/> Start New Batch
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className='fw-bold text-dark mb-0'>Work in Progress</h6>
+                <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm" onClick={() => setShowModal(true)}>
+                    <Play size={14}/> Start New Batch
                 </button>
             </div>
 
             <ProductionModal show={showModal} onHide={() => setShowModal(false)} refreshData={fetchData} />
 
-            <div className='card border-0 shadow-sm rounded-4 overflow-hidden'>
-                <div className='table-responsive p-4'>
-                    <table className='table align-middle mt-2'>
-                        <thead className='text-muted small text-uppercase'>
-                            <tr style={{textAlign:"center"}}>
-                                <th>Batch ID</th>
-                                <th>Product</th>
-                                <th>Qty</th>
-                                <th>Production Date</th>
-                                <th>Expiry Date</th>
-                                <th>Completion</th>
-                                <th>Stage</th>
-                                <th className="text-end">Actions</th>
+            <div className='card border-0 shadow-sm rounded-3 overflow-hidden'>
+                <div className='table-responsive'>
+                    <table className='table align-middle mb-0'>
+                        <thead>
+                            <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)', textAlign:"center" }}>
+                                <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Batch ID</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Product</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Qty</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Production Date</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Expiry Date</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Completion</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Stage</th>
+                                <th className='text-uppercase py-3 text-end pe-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody style={{textAlign:"center"}}>
                             {workingItems.map((item) => (
                                 <tr key={item.PR_ID}>
-                                    <td className='text-primary fw-medium'>{item.Batch_No}</td>
+                                    <td className='text-primary fw-medium ps-4'>{item.Batch_No}</td>
                                     <td className='fw-bold'>{item.P_Name}</td>
                                     <td>{item.Total_Qty_Produced}</td>
                                     <td>{item.Production_Date ? new Date(item.Production_Date).toLocaleDateString() : 'N/A'}</td>
@@ -134,34 +134,32 @@ const ProductionStock = () => {
                 </div>
             </div>
 
-            <div className='card border-0 shadow-sm rounded-4 overflow-hidden mt-4'>
-                <div className='card-header bg-white border-0 p-4 pb-0'>
-                    <h5 className='fw-bold mb-0'>Approved Batches</h5>
-                </div>
-                <div className='table-responsive p-4'>
-                    <table className='table align-middle mt-2'>
-                        <thead className='text-muted small text-uppercase'>
-                            <tr style={{textAlign:"center"}}>
-                                <th>Batch ID</th>
-                                <th>Product</th>
-                                <th>Qty</th>
-                                <th>Production Date</th>
-                                <th>Expiry Date</th>
-                                <th>Days to Expire</th>
-                                <th>Stage</th>
+            <h6 className='fw-bold text-dark mb-2 mt-4'>Approved Batches</h6>
+            <div className='card border-0 shadow-sm rounded-3 overflow-hidden'>
+                <div className='table-responsive'>
+                    <table className='table align-middle mb-0'>
+                        <thead>
+                            <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)', textAlign:"center" }}>
+                                <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Batch ID</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Product</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Qty</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Production Date</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Expiry Date</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Days to Expire</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Stage</th>
                             </tr>
                         </thead>
                         <tbody style={{textAlign:"center"}}>
                             {approvedItems.map((item) => {
                                 const daysLeft = item.DaysToExpire;
-                                let badgeClass = 'bg-success-subtle text-success'; // Green
-                                if (daysLeft <= 0) badgeClass = 'bg-danger-subtle text-danger'; // Red - Expired
-                                else if (daysLeft <= 7) badgeClass = 'bg-danger-subtle text-danger'; // Red - Expiring soon
-                                else if (daysLeft <= 30) badgeClass = 'bg-warning-subtle text-warning'; // Yellow - Medium
+                                let badgeClass = 'bg-success-subtle text-success';
+                                if (daysLeft <= 0) badgeClass = 'bg-danger-subtle text-danger';
+                                else if (daysLeft <= 7) badgeClass = 'bg-danger-subtle text-danger';
+                                else if (daysLeft <= 30) badgeClass = 'bg-warning-subtle text-warning';
                                 
                                 return (
                                     <tr key={item.PR_ID}>
-                                        <td className='text-primary fw-medium'>{item.Batch_No}</td>
+                                        <td className='text-primary fw-medium ps-4'>{item.Batch_No}</td>
                                         <td className='fw-bold'>{item.P_Name}</td>
                                         <td>{item.Total_Qty_Produced}</td>
                                         <td>{item.Production_Date ? new Date(item.Production_Date).toLocaleDateString() : 'N/A'}</td>

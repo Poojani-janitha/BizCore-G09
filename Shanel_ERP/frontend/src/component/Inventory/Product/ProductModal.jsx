@@ -56,11 +56,23 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            // Transform form field names to match API expectations
+            const apiPayload = {
+                name: formData.P_Name,
+                type: formData.P_Type,
+                baseUnit: formData.Base_Unit,
+                costPrice: parseFloat(formData.Cost_Price) || 0,
+                retailPrice: parseFloat(formData.Retail_Price) || 0,
+                wholesalePrice: parseFloat(formData.Wholesale_Price) || 0,
+                minStock: parseInt(formData.Min_Stock) || 0,
+                barcode: formData.Barcode
+            };
+
             if (editData) {
-                await axios.put(`http://localhost:5000/api/inventory/products/${editData.id}`, formData);
+                await axios.put(`http://localhost:5000/api/inventory/products/${editData.id}`, apiPayload);
                 alert("Product updated successfully!");
             } else {
-                await axios.post('http://localhost:5000/api/inventory/products', formData);
+                await axios.post('http://localhost:5000/api/inventory/products', apiPayload);
                 alert("Product added successfully!");
             }
             refreshData(); 

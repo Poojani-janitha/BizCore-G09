@@ -1,0 +1,10 @@
+/* in reports  make sure the sidebar doesn't show up in the print-out: */
+@media print {
+    .no-print, .sidebar, .navbar {
+        display: none !important;
+    }
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #eee !important;
+    }
+}
