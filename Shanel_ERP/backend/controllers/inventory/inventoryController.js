@@ -1,4 +1,4 @@
-const { Product, Inventory, Production } = require('../../models/index');
+const { Product, Inventory, Production, UnitConversion } = require('../../models/index');
 const sequelize = require('../../config/db');
 const { Op } = require('sequelize');
 
@@ -11,10 +11,11 @@ const getDashboardStats = async (req, res) => {
             attributes: [
                 ['P_Name', 'name'], 
                 ['Min_Stock', 'min'],
-                [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('Inventories.Qty')), 0), 'current']
+                [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('inventories.Qty')), 0), 'current']
             ],
             include: [{
                 model: Inventory,
+                as: 'inventories',
                 attributes: [],
                 required: false
             }],
@@ -29,12 +30,12 @@ const getDashboardStats = async (req, res) => {
         // Logic: Find products where Total Inventory <= Min_Stock
         const products = await Product.findAll({
             attributes: ['P_Name', 'Min_Stock', 'P_Type'],
-            include: [{ model: Inventory, attributes: ['Qty'] }]
+            include: [{ model: Inventory, as: 'inventories', attributes: ['Qty'] }]
         });
 
         const alerts = [];
         products.forEach(p => {
-            const total = p.Inventories.reduce((sum, inv) => sum + parseFloat(inv.Qty), 0);
+            const total = p.inventories.reduce((sum, inv) => sum + parseFloat(inv.Qty), 0);
             if (total <= parseFloat(p.Min_Stock) && p.Min_Stock > 0) {
                 alerts.push({
                     name: p.P_Name,
@@ -94,16 +95,18 @@ const getProducts = async (req, res) => {
                 ['Retail_Price', 'retailPrice'],
                 ['Min_Stock', 'minStock'],
                 ['Status', 'status'],
-                [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('Inventories.Qty')), 0), 'stockCount']
+                [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('inventories.Qty')), 0), 'stockCount']
             ],
             include: [{
                 model: Inventory,
+                as: 'inventories',
                 attributes: []
             }],
             group: ['Product.P_ID']
         });
         res.json(products);
     } catch (err) {
+        console.error("Get Products Error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 };
@@ -140,4 +143,81 @@ const deleteProduct = async (req, res) => {
     }
 };
 
-module.exports = { getDashboardStats, getProducts, addProduct, deleteProduct, updateProduct };
+// 6. Get Product Inventory by Location
+const getProductLocationInventory = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const inventories = await Inventory.findAll({
+            attributes: ['Location', 'Qty'],
+            where: { P_ID: productId }
+        });
+        
+        const result = {
+            'Main_Warehouse': 0,
+            'Production': 0,
+            'Shop': 0
+        };
+        
+        inventories.forEach(inv => {
+            if (inv.Location && result.hasOwnProperty(inv.Location)) {
+                result[inv.Location] += parseFloat(inv.Qty) || 0;
+            }
+        });
+        
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// 7. Get Product Unit Conversions (for card/packet calculations)
+const getProductUnitConversions = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        
+        const units = await UnitConversion.findAll({
+            where: { P_ID: productId },
+            attributes: ['U_ID', 'Unit_Name', 'Unit_Conversion', 'Is_Base_Unit', 'Display_Order'],
+            order: [['Display_Order', 'ASC']]
+        });
+
+        if (units.length === 0) {
+            return res.json({
+                success: true,
+                units: [],
+                baseUnit: 'Unit',
+                message: 'No unit conversions found for this product'
+            });
+        }
+
+        // Find base unit
+        const baseUnit = units.find(u => u.Is_Base_Unit) || units[0];
+
+        res.json({
+            success: true,
+            units: units.map(u => ({
+                U_ID: u.U_ID,
+                name: u.Unit_Name,
+                conversion: parseFloat(u.Unit_Conversion),
+                isBase: u.Is_Base_Unit
+            })),
+            baseUnit: {
+                name: baseUnit.Unit_Name,
+                conversion: parseFloat(baseUnit.Unit_Conversion)
+            }
+        });
+    } catch (err) {
+        console.error("Get Unit Conversions Error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+module.exports = { 
+    getDashboardStats, 
+    getProducts, 
+    addProduct, 
+    deleteProduct, 
+    updateProduct, 
+    getProductLocationInventory,
+    getProductUnitConversions
+};

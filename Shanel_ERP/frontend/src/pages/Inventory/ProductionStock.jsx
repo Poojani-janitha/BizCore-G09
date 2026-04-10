@@ -11,6 +11,24 @@ const ProductionStock = () => {
     const workingItems = wip.filter((item) => item.Status !== 'Approved');
     const approvedItems = wip.filter((item) => item.Status === 'Approved');
 
+    // Format days into readable format (years, months, days)
+    const formatDaysToExpiry = (days) => {
+        if (days === null) return 'N/A';
+        if (days < 0) return 'EXPIRED';
+        
+        const years = Math.floor(days / 365);
+        const remainingDaysAfterYears = days % 365;
+        const months = Math.floor(remainingDaysAfterYears / 30);
+        const remainingDays = remainingDaysAfterYears % 30;
+        
+        let result = [];
+        if (years > 0) result.push(`${years} year${years > 1 ? 's' : ''}`);
+        if (months > 0) result.push(`${months} month${months > 1 ? 's' : ''}`);
+        if (remainingDays > 0) result.push(`${remainingDays} day${remainingDays > 1 ? 's' : ''}`);
+        
+        return result.length > 0 ? result.join(' ') : '0 days';
+    };
+
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -55,6 +73,8 @@ const ProductionStock = () => {
                                 <th>Batch ID</th>
                                 <th>Product</th>
                                 <th>Qty</th>
+                                <th>Production Date</th>
+                                <th>Expiry Date</th>
                                 <th>Completion</th>
                                 <th>Stage</th>
                                 <th className="text-end">Actions</th>
@@ -66,6 +86,8 @@ const ProductionStock = () => {
                                     <td className='text-primary fw-medium'>{item.Batch_No}</td>
                                     <td className='fw-bold'>{item.P_Name}</td>
                                     <td>{item.Total_Qty_Produced}</td>
+                                    <td>{item.Production_Date ? new Date(item.Production_Date).toLocaleDateString() : 'N/A'}</td>
+                                    <td>{item.Exp_Date ? new Date(item.Exp_Date).toLocaleDateString() : 'N/A'}</td>
                                     <td style={{ minWidth: '150px' }}>
                                         {(() => {
                                             const completion = Number(item.Completion || 0);
@@ -104,7 +126,7 @@ const ProductionStock = () => {
                             ))}
                             {workingItems.length === 0 && (
                                 <tr>
-                                    <td colSpan="6" className="text-center text-muted py-4">No work in progress items</td>
+                                    <td colSpan="8" className="text-center text-muted py-4">No work in progress items</td>
                                 </tr>
                             )}
                         </tbody>
@@ -123,29 +145,43 @@ const ProductionStock = () => {
                                 <th>Batch ID</th>
                                 <th>Product</th>
                                 <th>Qty</th>
-                                <th>Completion</th>
+                                <th>Production Date</th>
+                                <th>Expiry Date</th>
+                                <th>Days to Expire</th>
                                 <th>Stage</th>
                             </tr>
                         </thead>
                         <tbody style={{textAlign:"center"}}>
-                            {approvedItems.map((item) => (
-                                <tr key={item.PR_ID}>
-                                    <td className='text-primary fw-medium'>{item.Batch_No}</td>
-                                    <td className='fw-bold'>{item.P_Name}</td>
-                                    <td>{item.Total_Qty_Produced}</td>
-                                    <td>
-                                        <span className="fw-bold">{Number(item.Completion || 0)}%</span>
-                                    </td>
-                                    <td className="text-center align-middle">
-                                        <span className="badge d-inline-block text-center bg-success-subtle text-success px-2" style={{ minWidth: '120px' }}>
-                                            Approved
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
+                            {approvedItems.map((item) => {
+                                const daysLeft = item.DaysToExpire;
+                                let badgeClass = 'bg-success-subtle text-success'; // Green
+                                if (daysLeft <= 0) badgeClass = 'bg-danger-subtle text-danger'; // Red - Expired
+                                else if (daysLeft <= 7) badgeClass = 'bg-danger-subtle text-danger'; // Red - Expiring soon
+                                else if (daysLeft <= 30) badgeClass = 'bg-warning-subtle text-warning'; // Yellow - Medium
+                                
+                                return (
+                                    <tr key={item.PR_ID}>
+                                        <td className='text-primary fw-medium'>{item.Batch_No}</td>
+                                        <td className='fw-bold'>{item.P_Name}</td>
+                                        <td>{item.Total_Qty_Produced}</td>
+                                        <td>{item.Production_Date ? new Date(item.Production_Date).toLocaleDateString() : 'N/A'}</td>
+                                        <td>{item.Exp_Date ? new Date(item.Exp_Date).toLocaleDateString() : 'N/A'}</td>
+                                        <td>
+                                            <span className={`badge d-inline-block text-center ${badgeClass} px-3 py-2`} style={{ minWidth: '120px', fontWeight: '600' }}>
+                                                {formatDaysToExpiry(daysLeft)}
+                                            </span>
+                                        </td>
+                                        <td className="text-center align-middle">
+                                            <span className="badge d-inline-block text-center bg-success-subtle text-success px-2" style={{ minWidth: '120px' }}>
+                                                Approved
+                                            </span>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             {approvedItems.length === 0 && (
                                 <tr>
-                                    <td colSpan="5" className="text-center text-muted py-4">No approved items yet</td>
+                                    <td colSpan="7" className="text-center text-muted py-4">No approved items yet</td>
                                 </tr>
                             )}
                         </tbody>
