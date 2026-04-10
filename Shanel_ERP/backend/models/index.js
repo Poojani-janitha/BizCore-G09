@@ -7,11 +7,36 @@ const StockAdjustment = require('./inventory/StockAdjustment');
 const UnitConversion = require('./inventory/UnitConversion');
 const ProductReturn = require('./inventory/ProductReturn');
 
+
+
 // ===== INVENTORY ASSOCIATIONS =====
 const InventoryAssociations = require('./inventory/InventoryAssosiation');
-
-// Initialize Inventory Associations
 InventoryAssociations();
+
+
+//===== SALES MODELS =====
+const Sale = require('./sales/Sales');
+const SaleItem = require('./sales/SalesItem');
+const Payment = require('./sales/Payment');
+const CreditTranscation = require('./customer/CreditTranscation');
+const SalesSummaryDaily = require('./sales/SalesSummaryDaily');
+
+// ===== SALES ASSOCIATIONS =====
+const SaleAssociations = require('./sales/SaleAssociation');
+SaleAssociations();
+
+// ===== USER MODELS =====
+const User = require('./user/User');
+
+
+// ===== CUSTOMER MODELS =====
+const Customer = require('./customer/customer');
+
+/// ===== CUSTOMER ASSOCIATIONS =====
+const CustomerAssociations = require('./customer/CustomerAssosiation');
+CustomerAssociations();
+
+
 
 module.exports = { 
     Product, 
@@ -20,5 +45,6 @@ module.exports = {
     StockTransfer,
     StockAdjustment,
     UnitConversion,
-    ProductReturn
+    ProductReturn,
+    Customer
 };

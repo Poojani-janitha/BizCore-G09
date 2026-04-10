@@ -44,7 +44,6 @@ const SlideBar = () => {
                 { label: 'Customers', to: '/sales/customers', icon: <Users size={14} /> },
             ]
         },
-        { label: 'HR', icon: <Users size={18} />, to: '/hr' },
         { label: 'Finance', icon: <DollarSign size={18} />, to: '/finance' },
     ];
 
@@ -107,8 +106,8 @@ const SlideBar = () => {
             {/* Scrollable Menu Area */}
             <div className="flex-grow-1 sidebar-scroll-area" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
                 <ul className="nav flex-column py-3 px-2">
-                    {menuConfig.map((item) => (
-                        <li key={item.label} className='nav-item mb-1'>
+                    {menuConfig.map((item, index) => (
+                        <li key={`${item.label}-${item.to}-${index}`} className='nav-item mb-1'>
                             {item.subItems ? (
                                 <>
                                     <NavLink to={item.to}

@@ -1,6 +1,7 @@
-const sequelize = require('../db')
-const { DataTypes } = require('sequelize')
-const Customer = require('./customer')
+const sequelize = require('../../config/db');
+const { DataTypes } = require('sequelize');
+const Customer = require('./customer');
+const Product = require('../inventory/Product');
 
 
 
