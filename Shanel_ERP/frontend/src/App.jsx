@@ -20,7 +20,6 @@ import SupplierPurchaseReport from './pages/Inventory/Reports/SupplierPurchaseRe
 import TransferReport from './pages/Inventory/Reports/TransferReport.jsx';
 import AlertsPage from './pages/Inventory/AlertsPage.jsx';
 import './App.css';
-import POS from './pages/POS/POS.jsx';
 
 
 const App = () => {
@@ -65,8 +64,7 @@ const App = () => {
           </Routes>
         </main>
       </div>
-    </div>
-
+    
   )
 }
 
