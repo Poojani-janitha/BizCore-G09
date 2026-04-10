@@ -24,11 +24,10 @@ const SlideBar = () => {
             icon: <Package size={18} />, 
             to: '/inventory',
             subItems: [
-                { label: 'Company Items', to: '/inventory/company-items', icon: <Box size={14} /> },
-                { label: 'Other Items', to: '/inventory/other-items', icon: <Box size={14} /> },
+                { label: 'Products', to: '/inventory/products', icon: <Box size={14} /> },
                 { label: 'Raw Materials', to: '/inventory/raw-materials', icon: <Archive size={14} /> },
-                { label: 'Production Stock', to: '/inventory/production-stock', icon: <Truck size={14} /> },
-                { label: 'Sales Stock', to: '/inventory/sales-stock', icon: <Home size={14} /> },
+                { label: 'Finished Goods', to: '/inventory/finished-goods', icon: <Truck size={14} /> },
+                { label: 'Store Inventory', to: '/inventory/store-inventory', icon: <Home size={14} /> },
                 { label: 'Suppliers', to: '/inventory/suppliers', icon: <Users size={14} /> },
                 { label: 'Purchase Orders', to: '/inventory/purchase-orders', icon: <FileText size={14} /> },
                 { label: 'Production', to: '/inventory/production', icon: <Settings size={14} /> },
@@ -40,24 +39,15 @@ const SlideBar = () => {
             ]
         },
         { 
-            label: 'POS', 
+            label: 'Sales', 
             icon: <ShoppingCart size={18} />, 
-            to: '/POS',
-            // subItems: [
-            //     { label: 'Orders', to: '/sales/orders', icon: <PieChart size={14} /> },
-            //     { label: 'Customers', to: '/sales/customers', icon: <Users size={14} /> },
-            // ]
-        },
-        { 
-            label: 'HR', 
-            icon: <Users size={18} />, 
-            to: '/hr',
+            to: '/sales',
             subItems: [
-                { label: 'Employees', to: '/hr/employees', icon: <Users size={14} /> },
-                { label: 'Attendance', to: '/hr/attendance', icon: <FileText size={14} /> },
-                { label: 'Payroll', to: '/hr/payroll', icon: <DollarSign size={14} /> },
+                { label: 'Orders', to: '/sales/orders', icon: <PieChart size={14} /> },
+                { label: 'Customers', to: '/sales/customers', icon: <Users size={14} /> },
             ]
         },
+        { label: 'HR', icon: <Users size={18} />, to: '/hr' },
         { label: 'Finance', icon: <DollarSign size={18} />, to: '/finance' },
     ];
 
@@ -81,8 +71,6 @@ const SlideBar = () => {
         });
         setOpenMenus(newOpenMenus);
     }, [location.pathname]);
-
-    
 
     const toggleSubMenu = (label) => {
         if (isCollapsed) setIsCollapsed(false);
