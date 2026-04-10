@@ -1,8 +1,6 @@
 const sequlize = require('../../config/db');
 const { DataTypes } = require('sequelize');
 const Customer = require('./customer');
-const User = require
-
 
 //Model for Credit Transaction
 
@@ -79,4 +77,4 @@ const CreditTranscation = sequlize.define('CreditTranscation',{
     updatedAt: false
 })
 
-module.exports = CreditTranscation;
+model.exports = CreditTranscation;

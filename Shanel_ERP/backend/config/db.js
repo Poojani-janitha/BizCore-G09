@@ -17,4 +17,9 @@ const sequelize = new Sequelize(
     }
 );
 
-module.exports = databasecon;
+// Test the connection
+sequelize.authenticate()
+    .then(() => console.log('✅ Database connected with Sequelize'))
+    .catch(err => console.error('❌ Unable to connect to the database:', err));
+
+module.exports = sequelize;

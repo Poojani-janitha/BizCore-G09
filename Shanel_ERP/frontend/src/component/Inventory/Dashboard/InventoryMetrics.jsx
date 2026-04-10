@@ -1,56 +1,115 @@
 import React from 'react'
-import {Package, Store, AlertTriangle, FileText, Activity} from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Package, Store, AlertTriangle, BoxIcon, TrendingUp, TrendingDown } from 'lucide-react'
 
 const InventoryMetrics = ({ metrics = {} }) => {
+    const navigate = useNavigate()
+
     const cardData = [
         {
-            title: "Production Stock",
-            value: metrics?.productionStock || '0',
-            label: 'Units in Production',
-            icon: <Activity className="text-primary" size={20} />,
-            color: 'border-primary'
+            title: "Company Items",
+            value: metrics?.companyItems || '0',
+            label: 'Items in catalog',
+            icon: <Package className="text-primary" size={20} />,
+            color: 'border-primary',
+            trend: metrics?.companyItemsTrend || 0,
+            onClick: () => navigate('/inventory/company-items')
         },
         { 
-            title: 'Store Stock', 
-            value: metrics?.storeStock || '0', 
-            label: 'Units in store', 
-            icon: <Store className="text-success" size={20} />,
-            color: 'border-success' 
+            title: 'Other Items', 
+            value: metrics?.otherItems || '0', 
+            label: 'Other products', 
+            icon: <BoxIcon className="text-info" size={20} />,
+            color: 'border-info',
+            trend: metrics?.otherItemsTrend || 0,
+            onClick: () => navigate('/inventory/other-items')
         },
         {
-            title: 'Active Products', 
-            value: metrics?.activeProducts || '0', 
-            label: 'In catalog', 
-            icon: <Package className="text-info" size={20} />,
-            color: 'border-info'
+            title: 'Production Stock', 
+            value: Math.round(metrics?.productionStock) || '0', 
+            label: 'Units in production', 
+            icon: <Package className="text-success" size={20} />,
+            color: 'border-success',
+            trend: metrics?.productionTrend || 0,
+            onClick: () => navigate('/inventory/production-stock')
+        },
+        {
+            title: 'Sales Stock', 
+            value: Math.round(metrics?.salesStock) || '0', 
+            label: 'Units in store', 
+            icon: <Store className="text-warning" size={20} />,
+            color: 'border-warning',
+            trend: metrics?.salesTrend || 0,
+            onClick: () => navigate('/inventory/salesStock')
         },
         {
             title: 'Alerts', 
             value: metrics?.alertsCount || '0', 
             label: 'Requires attention', 
             icon: <AlertTriangle className="text-danger" size={20} />,
-            color: 'border-danger'
-        },
-        {
-            title: 'Pending Orders', 
-            value: metrics?.pendingOrders || '0', 
-            label: 'Purchase orders', 
-            icon: <FileText className="text-warning" size={20} />,
-            color: 'border-warning'
+            color: 'border-danger',
+            trend: 0,
+            onClick: () => navigate('/inventory/alerts')
         }
     ]
 
   return (
-    <div className='row g-3 mb-4'>
+    <div className="d-flex gap-2 mb-4" style={{ width: '100%' }}>
         {cardData.map((card, index) => (
-            <div key={index} className="col-md">
-                <div className={`card border-0 border-top border-4 ${card.color} shadow-sm p-3 h-100`}>
+            <div 
+              key={index} 
+              style={{ flex: 1, minWidth: 0 }}
+            >
+                <div 
+                    className={`card border-0 border-top border-4 ${card.color} shadow-sm p-3 h-100`}
+                    style={{ 
+                        cursor: 'pointer', 
+                        transition: 'all 0.3s ease'
+                    }}
+                    onClick={card.onClick}
+                    role="button"
+                    tabIndex="0"
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-6px)';
+                        e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '';
+                    }}
+                >
                     <div className="d-flex justify-content-between align-items-start mb-2">
-                        <small className="text-muted fw-bold text-uppercase" style={{ fontSize: '11px' }}>{card.title}</small>
-                        {card.icon}
+                        <small className="text-muted fw-bold text-uppercase" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
+                            {card.title}
+                        </small>
+                        <div className="opacity-75">
+                            {card.icon}
+                        </div>
                     </div>
-                    <h4 className="fw-bold mb-0">{card.value}</h4>
-                    <small className="text-muted" style={{ fontSize: '12px' }}>{card.label}</small>
+                    
+                    {/* Value with Trend */}
+                    <div className="d-flex align-items-center gap-2 mb-1">
+                        <h5 className="fw-bold mb-0" style={{ fontSize: '24px', color: '#1e293b' }}>
+                            {card.value}
+                        </h5>
+                        {card.trend !== 0 && (
+                            <div className="d-flex align-items-center gap-1" style={{ fontSize: '12px' }}>
+                                <span className={card.trend > 0 ? 'text-success' : 'text-danger'}>
+                                    {card.trend > 0 ? 
+                                        <TrendingUp size={14} className="d-inline" /> : 
+                                        <TrendingDown size={14} className="d-inline" />
+                                    }
+                                </span>
+                                <span className="fw-semibold" style={{ color: card.trend > 0 ? '#10b981' : '#ef4444' }}>
+                                    {Math.abs(card.trend)}%
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <small className="text-muted d-block" style={{ fontSize: '11px' }}>
+                        {card.label}
+                    </small>
                 </div>
             </div>
         ))}

@@ -12,41 +12,86 @@ const InventoryDashboard = () => {
     distribution: [],
     alerts: [],
     transfers: [],
-    summary:{} // Placeholder for future summary metrics
- });
+    summary:{} 
+  });
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchData = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/inventory/dashboard-stats");
+      if (res.data.success) {
+        setData(res.data);
+        setError(null);
+      }
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError("Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/inventory/dashboard-stats")
-      .then((res) => setData(res.data))
-      .catch((err) => console.error("Error fetching data:", err));
+    fetchData();
   }, []);
 
   return (
-    <div className="p-4" style={{ backgroundColor: "#faf9f6", minHeight: "100vh" }}>
-      <h2 className="mb-4 fw-bold" style={{ color: "#7c5d47" }}>Inventory Overview</h2>
-      
-      {/* Summary Metrics */}
-      <InventoryMetrics metrics={data.summary} />
-      
-      {/* Charts Section */}
-      <div className="row g-4 mb-4">
-        <div className="col-md-8">
-          <StockChart data={data.stockLevel} />
+    <div className="min-vh-100 bg-light p-4">
+      {/* Header Section */}
+      <div className="mb-4">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 className="mb-0 fw-bold text-dark">Inventory Dashboard</h5>
+          </div>
         </div>
-        <div className="col-md-4">
-          <DistributionPie data={data.distribution} />
-        </div>
+
+        {/* Error Alert */}
+        {error && (
+          <div className="alert alert-danger alert-dismissible fade show mt-3 mb-0 small" role="alert">
+            <strong>Error:</strong> {error}
+            <button type="button" className="btn-close" onClick={() => setError(null)}></button>
+          </div>
+        )}
       </div>
 
-      {/* Lists Section */}
-      <div className="row g-4">
-        <div className="col-md-6">
-          <StockAlerts alerts={data.alerts} />
+      {/* Loading State */}
+      {loading ? (
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary mb-3" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="text-muted">Loading inventory data...</p>
         </div>
-        <div className="col-md-6">
-          <StockTransfers transfers={data.transfers} />
-        </div>
-      </div>
+      ) : (
+        <>
+          {/* Summary Metrics */}
+          <div className="mb-4">
+            <InventoryMetrics metrics={data.summary} />
+          </div>
+
+          {/* Charts Section */}
+          <div className="row g-4 mb-4">
+            <div className="col-xxl-8 col-lg-8">
+              <StockChart data={data.stockLevel} />
+            </div>
+            <div className="col-xxl-4 col-lg-4">
+              <DistributionPie data={data.distribution} />
+            </div>
+          </div>
+
+          {/* Lists Section */}
+          <div className="row g-4">
+            <div className="col-lg-6">
+              <StockAlerts alerts={data.alerts} />
+            </div>
+            <div className="col-lg-6">
+              <StockTransfers transfers={data.transfers} />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
