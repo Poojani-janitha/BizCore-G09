@@ -3,7 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Inventory_Dashboard from './pages/Inventory/InventoryDashboard';
 import Hrdashboardpage from './pages/HR/Hrdashboardpage';
 import EmployeesPage from './pages/HR/EmployeesPage';
-import EmployeeDetail from './pages/HR/EmployeeDetail';
+import Attendance from './pages/HR/AttendancePage.jsx';
+import Payroll from './pages/HR/Payroll.jsx';
 import Header from './component/Header/Header';
 import ProductPage from './pages/Inventory/ProductPage.jsx';
 import ProductionStock from './pages/Inventory/ProductionStock.jsx';
@@ -57,9 +58,10 @@ const App = () => {
             <Route path="/inventory/reports/transfers" element={<TransferReport />} />
 
             <Route path="/hr/employees" element={<EmployeesPage />} />
-            <Route path="/hr/employees/:id" element={<EmployeeDetail />} />
+            <Route path="/hr/attendance" element={<Attendance />} />
+            <Route path="/hr/payroll" element={<Payroll />} />
             <Route path="/POS" element={<POS />} />
-            <Route path="/hr" element={<div>HR Page</div>} />
+            <Route path="/hr" element={<Hrdashboardpage />} />
             <Route path="/finance" element={<div>Finance Page</div>} />
             <Route path="/logout" element={<div>Logout Page</div>} />
           </Routes>
