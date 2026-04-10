@@ -4,5 +4,8 @@ const productionController = require('../../controllers/inventory/productionCont
 
 //Define endpoint
 router.get('/stock-overview', productionController.getProductionData);
+router.post('/start', productionController.startProduction);
+router.put('/update/:id', productionController.updateProductionStatus);
+router.delete('/:id', productionController.deleteProduction);
 
 module.exports = router;

@@ -3,10 +3,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Inventory_Dashboard from './pages/Inventory/InventoryDashboard';
 import Hrdashboardpage from './pages/HR/Hrdashboardpage';
 import EmployeesPage from './pages/HR/EmployeesPage';
-import Attendance from './pages/HR/AttendancePage.jsx';
+import EmployeeDetail from './pages/HR/EmployeeDetail';
 import Header from './component/Header/Header';
 import ProductPage from './pages/Inventory/ProductPage.jsx';
 import ProductionStock from './pages/Inventory/ProductionStock.jsx';
+import SalesStock from './pages/Inventory/SalesStock.jsx';
+import StockTransfer from './pages/Inventory/StockTransfer.jsx';
+import StockAdjustment from './pages/Inventory/StockAdjustment.jsx';
 import './App.css';
 import POS from './pages/POS/POS.jsx';
 
@@ -31,11 +34,15 @@ const App = () => {
             <Route path="/inventory/other-items" element={<ProductPage pageTitle="Other Items" typeFilter="Other" />} />
             <Route path="/inventory/raw-materials" element={<ProductPage pageTitle="Raw Materials" typeFilter="Raw" />} />
             <Route path="/inventory/production-stock" element={<ProductionStock />} />
+            <Route path="/inventory/salesStock" element={<SalesStock />} />
+            <Route path="/inventory/stock-transfers" element={<StockTransfer />} />
+            <Route path="/inventory/stock-adjustments" element={<StockAdjustment />} />
+
 
             <Route path="/hr/employees" element={<EmployeesPage />} />
+            <Route path="/hr/employees/:id" element={<EmployeeDetail />} />
             <Route path="/POS" element={<POS />} />
-            <Route path="/hr" element={<Hrdashboardpage />} />
-            <Route path="/hr/attendance" element={<Attendance />} />
+            <Route path="/hr" element={<div>HR Page</div>} />
             <Route path="/finance" element={<div>Finance Page</div>} />
             <Route path="/logout" element={<div>Logout Page</div>} />
           </Routes>

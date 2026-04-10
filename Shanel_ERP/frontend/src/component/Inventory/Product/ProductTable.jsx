@@ -1,5 +1,5 @@
 import React from 'react'
-import{ Edit2, MoreVertical, Eye, Trash2 } from 'react-feather';
+import { Edit2, Trash2, Printer } from 'react-feather';
 
 const thStyle = {
     color: '#fff',
@@ -11,7 +11,7 @@ const thStyle = {
     '--bs-table-bg': 'transparent',
 };
 
-const ProductTable = ({ products, isLoading, onDelete, onEdit }) => {
+const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint }) => {
     if(isLoading){
         return(
             <div className='text-center py-5 bg-white rounded-3 shadow-sm'>
@@ -62,16 +62,19 @@ const ProductTable = ({ products, isLoading, onDelete, onEdit }) => {
                                     <div className='text-muted' style={{fontSize: '10px'}}>Min: {p.minStock}</div>
                                 </td>
                                 <td>
-                                    <span className={`badge rounded-pill ${p.status === 'Active' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'} px-3`}>
+                                    <span className={`badge rounded-pill ${
+                                        p.status === 'In Stock' ? 'bg-success-subtle text-success' :
+                                        p.status === 'Low Stock' ? 'bg-warning-subtle text-warning' :
+                                        'bg-danger-subtle text-danger'
+                                    } px-3`}>
                                         {p.status}
                                     </span>
                                 </td>
                                 <td className='text-end pe-4'>
                                     <div className='btn-group shadow-sm'>
-                                        {/* <button className='btn btn-sm btn-light border p-1'><Eye size={15} className='text-muted'/></button> */}
-                                        <button className='btn btn-sm btn-light border p-1' onClick={() => onEdit(p)}><Edit2 size={15} className='text-muted'/></button>
-                                        <button className='btn btn-sm btn-light border p-1' onClick={() => onDelete(p.id)}><Trash2 size={15} className='text-danger'/></button>
-                                        {/* <button className='btn btn-sm btn-light border p-1'><MoreVertical size={15} className='text-muted'/></button> */}
+                                        <button className='btn btn-sm btn-light border p-1' title='Edit' onClick={() => onEdit(p)}><Edit2 size={15} className='text-muted'/></button>
+                                        <button className='btn btn-sm btn-light border p-1' title='Delete' onClick={() => onDelete(p.id)}><Trash2 size={15} className='text-danger'/></button>
+                                        <button className='btn btn-sm btn-light border p-1' title='Print Barcode' onClick={() => onPrint(p)}><Printer size={15} className='text-primary'/></button>
                                     </div>
                                 </td>
                             </tr>
