@@ -19,6 +19,7 @@ import PurchaseReport from './pages/Inventory/Reports/PurchaseReport.jsx';
 import SupplierPurchaseReport from './pages/Inventory/Reports/SupplierPurchaseReport.jsx';
 import TransferReport from './pages/Inventory/Reports/TransferReport.jsx';
 import AlertsPage from './pages/Inventory/AlertsPage.jsx';
+import POS from './pages/POS/POS.jsx';
 import './App.css';
 
 
@@ -64,7 +65,7 @@ const App = () => {
           </Routes>
         </main>
       </div>
-    
+    </div>   
   )
 }
 
