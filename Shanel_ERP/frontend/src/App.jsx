@@ -7,6 +7,9 @@ import Attendance from './pages/HR/AttendancePage.jsx';
 import Header from './component/Header/Header';
 import ProductPage from './pages/Inventory/ProductPage.jsx';
 import ProductionStock from './pages/Inventory/ProductionStock.jsx';
+import PaymentManagementPage from './pages/Finance/PaymentManagementPage.jsx';
+import ReceivePaymentPage from './pages/Finance/ReceivePaymentPage.jsx';
+import MakePaymentPage from './pages/Finance/MakePaymentPage.jsx';
 import './App.css';
 import POS from './pages/POS/POS.jsx';
 
@@ -36,7 +39,9 @@ const App = () => {
             <Route path="/POS" element={<POS />} />
             <Route path="/hr" element={<Hrdashboardpage />} />
             <Route path="/hr/attendance" element={<Attendance />} />
-            <Route path="/finance" element={<div>Finance Page</div>} />
+            <Route path="/finance" element={<PaymentManagementPage />} />
+            <Route path="/finance/receive-payment" element={<ReceivePaymentPage />} />
+            <Route path="/finance/make-payment" element={<MakePaymentPage />} />
             <Route path="/logout" element={<div>Logout Page</div>} />
           </Routes>
         </main>
