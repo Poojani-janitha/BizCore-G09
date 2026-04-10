@@ -6,6 +6,7 @@ const applyMiddleware = require('./middleware/appMiddleware');
 const inventoryRoutes = require('./routes/inventory/inventory');
 const productionRoutes = require('./routes/inventory/productionRoutes');
 const customerRoutes = require('./routes/customer/CustomerRoutes');
+const saleRoutes =  require('./routes/sales/SalesRoutes')
 
 const app = express();
 applyMiddleware(app);
@@ -15,6 +16,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/production', productionRoutes);
 
 //Sales routes
+app.use('/api/sales',saleRoutes);
 
 //Customer routes
 app.use('/api/customer',customerRoutes);

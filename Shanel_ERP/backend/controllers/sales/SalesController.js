@@ -1,4 +1,4 @@
-const Products = require('../../models/inventory/Product/');
+const {Product} = require('../../models/index');
 const { Op, where } = require('sequelize');
 
 const searchProducts = async (req, res) => {
@@ -9,17 +9,17 @@ const searchProducts = async (req, res) => {
 
 
         if (!q || q.trim() === '') {
-            return res.status(422).json({
-                success: false,
+            return res.status(200).json({
+                success: true,
                 message: "query is empty",
-                error: "EMPTY_QUERY"
+                products: [],
             })
         }
 
         const searchTerm = q.trim();
 
 
-        const products = await Products.findAll({
+        const products = await Product.findAll({
             where: {
                 Status: 'Active',
                 [Op.or]: [
@@ -65,7 +65,7 @@ const searchProducts = async (req, res) => {
 
         return res.status(200).json({
             success:true,
-            data: formateData,
+            products: formateData,
             count: formateData.length
          })
        
@@ -80,3 +80,5 @@ const searchProducts = async (req, res) => {
 
     }
 }
+
+module.exports = {searchProducts}
