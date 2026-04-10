@@ -1,7 +1,6 @@
 import React from 'react';
 import HrStatsCard from '../../component/HR/Dashboard/HrStatsCard';
 import QuickActions from '../../component/HR/Dashboard/Quickactions';
-import AttendanceSummary from '../../component/HR/Dashboard/AttendanceSummary';
 
 const Hrdashboardpage = () => {
   const stats = [
@@ -47,11 +46,6 @@ const Hrdashboardpage = () => {
       {/* Quick Actions */}
       <div style={{ marginBottom: '22px' }}>
         <QuickActions />
-      </div>
-
-      {/* Attendance Summary (bottom) */}
-      <div style={{ marginTop: '22px' }}>
-        <AttendanceSummary />
       </div>
 
       {/* (Simplified) Other HR widgets can be added here */}

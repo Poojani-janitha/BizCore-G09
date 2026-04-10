@@ -1,10 +1,9 @@
-const { Sequelize } = require('sequelize');
-require('dotenv').config();
+const {Sequelize} = require('sequelize');
 
 const sequelize = new Sequelize(
     process.env.DB_NAME || 'shanel_erp', //
     process.env.DB_USER || 'root',
-    process.env.DB_PASS || 'your_password',
+    process.env.DB_PASS || '12345',
     {
         host: process.env.DB_HOST || 'localhost',
         dialect: 'mysql',

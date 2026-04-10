@@ -13,8 +13,7 @@ export const generateEmployees = () => {
     role: i % 5 === 0 ? 'Manager' : 'Staff',
     email: `${name.split(' ')[0].toLowerCase()}@shanel.local`,
     phone: `+94-71-555-${String(100 + i).padStart(3,'0')}`,
-    department: 'HR',
-    image: '' // URL to profile photo - add via Edit
+    department: 'HR'
   }));
 };
 
