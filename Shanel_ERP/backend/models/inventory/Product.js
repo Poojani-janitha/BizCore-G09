@@ -47,6 +47,11 @@ const Product = sequelize.define(
         Min_Stock: { 
             type: DataTypes.DECIMAL(10, 2), 
             defaultValue: 0.0 },
+
+        Tax_Rate: {
+            type: DataTypes.DECIMAL(5, 2),
+            defaultValue: 0.0,
+        },
     },
     {
         tableName: "product",

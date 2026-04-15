@@ -19,11 +19,13 @@ applyMiddleware(app);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/production', productionRoutes);
 app.use('/api/sales', inventorySalesRoutes);
-app.use('/api/sales', productSalesRoutes);
 app.use('/api/inventory/transfers', transferRoutes);
 app.use('/api/inventory/reports', reportRoutes);
+
 //Sales routes
-app.use('/api/accounting/sales', accountingRoutes);
+app.use('/api/sales', productSalesRoutes);
+
+
 
 //Customer routes
 app.use('/api/customer',customerRoutes);
@@ -31,6 +33,7 @@ app.use('/api/customer',customerRoutes);
 //HR routes
 
 //Finance routes
+app.use('/api/accounting/sales', accountingRoutes);
 
 //Supplier routes
 

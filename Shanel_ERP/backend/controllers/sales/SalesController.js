@@ -1,4 +1,5 @@
-const {Product} = require('../../models/index');
+const sequelize = require('../../config/db');
+const {Product,UnitConversion} = require('../../models/index');
 const { Op, where } = require('sequelize');
 
 const searchProducts = async (req, res) => {
@@ -37,7 +38,8 @@ const searchProducts = async (req, res) => {
                 'Cost_Price',
                 'Retail_Price',
                 'Wholesale_Price',
-                'Min_Stock'
+                'Min_Stock',
+                'Tax_Rate'
 
             ], limit: parseFloat(Limit),
             order: [['P_Name', 'ASC']]
@@ -59,6 +61,7 @@ const searchProducts = async (req, res) => {
                 retail_price: parseFloat(p.Retail_Price),
                 wholesale_price: parseFloat(p.Wholesale_Price),
                 min_stock: parseFloat(p.Min_Stock)
+                ,tax_rate: parseFloat(p.Tax_Rate)
             }
         })
 
@@ -81,4 +84,63 @@ const searchProducts = async (req, res) => {
     }
 }
 
-module.exports = {searchProducts}
+//for the dropdown in the POS
+const allUnits = async (req, res) => {
+    try {
+        const units = await UnitConversion.findAll({
+            attributes: [
+                [sequelize.fn('DISTINCT', sequelize.col('Unit_Name')), 'Unit_Name']
+            ],
+            raw: true
+        });
+
+        return res.status(200).json({
+            success: true,
+            units: units.map(u => u.Unit_Name)
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "server error while fetching units",
+            error: error.message
+        });
+    }
+};
+
+
+// For converting a given unit to the base unit quantity for a specific product
+const getBaseUnitQty = async (req, res) => {
+    try {
+        const { productId, unitName } = req.query;
+
+        const conversion = await UnitConversion.findOne({
+            where: {
+                P_ID: productId,
+                Unit_Name: unitName
+            },
+            raw: true
+        });
+
+        if (conversion) {
+            return res.json({
+                success: true,
+                conversionQty: parseFloat(conversion.Unit_Convwersion),
+                isBase: conversion.Is_Base_Unit
+            });
+        }
+
+        return res.json({
+            success: false,
+            message: "No conversion found"
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+module.exports = {searchProducts, allUnits, getBaseUnitQty}
+

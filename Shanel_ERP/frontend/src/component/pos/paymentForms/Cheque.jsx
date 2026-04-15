@@ -15,7 +15,7 @@ const Cheque = ({ color, label }) => {
             <div>
                 <div className='d-flex align-items-center gap-2 px-3 py-2 rounded-3 bg-primary bg-opacity-25'>
                     <FileText size={18} className='text-primary' />
-                    <span className='fw-semibold'>{label}</span>
+                    <span className='fw-semibold'>{label || 'Cheque'}</span>
                 </div>
             </div>
 

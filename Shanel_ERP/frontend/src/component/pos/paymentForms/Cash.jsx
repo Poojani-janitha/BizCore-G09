@@ -16,7 +16,7 @@ const Cash = ({ color, label }) => {
             <div>
                 <div className='d-flex align-items-center gap-2 px-3 py-2 rounded-3 bg-success bg-opacity-25'>
                     <Banknote size={18} className='text-success' />
-                    <span className='fw-semibold'>{label}</span>
+                    <span className='fw-semibold'>{label || 'Cash'}</span>
                 </div>
             </div>
 

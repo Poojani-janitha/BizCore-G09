@@ -10,7 +10,7 @@ const Bank = ({ color, label }) => {
             <div>
                 <div className='d-flex align-items-center gap-2 px-3 py-2 rounded-3 bg-info bg-opacity-25'>
                     <Building2 size={18} className='text-info' />
-                    <span className='fw-semibold'>{label}</span>
+                    <span className='fw-semibold'>{label || 'Bank'}</span>
                 </div>
             </div>
 

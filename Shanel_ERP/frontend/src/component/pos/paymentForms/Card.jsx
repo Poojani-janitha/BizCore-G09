@@ -15,7 +15,7 @@ const Card = ({ color, label }) => {
         <div>
           <div className='d-flex align-items-center gap-2 px-3 py-2 rounded-3 bg-primary bg-opacity-25'>
             <CreditCard size={18} className='text-primary' />
-            <span className='fw-semibold'>{label}</span>
+            <span className='fw-semibold'>{label || 'Card'}</span>
           </div>
         </div>
 

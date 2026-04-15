@@ -1,0 +1,13 @@
+.itemtable-dropdown .cursor-pointer {
+    cursor: pointer;
+}
+
+.itemtable-dropdown .cursor-pointer:hover,
+.itemtable-dropdown .cursor-pointer:focus {
+    color: #212529 !important;
+    background-color: #f8f9fa;
+}
+
+.itemtable-dropdown .text-muted {
+    color: #6c757d !important;
+}
