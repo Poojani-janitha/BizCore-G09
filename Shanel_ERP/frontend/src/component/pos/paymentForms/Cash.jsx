@@ -1,37 +1,97 @@
-import React from 'react'
-import { Banknote } from 'lucide-react'
+import React, { useEffect, useMemo, useState } from 'react';
 
-const Cash = ({ color, label }) => {
+const Cash = ({ setPaymentData, totalDue, isPartial, partialAmount }) => {
+    const [cashTendered, setCashTendered] = useState('');
 
-    const handleFocus = (e) => {
-        e.target.style.borderColor = color;
-    }
+    const tenderedSafe = useMemo(() => {
+        const tendered = parseFloat(cashTendered || 0);
+        return Number.isFinite(tendered) ? tendered : 0;
+    }, [cashTendered]);
 
-    const handleBlur = (e) => {
-        e.target.style.borderColor = '#dee2e6';
-    }
-    
+    const partialSafe = useMemo(() => {
+        const partial = parseFloat(partialAmount || 0);
+        return Number.isFinite(partial) ? partial : 0;
+    }, [partialAmount]);
+
+    const effectiveTendered = useMemo(() => {
+        return isPartial ? partialSafe : tenderedSafe;
+    }, [isPartial, partialSafe, tenderedSafe]);
+
+    const customerReturnAmount = useMemo(() => {
+        if (!isPartial) return 0;
+        return Math.max(tenderedSafe - partialSafe, 0);
+    }, [isPartial, tenderedSafe, partialSafe]);
+
+    const partialCollectionShort = useMemo(() => {
+        if (!isPartial) return 0;
+        return Math.max(partialSafe - tenderedSafe, 0);
+    }, [isPartial, partialSafe, tenderedSafe]);
+
+    const { shortAmount, changeAmount } = useMemo(() => {
+        const tendered = effectiveTendered;
+        const due = parseFloat(totalDue || 0);
+        const balance = due - tendered;
+
+        return {
+            shortAmount: Math.max(balance, 0),
+            changeAmount: Math.max(tendered - due, 0),
+        };
+    }, [effectiveTendered, totalDue]);
+
+    const { displayBalanceAmount, displayIsShort } = useMemo(() => {
+        const compareAgainst = isPartial ? partialSafe : parseFloat(totalDue || 0);
+        const balance = compareAgainst - tenderedSafe;
+
+        return {
+            displayBalanceAmount: Math.abs(balance),
+            displayIsShort: balance > 0,
+        };
+    }, [isPartial, partialSafe, totalDue, tenderedSafe]);
+
+    useEffect(() => {
+        setPaymentData(prev => ({
+            ...prev,
+            Cash_Tendered: tenderedSafe,
+            Cash_Change: isPartial ? customerReturnAmount : changeAmount,
+            Cash_Short: isPartial ? partialCollectionShort : shortAmount,
+        }));
+    }, [
+        tenderedSafe,
+        isPartial,
+        customerReturnAmount,
+        partialCollectionShort,
+        changeAmount,
+        shortAmount,
+        setPaymentData,
+    ]);
+
     return (
-        <div className='d-flex flex-column w-100' style={{ minWidth: 0, maxWidth: '100%', gap: '0.9rem' }}>
+        <div className='d-flex flex-column w-100' style={{ gap: '0.8rem' }}>
             <div>
-                <div className='d-flex align-items-center gap-2 px-3 py-2 rounded-3 bg-success bg-opacity-25'>
-                    <Banknote size={18} className='text-success' />
-                    <span className='fw-semibold'>{label || 'Cash'}</span>
+                <label className='form-label fw-semibold mb-2'>Cash Tendered (Rs.)</label>
+                <input
+                    type='number'
+                    min='0'
+                    step='0.01'
+                    className='form-control form-control-lg shadow-none'
+                    placeholder='0.00'
+                    value={cashTendered}
+                    onChange={(e) => setCashTendered(e.target.value)}
+                />
+            </div>
+            <div className={`p-3 rounded-3 ${displayIsShort ? 'bg-danger bg-opacity-10' : 'bg-success bg-opacity-10'}`}>
+                <span className='d-block small fw-bold text-uppercase'>{displayIsShort ? 'Short Amount' : 'Change to Return'}</span>
+                <strong className={`fs-5 ${displayIsShort ? 'text-danger' : 'text-success'}`}>
+                    Rs. {displayBalanceAmount.toFixed(2)}
+                </strong>
+            </div>
+            {isPartial && (
+                <div className='small text-warning-emphasis'>
+                    Customer balance is calculated against partial amount entered.
                 </div>
-            </div>
-
-            <div>
-                <label className="form-label fw-semibold mb-1">Cash Amount</label>
-                <input type="number" className="form-control form-control-lg fs-6 shadow-none" placeholder="0.00" style={{ borderRadius: '10px' }} onFocus={handleFocus} onBlur={handleBlur} />
-            </div>
-
-
-            <div>
-                <label className="form-label fw-semibold mb-1">Change</label>
-                <input type="text" className="form-control form-control-lg fs-6 shadow-none bg-light" placeholder="0.00" readOnly style={{ borderRadius: '10px' }} />
-            </div>
+            )}
         </div>
-    )
-}
+    );
+};
 
 export default Cash;

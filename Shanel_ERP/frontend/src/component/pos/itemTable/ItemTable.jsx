@@ -1,201 +1,8 @@
-// import React, { useState, useMemo } from 'react';
-// import { Plus, Trash2, Package } from 'lucide-react';
-// import axios from 'axios';
-
-// const ItemTable = ({ cartItems, setCartItems }) => {
-//     const inputRowBg = '#f8faf9';
-//     const [query, setQuery] = useState('');
-//     const [allUnits, setAllUnits] = useState([]); //to store units for the dropdown
-//     const [searchResults, setSearchResults] = useState([]);
-//     const [tempItem, setTempItem] = useState({
-//         p_code: '', p_name: '', p_unit: 'Packet',
-//         unit_price: 0, discount: 0, tax: 0, quntity: 1, free: 0
-//     });
-
-//     const calculateLineSubtotal = (item) => {
-//         const q = parseFloat(item.quntity) || 0;
-//         const f = parseFloat(item.free) || 0;
-//         const p = parseFloat(item.unit_price) || 0;
-//         const d = parseFloat(item.discount) || 0;
-//         const chargedQty = Math.max(0, q - f);
-//         return (chargedQty * p) * (1 - d / 100);
-//     };
-
-//     const calculateLineTaxAmount = (item) => {
-//         const lineSubtotal = calculateLineSubtotal(item);
-//         const taxRate = parseFloat(item.tax) || 0;
-//         return lineSubtotal * (taxRate / 100);
-//     };
-
-//     const calculateLineTotal = (item) => calculateLineSubtotal(item) + calculateLineTaxAmount(item);
-
-//     const currentEntryTotal = useMemo(() => calculateLineTotal(tempItem), [tempItem]);
-
-//     const handleSearch = async (value) => {
-//         setQuery(value);
-//         if (!value.trim()) return setSearchResults([]);
-//         try {
-//             const res = await axios.get(`http://localhost:5000/api/sales/search?q=${value}`);
-//             if (res.data.success) setSearchResults(res.data.products);
-//         } catch (err) { console.error("Search error", err); }
-//     };
-
-
-    
-
-//     //retrive all the unit names
-//     const handleAllUnits = async () => {
-//         try{
-//             const res = await axios.get(`http://localhost:5000/api/sales/units`);
-//             if(res.data.success) setAllUnits(res.data.units);
-
-//         }catch (error) {
-//             console.error("Units fetch error", error);
-//         }
-//     };
-
-//     // call handleUnit conversion when unit changes to get the conversion factor for the selected unit and product related to the base unit, then use that factor to convert the quantity to the base unit for accurate calculations. This ensures that regardless of the unit selected by the user, the system can correctly calculate totals based on a consistent base unit.
-//     const handleUnitConversion = async (productId, unitName) => {
-//         try{
-//             const res = await axios.get(`http://localhost:5000/api/sales/base-unit?productId=${productId}&unitName=${unitName}`);
-
-//             if(res.data.success) return res.data.conversionQty;
-//         } catch (error) {
-//             console.error("Unit conversion error", error);
-//         }
-//     };
-
-//     const selectProduct = (p) => {
-//         setTempItem({
-//             ...tempItem,
-//             p_code: p.p_code,
-//             p_name: p.p_name,
-//             unit_price: p.retail_price || 0,
-//             p_unit: p.p_unit || 'Packet',
-//             tax: p.tax_rate || 0
-//         });
-//         setQuery(p.p_name);
-//         setSearchResults([]);
-//     };
-
-//     const addItem = () => {
-//         if (!tempItem.p_code) return;
-//         const newItem = {
-//             ...tempItem,
-//             subTotal: calculateLineSubtotal(tempItem),
-//             taxAmount: calculateLineTaxAmount(tempItem),
-//             total: calculateLineTotal(tempItem),
-//             id: Date.now()
-//         };
-//         setCartItems([...cartItems, newItem]);
-//         setTempItem({ p_code: '', p_name: '', p_unit: 'Packet', unit_price: 0, discount: 0, tax: 0, quntity: 1, free: 0 });
-//         setQuery('');
-//     };
-
-//     const updateCartItem = (index, field, value) => {
-//         const updatedCart = [...cartItems];
-//         updatedCart[index][field] = value;
-//         updatedCart[index].subTotal = calculateLineSubtotal(updatedCart[index]);
-//         updatedCart[index].taxAmount = calculateLineTaxAmount(updatedCart[index]);
-//         updatedCart[index].total = calculateLineTotal(updatedCart[index]);
-//         setCartItems(updatedCart);
-//     };
-
-//     return (
-//         <div className='card border-0 shadow-sm'>
-//             <div className='card-header bg-white py-3'>
-//                 <h5 className='mb-0'><Package size={20} className="me-2 text-primary"/> Sales Items</h5>
-//             </div>
-            
-         
-//             <div className='table-responsive' style={{ minHeight: '300px', overflow: 'visible' }}>
-//                 <table className='table table-hover align-middle mb-0' style={{ minWidth: '1100px' }}>
-//                     <thead className='bg-light text-secondary small text-uppercase'>
-//                         <tr>
-//                             <th className="text-center" style={{ width: '50px' }}>#</th>
-//                             <th style={{ width: '140px' }}>Item Code</th>
-//                             <th>Description</th>
-//                             <th style={{ width: '110px' }}>Unit</th>
-//                             <th className="text-end" style={{ width: '100px' }}>Price</th>
-//                             <th className="text-end" style={{ width: '80px' }}>Dis%</th>
-//                             <th className="text-center" style={{ width: '90px' }}>Qty</th>
-//                             <th className="text-center" style={{ width: '80px' }}>Free</th>
-//                             <th className="text-end" style={{ width: '120px' }}>Total</th>
-//                             <th className="text-center" style={{ width: '60px' }}>Action</th>
-//                         </tr>
-//                     </thead>
-//                     <tbody style={{ position: 'relative' }}>
-//                         {/* INPUT ROW */}
-//                         <tr style={{ backgroundColor: inputRowBg, borderBottom: '2px solid #dee2e6' }}>
-//                             <td className='text-center text-success fw-bold'>+</td>
-//                             <td><input readOnly className='form-control form-control-sm bg-white' value={tempItem.p_code} placeholder="Code" /></td>
-//                             <td className="position-relative">
-//                                 <input 
-//                                     className='form-control form-control-sm' 
-//                                     placeholder='Type to search item...' 
-//                                     value={query} 
-//                                     onChange={(e) => handleSearch(e.target.value)} 
-//                                 />
-//                                 {searchResults.length > 0 && (
-//                                     <ul className="position-absolute list-group shadow-lg w-100" style={{ zIndex: 9999, top: '100%' }}>
-//                                         {searchResults.map(p => (
-//                                             <li key={p.p_id} onClick={() => selectProduct(p)} className="list-group-item list-group-item-action small py-2 cursor-pointer">
-//                                                 <div className="fw-bold">{p.p_name}</div>
-//                                                 <div className="text-muted small">Code: {p.p_code} | Price: {p.retail_price}</div>
-//                                             </li>
-//                                         ))}
-//                                     </ul>
-//                                 )}
-//                             </td>
-//                             <td>
-//                                 <select className='form-select form-select-sm' value={tempItem.p_unit} onChange={e => setTempItem({...tempItem, p_unit: e.target.value})}>
-//                                     <option value="Packet">Packet</option>
-//                                     <option value="Pieces">Pieces</option>
-//                                     <option value="Bottle">Bottle</option>
-//                                     <option value="kg">kg</option>
-//                                 </select>
-//                             </td>
-//                             <td><input type="number" className='form-control form-control-sm text-end' value={tempItem.unit_price} onChange={e => setTempItem({...tempItem, unit_price: e.target.value})} /></td>
-//                             <td><input type="number" className='form-control form-control-sm text-end' value={tempItem.discount} onChange={e => setTempItem({...tempItem, discount: e.target.value})} /></td>
-//                             <td><input type="number" className='form-control form-control-sm text-center' value={tempItem.quntity} onChange={e => setTempItem({...tempItem, quntity: e.target.value})} /></td>
-//                             <td><input type="number" className='form-control form-control-sm text-center' value={tempItem.free} onChange={e => setTempItem({...tempItem, free: e.target.value})} /></td>
-//                             <td className="text-end fw-bold text-primary">{currentEntryTotal.toFixed(2)}</td>
-//                             <td className="text-center">
-//                                 <button onClick={addItem} className='btn btn-success btn-sm shadow-sm'><Plus size={18} strokeWidth={3}/></button>
-//                             </td>
-//                         </tr>
-
-//                         {/* CART ITEMS */}
-//                         {cartItems.map((item, index) => (
-//                             <tr key={item.id} className="border-bottom">
-//                                 <td className="text-center text-muted small">{index + 1}</td>
-//                                 <td>{item.p_code}</td>
-//                                 <td className="fw-medium">{item.p_name}</td>
-//                                 <td>{item.p_unit}</td>
-//                                 <td><input type="number" className="form-control form-control-sm border-0 text-end" value={item.unit_price} onChange={e => updateCartItem(index, 'unit_price', e.target.value)} /></td>
-//                                 <td><input type="number" className="form-control form-control-sm border-0 text-end" value={item.discount} onChange={e => updateCartItem(index, 'discount', e.target.value)} /></td>
-//                                 <td><input type="number" className="form-control form-control-sm border-0 text-center fw-bold text-success" value={item.quntity} onChange={e => updateCartItem(index, 'quntity', e.target.value)} /></td>
-//                                 <td><input type="number" className="form-control form-control-sm border-0 text-center" value={item.free} onChange={e => updateCartItem(index, 'free', e.target.value)} /></td>
-//                                 <td className="text-end fw-bold">{parseFloat(item.total).toFixed(2)}</td>
-//                                 <td className="text-center">
-//                                     <button onClick={() => setCartItems(cartItems.filter(i => i.id !== item.id))} className="btn btn-link text-danger p-0 border-0"><Trash2 size={16}/></button>
-//                                 </td>
-//                             </tr>
-//                         ))}
-//                     </tbody>
-//                 </table>
-//             </div>
-//         </div>
-//     );
-// };
-
-
-// export default ItemTable;
-
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Plus, Trash2, Package } from 'lucide-react';
-import axios from 'axios';
+import axios, { all } from 'axios';
 import './itemTable.css';
+import Portal from './Portal';
 
 const EMPTY_ITEM = {
     p_id: '',
@@ -218,17 +25,22 @@ const ItemTable = ({ cartItems, setCartItems }) => {
     const [allUnits, setAllUnits] = useState([]);
     const [searchResults, setSearchResults] = useState([]);
     const [tempItem, setTempItem] = useState(EMPTY_ITEM);
+    
+    const searchInputRef = useRef(null);
 
-    // Fetch all units for the dropdown on component mount
+    // Fetch all units for the selected product
     useEffect(() => {
         const handleAllUnits = async () => {
+            if (!tempItem.p_id) {
+                setAllUnits([]);  
+                return;
+            }
+            
             try {
-                const res = await axios.get('http://localhost:5000/api/sales/units');
+                const res = await axios.get(`http://localhost:5000/api/sales/units?productId=${tempItem.p_id}`);
                 if (res.data.success) {
-                    const normalized = (res.data.units || []).map((unit) =>
-                        typeof unit === 'string' ? unit : (unit?.unit_name || unit?.Unit_Name || '')
-                    ).filter(Boolean);
-                    setAllUnits(normalized);
+                    
+                    setAllUnits(res.data.units || []);
                 }
             } catch (error) {
                 console.error('Units fetch error', error);
@@ -236,7 +48,7 @@ const ItemTable = ({ cartItems, setCartItems }) => {
         };
 
         handleAllUnits();
-    }, []);
+    }, [tempItem.p_id]);
 
 
     // Function to  calculate line subtotal, tax amount, and total based on the current tempItem values. This ensures that as the user inputs or changes values for quantity, price, discount, or tax, the calculations are updated in real-time and accurately reflect the current state of the item being added to the cart.
@@ -291,21 +103,23 @@ const ItemTable = ({ cartItems, setCartItems }) => {
             return;
         }
 
-        try {
-            const res = await axios.get(`http://localhost:5000/api/sales/base-unit?productId=${tempItem.p_id}&unitName=${newUnit}`);
-            const factor = toNumber(res?.data?.conversionQty);
-            const nextPrice = factor > 0 ? toNumber(tempItem.base_unit_price) * factor : toNumber(tempItem.base_unit_price);
-            setTempItem((prev) => ({
+        // Find the selected unit object from allUnits array
+        const selectedUnitObj = allUnits.find((u) => {
+            const unitName = typeof u === 'string' ? u : u.Unit_Name;
+            return unitName === newUnit;
+        });
+
+        setTempItem((prev) => {
+            // Get conversion factor from the selected unit object
+            const conversionFactor = selectedUnitObj?.Unit_Conversion || 1;
+            const nextPrice = toNumber(prev.base_unit_price) * toNumber(conversionFactor);
+
+            return {
                 ...prev,
                 p_unit: newUnit,
                 unit_price: nextPrice,
-            }));
-            return;
-        } catch (error) {
-            console.error('Unit conversion error', error);
-        }
-
-        setTempItem((prev) => ({ ...prev, p_unit: newUnit }));
+            };
+        });
     };
 
     // Function to handle the selection of a product from the search results. When a product is selected, this function updates the temporary item state with the details of the selected product, including its code, name, base unit price, default unit, and tax rate. This allows the user to quickly populate the item details for adding to the cart without manually entering all the information.
@@ -359,133 +173,109 @@ const ItemTable = ({ cartItems, setCartItems }) => {
 
     return (
         <div className='card border-0 shadow-sm'>
-            <div className='card-header bg-white py-3'>
-                <h5 className='mb-0'><Package size={20} className='me-2 text-primary' /> Sales Items</h5>
-            </div>
-           
-            <div className='table-responsive' style={{ minHeight: '300px', overflow: 'visible' }}>
-                <table className='table table-hover align-middle mb-0' style={{ minWidth: '1320px' }}>
-                     {/* header */}
-                    <thead className='bg-light text-secondary small text-uppercase'>
-                        <tr>
-                            <th className='text-center' style={{ width: '50px' }}>#</th>
-                            <th style={{ width: '140px' }}>Item Code</th>
-                            <th>Description</th>
-                            <th style={{ width: '110px' }}>Unit</th>
-                            <th className='text-end' style={{ width: '100px' }}>Price</th>
-                            <th className='text-end' style={{ width: '80px' }}>Dis%</th>
-                            <th className='text-end' style={{ width: '80px' }}>Tax%</th>
-                            <th className='text-center' style={{ width: '90px' }}>Qty</th>
-                            <th className='text-center' style={{ width: '80px' }}>Free</th>
-                            {/* <th className='text-end' style={{ width: '120px' }}>Tax Amt</th> */}
-                            <th className='text-end' style={{ width: '120px' }}>Total</th>
-                            <th className='text-center' style={{ width: '60px' }}>Action</th>
-                        </tr>
-                    </thead>
-                    {/* body */}
-                    <tbody>
-                            {/* INPUT ROW */}
-                        <tr style={{ backgroundColor: inputRowBg, borderBottom: '2px solid #dee2e6' }}>
-                            <td className='text-center text-success fw-bold'>+</td>
-                            <td>
-                                <input readOnly className='form-control form-control-sm bg-white' value={tempItem.p_code} placeholder='Code' />
-                            </td>
-                            <td className='position-relative'>
-                                <input
-                                    className='form-control form-control-sm'
-                                    placeholder='Type to search item...'
-                                    value={query}
-                                    onChange={(e) => handleSearch(e.target.value)}
-                                />
-                                {searchResults.length > 0 && (
-                                    <ul className='position-absolute list-group shadow-lg w-100 itemtable-dropdown' style={{ zIndex: 9999, top: '100%' }}>
+        <div className='card-header bg-white py-2'>
+            <h6 className='mb-0 fw-bold'><Package size={18} className='me-2 text-primary' /> Sales Items</h6>
+        </div>
+   
+        <div className='table-responsive' style={{ minHeight: '300px', overflowX: 'auto' }}>
+            <table className='table table-sm table-hover align-middle mb-0' style={{ width: '100%', minWidth: '1000px' }}>
+                <thead className='bg-light text-secondary small text-uppercase'>
+                    <tr>
+                        <th className='text-center' style={{ width: '40px' }}>#</th>
+                        <th style={{ width: '110px' }}>Item Code</th>
+                        <th style={{ width: 'auto' }}>Description</th>
+                        <th style={{ width: '100px' }}>Unit</th>
+                        <th className='text-end' style={{ width: '90px' }}>Price</th>
+                        <th className='text-end' style={{ width: '70px' }}>Dis%</th>
+                        <th className='text-end' style={{ width: '70px' }}>Tax%</th>
+                        <th className='text-center' style={{ width: '80px' }}>Qty</th>
+                        <th className='text-center' style={{ width: '70px' }}>Free</th>
+                        <th className='text-end' style={{ width: '100px' }}>Total</th>
+                        <th className='text-center' style={{ width: '50px' }}>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {/* INPUT ROW */}
+                    <tr style={{ backgroundColor: inputRowBg, borderBottom: '2px solid #dee2e6' }}>
+                        <td className='text-center text-success fw-bold'>+</td>
+                        <td>
+                            <input readOnly className='form-control form-control-sm bg-light' value={tempItem.p_code} placeholder='Code' />
+                        </td>
+                        <td className='position-relative' style={{ width: '300px' }}>
+                            <input
+                                ref={searchInputRef}
+                                className='form-control form-control-sm'
+                                placeholder='Search item...'
+                                value={query}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                style={{ width: '100%' }}
+                            />
+                            {searchResults.length > 0 && (
+                                <Portal targetElement={searchInputRef}>
+                                    <ul className='list-group shadow-lg' style={{ maxHeight: '300px', overflowY: 'auto', width: '400px' }}>
                                         {searchResults.map((product) => (
                                             <li
                                                 key={product.p_id}
                                                 onClick={() => selectProduct(product)}
-                                                className='list-group-item list-group-item-action small py-2 cursor-pointer'
+                                                className='list-group-item list-group-item-action small py-2 cursor-pointer search-result-item'
                                             >
                                                 <div className='fw-bold'>{product.p_name}</div>
-                                                <div className='text-muted small'>
+                                                <div className='text-muted' style={{fontSize: '12px'}}>
+                                                    <img src={product.image_path } style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '10px' }} />
                                                     Code: {product.p_code} | Price: {toNumber(product.retail_price).toFixed(2)} | Tax: {toNumber(product.tax_rate).toFixed(2)}%
                                                 </div>
                                             </li>
                                         ))}
                                     </ul>
-                                )}
-                            </td>
-                            <td>
-                                <select
-                                    className='form-select form-select-sm'
-                                    value={tempItem.p_unit}
-                                    onChange={(e) => handleUnitChange(e.target.value)}
-                                >
-                                    {(allUnits.length ? allUnits : ['Packet']).map((unit) => (
-                                        <option key={unit} value={unit}>{unit}</option>
-                                    ))}
-                                </select>
-                            </td>
-                            <td>
-                                <input type='number' className='form-control form-control-sm text-end' value={tempItem.unit_price} onChange={(e) => setTempItem({ ...tempItem, unit_price: e.target.value })} />
-                            </td>
-                            <td>
-                                <input type='number' className='form-control form-control-sm text-end' value={tempItem.discount} onChange={(e) => setTempItem({ ...tempItem, discount: e.target.value })} />
-                            </td>
-                            <td>
-                                <input type='number' className='form-control form-control-sm text-end' value={tempItem.tax} onChange={(e) => setTempItem({ ...tempItem, tax: e.target.value })} />
-                            </td>
-                            <td>
-                                <input type='number' className='form-control form-control-sm text-center' value={tempItem.quntity} onChange={(e) => setTempItem({ ...tempItem, quntity: e.target.value })} />
-                            </td>
-                            <td>
-                                <input type='number' className='form-control form-control-sm text-center' value={tempItem.free} onChange={(e) => setTempItem({ ...tempItem, free: e.target.value })} />
-                            </td>
-                            {/* <td className='text-end fw-bold text-secondary'>{currentEntryTaxAmount.toFixed(2)}</td> */}
-                            <td className='text-end fw-bold text-primary'>{currentEntryTotal.toFixed(2)}</td>
+                                </Portal>
+                            )}
+                        </td>
+                        <td>
+                            <select
+                                className='form-select form-select-sm'
+                                value={tempItem.p_unit}
+                                onChange={(e) => handleUnitChange(e.target.value)}
+                            >
+                              {/*default option if no  unit are loaded yet*/}
+                              {allUnits.length === 0 && <option value="Packet">Packet</option>}
+                              {allUnits.map((unit) => (
+                                  <option key={unit.Unit_Name} value={unit.Unit_Name}>{unit.Unit_Name}</option>
+                              ))}
+                            </select>
+                        </td>
+                        <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.unit_price} onChange={(e) => setTempItem({ ...tempItem, unit_price: e.target.value })} /></td>
+                        <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.discount} onChange={(e) => setTempItem({ ...tempItem, discount: e.target.value })} /></td>
+                        <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.tax} onChange={(e) => setTempItem({ ...tempItem, tax: e.target.value })} readOnly /></td>
+                        <td><input type='number' className='form-control form-control-sm text-center fw-bold' value={tempItem.quntity} onChange={(e) => setTempItem({ ...tempItem, quntity: e.target.value })} /></td>
+                        <td><input type='number' className='form-control form-control-sm text-center' value={tempItem.free} onChange={(e) => setTempItem({ ...tempItem, free: e.target.value })} /></td>
+                        <td className='text-end fw-bold text-primary'>{currentEntryTotal.toFixed(2)}</td>
+                        <td className='text-center'>
+                            <button onClick={addItem} className='btn btn-primary btn-sm'><Plus size={16} /></button>
+                        </td>
+                    </tr>
+
+                    {/* CART ITEMS */}
+                    {cartItems.map((item, index) => (
+                        <tr key={item.id} className='border-bottom'>
+                            <td className='text-center text-muted small'>{index + 1}</td>
+                            <td className='small'>{item.p_code}</td>
+                            <td className='fw-medium small'>{item.p_name}</td>
+                            <td className='small'>{item.p_unit}</td>
+                            <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.unit_price} onChange={(e) => updateCartItem(index, 'unit_price', e.target.value)} /></td>
+                            <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.discount} onChange={(e) => updateCartItem(index, 'discount', e.target.value)} /></td>
+                            <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.tax} onChange={(e) => updateCartItem(index, 'tax', e.target.value)} readOnly/></td>
+                            <td><input type='number' className='form-control form-control-sm border-0 text-center fw-bold text-success p-0' value={item.quntity} onChange={(e) => updateCartItem(index, 'quntity', e.target.value)} /></td>
+                            <td><input type='number' className='form-control form-control-sm border-0 text-center p-0' value={item.free} onChange={(e) => updateCartItem(index, 'free', e.target.value)} /></td>
+                            <td className='text-end fw-bold small'>{toNumber(item.total).toFixed(2)}</td>
                             <td className='text-center'>
-                                <button onClick={addItem} className='btn btn-success btn-sm shadow-sm'><Plus size={18} strokeWidth={3} /></button>
+                                <button onClick={() => setCartItems(cartItems.filter((i) => i.id !== item.id))} className='btn btn-link text-danger p-0 border-0'><Trash2 size={16} /></button>
                             </td>
                         </tr>
-                            {/* CART ITEMS */}
-
-                        {cartItems.map((item, index) => (
-                            <tr key={item.id} className='border-bottom'>
-                                <td className='text-center text-muted small'>{index + 1}</td>
-                                <td>{item.p_code}</td>
-                                <td className='fw-medium'>{item.p_name}</td>
-                                <td>{item.p_unit}</td>
-                                <td>
-                                    <input type='number' className='form-control form-control-sm border-0 text-end' value={item.unit_price} onChange={(e) => updateCartItem(index, 'unit_price', e.target.value)} />
-                                </td>
-                                <td>
-                                    <input type='number' className='form-control form-control-sm border-0 text-end' value={item.discount} onChange={(e) => updateCartItem(index, 'discount', e.target.value)} />
-                                </td>
-                                <td>
-                                    <input type='number' className='form-control form-control-sm border-0 text-end' value={item.tax} onChange={(e) => updateCartItem(index, 'tax', e.target.value)} />
-                                </td>
-                                <td>
-                                    <input type='number' className='form-control form-control-sm border-0 text-center fw-bold text-success' value={item.quntity} onChange={(e) => updateCartItem(index, 'quntity', e.target.value)} />
-                                </td>
-                                <td>
-                                    <input type='number' className='form-control form-control-sm border-0 text-center' value={item.free} onChange={(e) => updateCartItem(index, 'free', e.target.value)} />
-                                </td>
-                                {/* <td className='text-end fw-semibold'>{toNumber(item.taxAmount).toFixed(2)}</td> */}
-                                <td className='text-end fw-bold'>{toNumber(item.total).toFixed(2)}</td>
-                                <td className='text-center'>
-                                    <button onClick={() => setCartItems(cartItems.filter((cartItem) => cartItem.id !== item.id))} className='btn btn-link text-danger p-0 border-0'><Trash2 size={16} /></button>
-                                </td>
-                            </tr>
-                        ))}
-
-                        {cartItems.length === 0 && (
-                            <tr>
-                                <td colSpan={12} className='text-center text-muted py-4'>No items added yet</td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                    ))}
+                </tbody>
+            </table>
         </div>
+    </div>
     );
 };
 

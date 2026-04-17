@@ -1,13 +1,32 @@
-.itemtable-dropdown .cursor-pointer {
-    cursor: pointer;
+/* This prevents the column from expanding when the dropdown appears */
+.position-relative {
+    position: relative;
 }
 
-.itemtable-dropdown .cursor-pointer:hover,
-.itemtable-dropdown .cursor-pointer:focus {
-    color: #212529 !important;
-    background-color: #f8f9fa;
+.itemtable-dropdown {
+    /* Ensure the dropdown doesn't push table boundaries */
+    pointer-events: auto;
 }
 
-.itemtable-dropdown .text-muted {
-    color: #6c757d !important;
+/* Force the description column to stay at a specific size */
+td.position-relative {
+    max-width: 300px;
+    min-width: 200px;
+    overflow: visible; /* Crucial so dropdown isn't cut off */
+}
+
+/* Optional: Add text truncation for long names inside the dropdown */
+.itemtable-dropdown li div {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-item:hover {
+    background-color: #f0f0f0;
+    color: #000;
+}
+
+.search-result-item div {
+    color: #000 !important;
 }

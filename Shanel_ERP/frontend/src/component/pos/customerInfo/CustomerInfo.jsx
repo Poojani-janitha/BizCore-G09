@@ -3,7 +3,7 @@ import { useState } from 'react'
 import axios from 'axios';
 import { Search } from 'lucide-react';
 
-const CustomerInfo = () => {
+const CustomerInfo = ({ setCustomerData }) => {
 
   // const [customerID, setCustomerID] = useState('');
   // const [customerData, setCustomerData] = useState({});
@@ -60,6 +60,7 @@ const CustomerInfo = () => {
   const handleSelect = async (customer) =>{
       setSelected(customer);
       setQuery(customer.c_name);
+      setCustomerData(customer);
       setResult([]);//close the dropdown 
   }
 

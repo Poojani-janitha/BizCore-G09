@@ -9,20 +9,24 @@ import { useState } from 'react'
 
 const POS = () => {
   const [cartItems, setCartItems] = useState([]);
-  const [invoiceData, setInvoiceData] = useState([]);
-  
+  const [invoiceData, setInvoiceData] = useState({});
+  const [customerData, setCustomerData] = useState({});
+  const [paymentData, setPaymentData] = useState({});
+  const [action,setAction] = useState({});
 
+
+  
   const handleInvoiceDataChange = (data) =>{
     setInvoiceData(data);
     console.log("Updated Invoice Data:", data);
   }
  
   return (
-    // Remove vh-100 and the extra relative positioning
+    
     <div className='pos-wrapper w-100' style={{ overflowX: 'hidden'}}>
       {/* Section 1: Customer Info */}
       <div className='card border-0 shadow-sm p-4 mb-3'>
-        <CustomerInfo />
+        <CustomerInfo setCustomerData={setCustomerData} />
       </div>
 
       {/* Section 2: Item Table */}
@@ -40,13 +44,13 @@ const POS = () => {
 
         <div className='col-xl-4 col-lg-6'>
           <div className='card border-0 shadow-sm p-3 h-100'>
-            <PaymentMethod />
+            <PaymentMethod paymentData={paymentData} setPaymentData={setPaymentData} totalDue={invoiceData?.finalTotal || 0} />
           </div>
         </div>
 
         <div className='col-xl-4 col-lg-12'>
           <div className='card border-0 shadow-sm p-3 h-100'>
-            <ActionButtons />
+            <ActionButtons setAction={setAction} />
           </div>
         </div>
         

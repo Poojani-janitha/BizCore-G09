@@ -39,7 +39,8 @@ const searchProducts = async (req, res) => {
                 'Retail_Price',
                 'Wholesale_Price',
                 'Min_Stock',
-                'Tax_Rate'
+                'Tax_Rate',
+                'Image_Path'
 
             ], limit: parseFloat(Limit),
             order: [['P_Name', 'ASC']]
@@ -60,13 +61,15 @@ const searchProducts = async (req, res) => {
                 cost_price: parseFloat(p.Cost_Price),
                 retail_price: parseFloat(p.Retail_Price),
                 wholesale_price: parseFloat(p.Wholesale_Price),
-                min_stock: parseFloat(p.Min_Stock)
-                ,tax_rate: parseFloat(p.Tax_Rate)
+                min_stock: parseFloat(p.Min_Stock),
+                tax_rate: parseFloat(p.Tax_Rate),
+                image_path: p.Image_Path
             }
         })
 
 
         return res.status(200).json({
+            
             success:true,
             products: formateData,
             count: formateData.length
@@ -87,16 +90,25 @@ const searchProducts = async (req, res) => {
 //for the dropdown in the POS
 const allUnits = async (req, res) => {
     try {
+        const { productId } = req.query;
         const units = await UnitConversion.findAll({
+            where: {
+                P_ID: productId
+            },
             attributes: [
-                [sequelize.fn('DISTINCT', sequelize.col('Unit_Name')), 'Unit_Name']
+               'Unit_Name',
+                'Is_Base_Unit',
+                'Unit_Conversion'
+             
+
             ],
+            order: [['Display_Order', 'ASC']],
             raw: true
         });
 
         return res.status(200).json({
             success: true,
-            units: units.map(u => u.Unit_Name)
+            units: units
         });
 
     } catch (error) {
