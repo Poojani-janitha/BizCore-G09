@@ -154,5 +154,46 @@ const getBaseUnitQty = async (req, res) => {
         });
     }
 };
-module.exports = {searchProducts, allUnits, getBaseUnitQty}
+
+//post sales data from POS to backend
+const postSalesData = async (req, res) => {
+    try {
+       const{cutomer, items, invoiceDetails, paymentDetails, action} = req.body;
+       
+       console.log("Received Sales Data:", {
+        cutomer,
+        items,
+        invoiceDetails,
+        paymentDetails,
+        action
+       });
+
+
+       const sale = await sequelize.createSchema({
+        Invoice_No: invoiceDetails.invoiceNo,
+        C_ID: cutomer.C_ID,
+        Sale_Date: invoiceDetails.saleDate,
+        Sale_Time: invoiceDetails.saleTime,
+        Location: invoiceDetails.location,
+        Sale_Type: invoiceDetails.saleType,
+        Price_Level: invoiceDetails.priceLevel,
+        Subtotal: invoiceDetails.subtotal,
+        Discount_Percentage: invoiceDetails.discountPercentage,
+        Discount_Amount: invoiceDetails.discountAmount,
+        Tax_Rate: invoiceDetails.taxRate,
+        Total_Amount: invoiceDetails.totalAmount,
+        Payment_Method: paymentDetails.paymentMethod,
+        Payment_Amount: paymentDetails.paymentAmount,
+        Change_Amount: paymentDetails.changeAmount
+       })
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error processing sales data",
+            error: error.message
+        });
+    }
+}
+module.exports = {searchProducts, allUnits, getBaseUnitQty, postSalesData}
 

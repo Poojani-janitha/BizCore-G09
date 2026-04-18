@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { use, useEffect, useMemo, useState } from 'react';
 import { CreditCard, Banknote, FileText, Building2, Wallet } from 'lucide-react';
 import Card from '../paymentForms/Card';
 import Cash from '../paymentForms/Cash';
@@ -12,6 +12,18 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue }) => {
     const [isPartial, setIsPartial] = useState(false);
     const [partialAmount, setPartialAmount] = useState('');
     const [note, setNote] = useState('');
+
+   useEffect(() => {
+       
+        setPaymentData((prev)=> {
+                const cleared = {};
+                Object.keys(prev).forEach(key => {
+                    cleared[key] ='';
+                    });
+                return cleared;
+        })
+    }, [selectForm]);
+
 
     const methodValueMap = {
         cash: 'Cash',
@@ -59,6 +71,8 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue }) => {
         return Math.max(cashTendered - partialValue, 0);
     }, [isPartial, partialValue, cashTendered]);
 
+
+    
     const effectiveCollectedAmount = useMemo(() => {
         if (isPartial && partialValue !== null) {
             return partialValue;
@@ -86,7 +100,8 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue }) => {
             Partial_Amount: isPartial ? partialValue : null,
             Remaining_Amount: isPartial ? remainingDue : 0,
             Payment_Amount: effectiveCollectedAmount,
-            payment_amount: effectiveCollectedAmount,
+            
+            
         }));
     }, [
         selectForm,
@@ -144,7 +159,7 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue }) => {
                         type='number'
                         min='0'
                         step='0.01'
-                        disabled={!isPartial}
+                        disabled={!isPartial}  
                         className='form-control form-control-sm'
                         placeholder='Enter partial amount...'
                         value={partialAmount}
@@ -158,7 +173,7 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue }) => {
                     </div>
                 )}
                 {/* {isPartial && customerReturnAmount > 0 && (
-                    <div className='alert alert-success py-2 px-3 mb-2 small'>
+                    <div classN ame='alert alert-success py-2 px-3 mb-2 small'>
                         Customer balance to return: <strong>Rs. {customerReturnAmount.toFixed(2)}</strong>
                     </div>
                 )} */}

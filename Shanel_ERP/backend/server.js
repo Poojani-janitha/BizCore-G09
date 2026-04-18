@@ -15,7 +15,7 @@ const app = express();
 applyMiddleware(app);
 
 
-//link my inventry routes
+//inventry routes
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/production', productionRoutes);
 app.use('/api/sales', inventorySalesRoutes);
