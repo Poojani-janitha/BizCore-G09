@@ -32,11 +32,27 @@ const AdjustmentModal = ({ show, onHide, refresh }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Validate form
+        if (!formData.P_ID) {
+            alert('Please select a product');
+            return;
+        }
+        if (!formData.Adjustment_Qty || parseFloat(formData.Adjustment_Qty) <= 0) {
+            alert('Adjustment quantity must be greater than 0');
+            return;
+        }
+        if (!formData.Reason) {
+            alert('Please provide a reason for this adjustment');
+            return;
+        }
+        
         try {
             const response = await axios.post('http://localhost:5000/api/inventory/adjustments/adjust', formData);
             if (response.data.success) {
                 refresh(); // Refresh the log table on the main page
                 onHide();   // Close modal
+                alert('Stock adjustment created successfully!');
                 setFormData({ 
                     P_ID: '', 
                     Location: 'Shop', 
@@ -157,6 +173,7 @@ const AdjustmentModal = ({ show, onHide, refresh }) => {
                             rows={3} 
                             placeholder="Provide details about this adjustment (e.g. Batch number, specific damage info)..."
                             className="bg-light border-0 shadow-none"
+                            required
                             value={formData.Reason}
                             onChange={(e) => setFormData({...formData, Reason: e.target.value})}
                         />

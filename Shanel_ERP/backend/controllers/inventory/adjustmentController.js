@@ -1,7 +1,7 @@
 const { StockAdjustment,Product, Inventory } = require("../../models/index");
 const sequelize = require('../../config/db');
 
-exports.createAdjsutment = async (req, res) => {
+exports.createAdjustment = async (req, res) => {
     const t = await sequelize.transaction();
     try{
         const { P_ID, Location, Adjustment_Qty, Adjustment_Type, Adjustment_Date, Reason} = req.body;
