@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/db');
+const sequelize = require('../../config/db');
 
 const SalesSummaryDaily = sequelize.define('SalesSummaryDaily', {
     Summary_ID: {
