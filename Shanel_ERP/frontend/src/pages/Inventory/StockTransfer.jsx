@@ -31,36 +31,46 @@ const StockTransfer = () => {
             
             // API returns array directly or wrapped in .products
             const products = Array.isArray(productsRes.data) ? productsRes.data : productsRes.data?.products || [];
+            console.log('Fetched products:', products.length);
             
             if (products.length > 0) {
                 const productsWithInventory = await Promise.all(
                     products.map(async (product) => {
                         try {
-                            const productId = product.P_ID || product.id;
+                            const productId = product.id;  // API returns 'id', not 'P_ID'
                             const locationRes = await axios.get(
                                 `http://localhost:5000/api/inventory/product/${productId}/locations`
                             );
+                            console.log(`Product ${productId} locations:`, locationRes.data);
                             return {
-                                P_ID: product.P_ID || product.id,
-                                P_Name: product.P_Name || product.name,
+                                id: product.id,
+                                name: product.name,
                                 ...product,
-                                locationInventory: locationRes.data || { Main_Warehouse: 0, Shop: 0, Production: 0 }
+                                locationInventory: locationRes.data || { Shop: 0, Production: 0 }
                             };
                         } catch (err) {
-                            console.error(`Failed to fetch locations for product ${product.id || product.P_ID}:`, err);
+                            console.error(`Failed to fetch locations for product ${product.id}:`, err.message);
                             return {
-                                P_ID: product.P_ID || product.id,
-                                P_Name: product.P_Name || product.name,
+                                id: product.id,
+                                name: product.name,
                                 ...product,
-                                locationInventory: { Main_Warehouse: 0, Shop: 0, Production: 0 }
+                                locationInventory: { Shop: 0, Production: 0 }
                             };
                         }
                     })
                 );
+                console.log('Products with inventory:', productsWithInventory);
                 setInventory(productsWithInventory);
+                // Log the actual data structure for debugging
+                if (productsWithInventory.length > 0) {
+                    console.log('First product structure:', JSON.stringify(productsWithInventory[0], null, 2));
+                }
+            } else {
+                console.log('No products found');
+                setInventory([]);
             }
         } catch (err) {
-            console.error('Failed to load products:', err);
+            console.error('Failed to load products:', err.message);
             setInventory([]);
         }
     };
@@ -78,6 +88,8 @@ const StockTransfer = () => {
     const handleCloseModal = () => {
         setShowModal(false);
         setEditTransfer(null);
+        // Refresh inventory data after modal closes
+        fetchInventory();
     };
 
     if (loading) {
@@ -127,30 +139,25 @@ const StockTransfer = () => {
                         <thead>
                             <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
                                 <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>PRODUCT</th>
-                                <th className='text-uppercase py-3 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>MAIN WAREHOUSE</th>
-                                <th className='text-uppercase py-3 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>SHOP</th>
                                 <th className='text-uppercase py-3 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>PRODUCTION</th>
+                                <th className='text-uppercase py-3 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>SHOP</th>
                                 <th className='text-uppercase py-3 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>TOTAL</th>
                             </tr>
                         </thead>
                         <tbody>
                             {inventory.map(item => {
-                                const warehouse = parseFloat(item.locationInventory?.Main_Warehouse || 0);
                                 const shop = parseFloat(item.locationInventory?.Shop || 0);
                                 const production = parseFloat(item.locationInventory?.Production || 0);
-                                const total = warehouse + shop + production;
+                                const total = shop + production;
                                 
                                 return (
-                                    <tr key={item.P_ID}>
-                                        <td className="fw-semibold" style={{fontSize: '13px'}}>{item.P_Name}</td>
+                                    <tr key={item.id}>
+                                        <td className="fw-semibold" style={{fontSize: '13px'}}>{item.name}</td>
                                         <td className="text-center" style={{fontSize: '13px'}}>
-                                            {warehouse.toFixed(2)}
+                                            {production.toFixed(2)}
                                         </td>
                                         <td className="text-center" style={{fontSize: '13px'}}>
                                             {shop.toFixed(2)}
-                                        </td>
-                                        <td className="text-center" style={{fontSize: '13px'}}>
-                                            {production.toFixed(2)}
                                         </td>
                                         <td className="text-center fw-bold" style={{fontSize: '13px'}}>
                                             {total.toFixed(2)}
@@ -183,7 +190,10 @@ const StockTransfer = () => {
             <NewTransferModal 
                 show={showModal}
                 onHide={handleCloseModal}
-                refreshData={fetchData}
+                refreshData={() => {
+                    fetchData();
+                    fetchInventory();
+                }}
                 editTransfer={editTransfer}
             />
         </div>
@@ -206,8 +216,8 @@ const TransferCard = ({ transfer, inventory, onEdit }) => {
     if (!transfer) return null;
     
     // Find product name from inventory
-    const product = inventory?.find(p => p.P_ID === transfer.P_ID || p.id === transfer.P_ID);
-    const productName = product?.P_Name || product?.name || 'Unknown Product';
+    const product = inventory?.find(p => p.id === transfer.P_ID);
+    const productName = product?.name || 'Unknown Product';
     
     return (
     <div className="card border-0 shadow-sm rounded-4 p-4 mb-3 position-relative">

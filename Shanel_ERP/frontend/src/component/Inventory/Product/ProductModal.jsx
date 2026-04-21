@@ -21,7 +21,8 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
         Barcode: '',
         Auto_Generate_Barcode: false,
         Status: 'In Stock',
-        InitialQty: 0  // For "Other" and "Raw" items only
+        InitialQty: 0,  // For "Other" and "Raw" items only
+        IsIsharaProduct: false  // For Company items: true = Ishara (direct supply), false = regular production
     };
 
     const [formData, setFormData] = useState(initialState);
@@ -76,7 +77,8 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
                     Barcode: editData.barcode || '',
                     Auto_Generate_Barcode: editData.autoGenerateBarcode || false,
                     Status: editData.status || 'In Stock',
-                    InitialQty: (editData.type === 'Other' || editData.type === 'Raw') ? (editData.stockCount ?? 0) : 0
+                    InitialQty: (editData.type === 'Other' || editData.type === 'Raw' || editData.isIsharaProduct) ? (editData.stockCount ?? 0) : 0,
+                    IsIsharaProduct: editData.isIsharaProduct || false
                 });
                 // Set existing image preview
                 if (editData.imagePath) {
@@ -195,9 +197,10 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
             formDataToSend.append('imagePath', formData.Image_Path || null);
             formDataToSend.append('barcode', formData.Barcode || null);
             formDataToSend.append('autoGenerateBarcode', formData.Auto_Generate_Barcode);
+            formDataToSend.append('isIsharaProduct', formData.IsIsharaProduct);
             
-            // Initial Quantity for supplier items
-            if (formData.P_Type === 'Other' || formData.P_Type === 'Raw') {
+            // Initial Quantity for supplier items and Ishara products
+            if (formData.P_Type === 'Other' || formData.P_Type === 'Raw' || (formData.P_Type === 'Company' && formData.IsIsharaProduct)) {
                 formDataToSend.append('initialQty', parseFloat(formData.InitialQty) || 0);
             }
             
@@ -303,6 +306,41 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
                                     </select>
                                 </div>
 
+                                {/* Product Source Selection - Only for Company Items */}
+                                {formData.P_Type === 'Company' && (
+                                    <div className="col-6 mb-2">
+                                        <label className="form-label mb-1 small fw-semibold text-muted">Product Source</label>
+                                        <div className="d-flex gap-3 mt-2">
+                                            <div className="form-check">
+                                                <input 
+                                                    className="form-check-input" 
+                                                    type="radio" 
+                                                    name="IsIsharaProduct" 
+                                                    id="companyRadio"
+                                                    checked={!formData.IsIsharaProduct} 
+                                                    onChange={() => setFormData({...formData, IsIsharaProduct: false})}
+                                                />
+                                                <label className="form-check-label small" htmlFor="companyRadio">
+                                                    Company <small className="text-muted d-block" style={{ fontSize: '11px' }}>Production batch</small>
+                                                </label>
+                                            </div>
+                                            <div className="form-check">
+                                                <input 
+                                                    className="form-check-input" 
+                                                    type="radio" 
+                                                    name="IsIsharaProduct" 
+                                                    id="isharaRadio"
+                                                    checked={formData.IsIsharaProduct} 
+                                                    onChange={() => setFormData({...formData, IsIsharaProduct: true})}
+                                                />
+                                                <label className="form-check-label small" htmlFor="isharaRadio">
+                                                    Ishara <small className="text-muted d-block" style={{ fontSize: '11px' }}>Direct supply</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Unit Conversion Manager */}
                                 <div className="col-12 mb-3">
                                     <UnitConversionManager 
@@ -342,11 +380,11 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
                                            value={formData.Min_Stock} onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur} />
                                 </div>
 
-                                {/* Initial Quantity - Only for Supplier Items (Other/Raw) */}
-                                {(formData.P_Type === 'Other' || formData.P_Type === 'Raw') && (
+                                {/* Initial Quantity - For Supplier Items (Other/Raw) and Ishara Products */}
+                                {(formData.P_Type === 'Other' || formData.P_Type === 'Raw' || (formData.P_Type === 'Company' && formData.IsIsharaProduct)) && (
                                     <div className="col-6 mt-2">
                                         <label className="form-label mb-1 small fw-semibold text-muted">
-                                            {editData ? 'Current Stock' : 'Initial Qty'} {formData.P_Type === 'Other' ? '(Supplier)' : '(Received)'}
+                                            {formData.P_Type === 'Company' ? 'Supplied Qty' : editData ? 'Current Stock' : 'Initial Qty'} {formData.P_Type === 'Other' ? '(Supplier)' : formData.P_Type === 'Company' ? '(Received)' : '(Received)'}
                                         </label>
                                         <div className="d-flex align-items-center" style={{ gap: '8px' }}>
                                             <input 

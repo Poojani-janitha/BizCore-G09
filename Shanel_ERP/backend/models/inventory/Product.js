@@ -103,6 +103,11 @@ const Product = sequelize.define(
         Created_By: { 
             type: DataTypes.INTEGER, 
             allowNull: true },
+
+        Is_Ishara_Product: { 
+            type: DataTypes.BOOLEAN, 
+            defaultValue: false,
+            comment: 'For Company items: if true, product is supplied directly (Ishara) - no production batch needed. If false, product goes through production batch.' },
     },
     {
         tableName: "product",

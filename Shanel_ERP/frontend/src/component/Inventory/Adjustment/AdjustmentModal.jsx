@@ -126,7 +126,6 @@ const AdjustmentModal = ({ show, onHide, refresh }) => {
                                 >
                                     <option value="Shop">Shop</option>
                                     <option value="Production">Production</option>
-                                    <option value="Main_Warehouse">Main Warehouse</option>
                                 </Form.Select>
                             </Form.Group>
                         </Col>

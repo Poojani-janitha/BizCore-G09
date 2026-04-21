@@ -307,16 +307,28 @@ const addProduct = async (req, res) => {
             await Promise.all(unitPromises);
         }
 
-        // Create inventory entry if initial quantity provided (for supplier items)
+        // Create inventory entry if initial quantity provided (for supplier items and Ishara products)
         const initialQty = parseFloat(req.body.initialQty) || 0;
-        if ((req.body.type === 'Other' || req.body.type === 'Raw') && initialQty > 0) {
+        let inventoryLocation = null;
+        
+        // Determine inventory location based on product type
+        if (req.body.type === 'Other') {
+            inventoryLocation = 'Shop';
+        } else if (req.body.type === 'Raw') {
+            inventoryLocation = 'Production';
+        } else if (req.body.type === 'Company' && req.body.isIsharaProduct) {
+            // Ishara products (Company items that skip production)
+            inventoryLocation = 'Shop';
+        }
+        
+        if (inventoryLocation && initialQty > 0) {
             await Inventory.create({
                 P_ID: newProduct.P_ID,
-                Location: 'Main_Warehouse', // Default location for new supplier items
+                Location: inventoryLocation,
                 Qty: initialQty,
                 Last_Updated: new Date()
             });
-            console.log(`✓ Created inventory entry for product ${newProduct.P_ID} with quantity ${initialQty}`);
+            console.log(`✓ Created inventory entry for product ${newProduct.P_ID} with quantity ${initialQty} at location ${inventoryLocation}`);
         }
         
         res.status(201).json({ success: true, message: "Product created!", data: newProduct });
@@ -396,30 +408,42 @@ const updateProduct = async (req, res) => {
             }
         }
 
-        // Update inventory for supplier items if initialQty provided
+        // Update inventory for supplier items and Ishara products if initialQty provided
         const initialQty = parseFloat(req.body.initialQty);
-        if ((req.body.type === 'Other' || req.body.type === 'Raw') && initialQty >= 0) {
-            // Find existing inventory for this product
+        let inventoryLocation = null;
+        
+        // Determine inventory location based on product type
+        if (req.body.type === 'Other') {
+            inventoryLocation = 'Shop';
+        } else if (req.body.type === 'Raw') {
+            inventoryLocation = 'Production';
+        } else if (req.body.type === 'Company' && req.body.isIsharaProduct) {
+            // Ishara products (Company items that skip production)
+            inventoryLocation = 'Shop';
+        }
+        
+        if (inventoryLocation && initialQty >= 0) {
+            // Find existing inventory for this product at the correct location
             const existingInventory = await Inventory.findOne({
-                where: { P_ID: id, Location: 'Main_Warehouse' }
+                where: { P_ID: id, Location: inventoryLocation }
             });
 
             if (existingInventory) {
                 // Update existing inventory
                 await Inventory.update(
                     { Qty: initialQty, Last_Updated: new Date() },
-                    { where: { P_ID: id, Location: 'Main_Warehouse' } }
+                    { where: { P_ID: id, Location: inventoryLocation } }
                 );
-                console.log(`✓ Updated inventory for product ${id} to quantity ${initialQty}`);
+                console.log(`✓ Updated inventory for product ${id} to quantity ${initialQty} at location ${inventoryLocation}`);
             } else if (initialQty > 0) {
                 // Create new inventory if doesn't exist and qty > 0
                 await Inventory.create({
                     P_ID: id,
-                    Location: 'Main_Warehouse',
+                    Location: inventoryLocation,
                     Qty: initialQty,
                     Last_Updated: new Date()
                 });
-                console.log(`✓ Created inventory entry for product ${id} with quantity ${initialQty}`);
+                console.log(`✓ Created inventory entry for product ${id} with quantity ${initialQty} at location ${inventoryLocation}`);
             }
         }
         
