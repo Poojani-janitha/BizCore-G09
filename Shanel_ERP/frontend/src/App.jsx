@@ -10,17 +10,20 @@ import ProductPage from './pages/Inventory/ProductPage.jsx';
 import ProductionStock from './pages/Inventory/ProductionStock.jsx';
 import './App.css';
 import POS from './pages/POS/POS.jsx';
+import { useState } from 'react';
 
 
 const App = () => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   return (
 
 
     <div className="d-flex w-100" style={{ height: '100vh', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
-      <SlideBar />
+      <SlideBar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
 
-      {/* Main content Warapper */}
-      <div className="flex-grow-1 d-flex flex-column" style={{ height: '100vh', overflow: 'hidden' }}>
+      
+      <div className="flex-grow-1 d-flex flex-column" style={{ height: '100vh', overflow: 'hidden', marginLeft: isCollapsed ? '70px' : '240px' }}>
         <Header />
 
         <main className='p-4 flex-grow-1' style={{ overflowY: 'auto' }}>

@@ -121,7 +121,7 @@ const EmployeesPage = () => {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: 'auto',
       background: '#f5f6fa',
       padding: '28px 32px',
       fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",

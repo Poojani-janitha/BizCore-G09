@@ -9,8 +9,7 @@ import {
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 
-const SlideBar = () => {
-    const [isCollapsed, setIsCollapsed] = useState(false);
+const SlideBar = ({ isCollapsed, setIsCollapsed }) => {
     const [headerHover, setHeaderHover] = useState(false);
     const [openMenus, setOpenMenus] = useState({}); // Dynamic toggle state
     const location = useLocation();
@@ -100,8 +99,9 @@ const SlideBar = () => {
                  transition: 'width 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
                  zIndex: 1000,
                  minHeight: '100vh',
-                 position: 'sticky',
+                 position: 'fixed',
                  top: 0,
+                 left: 0,
                  overflowX: 'hidden',
                  fontSize: '14px' 
              }}>
