@@ -1,0 +1,162 @@
+.payment-method-shell {
+    background: linear-gradient(165deg, #292929 0%, #212121 45%, #1b1b1b 100%);
+    border-radius: 14px;
+    border: 1px solid #3f3f3f;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    color: #ececec;
+}
+
+.pm-title {
+    color: #f5f5f5;
+    text-transform: capitalize;
+}
+
+.pm-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.pm-method-btn {
+    min-height: 64px;
+    border-radius: 10px;
+    border: 1px solid #595959;
+    background: #2c2c2c;
+    color: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.pm-method-btn:hover {
+    border-color: #7a7a7a;
+    background: #343434;
+}
+
+.pm-method-btn.active {
+    border-color: var(--pm-active, #44c772);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--pm-active, #44c772) 50%, transparent);
+    background: linear-gradient(180deg, #343434, #2a2a2a);
+}
+
+.pm-form-host .form-label {
+    color: #c9c9c9;
+    font-size: 0.83rem;
+    font-weight: 600;
+}
+
+.pm-form-host .form-control {
+    background: #262626;
+    border-color: #535353;
+    color: #f4f4f4;
+}
+
+.pm-form-host .form-control::placeholder {
+    color: #8f8f8f;
+}
+
+.pm-form-host .form-control:focus {
+    border-color: #7a7a7a;
+    background: #2a2a2a;
+    color: #fafafa;
+    box-shadow: none;
+}
+
+.pm-field-label {
+    display: block;
+    color: #ababab;
+    font-size: 0.96rem;
+    font-weight: 600;
+}
+
+.pm-cash-input {
+    height: 44px;
+    border-radius: 8px;
+    font-size: 1.95rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.pm-balance-chip {
+    border-radius: 9px;
+    padding: 12px;
+    border: 1px solid;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.92rem;
+}
+
+.pm-balance-chip strong {
+    font-size: 1.1rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.pm-balance-chip.is-short {
+    background: #432224;
+    border-color: #d45555;
+    color: #ff9494;
+}
+
+.pm-balance-chip.is-change {
+    background: #183725;
+    border-color: #3ab06f;
+    color: #88f2b8;
+}
+
+.pm-balance-label {
+    opacity: 0.92;
+}
+
+.pm-checkbox-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #c8c8c8;
+    font-size: 0.92rem;
+    cursor: pointer;
+}
+
+.pm-checkbox-wrap .form-check-input {
+    width: 15px;
+    height: 15px;
+    border-radius: 4px;
+    border-color: #787878;
+    background-color: transparent;
+}
+
+.pm-checkbox-wrap .form-check-input:checked {
+    background-color: #fd6f6f;
+    border-color: #fd6f6f;
+}
+
+.pm-placeholder {
+    border: 1px dashed #5f5f5f;
+    border-radius: 9px;
+    padding: 12px;
+    color: #c7c7c7;
+}
+
+.pm-placeholder-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.pm-placeholder-text {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+@media (max-width: 992px) {
+    .pm-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

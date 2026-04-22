@@ -22,9 +22,11 @@ import TransferReport from './pages/Inventory/Reports/TransferReport.jsx';
 import AlertsPage from './pages/Inventory/AlertsPage.jsx';
 import POS from './pages/POS/POS.jsx';
 import './App.css';
+import { useState } from 'react';
 
 
 const App = () => {
+  
   return (
 
 
@@ -64,6 +66,7 @@ const App = () => {
             <Route path="/hr" element={<Hrdashboardpage />} />
             <Route path="/finance" element={<div>Finance Page</div>} />
             <Route path="/logout" element={<div>Logout Page</div>} />
+         
           </Routes>
         </main>
       </div>
