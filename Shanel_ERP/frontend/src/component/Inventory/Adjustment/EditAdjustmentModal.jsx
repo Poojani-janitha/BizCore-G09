@@ -36,6 +36,17 @@ const EditAdjustmentModal = ({ show, onHide, adjustment, refresh }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Validate form
+        if (!formData.Adjustment_Qty || parseFloat(formData.Adjustment_Qty) <= 0) {
+            alert('Adjustment quantity must be greater than 0');
+            return;
+        }
+        if (!formData.Reason) {
+            alert('Please provide a reason for this adjustment');
+            return;
+        }
+        
         try {
             const response = await axios.put(
                 `http://localhost:5000/api/inventory/adjustments/${adjustment.Adjustment_ID}`,
@@ -145,6 +156,7 @@ const EditAdjustmentModal = ({ show, onHide, adjustment, refresh }) => {
                             rows={3} 
                             placeholder="Provide details about this adjustment..."
                             className="bg-light border-0 shadow-none"
+                            required
                             value={formData.Reason}
                             onChange={(e) => setFormData({...formData, Reason: e.target.value})}
                         />

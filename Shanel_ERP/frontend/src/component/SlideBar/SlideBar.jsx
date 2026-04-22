@@ -59,6 +59,7 @@ const SlideBar = () => {
             ]
         },
         { label: 'Finance', icon: <DollarSign size={18} />, to: '/finance' },
+         { label: 'Test', icon: <DollarSign size={18} />, to: '/test' },
     ];
 
     const colors = {

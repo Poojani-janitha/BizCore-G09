@@ -18,7 +18,7 @@ const StockAdjustment = sequelize.define(
         allowNull: true 
     },
     Location: {
-        type: DataTypes.ENUM("Shop", "Production", "Main_Warehouse"),
+        type: DataTypes.ENUM("Shop", "Production"),
         allowNull: false,
     },
     System_Qty: { 

@@ -12,9 +12,11 @@ import ProductPage from './pages/Inventory/ProductPage.jsx';
 import ProductionStock from './pages/Inventory/ProductionStock.jsx';
 import './App.css';
 import POS from './pages/POS/POS.jsx';
+import { useState } from 'react';
 
 
 const App = () => {
+  
   return (
 
 
@@ -44,6 +46,7 @@ const App = () => {
             <Route path="/hr" element={<Hrdashboardpage />} />
             <Route path="/finance" element={<div>Finance Page</div>} />
             <Route path="/logout" element={<div>Logout Page</div>} />
+         
           </Routes>
         </main>
       </div>
