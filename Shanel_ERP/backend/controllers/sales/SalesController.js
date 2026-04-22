@@ -1,5 +1,5 @@
 const sequelize = require('../../config/db');
-const { Product, UnitConversion, Sale } = require('../../models/index');
+const { Product, UnitConversion, Sale,Inventory } = require('../../models/index');
 const { Op, where } = require('sequelize');
 
 const searchProducts = async (req, res) => {
@@ -22,11 +22,9 @@ const searchProducts = async (req, res) => {
 
         const products = await Product.findAll({
             where: {
-                Status: 'Active',
                 [Op.or]: [
                     { P_Name: { [Op.like]: `${searchTerm}%` } },
                     { P_Code: { [Op.like]: `${searchTerm}%` } }
-
                 ]
             }, attributes: [
                 'P_ID',
@@ -67,6 +65,8 @@ const searchProducts = async (req, res) => {
             }
         })
 
+        //show retrive data in the console
+        console.log("Search Products Result:", formateData);
 
         return res.status(200).json({
 
@@ -171,6 +171,7 @@ const generateInvoiceNo = async (req, res) => {
                 newInvoiceNo = `INV-${new Date().getFullYear()}-000001`;
             }
             
+            console.log("Generated Invoice No:", newInvoiceNo);
 
             return res.status(200).json({
                 invoiceNo: newInvoiceNo,
@@ -268,6 +269,20 @@ const postSalesData = async (req, res) => {
     }
 }
 
+
+//get the quntity of product in the inventory 
+// const getProductQuntity = async (productId) => {
+//     try{
+//         const invetoryRecords = await.Inventory.findAll({
+//             where:{
+//                 P_ID:productId,
+//                 Location:'Shop'
+//             },
+//             attributes:[
+
+//             ]
+//         })
+//     }
 
 module.exports = { searchProducts, allUnits, getBaseUnitQty, postSalesData, generateInvoiceNo }
 
