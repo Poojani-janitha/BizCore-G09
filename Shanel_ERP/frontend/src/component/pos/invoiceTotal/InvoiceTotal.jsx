@@ -4,7 +4,7 @@ const InvoiceTotal = ({ cartItems, onChangeInvoiceData }) => {
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState('percentage'); // 'percentage' or 'amount'
 
-  
+    
 
   const summary = useMemo(() => {
     const items = Array.isArray(cartItems) ? cartItems : [];
@@ -32,6 +32,11 @@ const InvoiceTotal = ({ cartItems, onChangeInvoiceData }) => {
     // 3. Calculate Final Total
     const finalTotal = totals.subTotal - discountAmount + totals.taxTotal;
 
+    // 4. Get current date and time
+    const now = new Date();
+    const invoiceDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const invoiceTime = now.toTimeString().split(' ')[0]; // HH:MM:SS format
+
     return {
       subTotal: totals.subTotal,
       taxTotal: totals.taxTotal,
@@ -39,7 +44,11 @@ const InvoiceTotal = ({ cartItems, onChangeInvoiceData }) => {
       discountValue: discount,
       discountType: discountType,
       discountAmount: discountAmount,
-      finalTotal: Math.max(0, finalTotal)
+      finalTotal: Math.max(0, finalTotal),
+      invoiceDate: invoiceDate,
+      invoiceTime: invoiceTime
+
+
     };
   }, [cartItems, discount, discountType]);
 

@@ -1,16 +1,18 @@
 import React from 'react'
 import { useMemo } from 'react';
 
-const Test = ({ cartItems , invoiceData, paymentData}) => {
+const Test = ({ cartItems , invoiceData, paymentData, customerData}) => {
   const items = useMemo(() => Array.isArray(cartItems) ? cartItems : [], [cartItems]);
   const paydata = useMemo(() => typeof paymentData === 'object' && paymentData !== null ? paymentData : {}, [paymentData]);
   const invData = useMemo(() => typeof invoiceData === 'object' && invoiceData !== null ? invoiceData : {}, [invoiceData]);
+  const custData = useMemo(() => typeof customerData === 'object' && customerData !== null ? customerData : {}, [customerData]);
   const calculateTotal = useMemo(() => {
     return items.reduce((sum, item) => sum + (Number(item?.total) || 0), 0);
   }, [items]);
 
   const paymentEntries = Object.entries(paydata);
   const invoiceEntries = Object.entries(invData);
+  const customerEntries = Object.entries(custData);
 
   return (
     <>
@@ -26,6 +28,16 @@ const Test = ({ cartItems , invoiceData, paymentData}) => {
         <div>
           <h5>Invoice Data</h5>
           {invoiceEntries.map(([key, value]) => (
+            <p key={key}>{key}: {String(value)}</p>
+          ))}
+        </div>
+      )}
+
+
+       {customerEntries.length > 0 && (
+        <div>
+          <h5>Customer Data</h5>
+          {customerEntries.map(([key, value]) => (
             <p key={key}>{key}: {String(value)}</p>
           ))}
         </div>

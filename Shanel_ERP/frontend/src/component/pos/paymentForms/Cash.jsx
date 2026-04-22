@@ -65,6 +65,10 @@ const Cash = ({ setPaymentData, totalDue, isPartial, partialAmount }) => {
         setPaymentData,
     ]);
 
+
+    const handleOnFocus = () => {
+        setCashTendered('');
+    };
     return (
         <div className='d-flex flex-column w-100' style={{ gap: '0.8rem' }}>
             <div>
@@ -75,6 +79,7 @@ const Cash = ({ setPaymentData, totalDue, isPartial, partialAmount }) => {
                     step='0.01'
                     className='form-control form-control-lg shadow-none'
                     placeholder='0.00'
+                    onFocus={handleOnFocus}
                     value={cashTendered}
                     onChange={(e) => setCashTendered(e.target.value)}
                 />

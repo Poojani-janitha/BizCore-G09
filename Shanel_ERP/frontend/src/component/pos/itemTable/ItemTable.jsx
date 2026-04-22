@@ -22,9 +22,9 @@ const toNumber = (value) => parseFloat(value) || 0;
 const ItemTable = ({ cartItems, setCartItems }) => {
     const inputRowBg = '#f8faf9';
     const [query, setQuery] = useState('');
-    const [allUnits, setAllUnits] = useState([]);
-    const [searchResults, setSearchResults] = useState([]);
-    const [tempItem, setTempItem] = useState(EMPTY_ITEM);
+    const [allUnits, setAllUnits] = useState([]);// All available units for the selected product
+    const [searchResults, setSearchResults] = useState([]);// For product search results dropdown
+    const [tempItem, setTempItem] = useState(EMPTY_ITEM);// Temporary state for the item being added to the cart
     
     const searchInputRef = useRef(null);
 
@@ -220,9 +220,9 @@ const ItemTable = ({ cartItems, setCartItems }) => {
                                                 className='list-group-item list-group-item-action small py-2 cursor-pointer search-result-item'
                                             >
                                                 <div className='fw-bold'>{product.p_name}</div>
-                                                <div className='text-muted' style={{fontSize: '12px'}}>
-                                                    <img src={product.image_path } style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '10px' }} />
-                                                    Code: {product.p_code} | Price: {toNumber(product.retail_price).toFixed(2)} | Tax: {toNumber(product.tax_rate).toFixed(2)}%
+                                                <div className='text-muted' style={{fontSize: '12px'}} style={{ product.p_type === 'Finished' ? { color: '#0d6efd' } : { color: '#198754' } }}>
+                                                    <img src={`http://localhost:5000${product.image_url}`} style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '10px' }} />
+                                                    Code: {product.p_code} | Price: {toNumber(product.retail_price).toFixed(2)} | Tax: {toNumber(product.tax_rate).toFixed(2)}% |<br /> Type : {product.p_type}
                                                 </div>
                                             </li>
                                         ))}

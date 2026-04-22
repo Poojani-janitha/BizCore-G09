@@ -1,5 +1,5 @@
 const sequelize = require('../../config/db');
-const {Product,UnitConversion} = require('../../models/index');
+const { Product, UnitConversion, Sale } = require('../../models/index');
 const { Op, where } = require('sequelize');
 
 const searchProducts = async (req, res) => {
@@ -26,7 +26,7 @@ const searchProducts = async (req, res) => {
                 [Op.or]: [
                     { P_Name: { [Op.like]: `${searchTerm}%` } },
                     { P_Code: { [Op.like]: `${searchTerm}%` } }
-                   
+
                 ]
             }, attributes: [
                 'P_ID',
@@ -46,11 +46,11 @@ const searchProducts = async (req, res) => {
             order: [['P_Name', 'ASC']]
 
 
-            
+
 
         })
 
-        const formateData = products.map((p)=>{
+        const formateData = products.map((p) => {
             return {
                 p_id: p.P_ID,
                 p_name: p.P_Name,
@@ -69,20 +69,20 @@ const searchProducts = async (req, res) => {
 
 
         return res.status(200).json({
-            
-            success:true,
+
+            success: true,
             products: formateData,
             count: formateData.length
-         })
-       
+        })
+
     } catch (error) {
         return res.status(500).json({
             success: false,
             message: "server error while searching products",
             error: error.message
         })
-    
-       
+
+
 
     }
 }
@@ -96,10 +96,10 @@ const allUnits = async (req, res) => {
                 P_ID: productId
             },
             attributes: [
-               'Unit_Name',
+                'Unit_Name',
                 'Is_Base_Unit',
                 'Unit_Conversion'
-             
+
 
             ],
             order: [['Display_Order', 'ASC']],
@@ -155,39 +155,111 @@ const getBaseUnitQty = async (req, res) => {
     }
 };
 
+const generateInvoiceNo = async (req, res) => {
+     try {
+            let newInvoiceNo; 
+            const lastSale = await Sale.findOne({
+                order: [['Created_At', 'DESC']]
+            });
+
+            if (lastSale) {
+                const lastInvoiceNo = lastSale.Invoice_No;
+                const numericPart = parseInt(lastInvoiceNo.replace(/\D/g, ''));
+                const newNumericPart = numericPart + 1;
+                newInvoiceNo = `INV-${new Date().getFullYear()}-${newNumericPart.toString().padStart(6, '0')}`;
+            } else {
+                newInvoiceNo = `INV-${new Date().getFullYear()}-000001`;
+            }
+            
+
+            return res.status(200).json({
+                invoiceNo: newInvoiceNo,
+                success: true,
+                message: "Invoice number generated successfully"
+            });
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                message: "Error generating invoice number",
+                error: error.message
+            });
+        }
+}
+
 //post sales data from POS to backend
 const postSalesData = async (req, res) => {
     try {
-       const{cutomer, items, invoiceDetails, paymentDetails, action} = req.body;
-       
-       console.log("Received Sales Data:", {
-        cutomer,
-        items,
-        invoiceDetails,
-        paymentDetails,
-        action
-       });
+        const { cutomer, items, invoiceDetails, paymentDetails, action } = req.body;
 
+        console.log("Received Sales Data:", {
+            cutomer,
+            items,
+            invoiceDetails,
+            paymentDetails,
+            action
+        });
 
-       const sale = await sequelize.createSchema({
-        Invoice_No: invoiceDetails.invoiceNo,
-        C_ID: cutomer.C_ID,
-        Sale_Date: invoiceDetails.saleDate,
-        Sale_Time: invoiceDetails.saleTime,
-        Location: invoiceDetails.location,
-        Sale_Type: invoiceDetails.saleType,
-        Price_Level: invoiceDetails.priceLevel,
-        Subtotal: invoiceDetails.subtotal,
-        Discount_Percentage: invoiceDetails.discountPercentage,
-        Discount_Amount: invoiceDetails.discountAmount,
-        Tax_Rate: invoiceDetails.taxRate,
-        Total_Amount: invoiceDetails.totalAmount,
-        Payment_Method: paymentDetails.paymentMethod,
-        Payment_Amount: paymentDetails.paymentAmount,
-        Change_Amount: paymentDetails.changeAmount
-       })
+        // Validate customer data
+        if (!cutomer || !cutomer.c_id) {
+            return res.status(400).json({
+                success: false,
+                message: "Customer data is required with valid customer ID"
+            });
+        }
+
+        // Validate items
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "At least one item is required in the sale"
+            });
+        }
+
+        // Validate invoice details
+        if (!invoiceDetails || !invoiceDetails.invoiceNo) {
+            return res.status(400).json({
+                success: false,
+                message: "Invoice details with valid invoice number are required"
+            });
+        }
+
+        
+
+        // Get current date/time as fallback if not provided
+        const now = new Date();
+        const saleDate = invoiceDetails?.invoiceDate || now.toISOString().split('T')[0];
+        const saleTime = invoiceDetails?.invoiceTime || now.toTimeString().split(' ')[0];
+
+        // Create sale with the invoice number passed from frontend
+        const sale = await Sale.create({
+            Invoice_No: invoiceDetails.invoiceNo,
+            C_ID: cutomer.c_id,
+            Sale_Date: saleDate,
+            Sale_Time: saleTime,
+            Location: 'Shop',
+            Sale_Type: 'Retail',
+            Price_Level: 'Retail',
+            Subtotal: invoiceDetails.subTotal,
+            Discount_Percentage: 0,
+            Discount_Amount: invoiceDetails.discountAmount,
+            Tax_Rate: 0,
+            Tax_Amount: invoiceDetails.taxTotal,
+            Total_Amount: invoiceDetails.finalTotal,
+            Payment_Status: 'Paid',
+            Paid_Amount: paymentDetails.Payment_Amount,
+            Bill_Printed: false,
+            Status: 'Active'
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Sales data processed successfully",
+            invoiceNo: sale.Invoice_No,
+            saleId: sale.Sale_Id
+        });
 
     } catch (error) {
+        console.error("Error in postSalesData:", error);
         res.status(500).json({
             success: false,
             message: "Error processing sales data",
@@ -195,5 +267,7 @@ const postSalesData = async (req, res) => {
         });
     }
 }
-module.exports = {searchProducts, allUnits, getBaseUnitQty, postSalesData}
+
+
+module.exports = { searchProducts, allUnits, getBaseUnitQty, postSalesData, generateInvoiceNo }
 

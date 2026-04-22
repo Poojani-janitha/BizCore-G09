@@ -172,11 +172,11 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue }) => {
                         Amount passed to credit: <strong>Rs. {remainingDue.toFixed(2)}</strong>
                     </div>
                 )}
-                {/* {isPartial && customerReturnAmount > 0 && (
+                {isPartial && customerReturnAmount > 0 && (
                     <div classN ame='alert alert-success py-2 px-3 mb-2 small'>
                         Customer balance to return: <strong>Rs. {customerReturnAmount.toFixed(2)}</strong>
                     </div>
-                )} */}
+                )}
                 <textarea 
                     className="form-control form-control-sm" 
                     placeholder="Add payment notes..." 
