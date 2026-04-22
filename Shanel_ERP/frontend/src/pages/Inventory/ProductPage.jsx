@@ -4,6 +4,7 @@ import ProductHeader from '../../component/Inventory/Product/ProductHeader';
 import ProductFilters from '../../component/Inventory/Product/ProductFilters';
 import ProductTable from '../../component/Inventory/Product/ProductTable';
 import ProductModal from '../../component/Inventory/Product/ProductModal';
+import ProductViewModal from '../../component/Inventory/Product/ProductViewModal';
 
 // Utility function for stock status
 const getStockStatus = (stockCount, minStock) => {
@@ -25,6 +26,8 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     const [error, setError] = useState(null);
 
     const [showModal, setShowModal] = useState(false);
+    const [viewingProduct, setViewingProduct] = useState(null);
+    const [showViewModal, setShowViewModal] = useState(false);
 
     const [editingProduct, setEditingProduct] = useState(null);
 
@@ -33,6 +36,16 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     const handleEdit = (product) => {
         setEditingProduct(product); // Set the selected product data
         setShowModal(true); // Open the modal
+    };
+
+    const handleView = (product) => {
+        setViewingProduct(product);
+        setShowViewModal(true);
+    };
+
+    const handleCloseViewModal = () => {
+        setViewingProduct(null);
+        setShowViewModal(false);
     };
 
     const handleCloseModal = () => {
@@ -223,6 +236,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
 
             <ProductHeader title={pageTitle} onAddClick={handleAddProduct} products={filteredProducts} />
             <ProductModal show={showModal} onHide={handleCloseModal} typeFilter={typeFilter} refreshData={fetchProducts} editData={editingProduct} />
+            <ProductViewModal show={showViewModal} onHide={handleCloseViewModal} product={viewingProduct} />
             <ProductFilters onSearchChange={setSearchTerm} onTypeChange={setSelectedType} onActiveToggle={setActiveOnly} />
             
             {error && (
@@ -245,7 +259,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                 </div>
             </div>
 
-            <ProductTable products={filteredProducts} isLoading={isLoading} onDelete={handleDelete} onEdit={handleEdit} onPrint={handlePrintSingle} error={error} />
+            <ProductTable products={filteredProducts} isLoading={isLoading} onDelete={handleDelete} onEdit={handleEdit} onView={handleView} onPrint={handlePrintSingle} error={error} />
 
             {/* Barcode Qty Print Dialog */}
             {showPrintDialog && printTarget && (

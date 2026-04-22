@@ -14,7 +14,7 @@ const getTransferHistory = async (req, res) => {
         // Try to fetch from database, but gracefully handle if table doesn't exist
         try {
             transfers = await StockTransfer.findAll({
-                order: [['Created_At', 'DESC']],
+                order: [['Created_At', 'DESC'], ['Transfer_Date', 'DESC']],
             });
 
             metrics = {
