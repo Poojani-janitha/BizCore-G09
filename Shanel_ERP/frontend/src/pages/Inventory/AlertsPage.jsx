@@ -66,13 +66,21 @@ const AlertsPage = () => {
   const filteredAlerts = getFilteredAlerts();
 
   const MetricCard = ({ title, value, subtitle, icon, borderColor }) => (
-    <div className={`card border-0 shadow-sm rounded-3 overflow-hidden`}>
-      <div className="card-body p-4">
-        <div className="d-flex justify-content-between align-items-start mb-3">
-          <h6 className="text-muted small fw-semibold mb-0">{title}</h6>
-          <span className={`text-${borderColor}`}>{icon}</span>
+    <div className={`card border-0 border-top border-4 border-${borderColor} shadow-sm rounded-3 overflow-hidden`} style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-6px)';
+        e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '';
+      }}>
+      <div className="card-body p-3">
+        <div className="d-flex justify-content-between align-items-start mb-2">
+          <h6 className="text-muted small fw-bold text-uppercase mb-0" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>{title}</h6>
+          <span className={`text-${borderColor} opacity-75`}>{icon}</span>
         </div>
-        <h3 className="fw-bold text-dark mb-1">{value}</h3>
+        <h5 className="fw-bold text-dark mb-1" style={{ fontSize: '22px' }}>{value}</h5>
         <p className="text-muted small mb-0">{subtitle}</p>
       </div>
     </div>

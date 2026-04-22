@@ -1,5 +1,7 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ChevronRight, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const CustomizedAxisTick = ({ x, y, payload }) => {
   const words = payload.value.split(' ');
@@ -15,13 +17,36 @@ const CustomizedAxisTick = ({ x, y, payload }) => {
 };
 
 const StockChart = ({ data = [] }) => {
+  const navigate = useNavigate();
+
   return (
     <div className="card border-0 shadow-sm rounded-3 h-100 bg-white">
       <div className="pt-4 px-4">
-        <div>
-          <h6 className="mb-1 fw-bold text-dark">Stock Levels Overview</h6>
-          <p className="text-muted mb-0 small">Current vs Minimum Stock Levels</p>
+        <div className="d-flex justify-content-between align-items-start mb-2">
+          <div>
+            <h6 className="mb-1 fw-bold text-dark">Stock Levels Overview</h6>
+            <p className="text-muted mb-0 small">Current vs Minimum Stock Levels</p>
+          </div>
+          <button 
+            type="button" 
+            className="btn btn-sm fw-bold d-flex align-items-center gap-1"
+            style={{ backgroundColor: 'transparent', color: '#3b82f6', fontSize: '12px', padding: '4px 8px' }}
+            onClick={() => navigate('/inventory/company-items')}
+            title="View complete product inventory"
+          >
+            View All <ChevronRight size={14} />
+          </button>
         </div>
+        
+        {/* Info Banner - Shows that we're limiting to top 15 */}
+        {data.length > 0 && (
+          <div className="d-flex align-items-center gap-2 mb-3 p-2 rounded-2" style={{ backgroundColor: '#fef3c7', borderLeft: '3px solid #f59e0b' }}>
+            <AlertCircle size={14} style={{ color: '#f59e0b', flexShrink: 0 }} />
+            <small style={{ color: '#92400e' }}>
+              <strong>Top 15 Critical Items</strong> - Sorted by stock urgency. Low stock items appear first.
+            </small>
+          </div>
+        )}
       </div>
       
       {data.length > 0 ? (

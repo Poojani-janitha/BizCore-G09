@@ -98,7 +98,7 @@ const SaleItem = sequelize.define('SaleItem',{
         }
     },
     Location_Taken_From: {
-        type: DataTypes.ENUM('Shop', 'Production', 'Main_Warehouse'),
+        type: DataTypes.ENUM('Shop', 'Production'),
         allowNull: true
     },
     Notes: {

@@ -174,3 +174,108 @@ exports.getInvoiceDetails = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// Update a return record
+exports.updateReturn = async (req, res) => {
+    const t = await sequelize.transaction();
+    try {
+        const { RT_ID } = req.params;
+        const { Qty, Reason, Reason_Details, Refund_Amount, Restock } = req.body;
+
+        // Get the existing return record
+        const existingReturn = await ProductReturn.findByPk(RT_ID, { transaction: t });
+        if (!existingReturn) {
+            return res.status(404).json({ success: false, message: 'Return record not found' });
+        }
+
+        const oldQty = parseFloat(existingReturn.Qty);
+        const newQty = parseFloat(Qty);
+        const P_ID = existingReturn.P_ID;
+        const oldRestock = existingReturn.Restock;
+
+        // If quantity or restock status changed, update inventory
+        if (oldQty !== newQty || oldRestock !== Restock) {
+            const inventory = await Inventory.findOne({ 
+                where: { P_ID, Location: 'Shop' }, 
+                transaction: t 
+            });
+
+            if (inventory) {
+                let currentQty = parseFloat(inventory.Qty);
+
+                // Reverse old effect
+                if (oldRestock === 1) {
+                    currentQty -= oldQty; // Remove the old good return
+                }
+
+                // Apply new effect
+                if (Restock === 1) {
+                    currentQty += newQty; // Add the new good return
+                }
+
+                // Never allow negative inventory
+                currentQty = Math.max(0, currentQty);
+
+                await inventory.update({ Qty: currentQty }, { transaction: t });
+            }
+        }
+
+        // Update the return record
+        await existingReturn.update({
+            Qty: newQty,
+            Reason,
+            Reason_Details,
+            Refund_Amount: parseFloat(Refund_Amount),
+            Restock
+        }, { transaction: t });
+
+        await t.commit();
+        res.json({ success: true, message: 'Return updated successfully' });
+    } catch (error) {
+        await t.rollback();
+        console.error('Update return error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Delete a return record
+exports.deleteReturn = async (req, res) => {
+    const t = await sequelize.transaction();
+    try {
+        const { RT_ID } = req.params;
+
+        // Get the return record to delete
+        const returnRecord = await ProductReturn.findByPk(RT_ID, { transaction: t });
+        if (!returnRecord) {
+            return res.status(404).json({ success: false, message: 'Return record not found' });
+        }
+
+        const P_ID = returnRecord.P_ID;
+        const qty = parseFloat(returnRecord.Qty);
+        const restock = returnRecord.Restock;
+
+        // If it was a good item (Restock = 1), reverse the inventory
+        if (restock === 1) {
+            const inventory = await Inventory.findOne({ 
+                where: { P_ID, Location: 'Shop' }, 
+                transaction: t 
+            });
+
+            if (inventory) {
+                // Subtract the quantity that was added back
+                const newQty = Math.max(0, parseFloat(inventory.Qty) - qty);
+                await inventory.update({ Qty: newQty }, { transaction: t });
+            }
+        }
+
+        // Delete the return record
+        await returnRecord.destroy({ transaction: t });
+
+        await t.commit();
+        res.json({ success: true, message: 'Return deleted and inventory reversed' });
+    } catch (error) {
+        await t.rollback();
+        console.error('Delete return error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

@@ -34,6 +34,10 @@ module.exports = () => {
     Product.hasMany(StockTransfer, { foreignKey: 'P_ID', as: 'stockTransfers' });
     StockTransfer.belongsTo(Product, { foreignKey: 'P_ID', as: 'product' });
 
+    // Product <-> User (Created By) - For audit trail
+    User.hasMany(Product, { foreignKey: 'Created_By', as: 'CreatedProducts' });
+    Product.belongsTo(User, { foreignKey: 'Created_By', as: 'creator' });
+
     // ===== PRODUCTION ASSOCIATIONS =====
     
     // Production <-> Inventory (One Batch has Many Inventory Records)

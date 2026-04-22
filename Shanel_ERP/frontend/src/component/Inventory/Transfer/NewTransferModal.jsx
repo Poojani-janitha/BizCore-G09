@@ -129,7 +129,6 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
                             <Form.Label className="small fw-bold">FROM</Form.Label>
                             <Form.Select required value={formData.From_Location} onChange={handleLocationChange}>
                                 <option value="">Source...</option>
-                                <option value="Main_Warehouse">Main Warehouse</option>
                                 <option value="Production">Production</option>
                                 <option value="Shop">Shop</option>
                             </Form.Select>
@@ -144,7 +143,6 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
                             <Form.Label className="small fw-bold">TO</Form.Label>
                             <Form.Select required value={formData.To_Location} onChange={e => setFormData({...formData, To_Location: e.target.value})}>
                                 <option value="">Destination...</option>
-                                <option value="Main_Warehouse">Main Warehouse</option>
                                 <option value="Production">Production</option>
                                 <option value="Shop">Shop</option>
                             </Form.Select>

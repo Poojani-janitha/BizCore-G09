@@ -27,7 +27,7 @@ const ItemTable = () => {
 
         try {
 
-            const res = await axios.get('http://localhost:5000/api/sales/search', {
+            const res = await axios.get('http://localhost:5000/api/inventory/sales/search', {
                 params: { q: term }
             });
 
