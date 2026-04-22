@@ -51,5 +51,6 @@ module.exports = {
     SaleItem,
     Payment,
     CreditTranscation,
-    SalesSummaryDaily
+    SalesSummaryDaily,
+    User
 };

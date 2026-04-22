@@ -12,7 +12,7 @@ const SalesSummaryDaily = sequelize.define('SalesSummaryDaily', {
         allowNull: false
     },
     Location: {
-        type: DataTypes.ENUM('Shop', 'Production', 'Main_Warehouse'),
+        type: DataTypes.ENUM('Shop', 'Production'),
         allowNull: true
     },
     Cashier_ID: {

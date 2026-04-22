@@ -69,16 +69,16 @@ const StockAdjustment = () => {
 
             <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
                 <div className="table-responsive">
-                    <table className="table align-middle mb-0">
+                    <table className="table align-middle mb-0" style={{ minWidth: '900px' }}>
                         <thead>
                             <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
-                                <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Date</th>
-                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Item</th>
-                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Reason</th>
-                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Quantity</th>
-                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Stock Change</th>
-                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Status</th>
-                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>Actions</th>
+                                <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '12%' }}>Date</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '18%' }}>Item</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '20%' }}>Reason</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '12%' }}>Quantity</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '18%' }}>Stock Change</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '10%' }}>Status</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '10%' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -89,11 +89,21 @@ const StockAdjustment = () => {
                                         <div className="fw-bold">{log.Product?.P_Name}</div>
                                         <small className="text-muted">{log.Product?.P_Code}</small>
                                     </td>
-                                    <td><span className="badge bg-light text-dark border">{log.Adjustment_Type}</span></td>
-                                    <td className={log.Difference < 0 ? 'text-danger fw-bold' : 'text-success fw-bold'}>
-                                        {log.Difference}
+                                    <td>
+                                        <small className="text-muted">{log.Reason || log.Adjustment_Type}</small>
+                                        <br />
+                                        <span className="badge bg-light text-dark border" style={{ fontSize: '10px' }}>{log.Adjustment_Type}</span>
                                     </td>
-                                    <td><small className="text-muted">{log.System_Qty} → {log.Physical_Qty}</small></td>
+                                    <td className={log.Difference < 0 ? 'text-danger fw-bold' : 'text-success fw-bold'}>
+                                        {Math.abs(log.Difference)}
+                                    </td>
+                                    <td>
+                                        <div title={`Before: ${log.System_Qty} → After: ${log.Physical_Qty}`}>
+                                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#6c757d' }}>{parseFloat(log.System_Qty || 0).toFixed(2)}</span>
+                                            <span className="mx-2" style={{ fontSize: '13px', fontWeight: 'bold', color: '#495057' }}>→</span>
+                                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#0d6efd' }}>{parseFloat(log.Physical_Qty || 0).toFixed(2)}</span>
+                                        </div>
+                                    </td>
                                     <td><span className="badge bg-success-subtle text-success">Approved</span></td>
                                     <td>
                                         <button 

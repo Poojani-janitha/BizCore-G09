@@ -82,8 +82,16 @@ exports.updateProductionStatus = async (req, res) => {
         if (!batch) throw new Error("Batch not found");
 
         if (status === 'Approved' && batch.Status !== 'Approved') {
+            // Fetch product to determine inventory location based on product type
+            const product = await Product.findByPk(batch.P_ID, { transaction: t });
+            if (!product) throw new Error("Product not found");
+
+            // Determine location based on product type
+            // Company items go to "Production", Others and Raw materials go to their respective locations
+            const location = product.P_Type === 'Company' ? 'Production' : 'Shop';
+
             const [inventory] = await Inventory.findOrCreate({
-                where: { P_ID: batch.P_ID, Location: 'Main_Warehouse' },
+                where: { P_ID: batch.P_ID, Location: location },
                 defaults: { Qty: 0 },
                 transaction: t
             });
