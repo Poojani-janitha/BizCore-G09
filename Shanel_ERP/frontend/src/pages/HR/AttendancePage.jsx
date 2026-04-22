@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import HrStatsCard from '../../component/HR/Dashboard/HrStatsCard';
 import { generateEmployees, EMP_KEY } from '../../storeContext/employeesData';
 
 const Attendance = () => {
-  const navigate = useNavigate();
   const today = new Date().toISOString().split('T')[0];
   const [employees, setEmployees] = useState([]);
   const [date, setDate] = useState(today);
   const [attendance, setAttendance] = useState({});
-
-  useEffect(() => {
+  const loadEmployees = () => {
     const stored = localStorage.getItem(EMP_KEY);
     let list = [];
     if (stored) {
@@ -19,28 +16,74 @@ const Attendance = () => {
       list = generateEmployees();
       localStorage.setItem(EMP_KEY, JSON.stringify(list));
     }
+
     setEmployees(list);
-    setAttendance(
-      Object.fromEntries(
-        list.map(emp => [
-          emp.id,
-          // ✅ FIX: timeIn and timeOut start empty — only user can fill them
-          { status: 'present', timeIn: '', timeOut: '', otHours: 0 },
-        ])
-      )
-    );
+    setAttendance(prev => Object.fromEntries(
+      list.map(emp => [
+        emp.id,
+        prev[emp.id] || { status: 'present', timeIn: '', timeOut: '', otHours: 0 },
+      ])
+    ));
+  };
+
+  useEffect(() => {
+    loadEmployees();
+
+    const syncEmployees = () => loadEmployees();
+    window.addEventListener('employees-updated', syncEmployees);
+    window.addEventListener('storage', syncEmployees);
+    return () => {
+      window.removeEventListener('employees-updated', syncEmployees);
+      window.removeEventListener('storage', syncEmployees);
+    };
   }, []);
 
   const [submitted, setSubmitted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const getWorkHours = (timeIn, timeOut) => {
+    if (!timeIn || !timeOut) return 0;
+    const [inH, inM] = timeIn.split(':').map(Number);
+    const [outH, outM] = timeOut.split(':').map(Number);
+    return ((outH * 60 + outM) - (inH * 60 + inM)) / 60;
+  };
+
+  const calculateOtHours = (timeIn, timeOut) => {
+    if (!timeIn || !timeOut) return 0;
+    const [outH, outM] = timeOut.split(':').map(Number);
+    const outMinutes = outH * 60 + outM;
+    const thresholdMinutes = 16 * 60; // 4:00 PM
+    const overtimeMinutes = Math.max(0, outMinutes - thresholdMinutes);
+    return Math.round((overtimeMinutes / 60) * 100) / 100;
+  };
+
+  const applyAttendanceRules = (record) => {
+    const next = { ...record };
+    const workedHours = getWorkHours(next.timeIn, next.timeOut);
+
+    if (next.status === 'present' && next.timeIn && next.timeOut && workedHours > 0 && workedHours < 4) {
+      next.status = 'leave';
+      next.otHours = 0;
+      return next;
+    }
+
+    if (next.status === 'present') {
+      next.otHours = calculateOtHours(next.timeIn, next.timeOut);
+    } else {
+      next.otHours = 0;
+    }
+
+    return next;
+  };
+
   const updateField = (id, field, value) => {
     setAttendance(prev => {
       const current = prev[id] || {};
       if (field !== 'status') {
+        const updatedRecord = applyAttendanceRules({ ...current, [field]: value });
         return {
           ...prev,
-          [id]: { ...current, [field]: value },
+          [id]: updatedRecord,
         };
       }
 
@@ -56,7 +99,7 @@ const Attendance = () => {
 
       // ✅ FIX: Present — preserve whatever the user has typed, never auto-fill
       if (nextStatus === 'present') {
-        if (typeof next.otHours !== 'number') next.otHours = 0;
+        return { ...prev, [id]: applyAttendanceRules(next) };
       }
 
       // ✅ FIX: Leave — preserve whatever the user has typed, clear OT only
@@ -73,24 +116,20 @@ const Attendance = () => {
       const updated = { ...prev };
       employees.forEach(emp => {
         const existing = updated[emp.id] || {};
+        const nextTimeIn = status === 'absent' ? '' : (existing.timeIn || '');
+        const nextTimeOut = status === 'absent' ? '' : (existing.timeOut || '');
         updated[emp.id] = {
           ...existing,
           status,
           // ✅ FIX: When marking all absent, clear times; otherwise preserve user's entries
-          timeIn: status === 'absent' ? '' : (existing.timeIn || ''),
-          timeOut: status === 'absent' ? '' : (existing.timeOut || ''),
-          otHours: status === 'present' ? (existing.otHours ?? 0) : 0,
+          timeIn: nextTimeIn,
+          timeOut: nextTimeOut,
+          otHours: status === 'present' ? calculateOtHours(nextTimeIn, nextTimeOut) : 0,
         };
+        updated[emp.id] = applyAttendanceRules(updated[emp.id]);
       });
       return updated;
     });
-  };
-
-  const getWorkHours = (timeIn, timeOut) => {
-    if (!timeIn || !timeOut) return 0;
-    const [inH, inM] = timeIn.split(':').map(Number);
-    const [outH, outM] = timeOut.split(':').map(Number);
-    return ((outH * 60 + outM) - (inH * 60 + inM)) / 60;
   };
 
   const isHalfDay = (id) => {
@@ -231,11 +270,9 @@ const Attendance = () => {
           const rec = attendance[emp.id] || { status: 'present', timeIn: '', timeOut: '', otHours: 0 };
           const halfDay = isHalfDay(emp.id);
 
-          // ✅ FIX: Tea cost = Rs 60 automatically when status is 'present' (half-day gets Rs 30)
-          const teaCost =
-            rec.status === 'present' && !halfDay ? 'Rs 60' :
-            rec.status === 'present' && halfDay ? 'Rs 30' :
-            '—';
+          const roleText = String(emp.role || '').toLowerCase();
+          const isProductionOrStaffRole = roleText.includes('production') || roleText.includes('staff');
+          const teaCost = rec.status === 'present' && isProductionOrStaffRole ? 'Rs 60' : '—';
 
           const rowBg = index % 2 === 0 ? '#fff' : '#fafbfc';
 
@@ -322,15 +359,13 @@ const Attendance = () => {
               <input
                 type="number"
                 min="0"
-                max="3"
                 value={rec.otHours}
-                disabled={rec.status !== 'present'}
-                onChange={e => updateField(emp.id, 'otHours', Number(e.target.value))}
+                disabled
                 placeholder="0"
                 style={{
                   padding: '5px 8px', borderRadius: '6px',
                   border: '1px solid #d1d5db', fontSize: '12px',
-                  background: rec.status !== 'present' ? '#f1f5f9' : '#fff',
+                  background: '#f1f5f9',
                   color: rec.status !== 'present' ? '#94a3b8' : '#1a1a2e',
                   outline: 'none', width: '60px',
                 }}
@@ -339,8 +374,8 @@ const Attendance = () => {
               {/* ✅ Tea Cost — auto-applied for present employees */}
               <div style={{
                 fontSize: '12px', fontWeight: 700,
-                color: teaCost === 'Rs 60' ? '#16a34a' : teaCost === 'Rs 30' ? '#2563eb' : '#94a3b8',
-                background: teaCost !== '—' ? (teaCost === 'Rs 60' ? 'rgba(34,197,94,0.1)' : 'rgba(59,130,246,0.1)') : 'transparent',
+                color: teaCost === 'Rs 60' ? '#16a34a' : '#94a3b8',
+                background: teaCost !== '—' ? 'rgba(34,197,94,0.1)' : 'transparent',
                 padding: teaCost !== '—' ? '4px 8px' : '0',
                 borderRadius: '6px',
               }}>{teaCost}</div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { DollarSign, Calculator, Send, Download, CheckCircle, AlertCircle, Edit2, Save, X } from 'lucide-react';
 import { generateEmployees, EMP_KEY } from '../../storeContext/employeesData';
 
@@ -81,6 +82,8 @@ const generatePayrollData = (employees) => {
 };
 
 export default function Payroll() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [payrollRecords, setPayrollRecords] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState('2026-02');
   const [editingId, setEditingId] = useState(null);
@@ -94,6 +97,53 @@ export default function Payroll() {
     notes: '',
   });
 
+  const syncPayrollWithEmployees = () => {
+    let employees = [];
+    let existingPayroll = [];
+
+    try {
+      const storedEmployees = localStorage.getItem(EMP_KEY);
+      employees = storedEmployees ? JSON.parse(storedEmployees) : generateEmployees();
+    } catch {
+      employees = generateEmployees();
+    }
+
+    try {
+      const storedPayroll = localStorage.getItem(PAYROLL_KEY);
+      existingPayroll = storedPayroll ? JSON.parse(storedPayroll) : [];
+    } catch {
+      existingPayroll = [];
+    }
+
+    const payrollById = new Map(existingPayroll.map((record) => [String(record.id), record]));
+    const syncedPayroll = employees.map((emp) => {
+      const existing = payrollById.get(String(emp.id));
+      if (existing) {
+        return {
+          ...existing,
+          employeeName: emp.name,
+          employeeRole: emp.role,
+        };
+      }
+
+      const config = getSalaryConfig(emp.role);
+      const salary = calculateSalary(config);
+      return {
+        id: emp.id,
+        employeeCode: `EMP-${String(emp.id).padStart(3, '0')}`,
+        employeeName: emp.name,
+        employeeRole: emp.role,
+        salaryType: config.salaryType,
+        ...salary,
+        overtimeHours: 0,
+        status: 'Pending',
+      };
+    });
+
+    setPayrollRecords(syncedPayroll);
+    localStorage.setItem(PAYROLL_KEY, JSON.stringify(syncedPayroll));
+  };
+
   // Initialize payroll data from employees
   useEffect(() => {
     const storedPayroll = localStorage.getItem(PAYROLL_KEY);
@@ -106,6 +156,14 @@ export default function Payroll() {
     } else {
       initializePayroll();
     }
+
+    const syncEmployees = () => syncPayrollWithEmployees();
+    window.addEventListener('employees-updated', syncEmployees);
+    window.addEventListener('storage', syncEmployees);
+    return () => {
+      window.removeEventListener('employees-updated', syncEmployees);
+      window.removeEventListener('storage', syncEmployees);
+    };
   }, []);
 
   const initializePayroll = () => {
@@ -317,14 +375,29 @@ export default function Payroll() {
 
     alert(`Payroll submitted to ${bankDetails.bankName}\n\nAccount: ${bankDetails.accountNumber}\nTotal Amount: Rs. ${totalNet.toLocaleString()}\n\nReceipt: ${submission.submittedAt}`);
 
-    // Email simulation (in real app, this would call backend)
     if (bankDetails.recipientEmail) {
-      console.log(`Email would be sent to: ${bankDetails.recipientEmail}`);
+      const subject = encodeURIComponent(`Paysheet - ${selectedMonth} - ${bankDetails.bankName}`);
+      const body = encodeURIComponent(
+        `Dear Bank Team,\n\nPlease find the paysheet for ${selectedMonth}.\n\n` +
+        `Bank: ${bankDetails.bankName}\n` +
+        `Account Number: ${bankDetails.accountNumber}\n` +
+        `Total Net Amount: Rs. ${totalNet.toLocaleString()}\n\n` +
+        `A printable paysheet PDF has been opened from SHANEL ERP.\n\nRegards,\nHR Department`
+      );
+      window.open(`mailto:${bankDetails.recipientEmail}?subject=${subject}&body=${body}`, '_blank');
+    } else {
+      alert('Paysheet PDF prepared. Add recipient email to create bank email.');
     }
 
     setShowBankModal(false);
     setBankDetails({ bankName: '', accountNumber: '', recipientEmail: '', notes: '' });
   };
+
+  useEffect(() => {
+    if (!location.state?.triggerSendPaysheet) return;
+    setShowBankModal(true);
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.state, location.pathname, navigate]);
 
   // Export to CSV
   const exportToCSV = () => {
