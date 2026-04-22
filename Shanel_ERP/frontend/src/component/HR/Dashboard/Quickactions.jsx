@@ -7,9 +7,9 @@ const QuickActions = () => {
     { label: 'Mark Attendance', icon: '🕗', color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', path: '/hr/attendance' },
     { label: 'Add Employee', icon: '👤', color: '#22c55e', bg: 'rgba(34,197,94,0.08)', path: '/hr/employees', state: { addNew: true } },
     { label: 'Process Salary', icon: '💰', color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)', path: '/hr/payroll' },
-    { label: 'Approve Leave', icon: '✅', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
+    { label: 'Leave Details', icon: '✅', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', path: '/hr/leave' },
     { label: 'Send Paysheet', icon: '📧', color: '#ef4444', bg: 'rgba(239,68,68,0.08)', path: '/hr/payroll', state: { triggerSendPaysheet: true } },
-    { label: 'View Reports', icon: '📊', color: '#06b6d4', bg: 'rgba(6,182,212,0.08)' },
+    { label: 'View Reports', icon: '📊', color: '#06b6d4', bg: 'rgba(6,182,212,0.08)', path: '/hr/reports' },
   ];
 
   return (

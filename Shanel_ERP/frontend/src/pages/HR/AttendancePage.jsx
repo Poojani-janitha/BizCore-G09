@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import HrStatsCard from '../../component/HR/Dashboard/HrStatsCard';
 import { generateEmployees, EMP_KEY } from '../../storeContext/employeesData';
+import { getAttendanceForDate, setAttendanceForDate, setLastSavedAttendanceDate } from '../../storeContext/attendanceData';
 
 const Attendance = () => {
   const today = new Date().toISOString().split('T')[0];
@@ -18,10 +19,11 @@ const Attendance = () => {
     }
 
     setEmployees(list);
+    const storedAttendance = getAttendanceForDate(date);
     setAttendance(prev => Object.fromEntries(
       list.map(emp => [
         emp.id,
-        prev[emp.id] || { status: 'present', timeIn: '', timeOut: '', otHours: 0 },
+        storedAttendance?.[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 },
       ])
     ));
   };
@@ -37,6 +39,18 @@ const Attendance = () => {
       window.removeEventListener('storage', syncEmployees);
     };
   }, []);
+
+  useEffect(() => {
+    // When the date changes, load saved attendance for that day (keeping employee list in sync)
+    if (!employees.length) return;
+    const storedAttendance = getAttendanceForDate(date);
+    setAttendance(prev => Object.fromEntries(
+      employees.map(emp => [
+        emp.id,
+        storedAttendance?.[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 },
+      ])
+    ));
+  }, [date]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [submitted, setSubmitted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,14 +73,50 @@ const Attendance = () => {
 
   const applyAttendanceRules = (record) => {
     const next = { ...record };
-    const workedHours = getWorkHours(next.timeIn, next.timeOut);
 
-    if (next.status === 'present' && next.timeIn && next.timeOut && workedHours > 0 && workedHours < 4) {
-      next.status = 'leave';
+    // Default state at the beginning of the day is Absent.
+    if (!next.status) next.status = 'absent';
+
+    // Manager override: Leave means "not working today".
+    // Keep times cleared and do not auto-switch to Present.
+    if (next.status === 'leave') {
+      next.timeIn = '';
+      next.timeOut = '';
       next.otHours = 0;
       return next;
     }
 
+    // If Time In is cleared, employee is Absent (reset the record for the day).
+    if (!next.timeIn) {
+      next.status = 'absent';
+      next.timeOut = '';
+      next.otHours = 0;
+      return next;
+    }
+
+    // If Time In is entered, automatically switch to Present.
+    // (If Time Out later shows < 4 hours, it will be converted to Leave below.)
+    if (next.timeIn) next.status = 'present';
+
+    // If user marks Absent, clear all time fields + OT.
+    if (next.status === 'absent') {
+      next.timeIn = '';
+      next.timeOut = '';
+      next.otHours = 0;
+      return next;
+    }
+
+    // When Time Out is entered, decide Leave vs Present based on worked hours.
+    if (next.timeIn && next.timeOut) {
+      const workedHours = getWorkHours(next.timeIn, next.timeOut);
+      if (workedHours > 0 && workedHours < 4) {
+        next.status = 'leave';
+      } else if (workedHours >= 4) {
+        next.status = 'present';
+      }
+    }
+
+    // OT only applies when Present and Time Out is after 4:00 PM.
     if (next.status === 'present') {
       next.otHours = calculateOtHours(next.timeIn, next.timeOut);
     } else {
@@ -81,33 +131,19 @@ const Attendance = () => {
       const current = prev[id] || {};
       if (field !== 'status') {
         const updatedRecord = applyAttendanceRules({ ...current, [field]: value });
-        return {
+        const next = {
           ...prev,
           [id]: updatedRecord,
         };
+        setAttendanceForDate(date, next);
+        return next;
       }
 
       const nextStatus = value;
-      const next = { ...current, status: nextStatus };
-
-      // Absent: clear times + OT
-      if (nextStatus === 'absent') {
-        next.timeIn = '';
-        next.timeOut = '';
-        next.otHours = 0;
-      }
-
-      // ✅ FIX: Present — preserve whatever the user has typed, never auto-fill
-      if (nextStatus === 'present') {
-        return { ...prev, [id]: applyAttendanceRules(next) };
-      }
-
-      // ✅ FIX: Leave — preserve whatever the user has typed, clear OT only
-      if (nextStatus === 'leave') {
-        next.otHours = 0;
-      }
-
-      return { ...prev, [id]: next };
+      const next = applyAttendanceRules({ ...current, status: nextStatus });
+      const updated = { ...prev, [id]: next };
+      setAttendanceForDate(date, updated);
+      return updated;
     });
   };
 
@@ -116,8 +152,8 @@ const Attendance = () => {
       const updated = { ...prev };
       employees.forEach(emp => {
         const existing = updated[emp.id] || {};
-        const nextTimeIn = status === 'absent' ? '' : (existing.timeIn || '');
-        const nextTimeOut = status === 'absent' ? '' : (existing.timeOut || '');
+        const nextTimeIn = (status === 'absent' || status === 'leave') ? '' : (existing.timeIn || '');
+        const nextTimeOut = (status === 'absent' || status === 'leave') ? '' : (existing.timeOut || '');
         updated[emp.id] = {
           ...existing,
           status,
@@ -128,28 +164,22 @@ const Attendance = () => {
         };
         updated[emp.id] = applyAttendanceRules(updated[emp.id]);
       });
+      setAttendanceForDate(date, updated);
       return updated;
     });
-  };
-
-  const isHalfDay = (id) => {
-    const { timeIn, timeOut, status } = attendance[id] || {};
-    if (status !== 'present') return false;
-    const hours = getWorkHours(timeIn, timeOut);
-    // Only flag as half-day if times are actually entered and hours < 4
-    return timeIn && timeOut && hours > 0 && hours < 4;
   };
 
   const handleSubmit = () => {
     setSubmitted(true);
     setTimeout(() => setSubmitted(false), 3000);
+    setAttendanceForDate(date, attendance);
+    setLastSavedAttendanceDate(date);
     console.log('Attendance Data:', { date, attendance });
     // TODO: send to backend via fetch/axios
   };
 
   const summary = {
-    present: employees.filter(e => attendance[e.id]?.status === 'present' && !isHalfDay(e.id)).length,
-    halfDay: employees.filter(e => isHalfDay(e.id)).length,
+    present: employees.filter(e => attendance[e.id]?.status === 'present').length,
     leave: employees.filter(e => attendance[e.id]?.status === 'leave').length,
     absent: employees.filter(e => attendance[e.id]?.status === 'absent').length,
   };
@@ -190,7 +220,6 @@ const Attendance = () => {
       {/* Summary Cards */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginBottom: '22px' }}>
         <HrStatsCard title="Present Today" value={summary.present} subtitle="Fingerprint verified" icon="✅" color="green" />
-        <HrStatsCard title="Half Day" value={summary.halfDay} subtitle="Less than 4 hours" icon="🕐" color="blue" />
         <HrStatsCard title="On Leave" value={summary.leave} subtitle="Approved leaves" icon="📋" color="amber" />
         <HrStatsCard title="Absent" value={summary.absent} subtitle="No show" icon="❌" color="red" />
       </div>
@@ -267,12 +296,12 @@ const Attendance = () => {
 
         {/* Table Rows */}
         {filtered.map((emp, index) => {
-          const rec = attendance[emp.id] || { status: 'present', timeIn: '', timeOut: '', otHours: 0 };
-          const halfDay = isHalfDay(emp.id);
+          const rec = attendance[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 };
 
           const roleText = String(emp.role || '').toLowerCase();
           const isProductionOrStaffRole = roleText.includes('production') || roleText.includes('staff');
-          const teaCost = rec.status === 'present' && isProductionOrStaffRole ? 'Rs 60' : '—';
+          const workedHours = getWorkHours(rec.timeIn, rec.timeOut);
+          const teaCost = rec.status === 'present' && isProductionOrStaffRole && rec.timeIn && rec.timeOut && workedHours >= 4 ? 'Rs 60' : '—';
 
           const rowBg = index % 2 === 0 ? '#fff' : '#fafbfc';
 
@@ -293,9 +322,6 @@ const Attendance = () => {
               {/* Name */}
               <div>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: '#1a1a2e' }}>{emp.name}</div>
-                {halfDay && (
-                  <span style={{ fontSize: '10px', color: '#2563eb', fontWeight: 600 }}>Half Day</span>
-                )}
               </div>
 
               {/* Role */}
@@ -327,14 +353,14 @@ const Attendance = () => {
               <input
                 type="time"
                 value={rec.timeIn}
-                disabled={rec.status === 'absent'}
+                disabled={rec.status === 'leave'}
                 onChange={e => updateField(emp.id, 'timeIn', e.target.value)}
                 placeholder="--:--"
                 style={{
                   padding: '5px 8px', borderRadius: '6px',
                   border: '1px solid #d1d5db', fontSize: '12px',
-                  background: rec.status === 'absent' ? '#f1f5f9' : '#fff',
-                  color: rec.status === 'absent' ? '#94a3b8' : '#1a1a2e',
+                  background: rec.status === 'leave' ? '#f1f5f9' : '#fff',
+                  color: rec.status === 'leave' ? '#94a3b8' : '#1a1a2e',
                   outline: 'none', width: '90px',
                 }}
               />
@@ -343,14 +369,14 @@ const Attendance = () => {
               <input
                 type="time"
                 value={rec.timeOut}
-                disabled={rec.status === 'absent'}
+                disabled={!rec.timeIn || rec.status === 'leave'}
                 onChange={e => updateField(emp.id, 'timeOut', e.target.value)}
                 placeholder="--:--"
                 style={{
                   padding: '5px 8px', borderRadius: '6px',
                   border: '1px solid #d1d5db', fontSize: '12px',
-                  background: rec.status === 'absent' ? '#f1f5f9' : '#fff',
-                  color: rec.status === 'absent' ? '#94a3b8' : '#1a1a2e',
+                  background: (!rec.timeIn || rec.status === 'leave') ? '#f1f5f9' : '#fff',
+                  color: (!rec.timeIn || rec.status === 'leave') ? '#94a3b8' : '#1a1a2e',
                   outline: 'none', width: '90px',
                 }}
               />
