@@ -246,18 +246,20 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                 </div>
             )}
 
+            {/* 
             <div className='d-flex align-items-center justify-content-between mb-3 px-1'>
                 <div className='d-flex gap-2'>
                     <span className='badge bg-white text-dark border shadow-sm py-2 px-3 fw-normal'>
                         <span className='text-muted fw-normal'>Total Results:</span> {products.length}                            
                     </span>
-                    {/* {selectedType && (
-                        <span className='badge bg-info-subtle text-info border border-info-subtle py-2 px-3 fw-normal'>
-                            Found: {filteredProducts.length}
-                        </span>
-                    )} */}
+                    // {selectedType && (
+                        // <span className='badge bg-info-subtle text-info border border-info-subtle py-2 px-3 fw-normal'>
+                            // Found: {filteredProducts.length}
+                        // </span>
+                    // )} 
                 </div>
-            </div>
+            </div> 
+            */}
 
             <ProductTable products={filteredProducts} isLoading={isLoading} onDelete={handleDelete} onEdit={handleEdit} onView={handleView} onPrint={handlePrintSingle} error={error} />
 
