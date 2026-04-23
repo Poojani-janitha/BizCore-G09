@@ -46,6 +46,14 @@ const EXPENSE_CATEGORY_ACCOUNTS = {
     'Other': ACCOUNTS.OTHER_EXPENSE
 };
 
+// Maps income categories to their account codes
+const INCOME_CATEGORY_ACCOUNTS = {
+    Sales: ACCOUNTS.SALES_REVENUE_RETAIL,
+    Interest: ACCOUNTS.OTHER_INCOME,
+    Commission: ACCOUNTS.OTHER_INCOME,
+    Other: ACCOUNTS.OTHER_INCOME
+};
+
 const PAYMENT_METHODS = {
     CASH: 'Cash',
     CREDIT: 'Credit',
@@ -58,5 +66,6 @@ const PAYMENT_METHODS = {
 module.exports = {
     ACCOUNTS,
     PAYMENT_METHODS,
-    EXPENSE_CATEGORY_ACCOUNTS
+    EXPENSE_CATEGORY_ACCOUNTS,
+    INCOME_CATEGORY_ACCOUNTS
 };

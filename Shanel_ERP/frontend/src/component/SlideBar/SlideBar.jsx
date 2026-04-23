@@ -52,13 +52,11 @@ const SlideBar = () => {
             subItems: [
                 { label: 'Overview', to: '/finance', icon: <PieChart size={14} /> },
                 { label: 'General Ledger', to: '/finance/general-ledger', icon: <FileText size={14} /> },
-                { label: 'Payments', to: '/finance/payments', icon: <DollarSign size={14} /> },
                 { label: 'Receive Payment', to: '/finance/receive-payment', icon: <CornerUpLeft size={14} /> },
                 { label: 'Make Payment', to: '/finance/make-payment', icon: <Truck size={14} /> },
                 { label: 'Reports', to: '/finance/reports', icon: <BarChart2 size={14} /> },
             ]
         },
-        { label: 'Test', icon: <DollarSign size={18} />, to: '/test' },
     ];
 
     const colors = {

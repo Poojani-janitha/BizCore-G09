@@ -171,16 +171,6 @@ const MakePaymentPage = () => {
     return (
         <div style={{ width: '100%', minHeight: '100%', backgroundColor: '#f8fafc', fontFamily: "'Inter', sans-serif" }}>
 
-            {/* Page Header */}
-            <div className="bg-white border-bottom px-4 py-2">
-                <div className="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 className="fw-bold mb-0" style={{ color: '#1e293b' }}>💸 Expense Management</h5>
-                        <small className="text-muted" style={{ fontSize: '11px' }}>Record and manage company expenses</small>
-                    </div>
-                    <span className="text-muted" style={{ fontSize: '12px' }}>{dateStr}</span>
-                </div>
-            </div>
 
             {/* Alert */}
             {alert && (
