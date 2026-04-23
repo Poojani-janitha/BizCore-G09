@@ -25,6 +25,8 @@ const ItemTable = ({ cartItems, setCartItems }) => {
     const [allUnits, setAllUnits] = useState([]);// All available units for the selected product
     const [searchResults, setSearchResults] = useState([]);// For product search results dropdown
     const [tempItem, setTempItem] = useState(EMPTY_ITEM);// Temporary state for the item being added to the cart
+    const [availableQuantity, setAvailableQuantity] = useState(null); // Available quantity for the selected product
+    const [error, setError] = useState({ field: null, message: null }); // Error state for handling any issues during API calls
     
     const searchInputRef = useRef(null);
 
@@ -38,9 +40,10 @@ const ItemTable = ({ cartItems, setCartItems }) => {
             
             try {
                 const res = await axios.get(`http://localhost:5000/api/sales/units?productId=${tempItem.p_id}`);
+                console.log('Units API Response:', res.data);
                 if (res.data.success) {
-                    
                     setAllUnits(res.data.units || []);
+                    console.log('Units set to:', res.data.units);
                 }
             } catch (error) {
                 console.error('Units fetch error', error);
@@ -119,6 +122,7 @@ const ItemTable = ({ cartItems, setCartItems }) => {
 
             return {
                 ...prev,
+                conversionFactor: conversionFactor,
                 p_unit: newUnit,
                 unit_price: nextPrice,
             };
@@ -134,11 +138,13 @@ const ItemTable = ({ cartItems, setCartItems }) => {
             p_name: product.p_name,
             base_unit_price: toNumber(product.retail_price),
             unit_price: toNumber(product.retail_price),
-            p_unit: product.base_unit || allUnits[0] || 'Packet',
+            p_unit: product.base_unit || allUnits[0]?.Unit_Name || 'Packet',
             tax: toNumber(product.tax_rate),
+            conversionFactor: 1, // Base unit has conversion factor of 1
         }));
         setQuery(product.p_name);
         setSearchResults([]);
+        setError(null); // Clear any previous errors
     };
 
 
@@ -153,6 +159,14 @@ const ItemTable = ({ cartItems, setCartItems }) => {
     // Function to add the currently entered item (tempItem) to the cart. This function first checks if the item has a valid product code, then calculates the subtotal, tax amount, and total for the item before adding it to the cart. After adding the item, it resets the temporary item state and clears the search query, allowing the user to easily add another item.
     const addItem = () => {
         if (!tempItem.p_code) {
+            console.warn('Cannot add item: no product code');
+            return;
+        }
+        
+
+        //check if there is any error related to quantity before adding the item to the cart. If there is an error (like quantity exceeding available stock), it prevents the item from being added and logs a warning. This ensures that only valid items with correct quantities are added to the cart, maintaining data integrity and preventing issues during checkout.
+        if (error?.field === 'quantity') {
+            console.warn('Cannot add item: quantity error exists');
             return;
         }
 
@@ -164,6 +178,8 @@ const ItemTable = ({ cartItems, setCartItems }) => {
         setCartItems([...cartItems, newItem]);
         setTempItem(EMPTY_ITEM);
         setQuery('');
+        setAvailableQuantity(null);
+        setError(null);
     };
 
     // Function to update a specific field of an item in the cart based on user input. When the user changes a value (like quantity, price, discount, etc.) for an item in the cart, this function updates that field and recalculates the subtotal, tax amount, and total for that item to ensure that the cart reflects the most current and accurate information.
@@ -174,11 +190,84 @@ const ItemTable = ({ cartItems, setCartItems }) => {
         setCartItems(updatedCart);
     };
 
+    //fuction to get availabale quntity of the product in inventory when user select the product from search result
+    const fetchProductQuantity = async (productId) => {
+        try{
+            const res = await axios.get(`http://localhost:5000/api/sales/product-quantity/${productId}`);
+            console.log('Product Quantity Response:', res.data);
+            if(res.data.success){
+                const qty = toNumber(res.data.totalQty);
+                setAvailableQuantity(qty);
+                console.log('Available quantity set to:', qty);
+            }
+        }
+        catch(error){
+            console.error("Error fetching product quantity:", error);
+        }
+    };
+
+    //useEffect to call fetchProductQuantity when tempItem.p_id changes
+    useEffect(() => {
+        if(tempItem.p_id){
+            console.log('Fetching quantity for product:', tempItem.p_id);
+            fetchProductQuantity(tempItem.p_id);
+        }
+        else{
+            setAvailableQuantity(null);
+        }
+    }, [tempItem.p_id]);
+
+    // Monitor error state changes
+    useEffect(() => {
+        console.log('Error state changed:', error);
+    }, [error]);
+
+    // Monitor availableQuantity changes
+    useEffect(() => {
+        console.log('Available quantity updated:', availableQuantity);
+    }, [availableQuantity]);
+
+
+    //set error when user input quntity more than available quntity in stock and also when user change the product selection reset the error
+    const handleQtyChange = (qty) => {
+        const numQty = toNumber(qty);
+        setTempItem((prev) => ({ ...prev, quntity: numQty }));
+        
+        const conversionFactor = tempItem.conversionFactor || 1;
+        const convertedQty = numQty / conversionFactor; // Convert to base unit quantity for comparison
+        
+        console.log('Qty Change Details:', { 
+            inputQty: qty,
+            numQty, 
+            conversionFactor, 
+            convertedQty, 
+            availableQuantity,
+            hasError: availableQuantity !== null && convertedQty > availableQuantity
+        });
+        
+        if(availableQuantity !== null && convertedQty > availableQuantity){
+            console.log('ERROR: Quantity exceeds available stock');
+            setError({ field: 'quantity', message: `Only ${availableQuantity} units available in stock` });
+        }
+        else{
+            console.log(' Quantity is valid');
+            setError(null);
+        }
+    };
+
     return (
         <div className='card border-0 shadow-sm'>
+            
         <div className='card-header bg-white py-2'>
             <h6 className='mb-0 fw-bold'><Package size={18} className='me-2 text-primary' /> Sales Items</h6>
         </div>
+        
+        {/* Error message display */}
+        {error?.field === 'quantity' && (
+            <div className='alert alert-danger alert-dismissible fade show mx-3 mt-3' role='alert'>
+                <strong> Quantity Error:</strong> {error.message}
+            </div>
+        )}
    
         <div className='table-responsive' style={{ minHeight: '300px', overflowX: 'auto' }}>
             <table className='table table-sm table-hover align-middle mb-0' style={{ width: '100%', minWidth: '1000px' }}>
@@ -222,9 +311,9 @@ const ItemTable = ({ cartItems, setCartItems }) => {
                                                 onClick={() => selectProduct(product)}
                                                 className='list-group-item list-group-item-action small py-2 cursor-pointer search-result-item'
                                             >
-                                                <div className='fw-bold'>{product.p_name}</div>
-                                                <div className='text-muted' style={{fontSize: '12px', color: product.p_type === 'Company' ? '#0d6efd' : '#198754'}}>
-                                                    <img src={`http://localhost:5000${product.image_url}`} style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '10px' }} />
+                                                <div className='fw-bold' style={{color: product.p_type === 'Company' ? '#0d6efd' : '#198754'}}>{product.p_name}</div>
+                                                <div className='text-muted' style={{fontSize: '12px'}}>
+                                                    {product.image_path && <img src={`http://localhost:5000${product.image_path}`} style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '10px' }} />}
                                                     Code: {product.p_code} | Price: {toNumber(product.retail_price).toFixed(2)} | Tax: {toNumber(product.tax_rate).toFixed(2)}% |<br /> Type : {product.p_type}
                                                 </div>
                                             </li>
@@ -249,7 +338,15 @@ const ItemTable = ({ cartItems, setCartItems }) => {
                         <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.unit_price} onChange={(e) => setTempItem({ ...tempItem, unit_price: e.target.value })} /></td>
                         <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.discount} onChange={(e) => setTempItem({ ...tempItem, discount: e.target.value })} /></td>
                         <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.tax} onChange={(e) => setTempItem({ ...tempItem, tax: e.target.value })} readOnly /></td>
-                        <td><input type='number' className='form-control form-control-sm text-center fw-bold' value={tempItem.quntity} onChange={(e) => setTempItem({ ...tempItem, quntity: e.target.value })} /></td>
+                        <td>
+                            <input 
+                                type='number' 
+                                className='form-control form-control-sm text-center fw-bold'
+                                value={tempItem.quntity} 
+                                onChange={(e) => handleQtyChange(e.target.value)}
+                                style={ error?.field === 'quantity' ? { borderColor: '#dc3545', borderWidth: '2px' } : {} }
+                            />
+                        </td>
                         <td><input type='number' className='form-control form-control-sm text-center' value={tempItem.free} onChange={(e) => setTempItem({ ...tempItem, free: e.target.value })} /></td>
                         <td className='text-end fw-bold text-primary'>{currentEntryTotal.toFixed(2)}</td>
                         <td className='text-center'>
@@ -278,6 +375,8 @@ const ItemTable = ({ cartItems, setCartItems }) => {
                 </tbody>
             </table>
         </div>
+        <label htmlFor="" >Available Quantity</label>
+        <input type="number" className="form-control form-control-sm" value={availableQuantity} readOnly />
     </div>
     );
 };
