@@ -28,8 +28,8 @@ const Product = sequelize.define(
             allowNull: false },
 
         Status: {
-            type: DataTypes.ENUM("Active", "Inactive", "Discontinued"),
-            defaultValue: "Active",
+            type: DataTypes.ENUM("In Stock", "Low Stock", "Out of Stock"),
+            defaultValue: "In Stock",
         },
 
         Cost_Price: { 
@@ -47,6 +47,67 @@ const Product = sequelize.define(
         Min_Stock: { 
             type: DataTypes.DECIMAL(10, 2), 
             defaultValue: 0.0 },
+
+        Max_Stock: { 
+            type: DataTypes.DECIMAL(10, 2), 
+            allowNull: true },
+
+        Reorder_Level: { 
+            type: DataTypes.DECIMAL(10, 2), 
+            allowNull: true },
+
+        Tax_Rate: { 
+            type: DataTypes.DECIMAL(5, 2), 
+            defaultValue: 0.0 },
+
+        P_Name_Sinhala: { 
+            type: DataTypes.STRING(200), 
+            allowNull: true },
+
+        Category: { 
+            type: DataTypes.STRING(100), 
+            allowNull: true },
+
+        Subcategory: { 
+            type: DataTypes.STRING(100), 
+            allowNull: true },
+
+        Description: { 
+            type: DataTypes.TEXT, 
+            allowNull: true },
+
+        Image_Path: { 
+            type: DataTypes.STRING(255), 
+            allowNull: true },
+
+        Weight: { 
+            type: DataTypes.DECIMAL(10, 3), 
+            allowNull: true },
+
+        Weight_Unit: { 
+            type: DataTypes.STRING(20), 
+            allowNull: true },
+
+        Barcode: { 
+            type: DataTypes.STRING(100), 
+            allowNull: true },
+
+        Barcode_Type: { 
+            type: DataTypes.STRING(20), 
+            allowNull: true },
+
+        Auto_Generate_Barcode: { 
+            type: DataTypes.BOOLEAN, 
+            defaultValue: false },
+
+        Created_By: { 
+            type: DataTypes.INTEGER, 
+            allowNull: true },
+
+        Is_Ishara_Product: { 
+            type: DataTypes.BOOLEAN, 
+            defaultValue: false,
+            comment: 'For Company items: if true, product is supplied directly (Ishara) - no production batch needed. If false, product goes through production batch.' },
     },
     {
         tableName: "product",

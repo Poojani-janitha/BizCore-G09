@@ -13,7 +13,7 @@ const Inventory = sequelize.define('Inventory', {
         type: DataTypes.INTEGER, 
         allowNull: true },
     Location: { 
-        type: DataTypes.ENUM('Shop', 'Production', 'Main_Warehouse'), 
+        type: DataTypes.ENUM('Shop', 'Production'), 
         allowNull: false 
     },
     Qty: { 

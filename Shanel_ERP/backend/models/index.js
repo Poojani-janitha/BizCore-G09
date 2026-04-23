@@ -1,57 +1,56 @@
-
-//Inventory models
+// ===== INVENTORY MODELS =====
 const Product = require('./inventory/Product');
 const Production = require('./inventory/Production');
 const Inventory = require('./inventory/Inventory');
-const setupInventoryAssociations = require('./inventory/InventoryAssosiation');
+const StockTransfer = require('./inventory/StockTransfer');
+const StockAdjustment = require('./inventory/StockAdjustment');
+const UnitConversion = require('./inventory/UnitConversion');
+const ProductReturn = require('./inventory/ProductReturn');
 
 
 
-// Define associations for inventory and production
-setupInventoryAssociations();
+// ===== INVENTORY ASSOCIATIONS =====
+const InventoryAssociations = require('./inventory/InventoryAssosiation');
+InventoryAssociations();
 
 
-//Sales models
-const Sale = require('./sales/Sales')
+//===== SALES MODELS =====
+const Sale = require('./sales/Sales');
 const SaleItem = require('./sales/SalesItem');
 const Payment = require('./sales/Payment');
-const SalesSummary = require('./sales/SalesSummaryDaily');
-const setupSalesAssociations = require('./sales/SaleAssociation');
-
-// Define associations for sales module
-setupSalesAssociations();
-
-
-
-//Customer models
-const Customer = require('./customer/customer');
 const CreditTranscation = require('./customer/CreditTranscation');
-const CustomerNofification = require('./customer/CustomerNotification');
-const CustomerBuyingPattern = require('./customer/CustomerBuyingPattern');
-const setupCustomerAssociations = require('./customer/CustomerAssosiation');
+const SalesSummaryDaily = require('./sales/SalesSummaryDaily');
+
+// ===== SALES ASSOCIATIONS =====
+const SaleAssociations = require('./sales/SaleAssociation');
+SaleAssociations();
+
+// ===== USER MODELS =====
+const User = require('./user/User');
 
 
-//Define associations for customer module
-setupCustomerAssociations();
+// ===== CUSTOMER MODELS =====
+const Customer = require('./customer/customer');
 
-
-//HR models
-
-//Finance models
-
-//Supplier models
+/// ===== CUSTOMER ASSOCIATIONS =====
+const CustomerAssociations = require('./customer/CustomerAssosiation');
+CustomerAssociations();
 
 
 
-
-
-module.exports = {
-    Product,
-    Production,
-    Inventory,
+module.exports = { 
+    Product, 
+    Production, 
+    Inventory, 
+    StockTransfer,
+    StockAdjustment,
+    UnitConversion,
+    ProductReturn,
+    Customer,
     Sale,
     SaleItem,
     Payment,
-    SalesSummary,
-    Customer
+    CreditTranscation,
+    SalesSummaryDaily,
+    User
 };

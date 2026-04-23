@@ -1,9 +1,25 @@
 const cors = require('cors');
 const express = require('express');
 
+const envOrigins = (process.env.CLIENT_URL || '')
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean);
+
+const allowedOrigins = new Set([
+    ...envOrigins,
+    'http://localhost:5173',
+    'http://localhost:5174'
+]);
+
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const corsOptions = {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173', // Vite default port
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.has(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true

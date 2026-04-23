@@ -26,7 +26,7 @@ const Sale = sequelize.define('Sale',{
         allowNull: false
     },
     Location: {
-        type: DataTypes.ENUM('Shop', 'Production', 'Main_Warehouse'),
+        type: DataTypes.ENUM('Shop', 'Production'),
         defaultValue: 'Shop'
     },
     Sale_Type: {
