@@ -46,5 +46,11 @@ module.exports = {
     StockAdjustment,
     UnitConversion,
     ProductReturn,
-    Customer
+    Customer,
+    Sale,
+    SaleItem,
+    Payment,
+    CreditTranscation,
+    SalesSummaryDaily,
+    User
 };

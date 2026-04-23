@@ -1,9 +1,13 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useState } from 'react'
 import axios from 'axios';
 import { Search } from 'lucide-react';
 
-const CustomerInfo = () => {
+const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
+
+  const date = new Date();
+  const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+
 
   // const [customerID, setCustomerID] = useState('');
   // const [customerData, setCustomerData] = useState({});
@@ -32,9 +36,60 @@ const CustomerInfo = () => {
   // }, [customerID])
 
 
-  const[result,setResult]= useState([]);
-  const[query,setQuery]= useState('');
-  const[,setSelected]= useState(null);
+  // Create a walk-in customer object
+  const WALKIN_CUSTOMER = {
+    c_id: 9,
+    customer_code: 'WALKIN',
+    c_name: 'Walk-in Customer',
+    phone1: 'N/A',
+    customer_type: 'Retail',
+    price_level: 'Retail',
+    credit_allowed: false,
+    credit_status: 'NOT_ALLOWED'
+  };
+
+  const[result,setResult]= useState([]);//for search results dropdown
+  const[query,setQuery]= useState('Walk-in Customer'); //default to walk-in customer, also used to control the input field
+  const[selectedCustomer,setSelected]= useState(WALKIN_CUSTOMER);//selected customer object
+
+  // Set Walk-in Customer as default when component mounts
+ useEffect(() => {
+    setCustomerData(WALKIN_CUSTOMER);
+  }, [setCustomerData]);
+
+
+  // Handle input changes and search for customers
+  const handleInputChange = (value) => {
+    setQuery(value);
+    if (value.trim() === '') {
+      setResult([]);
+    } else {
+      searchCustomers(value);
+    }
+  };
+
+
+  // Handle onBlur event to reset to walk-in customer if input is empty
+  const handleOnBlur = () => {
+    // If field is empty on blur, set to walk-in customer
+    setTimeout(() => {
+      if (query.trim() === '') {
+        setSelected(WALKIN_CUSTOMER);
+        setCustomerData(WALKIN_CUSTOMER);
+        setQuery('Walk-in Customer');
+      }
+      setResult([]); // Close dropdown
+    }, 200);
+  };
+
+    // Handle onFocus event to clear the input field for new search
+    const handleOnFocus = () => {
+        if (query === 'Walk-in Customer') {
+            setQuery('');
+        }
+    };
+
+  // Search customers from backend
   const searchCustomers = async (value) =>{
     const term = value.trim();
 
@@ -57,9 +112,12 @@ const CustomerInfo = () => {
 
   }
 
+
+  // Handle customer selection from dropdown
   const handleSelect = async (customer) =>{
       setSelected(customer);
       setQuery(customer.c_name);
+      setCustomerData(customer);//pass selected customer data to parent component (POS.jsx)
       setResult([]);//close the dropdown 
   }
 
@@ -76,14 +134,12 @@ const CustomerInfo = () => {
               <input
                 type="text"
                 className='form-control'
-                value={query}
+                value={query } 
                 placeholder='Search customer...'
                 style={{ paddingLeft: '28px' }}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setQuery(value);
-                  searchCustomers(value);
-                }}
+                onChange={(e) => handleInputChange(e.target.value)}
+                onBlur={handleOnBlur}
+                onFocus={handleOnFocus}
               />
             </div>
             {result.length > 0 && (
@@ -120,15 +176,40 @@ const CustomerInfo = () => {
           </div>
         </div>
 
+        {/* Selected Customer Details */}
+        {/* {selectedCustomer && (
+          <div className='col-12 col-md-auto'>
+            <div style={{ 
+              padding: '8px 12px', 
+              backgroundColor: '#e7f5ff', 
+              borderRadius: '4px', 
+              fontSize: '0.85rem',
+              border: '1px solid #74c0fc'
+            }}>
+              <div style={{ fontWeight: 600, color: '#1a1a2e', marginBottom: '4px' }}>
+                ✓ {selectedCustomer.c_name}
+              </div>
+              {selectedCustomer.phone1 && selectedCustomer.phone1 !== 'N/A' && (
+                <div style={{ color: '#6c757d' }}>📞 {selectedCustomer.phone1}</div>
+              )}
+              {selectedCustomer.customer_type && (
+                <div style={{ color: '#6c757d', fontSize: '0.8rem' }}>
+                  {selectedCustomer.customer_type}
+                </div>
+              )}
+            </div>
+          </div>
+        )} */}
+
         {/* Invoice Details pushed to the right */}
         <div className='col-auto ms-auto'>
           <label className='form-label small text-muted mb-1'>Invoice Date</label>
-          <input type="text" className='form-control form-control-sm bg-light' value="2024-05-20" readOnly style={{ width: '130px' }} />
+          <input type="text" className='form-control form-control-sm bg-light' value={formattedDate} readOnly style={{ width: '130px' }} />
         </div>
 
         <div className='col-auto'>
           <label className='form-label small text-muted mb-1'>Invoice No</label>
-          <input type="text" className='form-control form-control-sm bg-light' value="INV-1001" readOnly style={{ width: '130px' }} />
+          <input type="text" className='form-control form-control-sm bg-light' value={invoiceNo || 'INV-PENDING'} readOnly style={{ width: '130px' }} />
         </div>
 
         <div className='col-auto'>
