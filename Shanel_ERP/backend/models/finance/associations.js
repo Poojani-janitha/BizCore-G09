@@ -3,6 +3,7 @@ const BankAccount       = require('./BankAccount');
 const BankTransaction   = require('./BankTransaction');
 const JournalEntry      = require('./JournalEntry');
 const JournalEntryLine  = require('./JournalEntryLine');
+const Expense           = require('./Expense');
 
 // ── AccountChart self-referential (parent / children) ─────────────────────────
 AccountChart.hasMany(AccountChart, {
@@ -54,10 +55,32 @@ JournalEntryLine.belongsTo(AccountChart, {
     as: 'Account'
 });
 
+// ── Expense  <──>  AccountChart ───────────────────────────────────────────────
+Expense.belongsTo(AccountChart, {
+    foreignKey: 'Account_ID',
+    as: 'ExpenseAccount'
+});
+AccountChart.hasMany(Expense, {
+    foreignKey: 'Account_ID',
+    as: 'Expenses'
+});
+
+// ── Expense  <──>  BankAccount ────────────────────────────────────────────────
+Expense.belongsTo(BankAccount, {
+    foreignKey: 'Bank_Account_ID',
+    as: 'BankAccount'
+});
+BankAccount.hasMany(Expense, {
+    foreignKey: 'Bank_Account_ID',
+    as: 'Expenses'
+});
+
 module.exports = {
     AccountChart,
     BankAccount,
     BankTransaction,
     JournalEntry,
-    JournalEntryLine
+    JournalEntryLine,
+    Expense
 };
+

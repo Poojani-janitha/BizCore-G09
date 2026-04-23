@@ -1,309 +1,408 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, CreditCard, DollarSign, FileText, Briefcase } from 'react-feather';
+import { DollarSign, CreditCard, FileText, Briefcase, Plus, Trash2, Check, AlertCircle, Clock } from 'react-feather';
+import axios from 'axios';
 
-const CATEGORIES = ['Utilities', 'Office Supplies', 'Travel', 'Rent', 'Salaries', 'Marketing', 'Maintenance', 'Other'];
-const DEPARTMENTS = ['Production', 'Sales', 'Marketing', 'Finance', 'HR', 'IT', 'Admin'];
+const API_BASE = 'http://localhost:5000/api/expenses';
+
+const CATEGORIES = [
+    { value: 'Salary', label: 'Salary' },
+    { value: 'Rent', label: 'Rent' },
+    { value: 'Utilities', label: 'Utilities' },
+    { value: 'Raw_Materials', label: 'Raw Materials' },
+    { value: 'Transport', label: 'Transport' },
+    { value: 'Maintenance', label: 'Maintenance' },
+    { value: 'Marketing', label: 'Marketing' },
+    { value: 'Office_Supplies', label: 'Office Supplies' },
+    { value: 'Other', label: 'Other' },
+];
+
 const PAYMENT_METHODS = [
-  { id: 'cash', label: 'Cash', Icon: DollarSign },
-  { id: 'bank', label: 'Bank Transfer', Icon: Briefcase },
-  { id: 'cheque', label: 'Cheque', Icon: FileText },
-  { id: 'card', label: 'Credit Card', Icon: CreditCard },
+    { id: 'Cash', label: 'Cash', Icon: DollarSign },
+    { id: 'Bank', label: 'Bank Transfer', Icon: Briefcase },
+    { id: 'Cheque', label: 'Cheque', Icon: FileText },
+    { id: 'Credit_Card', label: 'Credit Card', Icon: CreditCard },
 ];
 
 const today = new Date();
 const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 const isoDate = today.toISOString().split('T')[0];
 
-const emptyItem = { category: '', vendor: '', description: '', amount: '' };
+const fmt = (n) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const statusBadge = (status) => {
+    const map = {
+        Paid: 'bg-success',
+        Pending: 'bg-warning text-dark',
+        Approved: 'bg-info',
+        Rejected: 'bg-danger',
+        Cancelled: 'bg-secondary'
+    };
+    return map[status] || 'bg-secondary';
+};
 
 const MakePaymentPage = () => {
-  const navigate = useNavigate();
-  const [expenseDate, setExpenseDate] = useState(isoDate);
-  const [department, setDepartment] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('bank');
-  const [lineItems, setLineItems] = useState([{ ...emptyItem }]);
-  const [bankDetails, setBankDetails] = useState({ bankName: '', slipNo: '', depositedBy: '', depositDate: '', refNo: '', notes: '' });
+    const navigate = useNavigate();
 
-  const addLineItem = () => setLineItems(prev => [{ ...emptyItem }, ...prev]);
-  const removeLineItem = (i) => setLineItems(prev => prev.filter((_, idx) => idx !== i));
-  const updateLineItem = (i, field, value) => {
-    setLineItems(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: value } : item));
-  };
+    // ── Form State ──
+    const [expenseDate, setExpenseDate] = useState(isoDate);
+    const [category, setCategory] = useState('');
+    const [subcategory, setSubcategory] = useState('');
+    const [amount, setAmount] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState('Cash');
+    const [paidTo, setPaidTo] = useState('');
+    const [description, setDescription] = useState('');
+    const [receiptNo, setReceiptNo] = useState('');
 
-  const totalAmount = lineItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-  const filledItems = lineItems.filter(i => i.category && i.amount);
+    // ── UI State ──
+    const [submitting, setSubmitting] = useState(false);
+    const [alert, setAlert] = useState(null);
+    const [recentExpenses, setRecentExpenses] = useState([]);
+    const [loadingExpenses, setLoadingExpenses] = useState(true);
 
-  const categoryBreakdown = filledItems.reduce((acc, item) => {
-    acc[item.category] = (acc[item.category] || 0) + (parseFloat(item.amount) || 0);
-    return acc;
-  }, {});
+    // ── Load recent expenses on mount ──
+    useEffect(() => {
+        fetchRecentExpenses();
+    }, []);
 
-  const handleSubmit = () => {
-    const payload = { expenseDate, department, paymentMethod, lineItems: filledItems, bankDetails, totalAmount };
-    console.log('Expense Submission:', payload);
-    alert('Expenses submitted for approval!');
-    navigate('/finance');
-  };
+    const fetchRecentExpenses = async () => {
+        try {
+            setLoadingExpenses(true);
+            const res = await axios.get(`${API_BASE}?limit=10`);
+            if (res.data.success) {
+                setRecentExpenses(res.data.data);
+            }
+        } catch (err) {
+            console.error('Failed to load expenses:', err);
+        } finally {
+            setLoadingExpenses(false);
+        }
+    };
 
-  const fmt = (n) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const resetForm = () => {
+        setExpenseDate(isoDate);
+        setCategory('');
+        setSubcategory('');
+        setAmount('');
+        setPaymentMethod('Cash');
+        setPaidTo('');
+        setDescription('');
+        setReceiptNo('');
+    };
 
-  const inputCls = "w-full h-10 px-3 py-2 text-sm rounded-[10px] border border-gray-300 outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition-all font-['Inter']";
-  const labelCls = "text-xs font-medium text-gray-600 font-['Inter'] leading-4";
-  const sectionTitle = "text-xs font-semibold text-gray-500 uppercase tracking-wide font-['Inter'] leading-4";
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setAlert(null);
 
-  return (
-    <div className="w-full min-h-full bg-neutral-100 font-['Inter']">
-      {/* Page Header */}
-      <div className="w-full bg-white border-b border-gray-200 px-6 py-2.5">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-lg font-bold text-gray-900 leading-6">💸 Expense Management</h1>
-            <p className="text-[11px] text-gray-500">Record and manage company expenses</p>
-          </div>
-          <span className="text-xs text-gray-400 font-['Inter']">{dateStr}</span>
-        </div>
-      </div>
+        if (!expenseDate || !category || !amount || !paymentMethod) {
+            setAlert({ type: 'danger', msg: 'Please fill in all required fields: Date, Category, Amount, and Payment Method.' });
+            return;
+        }
 
-      {/* Main Content */}
-      <div className="w-full py-6 px-6 flex flex-col gap-5">
+        const expenseAmount = parseFloat(amount);
+        if (isNaN(expenseAmount) || expenseAmount <= 0) {
+            setAlert({ type: 'danger', msg: 'Amount must be a valid positive number.' });
+            return;
+        }
 
-        {/* Voucher Details */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <p className={sectionTitle}>Voucher Details</p>
-          <div className="grid grid-cols-2 gap-6 mt-4">
-            <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Expense Date</label>
-              <input type="date" value={expenseDate} onChange={e => setExpenseDate(e.target.value)} className={inputCls} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Department</label>
-              <select value={department} onChange={e => setDepartment(e.target.value)} className={inputCls}>
-                <option value="">Select department</option>
-                {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
-          </div>
-        </div>
+        setSubmitting(true);
+        try {
+            const payload = {
+                expenseDate,
+                expenseCategory: category,
+                expenseSubcategory: subcategory || null,
+                amount: expenseAmount,
+                paymentMethod,
+                paidTo: paidTo || null,
+                description: description || null,
+                receiptNo: receiptNo || null,
+            };
 
-        {/* Expense Line Items */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
-            <p className={sectionTitle}>Expense Line Items</p>
-            <span className="text-xs text-gray-400">{filledItems.length} item{filledItems.length !== 1 ? 's' : ''} added</span>
-          </div>
+            const res = await axios.post(`${API_BASE}/create`, payload);
 
-          {/* Table Header */}
-          <div className="grid grid-cols-[40px_1fr_1fr_1fr_1fr_64px] bg-gray-50 border-b border-gray-200">
-            {['#', 'Category', 'Vendor', 'Description', 'Amount (Rs.)', ''].map((h, i) => (
-              <div key={i} className="px-4 py-3">
-                <span className="text-xs font-semibold text-gray-600">{h}</span>
-              </div>
-            ))}
-          </div>
+            if (res.data.success) {
+                setAlert({ type: 'success', msg: `✅ Expense recorded! Journal No: ${res.data.data.journal.journalNo}` });
+                resetForm();
+                fetchRecentExpenses();
+            } else {
+                setAlert({ type: 'danger', msg: res.data.message || 'Failed to create expense.' });
+            }
+        } catch (err) {
+            const msg = err.response?.data?.message || err.message || 'Server error.';
+            setAlert({ type: 'danger', msg });
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
-          {/* Input Row */}
-          <div className="grid grid-cols-[40px_1fr_1fr_1fr_1fr_64px] bg-blue-50/40 border-b border-gray-100 items-center">
-            <div className="px-4 py-4"><span className="text-sm text-gray-400 font-medium">#</span></div>
-            <div className="px-2 py-3">
-              <select value="" onChange={e => { if (e.target.value) { setLineItems(prev => [{ ...emptyItem, category: e.target.value }, ...prev]); e.target.value = ''; }}}
-                className="w-full h-9 px-2 text-sm rounded-[10px] border border-gray-300 bg-white outline-none">
-                <option value="">Select category</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div className="px-2 py-3"><input placeholder="Vendor name" className="w-full h-9 px-3 text-sm rounded-[10px] border border-gray-300 outline-none" disabled /></div>
-            <div className="px-2 py-3"><input placeholder="Description" className="w-full h-9 px-3 text-sm rounded-[10px] border border-gray-300 outline-none" disabled /></div>
-            <div className="px-2 py-3"><input placeholder="0.00" className="w-full h-9 px-3 text-sm rounded-[10px] border border-gray-300 outline-none" disabled /></div>
-            <div className="flex justify-center py-3">
-              <button onClick={addLineItem} className="w-9 h-9 bg-[#004445] rounded-[10px] flex items-center justify-center hover:bg-[#006060] transition-colors">
-                <Plus size={16} color="white" />
-              </button>
-            </div>
-          </div>
+    // ── Styles ──
+    const cardStyle = {
+        borderRadius: '16px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+    };
 
-          {/* Line Item Rows */}
-          {lineItems.map((item, i) => (
-            <div key={i} className="grid grid-cols-[40px_1fr_1fr_1fr_1fr_64px] border-b border-gray-100 items-center hover:bg-gray-50/50 transition-colors">
-              <div className="px-4 py-4"><span className="text-sm text-gray-400">{i + 1}</span></div>
-              <div className="px-2 py-3">
-                <select value={item.category} onChange={e => updateLineItem(i, 'category', e.target.value)}
-                  className="w-full h-9 px-2 text-sm rounded-[10px] border border-gray-300 outline-none bg-white">
-                  <option value="">Category</option>
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className="px-2 py-3">
-                <input value={item.vendor} onChange={e => updateLineItem(i, 'vendor', e.target.value)}
-                  placeholder="Vendor name" className="w-full h-9 px-3 text-sm rounded-[10px] border border-gray-300 outline-none" />
-              </div>
-              <div className="px-2 py-3">
-                <input value={item.description} onChange={e => updateLineItem(i, 'description', e.target.value)}
-                  placeholder="Description" className="w-full h-9 px-3 text-sm rounded-[10px] border border-gray-300 outline-none" />
-              </div>
-              <div className="px-2 py-3">
-                <input type="number" value={item.amount} onChange={e => updateLineItem(i, 'amount', e.target.value)}
-                  placeholder="0.00" className="w-full h-9 px-3 text-sm rounded-[10px] border border-gray-300 outline-none" />
-              </div>
-              <div className="flex justify-center py-3">
-                <button onClick={() => removeLineItem(i)} className="w-8 h-8 bg-red-50 rounded-[10px] flex items-center justify-center hover:bg-red-100 transition-colors">
-                  <Trash2 size={14} className="text-red-500" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+    const inputStyle = {
+        borderRadius: '10px',
+        border: '1px solid #d1d5db',
+        padding: '8px 14px',
+        fontSize: '14px',
+        transition: 'border-color 0.2s, box-shadow 0.2s',
+        fontFamily: "'Inter', sans-serif"
+    };
 
-        {/* Payment Method */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <p className={sectionTitle}>Payment Method</p>
-          <div className="grid grid-cols-4 gap-4 mt-4">
-            {PAYMENT_METHODS.map(({ id, label, Icon }) => {
-              const active = paymentMethod === id;
-              return (
-                <button key={id} onClick={() => setPaymentMethod(id)}
-                  className={`h-20 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all cursor-pointer
-                    ${active ? 'bg-orange-50 border-orange-500' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
-                  <Icon size={20} className={active ? 'text-orange-700' : 'text-gray-600'} />
-                  <span className={`text-xs font-medium ${active ? 'text-orange-700' : 'text-gray-600'}`}>{label}</span>
-                </button>
-              );
-            })}
-          </div>
+    const labelStyle = {
+        fontSize: '12px',
+        fontWeight: 600,
+        color: '#64748b',
+        marginBottom: '4px',
+        fontFamily: "'Inter', sans-serif"
+    };
 
-          {/* Bank Transfer Details */}
-          {paymentMethod === 'bank' && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className={sectionTitle}>Bank Transfer Details</p>
-              <div className="grid grid-cols-4 gap-4 mt-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Bank Name</label>
-                  <input value={bankDetails.bankName} onChange={e => setBankDetails(p => ({ ...p, bankName: e.target.value }))}
-                    placeholder="e.g., Commercial Bank" className={inputCls} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Deposit Slip Number</label>
-                  <input value={bankDetails.slipNo} onChange={e => setBankDetails(p => ({ ...p, slipNo: e.target.value }))}
-                    placeholder="Enter slip number" className={inputCls} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Deposited By</label>
-                  <input value={bankDetails.depositedBy} onChange={e => setBankDetails(p => ({ ...p, depositedBy: e.target.value }))}
-                    placeholder="Employee name" className={inputCls} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Deposit Date</label>
-                  <input type="date" value={bankDetails.depositDate} onChange={e => setBankDetails(p => ({ ...p, depositDate: e.target.value }))}
-                    className={inputCls} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Reference Number (Optional)</label>
-                  <input value={bankDetails.refNo} onChange={e => setBankDetails(p => ({ ...p, refNo: e.target.value }))}
-                    placeholder="Reference or receipt number" className={inputCls} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Notes (Optional)</label>
-                  <input value={bankDetails.notes} onChange={e => setBankDetails(p => ({ ...p, notes: e.target.value }))}
-                    placeholder="Additional payment notes..." className={inputCls} />
-                </div>
-              </div>
-            </div>
-          )}
+    const sectionTitleStyle = {
+        fontSize: '11px',
+        fontWeight: 700,
+        color: '#94a3b8',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        fontFamily: "'Inter', sans-serif"
+    };
 
-          {/* Cheque Details */}
-          {paymentMethod === 'cheque' && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className={sectionTitle}>Cheque Details</p>
-              <div className="grid grid-cols-3 gap-4 mt-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Cheque Number</label>
-                  <input placeholder="Enter cheque number" className={inputCls} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Bank Name</label>
-                  <input placeholder="Issuing bank" className={inputCls} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Cheque Date</label>
-                  <input type="date" className={inputCls} />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+    return (
+        <div style={{ width: '100%', minHeight: '100%', backgroundColor: '#f8fafc', fontFamily: "'Inter', sans-serif" }}>
 
-        {/* Expense Summary */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          {/* Summary Header */}
-          <div className="px-6 pt-5 pb-4 bg-gradient-to-br from-[#004445] via-[#004445] to-[#0d5c4f]">
-            <h3 className="text-base font-bold text-white tracking-wide">EXPENSE SUMMARY</h3>
-            <p className="text-xs text-teal-200 mt-0.5">Voucher overview</p>
-          </div>
-
-          {/* Summary Body */}
-          <div className="grid grid-cols-3 gap-6 p-6">
-            {/* Details Column */}
-            <div>
-              <p className={sectionTitle}>Details</p>
-              <div className="mt-4 space-y-3">
-                {[
-                  ['Date', expenseDate || '—'],
-                  ['Department', department || '—'],
-                  ['Payment', PAYMENT_METHODS.find(m => m.id === paymentMethod)?.label || '—'],
-                  ['Line Items', String(filledItems.length)],
-                ].map(([k, v]) => (
-                  <div key={k} className="flex justify-between">
-                    <span className="text-sm text-gray-500">{k}</span>
-                    <span className="text-sm font-medium text-gray-900 capitalize">{v}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Category Breakdown */}
-            <div>
-              <p className={sectionTitle}>Category Breakdown</p>
-              <div className="mt-4 space-y-3">
-                {Object.keys(categoryBreakdown).length === 0 ? (
-                  <p className="text-sm text-gray-400 italic">No items added yet</p>
-                ) : (
-                  Object.entries(categoryBreakdown).map(([cat, amt]) => (
-                    <div key={cat}>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-700">{cat}</span>
-                        <span className="text-sm font-semibold text-gray-900">Rs. {fmt(amt)}</span>
-                      </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
-                        <div className="h-full bg-amber-500 rounded-full transition-all duration-500"
-                          style={{ width: totalAmount > 0 ? `${(amt / totalAmount) * 100}%` : '0%' }} />
-                      </div>
+            {/* Page Header */}
+            <div className="bg-white border-bottom px-4 py-2">
+                <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 className="fw-bold mb-0" style={{ color: '#1e293b' }}>💸 Expense Management</h5>
+                        <small className="text-muted" style={{ fontSize: '11px' }}>Record and manage company expenses</small>
                     </div>
-                  ))
-                )}
-              </div>
+                    <span className="text-muted" style={{ fontSize: '12px' }}>{dateStr}</span>
+                </div>
             </div>
 
-            {/* Total Amount */}
-            <div>
-              <p className={sectionTitle}>Total Amount</p>
-              <div className="mt-4 p-5 bg-orange-50 rounded-2xl">
-                <p className="text-xs text-gray-500">TOTAL PAYABLE</p>
-                <p className="text-4xl font-bold text-orange-600 mt-1 leading-tight">Rs. {fmt(totalAmount)}</p>
-              </div>
-              <button onClick={handleSubmit}
-                className="w-full h-12 mt-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-bold rounded-2xl shadow-md hover:shadow-lg hover:from-orange-600 hover:to-orange-700 transition-all tracking-tight cursor-pointer">
-                💸 SUBMIT EXPENSES
-              </button>
-              <p className="text-center text-xs text-gray-400 mt-2">Will be submitted for manager approval</p>
-            </div>
-          </div>
+            {/* Alert */}
+            {alert && (
+                <div className={`alert alert-${alert.type} mx-4 mt-3 mb-0 d-flex align-items-center`} role="alert" style={{ borderRadius: '12px', fontSize: '14px' }}>
+                    {alert.type === 'success' ? <Check size={16} className="me-2" /> : <AlertCircle size={16} className="me-2" />}
+                    {alert.msg}
+                    <button type="button" className="btn-close ms-auto" onClick={() => setAlert(null)} style={{ fontSize: '10px' }}></button>
+                </div>
+            )}
+
+            {/* Main Form */}
+            <form onSubmit={handleSubmit}>
+                <div className="p-4 d-flex flex-column gap-4">
+
+                    {/* Row 1: Expense Details */}
+                    <div className="bg-white p-4" style={cardStyle}>
+                        <p style={sectionTitleStyle}>Expense Details</p>
+                        <div className="row g-3 mt-1">
+                            <div className="col-md-3">
+                                <label style={labelStyle}>Expense Date <span className="text-danger">*</span></label>
+                                <input type="date" value={expenseDate} onChange={e => setExpenseDate(e.target.value)}
+                                    className="form-control" style={inputStyle} required />
+                            </div>
+                            <div className="col-md-3">
+                                <label style={labelStyle}>Category <span className="text-danger">*</span></label>
+                                <select value={category} onChange={e => setCategory(e.target.value)}
+                                    className="form-select" style={inputStyle} required>
+                                    <option value="">Select category</option>
+                                    {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                                </select>
+                            </div>
+                            <div className="col-md-3">
+                                <label style={labelStyle}>Subcategory</label>
+                                <input type="text" value={subcategory} onChange={e => setSubcategory(e.target.value)}
+                                    placeholder="e.g., Electricity Bill" className="form-control" style={inputStyle} />
+                            </div>
+                            <div className="col-md-3">
+                                <label style={labelStyle}>Amount (Rs.) <span className="text-danger">*</span></label>
+                                <input type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)}
+                                    placeholder="0.00" className="form-control" style={inputStyle} required />
+                            </div>
+                        </div>
+
+                        <div className="row g-3 mt-1">
+                            <div className="col-md-4">
+                                <label style={labelStyle}>Paid To</label>
+                                <input type="text" value={paidTo} onChange={e => setPaidTo(e.target.value)}
+                                    placeholder="Vendor / Payee name" className="form-control" style={inputStyle} />
+                            </div>
+                            <div className="col-md-4">
+                                <label style={labelStyle}>Receipt No</label>
+                                <input type="text" value={receiptNo} onChange={e => setReceiptNo(e.target.value)}
+                                    placeholder="Receipt or invoice number" className="form-control" style={inputStyle} />
+                            </div>
+                            <div className="col-md-4">
+                                <label style={labelStyle}>Description</label>
+                                <input type="text" value={description} onChange={e => setDescription(e.target.value)}
+                                    placeholder="Brief description of the expense" className="form-control" style={inputStyle} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Row 2: Payment Method */}
+                    <div className="bg-white p-4" style={cardStyle}>
+                        <p style={sectionTitleStyle}>Payment Method <span className="text-danger">*</span></p>
+                        <div className="row g-3 mt-1">
+                            {PAYMENT_METHODS.map(({ id, label, Icon }) => {
+                                const active = paymentMethod === id;
+                                return (
+                                    <div className="col-md-3" key={id}>
+                                        <div onClick={() => setPaymentMethod(id)}
+                                            className="d-flex flex-column align-items-center justify-content-center gap-2"
+                                            style={{
+                                                height: '80px',
+                                                borderRadius: '16px',
+                                                border: `2px solid ${active ? '#e97a1f' : '#e2e8f0'}`,
+                                                backgroundColor: active ? '#fff7ed' : '#fff',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}>
+                                            <Icon size={22} color={active ? '#c2410c' : '#6b7280'} />
+                                            <span style={{ fontSize: '13px', fontWeight: 500, color: active ? '#c2410c' : '#6b7280' }}>{label}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Row 3: Expense Summary + Submit */}
+                    <div className="bg-white overflow-hidden" style={cardStyle}>
+                        {/* Summary Header */}
+                        <div className="px-4 py-3" style={{ background: 'linear-gradient(135deg, #004445, #0d5c4f)' }}>
+                            <h6 className="text-white fw-bold mb-0" style={{ letterSpacing: '0.5px' }}>EXPENSE SUMMARY</h6>
+                            <small style={{ color: '#99f6e4', fontSize: '11px' }}>Review before submitting</small>
+                        </div>
+
+                        <div className="row g-0 p-4">
+                            {/* Details */}
+                            <div className="col-md-4 pe-4">
+                                <p style={sectionTitleStyle}>Details</p>
+                                <div className="d-flex flex-column gap-2 mt-2">
+                                    {[
+                                        ['Date', expenseDate || '—'],
+                                        ['Category', CATEGORIES.find(c => c.value === category)?.label || '—'],
+                                        ['Subcategory', subcategory || '—'],
+                                        ['Paid To', paidTo || '—'],
+                                        ['Payment', PAYMENT_METHODS.find(m => m.id === paymentMethod)?.label || '—'],
+                                        ['Receipt #', receiptNo || '—'],
+                                    ].map(([k, v]) => (
+                                        <div key={k} className="d-flex justify-content-between">
+                                            <span style={{ fontSize: '13px', color: '#64748b' }}>{k}</span>
+                                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{v}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            <div className="col-md-4 px-4 border-start">
+                                <p style={sectionTitleStyle}>Description</p>
+                                <p className="mt-2" style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>
+                                    {description || <em className="text-muted">No description provided</em>}
+                                </p>
+                            </div>
+
+                            {/* Total + Submit */}
+                            <div className="col-md-4 ps-4 border-start">
+                                <p style={sectionTitleStyle}>Total Amount</p>
+                                <div className="mt-2 p-4 text-center" style={{ backgroundColor: '#fff7ed', borderRadius: '16px' }}>
+                                    <small className="text-muted d-block" style={{ fontSize: '10px', letterSpacing: '0.05em' }}>TOTAL PAYABLE</small>
+                                    <h2 className="fw-bold mb-0 mt-1" style={{ color: '#ea580c' }}>
+                                        Rs. {fmt(parseFloat(amount) || 0)}
+                                    </h2>
+                                </div>
+                                <button type="submit" disabled={submitting}
+                                    className="btn w-100 mt-3 fw-bold"
+                                    style={{
+                                        height: '48px',
+                                        borderRadius: '14px',
+                                        background: 'linear-gradient(135deg, #f97316, #ea580c)',
+                                        color: '#fff',
+                                        fontSize: '14px',
+                                        border: 'none',
+                                        letterSpacing: '0.3px',
+                                        boxShadow: '0 4px 12px rgba(249,115,22,0.3)',
+                                        cursor: submitting ? 'not-allowed' : 'pointer',
+                                        opacity: submitting ? 0.7 : 1,
+                                        transition: 'all 0.2s'
+                                    }}>
+                                    {submitting ? '⏳ Submitting...' : '💸 SUBMIT EXPENSE'}
+                                </button>
+                                <p className="text-center text-muted mt-2" style={{ fontSize: '11px' }}>
+                                    Creates journal entry automatically
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Row 4: Recent Expenses Table */}
+                    <div className="bg-white overflow-hidden" style={cardStyle}>
+                        <div className="px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+                            <div>
+                                <p style={sectionTitleStyle} className="mb-0">Recent Expenses</p>
+                            </div>
+                            <small className="text-muted">{recentExpenses.length} records</small>
+                        </div>
+
+                        {loadingExpenses ? (
+                            <div className="text-center py-5">
+                                <div className="spinner-border spinner-border-sm text-muted" role="status"></div>
+                                <p className="text-muted mt-2" style={{ fontSize: '13px' }}>Loading expenses...</p>
+                            </div>
+                        ) : recentExpenses.length === 0 ? (
+                            <div className="text-center py-5">
+                                <Clock size={32} className="text-muted mb-2" />
+                                <p className="text-muted" style={{ fontSize: '13px' }}>No expenses recorded yet</p>
+                            </div>
+                        ) : (
+                            <div className="table-responsive">
+                                <table className="table table-hover mb-0" style={{ fontSize: '13px' }}>
+                                    <thead style={{ backgroundColor: '#f8fafc' }}>
+                                        <tr>
+                                            <th className="fw-semibold text-muted border-0 px-4 py-3" style={{ fontSize: '11px' }}>ID</th>
+                                            <th className="fw-semibold text-muted border-0 py-3" style={{ fontSize: '11px' }}>DATE</th>
+                                            <th className="fw-semibold text-muted border-0 py-3" style={{ fontSize: '11px' }}>CATEGORY</th>
+                                            <th className="fw-semibold text-muted border-0 py-3" style={{ fontSize: '11px' }}>PAID TO</th>
+                                            <th className="fw-semibold text-muted border-0 py-3" style={{ fontSize: '11px' }}>PAYMENT</th>
+                                            <th className="fw-semibold text-muted border-0 py-3 text-end" style={{ fontSize: '11px' }}>AMOUNT</th>
+                                            <th className="fw-semibold text-muted border-0 py-3 text-center" style={{ fontSize: '11px' }}>STATUS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {recentExpenses.map((exp) => (
+                                            <tr key={exp.Expense_ID}>
+                                                <td className="px-4 py-3 text-muted">#{exp.Expense_ID}</td>
+                                                <td className="py-3">{exp.Expense_Date}</td>
+                                                <td className="py-3">
+                                                    <span className="badge bg-light text-dark border" style={{ fontWeight: 500, fontSize: '11px' }}>
+                                                        {exp.Expense_Category?.replace('_', ' ')}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3">{exp.Paid_To || '—'}</td>
+                                                <td className="py-3">{exp.Payment_Method?.replace('_', ' ')}</td>
+                                                <td className="py-3 text-end fw-semibold">Rs. {fmt(parseFloat(exp.Amount) || 0)}</td>
+                                                <td className="py-3 text-center">
+                                                    <span className={`badge ${statusBadge(exp.Status)}`} style={{ fontSize: '10px', padding: '4px 10px', borderRadius: '20px' }}>
+                                                        {exp.Status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+
+                </div>
+            </form>
         </div>
-
-      </div>
-    </div>
-  );
+    );
 };
 
 export default MakePaymentPage;

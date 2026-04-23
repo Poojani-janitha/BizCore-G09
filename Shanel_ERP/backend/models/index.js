@@ -37,6 +37,10 @@ const CustomerAssociations = require('./customer/CustomerAssosiation');
 CustomerAssociations();
 
 
+// ===== FINANCE MODELS & ASSOCIATIONS =====
+const FinanceAssociations = require('./finance/associations');
+const { AccountChart, BankAccount, BankTransaction, JournalEntry, JournalEntryLine, Expense } = FinanceAssociations;
+
 
 module.exports = { 
     Product, 
@@ -52,5 +56,11 @@ module.exports = {
     Payment,
     CreditTranscation,
     SalesSummaryDaily,
-    User
+    User,
+    AccountChart,
+    BankAccount,
+    BankTransaction,
+    JournalEntry,
+    JournalEntryLine,
+    Expense
 };
