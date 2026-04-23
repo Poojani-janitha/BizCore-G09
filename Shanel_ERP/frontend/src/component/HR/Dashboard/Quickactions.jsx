@@ -1,13 +1,15 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const QuickActions = () => {
+  const navigate = useNavigate();
   const actions = [
     { label: 'Mark Attendance', icon: '🕗', color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', path: '/hr/attendance' },
     { label: 'Add Employee', icon: '👤', color: '#22c55e', bg: 'rgba(34,197,94,0.08)', path: '/hr/employees', state: { addNew: true } },
     { label: 'Process Salary', icon: '💰', color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)', path: '/hr/payroll' },
-    { label: 'Approve Leave', icon: '✅', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
-    { label: 'Send Paysheet', icon: '📧', color: '#ef4444', bg: 'rgba(239,68,68,0.08)' },
-    { label: 'View Reports', icon: '📊', color: '#06b6d4', bg: 'rgba(6,182,212,0.08)' },
+    { label: 'Leave Details', icon: '✅', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', path: '/hr/leave' },
+    { label: 'Send Paysheet', icon: '📧', color: '#ef4444', bg: 'rgba(239,68,68,0.08)', path: '/hr/payroll', state: { triggerSendPaysheet: true } },
+    { label: 'View Reports', icon: '📊', color: '#06b6d4', bg: 'rgba(6,182,212,0.08)', path: '/hr/reports' },
   ];
 
   return (
@@ -29,6 +31,7 @@ const QuickActions = () => {
             fontWeight: 600, transition: 'all 0.2s',
             flex: '1 1 140px',
           }}
+            onClick={() => a.path && navigate(a.path, a.state ? { state: a.state } : undefined)}
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = `0 4px 12px ${a.color}30`; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
           >
