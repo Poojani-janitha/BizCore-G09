@@ -1,5 +1,5 @@
 const sequelize = require('../../config/db');
-const { Product, UnitConversion, Sale,Inventory, Customer } = require('../../models/index');
+const { Product, UnitConversion, Sale,Inventory, Customer,Payment,SaleItem } = require('../../models/index');
 const { Op, where } = require('sequelize');
 
 const searchProducts = async (req, res) => {
@@ -160,19 +160,24 @@ const getBaseUnitQty = async (req, res) => {
 
 const generateInvoiceNo = async (req, res) => {
      try {
-            let newInvoiceNo; 
+            let newInvoiceNo;
+            const currentYear = new Date().getFullYear();
             const lastSale = await Sale.findOne({
                 order: [['Created_At', 'DESC']]
             });
 
+            let nextSequence = 1;
+
             if (lastSale) {
                 const lastInvoiceNo = lastSale.Invoice_No;
-                const numericPart = parseInt(lastInvoiceNo.replace(/\D/g, ''));
-                const newNumericPart = numericPart + 1;
-                newInvoiceNo = `INV-${new Date().getFullYear()}-${newNumericPart.toString().padStart(6, '0')}`;
-            } else {
-                newInvoiceNo = `INV-${new Date().getFullYear()}-000001`;
+                const match = lastInvoiceNo.match(/^INV-(\d{4})-(\d{6})$/);
+
+                if (match && parseInt(match[1], 10) === currentYear) {
+                    nextSequence = parseInt(match[2], 10) + 30; // Increment by 30 for each new invoice
+                }
             }
+
+            newInvoiceNo = `INV-${currentYear}-${String(nextSequence).padStart(6, '0')}`;
             
             console.log("Generated Invoice No:", newInvoiceNo);
 
@@ -195,14 +200,19 @@ const generateInvoiceNo = async (req, res) => {
 //post sales data from POS to backend
 const postSalesData = async (req, res) => {
     try {
-        const { cutomer, items, invoiceDetails, paymentDetails, action } = req.body;
+        const { cutomer, items, invoiceDetails, paymentDetails, action, saleType, priceLevel } = req.body;
+
+        const resolvedSaleType = saleType || invoiceDetails?.saleType || 'Retail';
+        const resolvedPriceLevel = priceLevel || invoiceDetails?.priceLevel || 'Retail';
 
         console.log("Received Sales Data:", {
             cutomer,
             items,
             invoiceDetails,
             paymentDetails,
-            action
+            action,
+            saleType: resolvedSaleType,
+            priceLevel: resolvedPriceLevel
         });
 
         // Validate customer data
@@ -235,6 +245,7 @@ const postSalesData = async (req, res) => {
         const now = new Date();
         const saleDate = invoiceDetails?.invoiceDate || now.toISOString().split('T')[0];
         const saleTime = invoiceDetails?.invoiceTime || now.toTimeString().split(' ')[0];
+        const paymentAmount = Number(paymentDetails?.Payment_Amount ?? invoiceDetails?.finalTotal ?? 0);
 
         // Create sale with the invoice number passed from frontend
         const sale = await Sale.create({
@@ -243,8 +254,8 @@ const postSalesData = async (req, res) => {
             Sale_Date: saleDate,
             Sale_Time: saleTime,
             Location: 'Shop',
-            Sale_Type: 'Retail',
-            Price_Level: 'Retail',
+            Sale_Type: resolvedSaleType,
+            Price_Level: resolvedPriceLevel,
             Subtotal: invoiceDetails.subTotal,
             Discount_Percentage: 0,
             Discount_Amount: invoiceDetails.discountAmount,
@@ -252,10 +263,75 @@ const postSalesData = async (req, res) => {
             Tax_Amount: invoiceDetails.taxTotal,
             Total_Amount: invoiceDetails.finalTotal,
             Payment_Status: 'Paid',
-            Paid_Amount: paymentDetails.Payment_Amount,
+            Paid_Amount: paymentAmount,
             Bill_Printed: false,
             Status: 'Active'
         });
+        const createPayment = await Payment.create({
+            Sale_ID: sale.Sale_Id,
+            Payment_Method: paymentDetails?.Payment_Method || 'Cash',
+            Payment_Amount: paymentAmount,
+            Payment_Date: saleDate,
+            Payment_Time: saleTime,
+            Bank_Name: paymentDetails?.Bank_Name || null,
+            Card_Number: paymentDetails?.Card_Number || null,
+            Notes: paymentDetails?.Notes || null,
+            Status: 'Active'
+        });
+
+
+        // Process each sale item and create SaleItem records
+        const saleItemsData = await Promise.all(items.map(async (item) => {
+            const qty = Number(item.quntity ?? item.quantity ?? 0);
+            const unitPrice = Number(item.unit_price ?? 0);
+            const discountPct = Number(item.discount ?? 0);
+            const lineTaxRate = Number(item.tax ?? item.tax_rate ?? 0);
+            const lineSubtotal = Number(item.subTotal ?? 0);
+            const lineTaxAmount = Number(item.taxAmount ?? item.tax_amount ?? 0);
+            const lineTotal = Number(item.total ?? item.total_amount ?? (lineSubtotal + lineTaxAmount));
+
+            let unit = await UnitConversion.findOne({
+                where: {
+                    P_ID: item.p_id,
+                    Unit_Name: item.p_unit || item.unit || null,
+                },
+                attributes: ['U_ID', 'Unit_Conversion'],
+                raw: true,
+            });
+
+            if (!unit) {
+                unit = await UnitConversion.findOne({
+                    where: {
+                        P_ID: item.p_id,
+                        Is_Base_Unit: true,
+                    },
+                    attributes: ['U_ID', 'Unit_Conversion'],
+                    raw: true,
+                });
+            }
+
+            const unitConversion = Number(unit?.Unit_Conversion ?? item.conversionFactor ?? 1);
+
+            return {
+                Sale_ID: sale.Sale_Id,
+                P_ID: item.p_id,
+                U_ID: unit?.U_ID ?? 1,
+                Quantity: qty,
+                Base_Unit_Qty: qty * unitConversion,
+                Unit_Price: unitPrice,
+                Price_Level_Used: resolvedPriceLevel,
+                Line_Discount_Percentage: discountPct,
+                Line_Discount_Amount: Number(item.discountAmount ?? 0),
+                Line_Subtotal: lineSubtotal,
+                Line_Tax_Rate: lineTaxRate,
+                Line_Tax_Amount: lineTaxAmount,
+                Line_Total: lineTotal,
+                Location_Taken_From: 'Shop',
+                Status: 'Active',
+            };
+        }));
+
+        await SaleItem.bulkCreate(saleItemsData);
 
         return res.status(200).json({
             success: true,

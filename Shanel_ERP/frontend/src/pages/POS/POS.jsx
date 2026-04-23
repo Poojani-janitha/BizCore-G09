@@ -18,7 +18,7 @@ const POS = () => {
   const[invoiceNo,setInvoiceNo] = useState('');
   const[loading,setLoading] = useState(false);//for display resent sales component after payment, also can be used for loading state in future
   const[holdInvoice,setHoldInvoice] = useState(null);//for storing hold invoice data in local storage, this can be used in future to implement hold and resume invoice feature
-
+  const [priceLevel, setPriceLevel] = useState('Retail'); // Toggle between Retail and Wholesale
 
   const handleInvoiceDataChange = (data) => {
  
@@ -53,9 +53,12 @@ const POS = () => {
           items: cartItems,
           invoiceDetails: { ...invoiceData, invoiceNo: invoiceNo },
           paymentDetails: paymentData,
+          priceLevel: priceLevel,
+          saleType:priceLevel === 'Retail' ? 'Retail' : 'Wholesale',
           action: action
         });
-        console.log("Data sent successfully:", response.data);
+        console.log("Sale saved successfully:", response.data);
+        console.log("Completed Invoice No:", response.data.invoiceNo);
         
         alert(`Sale saved successfully! Invoice No: ${response.data.invoiceNo}`);
         
@@ -65,18 +68,25 @@ const POS = () => {
         setCustomerData({});
         setPaymentData({});
         setAction({});
+        setLoading(true);
         
         // Fetch new invoice number for next sale
-        try {
-          const newResponse = await axios.get('http://localhost:5000/api/sales/generate-invoice-no');
-          if (newResponse.data.success) {
-            setInvoiceNo(newResponse.data.invoiceNo);
-          }else {
-            console.error("Failed to fetch new invoice number:", newResponse.data.message);
+        setTimeout(async () => {
+          try {
+            const newResponse = await axios.get('http://localhost:5000/api/sales/generate-invoice-no');
+            console.log("New invoice number response:", newResponse.data);
+            if (newResponse.data.success) {
+              console.log("Setting new invoice number:", newResponse.data.invoiceNo);
+              setInvoiceNo(newResponse.data.invoiceNo);
+            } else {
+              console.error("Failed to fetch new invoice number:", newResponse.data.message);
+            }
+          } catch (error) {
+            console.error("Error fetching new invoice number:", error);
+          } finally {
+            setLoading(false);
           }
-        } catch (error) {
-          console.error("Error fetching new invoice number:", error);
-        }
+        }, 500);
       } catch (error) {
         console.error("Error sending data:", error);
         const errorMessage = error.response?.data?.message || error.message || "Error saving sale. Please try again.";
@@ -126,6 +136,7 @@ const POS = () => {
         return;
       }
 
+
       // Create hold invoice object
       const holdData = {
         customerData,
@@ -133,7 +144,8 @@ const POS = () => {
         invoiceData,
         paymentData,
         timestamp: new Date().toLocaleTimeString(),
-        invoiceNo: invoiceNo
+        invoiceNo: invoiceNo,
+        
       };
 
       // Store in local storage
@@ -259,7 +271,7 @@ const POS = () => {
 
       {/* Section 2: Item Table */}
       <div className='card border-0 shadow-sm p-3 mb-3'>
-        <ItemTable cartItems={cartItems} setCartItems={setCartItems} />
+        <ItemTable cartItems={cartItems} setCartItems={setCartItems} priceLevel={priceLevel} setPriceLevel={setPriceLevel}/>
       </div>
 
       {/* Section 3: Bottom Grid */}

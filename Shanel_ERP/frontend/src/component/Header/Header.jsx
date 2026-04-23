@@ -17,9 +17,7 @@ const Header = () => {
         if (path.includes('/inventory/finished-goods')) return 'Finished Goods';
         if (path === '/POS') return 'Point of Sale';
         if (path === '/hr') return 'Human Resources';
-        if (path.includes('/hr/employees')) return 'Employees';
-        if (path.includes('/hr/attendance')) return 'Attendance';
-        if (path.includes('/hr/payroll')) return 'Payroll';
+        if (path === '/hr/employees') return 'Employees';
         if (path === '/finance') return 'Finance';
         return 'Dashboard';
     };
