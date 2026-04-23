@@ -19,7 +19,7 @@ const EMPTY_ITEM = {
 
 const toNumber = (value) => parseFloat(value) || 0;
 
-const ItemTable = ({ cartItems, setCartItems }) => {
+const ItemTable = ({ cartItems, setCartItems,priceLevel,setPriceLevel}) => {
     const inputRowBg = '#f8faf9';
     const [query, setQuery] = useState('');
     const [allUnits, setAllUnits] = useState([]);// All available units for the selected product
@@ -27,17 +27,17 @@ const ItemTable = ({ cartItems, setCartItems }) => {
     const [tempItem, setTempItem] = useState(EMPTY_ITEM);// Temporary state for the item being added to the cart
     const [availableQuantity, setAvailableQuantity] = useState(null); // Available quantity for the selected product
     const [error, setError] = useState({ field: null, message: null }); // Error state for handling any issues during API calls
-    
+
     const searchInputRef = useRef(null);
 
     // Fetch all units for the selected product
     useEffect(() => {
         const handleAllUnits = async () => {
             if (!tempItem.p_id) {
-                setAllUnits([]);  
+                setAllUnits([]);
                 return;
             }
-            
+
             try {
                 const res = await axios.get(`http://localhost:5000/api/sales/units?productId=${tempItem.p_id}`);
                 console.log('Units API Response:', res.data);
@@ -75,7 +75,7 @@ const ItemTable = ({ cartItems, setCartItems }) => {
     // Function to calculate the total amount for a line item by summing the calculated subtotal and tax amount. This provides the final amount that will be added to the cart for that item, ensuring that all relevant factors (quantity, price, discount, and tax) are considered in the final total.
     const calculateLineTotal = (item) => calculateLineSubtotal(item) + calculateLineTaxAmount(item);
 
-    
+
     const currentEntryTaxAmount = useMemo(() => calculateLineTaxAmount(tempItem), [tempItem]);
     const currentEntryTotal = useMemo(() => calculateLineTotal(tempItem), [tempItem]);
 
@@ -91,6 +91,7 @@ const ItemTable = ({ cartItems, setCartItems }) => {
         try {
             const res = await axios.get(`http://localhost:5000/api/sales/search?q=${value}`);
             if (res.data.success) {
+
                 setSearchResults(res.data.products || []);
             }
         } catch (err) {
@@ -98,9 +99,9 @@ const ItemTable = ({ cartItems, setCartItems }) => {
         }
     };
 
-            // const res = await axios.get('http://localhost:5000/api/inventory/sales/search', {
-            //     params: { q: term }
-            // });
+    // const res = await axios.get('http://localhost:5000/api/inventory/sales/search', {
+    //     params: { q: term }
+    // });
 
     // Function to handle changes in the unit selection for the item being added. When the user selects a different unit, this function retrieves the conversion factor for that unit relative to the base unit and updates the unit price accordingly. This ensures that the pricing remains accurate regardless of the unit selected by the user.
     const handleUnitChange = async (newUnit) => {
@@ -133,11 +134,12 @@ const ItemTable = ({ cartItems, setCartItems }) => {
     const selectProduct = (product) => {
         setTempItem((prev) => ({
             ...prev,
+            discount_allowed: product.p_type === 'Company' ? true : false,
             p_id: product.p_id,
             p_code: product.p_code,
             p_name: product.p_name,
-            base_unit_price: toNumber(product.retail_price),
-            unit_price: toNumber(product.retail_price),
+            base_unit_price: priceLevel === "Retail" ? toNumber(product.retail_price) : toNumber(product.wholesale_price),
+            unit_price: priceLevel === "Retail" ? toNumber(product.retail_price) : toNumber(product.wholesale_price),
             p_unit: product.base_unit || allUnits[0]?.Unit_Name || 'Packet',
             tax: toNumber(product.tax_rate),
             conversionFactor: 1, // Base unit has conversion factor of 1
@@ -162,7 +164,7 @@ const ItemTable = ({ cartItems, setCartItems }) => {
             console.warn('Cannot add item: no product code');
             return;
         }
-        
+
 
         //check if there is any error related to quantity before adding the item to the cart. If there is an error (like quantity exceeding available stock), it prevents the item from being added and logs a warning. This ensures that only valid items with correct quantities are added to the cart, maintaining data integrity and preventing issues during checkout.
         if (error?.field === 'quantity') {
@@ -192,27 +194,27 @@ const ItemTable = ({ cartItems, setCartItems }) => {
 
     //fuction to get availabale quntity of the product in inventory when user select the product from search result
     const fetchProductQuantity = async (productId) => {
-        try{
+        try {
             const res = await axios.get(`http://localhost:5000/api/sales/product-quantity/${productId}`);
             console.log('Product Quantity Response:', res.data);
-            if(res.data.success){
+            if (res.data.success) {
                 const qty = toNumber(res.data.totalQty);
                 setAvailableQuantity(qty);
                 console.log('Available quantity set to:', qty);
             }
         }
-        catch(error){
+        catch (error) {
             console.error("Error fetching product quantity:", error);
         }
     };
 
     //useEffect to call fetchProductQuantity when tempItem.p_id changes
     useEffect(() => {
-        if(tempItem.p_id){
+        if (tempItem.p_id) {
             console.log('Fetching quantity for product:', tempItem.p_id);
             fetchProductQuantity(tempItem.p_id);
         }
-        else{
+        else {
             setAvailableQuantity(null);
         }
     }, [tempItem.p_id]);
@@ -232,152 +234,230 @@ const ItemTable = ({ cartItems, setCartItems }) => {
     const handleQtyChange = (qty) => {
         const numQty = toNumber(qty);
         setTempItem((prev) => ({ ...prev, quntity: numQty }));
-        
+
         const conversionFactor = tempItem.conversionFactor || 1;
         const convertedQty = numQty / conversionFactor; // Convert to base unit quantity for comparison
-        
-        console.log('Qty Change Details:', { 
+
+        console.log('Qty Change Details:', {
             inputQty: qty,
-            numQty, 
-            conversionFactor, 
-            convertedQty, 
+            numQty,
+            conversionFactor,
+            convertedQty,
             availableQuantity,
             hasError: availableQuantity !== null && convertedQty > availableQuantity
         });
-        
-        if(availableQuantity !== null && convertedQty > availableQuantity){
+
+        if (availableQuantity !== null && convertedQty > availableQuantity) {
             console.log('ERROR: Quantity exceeds available stock');
             setError({ field: 'quantity', message: `Only ${availableQuantity} units available in stock` });
         }
-        else{
+        else {
             console.log(' Quantity is valid');
             setError(null);
         }
     };
 
+    //display error  when 
+    const handleOnFocusDiscount = () => {
+        if (!tempItem.discount_allowed) {
+            setError({ field: 'discount', message: 'Discount not allowed for this product' });
+        }
+    };
+
+
+
     return (
         <div className='card border-0 shadow-sm'>
-            
-        <div className='card-header bg-white py-2'>
-            <h6 className='mb-0 fw-bold'><Package size={18} className='me-2 text-primary' /> Sales Items</h6>
-        </div>
-        
-        {/* Error message display */}
-        {error?.field === 'quantity' && (
-            <div className='alert alert-danger alert-dismissible fade show mx-3 mt-3' role='alert'>
-                <strong> Quantity Error:</strong> {error.message}
-            </div>
-        )}
-   
-        <div className='table-responsive' style={{ minHeight: '300px', overflowX: 'auto' }}>
-            <table className='table table-sm table-hover align-middle mb-0' style={{ width: '100%', minWidth: '1000px' }}>
-                <thead className='bg-light text-secondary small text-uppercase'>
-                    <tr>
-                        <th className='text-center' style={{ width: '40px' }}>#</th>
-                        <th style={{ width: '110px' }}>Item Code</th>
-                        <th style={{ width: 'auto' }}>Description</th>
-                        <th style={{ width: '100px' }}>Unit</th>
-                        <th className='text-end' style={{ width: '90px' }}>Price</th>
-                        <th className='text-end' style={{ width: '70px' }}>Dis%</th>
-                        <th className='text-end' style={{ width: '70px' }}>Tax%</th>
-                        <th className='text-center' style={{ width: '80px' }}>Qty</th>
-                        <th className='text-center' style={{ width: '70px' }}>Free</th>
-                        <th className='text-end' style={{ width: '100px' }}>Total</th>
-                        <th className='text-center' style={{ width: '50px' }}>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {/* INPUT ROW */}
-                    <tr style={{ backgroundColor: inputRowBg, borderBottom: '2px solid #dee2e6' }}>
-                        <td className='text-center text-success fw-bold'>+</td>
-                        <td>
-                            <input readOnly className='form-control form-control-sm bg-light' value={tempItem.p_code} placeholder='Code' />
-                        </td>
-                        <td className='position-relative' style={{ width: '300px' }}>
-                            <input
-                                ref={searchInputRef}
-                                className='form-control form-control-sm'
-                                placeholder='Search item...'
-                                value={query}
-                                onChange={(e) => handleSearch(e.target.value)}
-                                style={{ width: '100%' }}
-                            />
-                            {searchResults.length > 0 && (
-                                <Portal targetElement={searchInputRef}>
-                                    <ul className='list-group shadow-lg' style={{ maxHeight: '300px', overflowY: 'auto', width: '400px' }}>
-                                        {searchResults.map((product) => (
-                                            <li
-                                                key={product.p_id}
-                                                onClick={() => selectProduct(product)}
-                                                className='list-group-item list-group-item-action small py-2 cursor-pointer search-result-item'
-                                            >
-                                                <div className='fw-bold' style={{color: product.p_type === 'Company' ? '#0d6efd' : '#198754'}}>{product.p_name}</div>
-                                                <div className='text-muted' style={{fontSize: '12px'}}>
-                                                    {product.image_path && <img src={`http://localhost:5000${product.image_path}`} style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '10px' }} />}
-                                                    Code: {product.p_code} | Price: {toNumber(product.retail_price).toFixed(2)} | Tax: {toNumber(product.tax_rate).toFixed(2)}% |<br /> Type : {product.p_type}
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </Portal>
-                            )}
-                        </td>
-                        <td>
-                            <select
-                                className='form-select form-select-sm'
-                                value={tempItem.p_unit}
-                                onChange={(e) => handleUnitChange(e.target.value)}
-                            >
-                              {/*default option if no  unit are loaded yet*/}
-                              {allUnits.length === 0 && <option value="Packet">Packet</option>}
-                              {allUnits.map((unit) => (
-                                  <option key={unit.Unit_Name} value={unit.Unit_Name}>{unit.Unit_Name}</option>
-                              ))}
-                            </select>
-                        </td>
-                        <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.unit_price} onChange={(e) => setTempItem({ ...tempItem, unit_price: e.target.value })} /></td>
-                        <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.discount} onChange={(e) => setTempItem({ ...tempItem, discount: e.target.value })} /></td>
-                        <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.tax} onChange={(e) => setTempItem({ ...tempItem, tax: e.target.value })} readOnly /></td>
-                        <td>
-                            <input 
-                                type='number' 
-                                className='form-control form-control-sm text-center fw-bold'
-                                value={tempItem.quntity} 
-                                onChange={(e) => handleQtyChange(e.target.value)}
-                                style={ error?.field === 'quantity' ? { borderColor: '#dc3545', borderWidth: '2px' } : {} }
-                            />
-                        </td>
-                        <td><input type='number' className='form-control form-control-sm text-center' value={tempItem.free} onChange={(e) => setTempItem({ ...tempItem, free: e.target.value })} /></td>
-                        <td className='text-end fw-bold text-primary'>{currentEntryTotal.toFixed(2)}</td>
-                        <td className='text-center'>
-                            <button onClick={addItem} className='btn btn-primary btn-sm'><Plus size={16} /></button>
-                        </td>
-                    </tr>
+            {/* put toggle button here to  indicate this is a resale or wholesale */}
 
-                    {/* CART ITEMS */}
-                    {cartItems.map((item, index) => (
-                        <tr key={item.id} className='border-bottom'>
-                            <td className='text-center text-muted small'>{index + 1}</td>
-                            <td className='small'>{item.p_code}</td>
-                            <td className='fw-medium small'>{item.p_name}</td>
-                            <td className='small'>{item.p_unit}</td>
-                            <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.unit_price} onChange={(e) => updateCartItem(index, 'unit_price', e.target.value)} /></td>
-                            <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.discount} onChange={(e) => updateCartItem(index, 'discount', e.target.value)} /></td>
-                            <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.tax} onChange={(e) => updateCartItem(index, 'tax', e.target.value)} readOnly/></td>
-                            <td><input type='number' className='form-control form-control-sm border-0 text-center fw-bold text-success p-0' value={item.quntity} onChange={(e) => updateCartItem(index, 'quntity', e.target.value)} /></td>
-                            <td><input type='number' className='form-control form-control-sm border-0 text-center p-0' value={item.free} onChange={(e) => updateCartItem(index, 'free', e.target.value)} /></td>
-                            <td className='text-end fw-bold small'>{toNumber(item.total).toFixed(2)}</td>
+            <div className='card-header bg-white py-2' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h6 className='mb-0 fw-bold'><Package size={18} className='me-2 text-primary' /> Sales Items</h6>
+
+                {/* Retail/Wholesale Toggle Button */}
+                <div style={{
+                    display: 'flex',
+                    gap: '8px',
+                    padding: '6px 8px',
+                    backgroundColor: '#f0f0f0',
+                    borderRadius: '6px',
+                    border: '1px solid #dee2e6'
+                }}>
+                    <button
+                        onClick={() => setPriceLevel('Retail')}
+                        style={{
+                            padding: '6px 14px',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontWeight: '500',
+                            fontSize: '13px',
+                            backgroundColor: priceLevel === 'Retail' ? '#007bff' : 'transparent',
+                            color: priceLevel === 'Retail' ? 'white' : '#6c757d',
+                            transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                            if (priceLevel !== 'Retail') {
+                                e.target.style.backgroundColor = '#e9ecef';
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (priceLevel !== 'Retail') {
+                                e.target.style.backgroundColor = 'transparent';
+                            }
+                        }}
+                    >
+                        🛍️ Retail
+                    </button>
+                    <button
+                        onClick={() => setPriceLevel('Wholesale')}
+                        style={{
+                            padding: '6px 14px',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontWeight: '500',
+                            fontSize: '13px',
+                            backgroundColor: priceLevel === 'Wholesale' ? '#28a745' : 'transparent',
+                            color: priceLevel === 'Wholesale' ? 'white' : '#6c757d',
+                            transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                            if (priceLevel !== 'Wholesale') {
+                                e.target.style.backgroundColor = '#e9ecef';
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (priceLevel !== 'Wholesale') {
+                                e.target.style.backgroundColor = 'transparent';
+                            }
+                        }}
+                    >
+                        📦 Wholesale
+                    </button>
+                </div>
+            </div>
+
+            {/* Error message display */}
+            {error?.field === 'quantity' && (
+                <div className='alert alert-danger alert-dismissible fade show mx-3 mt-3' role='alert'>
+                    <strong> Quantity Error:</strong> {error.message}
+                </div>
+            )}
+            {error?.field === 'discount' && (
+                <div className='alert alert-warning alert-dismissible fade show mx-3 mt-3' role='alert'>
+                    <strong> Discount Not Allowed:</strong> {error.message}
+                </div>
+            )}
+
+            <div className='table-responsive' style={{ minHeight: '300px', overflowX: 'auto' }}>
+                <table className='table table-sm table-hover align-middle mb-0' style={{ width: '100%', minWidth: '1000px' }}>
+                    <thead className='bg-light text-secondary small text-uppercase'>
+                        <tr>
+                            <th className='text-center' style={{ width: '40px' }}>#</th>
+                            <th style={{ width: '110px' }}>Item Code</th>
+                            <th style={{ width: 'auto' }}>Description</th>
+                            <th style={{ width: '100px' }}>Unit</th>
+                            <th className='text-end' style={{ width: '90px' }}>Price</th>
+                            <th className='text-end' style={{ width: '70px' }}>Dis%</th>
+                            <th className='text-end' style={{ width: '70px' }}>Tax%</th>
+                            <th className='text-center' style={{ width: '80px' }}>Qty</th>
+                            <th className='text-center' style={{ width: '70px' }}>Free</th>
+                            <th className='text-end' style={{ width: '100px' }}>Total</th>
+                            <th className='text-center' style={{ width: '50px' }}>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {/* INPUT ROW */}
+                        <tr style={{ backgroundColor: inputRowBg, borderBottom: '2px solid #dee2e6' }}>
+                            <td className='text-center text-success fw-bold'>+</td>
+                            <td>
+                                <input readOnly className='form-control form-control-sm bg-light' value={tempItem.p_code} placeholder='Code' />
+                            </td>
+                            <td className='position-relative' style={{ width: '300px' }}>
+                                <input
+                                    ref={searchInputRef}
+                                    className='form-control form-control-sm'
+                                    placeholder='Search item...'
+                                    value={query}
+                                    onChange={(e) => handleSearch(e.target.value)}
+                                    style={{ width: '100%' }}
+                                />
+                                {searchResults.length > 0 && (
+                                    <Portal targetElement={searchInputRef}>
+                                        <ul className='list-group shadow-lg' style={{ maxHeight: '300px', overflowY: 'auto', width: '400px' }}>
+                                            {searchResults.map((product) => (
+                                                <li
+                                                    key={product.p_id}
+                                                    onClick={() => selectProduct(product)}
+                                                    className='list-group-item list-group-item-action small py-2 cursor-pointer search-result-item'
+                                                >
+                                                    <div className='fw-bold' style={{ color: product.p_type === 'Company' ? '#0d6efd' : '#198754' }}>{product.p_name}</div>
+                                                    <div className='text-muted' style={{ fontSize: '12px' }}>
+                                                        {product.image_path && <img src={`http://localhost:5000${product.image_path}`} style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '10px' }} />}
+                                                        Code: {product.p_code} | Price: {priceLevel == "Retail" ? toNumber(product.retail_price).toFixed(2) : toNumber(product.wholesale_price).toFixed(2)} | Tax: {toNumber(product.tax_rate).toFixed(2)}% |<br /> Type : {product.p_type}
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </Portal>
+                                )}
+                            </td>
+                            <td>
+                                <select
+                                    className='form-select form-select-sm'
+                                    value={tempItem.p_unit}
+                                    onChange={(e) => handleUnitChange(e.target.value)}
+                                >
+                                    {/*default option if no  unit are loaded yet*/}
+                                    {allUnits.length === 0 && <option value="Packet">Packet</option>}
+                                    {allUnits.map((unit) => (
+                                        <option key={unit.Unit_Name} value={unit.Unit_Name}>{unit.Unit_Name}</option>
+                                    ))}
+                                </select>
+                            </td>
+                            <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.unit_price} onChange={(e) => setTempItem({ ...tempItem, unit_price: e.target.value })} /></td>
+                            <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.discount} onChange={(e) => setTempItem({ ...tempItem, discount: e.target.value })} onFocus={handleOnFocusDiscount} /></td>
+                            <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.tax} onChange={(e) => setTempItem({ ...tempItem, tax: e.target.value })} readOnly /></td>
+                            <td>
+                                <input
+                                    type='number'
+                                    className='form-control form-control-sm text-center fw-bold'
+                                    value={tempItem.quntity}
+                                    onChange={(e) => handleQtyChange(e.target.value)}
+                                    style={error?.field === 'quantity' ? { borderColor: '#dc3545', borderWidth: '2px' } : {}}
+                                />
+                            </td>
+                            <td><input type='number' className='form-control form-control-sm text-center' value={tempItem.free} onChange={(e) => setTempItem({ ...tempItem, free: e.target.value })} /></td>
+                            <td className='text-end fw-bold text-primary'>{currentEntryTotal.toFixed(2)}</td>
                             <td className='text-center'>
-                                <button onClick={() => setCartItems(cartItems.filter((i) => i.id !== item.id))} className='btn btn-link text-danger p-0 border-0'><Trash2 size={16} /></button>
+                                <button onClick={addItem} className='btn btn-primary btn-sm'><Plus size={16} /></button>
                             </td>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+
+                        {/* CART ITEMS */}
+                        {cartItems.map((item, index) => (
+                            <tr key={item.id} className='border-bottom'>
+                                <td className='text-center text-muted small'>{index + 1}</td>
+                                <td className='small'>{item.p_code}</td>
+                                <td className='fw-medium small'>{item.p_name}</td>
+                                <td className='small'>{item.p_unit}</td>
+                                <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.unit_price} onChange={(e) => updateCartItem(index, 'unit_price', e.target.value)} /></td>
+                                <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.discount} onChange={(e) => updateCartItem(index, 'discount', e.target.value)} /></td>
+                                <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.tax} onChange={(e) => updateCartItem(index, 'tax', e.target.value)} readOnly /></td>
+                                <td><input type='number' className='form-control form-control-sm border-0 text-center fw-bold text-success p-0' value={item.quntity} onChange={(e) => updateCartItem(index, 'quntity', e.target.value)} /></td>
+                                <td><input type='number' className='form-control form-control-sm border-0 text-center p-0' value={item.free} onChange={(e) => updateCartItem(index, 'free', e.target.value)} /></td>
+                                <td className='text-end fw-bold small'>{toNumber(item.total).toFixed(2)}</td>
+                                <td className='text-center'>
+                                    <button onClick={() => setCartItems(cartItems.filter((i) => i.id !== item.id))} className='btn btn-link text-danger p-0 border-0'><Trash2 size={16} /></button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+            <label htmlFor="" >Available Quantity</label>
+            <input type="number" className="form-control form-control-sm" value={availableQuantity} readOnly />
         </div>
-        <label htmlFor="" >Available Quantity</label>
-        <input type="number" className="form-control form-control-sm" value={availableQuantity} readOnly />
-    </div>
     );
 };
 
