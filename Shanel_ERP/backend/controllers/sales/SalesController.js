@@ -1,5 +1,5 @@
 const sequelize = require('../../config/db');
-const { Product, UnitConversion, Sale,Inventory } = require('../../models/index');
+const { Product, UnitConversion, Sale,Inventory, Customer } = require('../../models/index');
 const { Op, where } = require('sequelize');
 
 const searchProducts = async (req, res) => {
@@ -91,6 +91,8 @@ const searchProducts = async (req, res) => {
 const allUnits = async (req, res) => {
     try {
         const { productId } = req.query;
+        console.log('Fetching units for product ID:', productId);
+        
         const units = await UnitConversion.findAll({
             where: {
                 P_ID: productId
@@ -99,12 +101,12 @@ const allUnits = async (req, res) => {
                 'Unit_Name',
                 'Is_Base_Unit',
                 'Unit_Conversion'
-
-
             ],
             order: [['Display_Order', 'ASC']],
             raw: true
         });
+
+        console.log('Units found:', units);
 
         return res.status(200).json({
             success: true,
@@ -112,6 +114,7 @@ const allUnits = async (req, res) => {
         });
 
     } catch (error) {
+        console.error('Units fetch error:', error);
         return res.status(500).json({
             success: false,
             message: "server error while fetching units",
@@ -185,6 +188,8 @@ const generateInvoiceNo = async (req, res) => {
                 error: error.message
             });
         }
+
+   
 }
 
 //post sales data from POS to backend
@@ -270,19 +275,97 @@ const postSalesData = async (req, res) => {
 }
 
 
-//get the quntity of product in the inventory 
-// const getProductQuntity = async (productId) => {
-//     try{
-//         const invetoryRecords = await.Inventory.findAll({
-//             where:{
-//                 P_ID:productId,
-//                 Location:'Shop'
-//             },
-//             attributes:[
+//  get the quntity of product in the inventory 
+const getProductQuntity = async (req, res) => {
+    try{
+        const { productId } = req.params;
+        console.log('Fetching quantity for product:', productId);
+        
+        const invetoryRecords = await Inventory.findAll({
+            where:{
+                P_ID:productId,
+                Location:'Shop'
+            },
+            attributes:[
+                [sequelize.fn('SUM', sequelize.col('Qty')), 'totalQty'  ]
+            ]
+        });
 
-//             ]
-//         })
-//     }
+        const totalQty = parseFloat(invetoryRecords[0]?.dataValues?.totalQty) || 0;
+        console.log(`Total quantity for product ID ${productId}:`, totalQty);
 
-module.exports = { searchProducts, allUnits, getBaseUnitQty, postSalesData, generateInvoiceNo }
+        res.status(200).json({
+            success:true,
+            productId: productId,
+           totalQty: totalQty 
+        });
+
+    }catch(error){
+        console.error("Error fetching product quantity from inventory:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching product quantity"
+        });
+    }
+};
+
+
+//get all sales for recent activity log in the POS
+const getAllSales = async (req, res) => {
+    try {
+        const sales = await Sale.findAll({
+            where: { 
+                Status: 'Active',
+                Sale_Date: {
+                    [Op.gte]: new Date(new Date().setDate(new Date().getDate() - 7)) // Last 7 days
+                }
+            },
+            attributes: [
+               
+                'Invoice_No',
+                'C_ID',
+                'Sale_Date',
+                'Sale_Time',
+                'Total_Amount',
+                'Paid_Amount',
+                'Payment_Status'
+            ],include: [{
+                model: Customer,
+                attributes: ['C_Name']
+            }], order: [['Created_At', 'DESC']]
+
+            });
+
+
+            const formateData = sales.map((s) => {
+                return {
+                    invoice_no: s.Invoice_No,
+                    c_id: s.C_ID,
+                    customer_name: s.Customer?.C_Name || 'Unknown',
+                    sale_date: s.Sale_Date,
+                    sale_time: s.Sale_Time,
+                    total_amount: parseFloat(s.Total_Amount),
+                    balance: parseFloat(s.Total_Amount) - parseFloat(s.Paid_Amount),
+                    payment_status: s.Payment_Status
+                }
+            }
+            );
+          
+        return res.status(200).json({
+            success: true,
+            count: sales.length,
+            data: formateData
+
+        });
+    } catch (error) {
+        console.error('getAllSales error: ', error);
+        return res.status(500).json({
+            success: false,
+            message: 'server error while fetching sales',
+            error: error.message
+        })
+    }
+
+}         
+module.exports = { searchProducts, allUnits, getBaseUnitQty, postSalesData, generateInvoiceNo ,getProductQuntity,getAllSales};
 

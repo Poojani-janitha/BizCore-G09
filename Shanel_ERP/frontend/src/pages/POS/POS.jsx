@@ -7,6 +7,7 @@ import ActionButtons from '../../component/pos/actionButtons/ActionButtons'
 import Test from './Test'
 import { useState } from 'react'
 import axios from 'axios'
+import RecentSale from '../../component/pos/recentSale/RecentSale'
 
 const POS = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -15,7 +16,8 @@ const POS = () => {
   const [paymentData, setPaymentData] = useState({});
   const [action, setAction] = useState({});
   const[invoiceNo,setInvoiceNo] = useState('');
-
+  const[loading,setLoading] = useState(false);//for display resent sales component after payment, also can be used for loading state in future
+  const[holdInvoice,setHoldInvoice] = useState(null);//for storing hold invoice data in local storage, this can be used in future to implement hold and resume invoice feature
 
 
   const handleInvoiceDataChange = (data) => {
@@ -24,6 +26,8 @@ const POS = () => {
     console.log("Updated Invoice Data:", data);
   }
 
+
+  //send sales data to backend when action is triggered from ActionButtons component, also validate data before sending
   const sendData = useCallback(async () => {
     if (!action) {
       console.warn("No action selected. Data will not be sent.");
@@ -89,6 +93,8 @@ const POS = () => {
     }
   }, [action, sendData]);
 
+
+  // Re-fetch invoice number when component mounts to ensure we have the latest one
   useEffect(() => {
     const fetchInvoiceNo = async () => {
       try {
@@ -110,12 +116,145 @@ const POS = () => {
     fetchInvoiceNo();
   }, []);
 
+  //store hold invoice in local storage and retrieve when component mounts
+  useEffect(() => {
+    if (action === 'holdInvoice') {
+      // Validate that required data exists
+      if (!customerData || !invoiceData || cartItems.length === 0) {
+        alert('Cannot hold invoice: Missing customer, items, or invoice data');
+        setAction({});
+        return;
+      }
+
+      // Create hold invoice object
+      const holdData = {
+        customerData,
+        cartItems,
+        invoiceData,
+        paymentData,
+        timestamp: new Date().toLocaleTimeString(),
+        invoiceNo: invoiceNo
+      };
+
+      // Store in local storage
+      localStorage.setItem('holdInvoice', JSON.stringify(holdData));
+      setHoldInvoice(holdData);
+      
+      // Reset current invoice
+      setInvoiceData({});
+      setCartItems([]);
+      setPaymentData({});
+      setAction({});
+      
+      alert('Invoice has been held successfully!');
+    }
+  }, [action, customerData, cartItems, invoiceData, paymentData, invoiceNo]);
+
+  // Load hold invoice from localStorage on component mount
+  useEffect(() => {
+    const storedHoldInvoice = localStorage.getItem('holdInvoice');
+    if (storedHoldInvoice) {
+      try {
+        setHoldInvoice(JSON.parse(storedHoldInvoice));
+      } catch (error) {
+        console.error('Error loading held invoice from localStorage:', error);
+      }
+    }
+  }, []);
+
+  // Function to load held invoice back into the form
+  const loadHeldInvoice = () => {
+    if (holdInvoice) {
+      setCustomerData(holdInvoice.customerData);
+      setCartItems(holdInvoice.cartItems);
+      setInvoiceData(holdInvoice.invoiceData);
+      setPaymentData(holdInvoice.paymentData);
+      setHoldInvoice(null);
+      localStorage.removeItem('holdInvoice');
+      alert('Held invoice has been loaded!');
+    }
+  };
+
+  // Function to clear held invoice
+  const clearHeldInvoice = () => {
+    setHoldInvoice(null);
+    localStorage.removeItem('holdInvoice');
+  };
+
+
   return (
 
     <div className='pos-wrapper w-100' style={{ overflowX: 'hidden' }}>
+      {/* Floating Recent Sales Button */}
+      <RecentSale />
+
+      {/* Hold Invoice Banner */}
+      {holdInvoice && (
+        <div style={{
+          marginBottom: '16px',
+          padding: '14px 16px',
+          backgroundColor: '#fff3cd',
+          border: '1px solid #ffc107',
+          borderRadius: '8px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <h6 style={{ margin: '0 0 6px 0', fontSize: '14px', fontWeight: '600', color: '#856404' }}>
+              📋 Hold Invoice Pending
+            </h6>
+            <p style={{ margin: 0, fontSize: '13px', color: '#856404' }}>
+              Customer: <strong>{holdInvoice.customerData?.c_name}</strong> | 
+              Items: <strong>{holdInvoice.cartItems?.length || 0}</strong> | 
+              Time: <strong>{holdInvoice.timestamp}</strong>
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={loadHeldInvoice}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#218838'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#28a745'}
+            >
+              Load Invoice
+            </button>
+            <button
+              onClick={clearHeldInvoice}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#c82333'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#dc3545'}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Section 1: Customer Info */}
       <div className='card border-0 shadow-sm p-4 mb-3'>
         <CustomerInfo setCustomerData={setCustomerData} invoiceNo={invoiceNo} />
+
       </div>
 
       {/* Section 2: Item Table */}
