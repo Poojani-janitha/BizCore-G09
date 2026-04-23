@@ -19,14 +19,19 @@ const Header = () => {
         if (path === '/hr') return 'Human Resources';
         if (path.includes('/hr/employees')) return 'Employees';
         if (path.includes('/hr/attendance')) return 'Attendance';
-        if (path.includes('/hr/payroll')) return 'Payroll';
-        if (path === '/finance') return 'Finance';
+        if (path === '/finance') return 'Finance & Accounting';
+        if (path.includes('/finance/make-payment')) return 'Expense Management';
+        if (path.includes('/finance/receive-payment')) return 'Receive Payment';
+        if (path.includes('/finance/general-ledger')) return 'General Ledger';
+        if (path.includes('/finance/payments')) return 'Payments';
+        if (path.includes('/finance/reports')) return 'Finance Reports';
+        if (path === '/logout') return 'Logout';
         return 'Dashboard';
     };
 
     return (
         <header className="d-flex align-items-center px-4 py-2 bg-white border-bottom shadow-sm w-100" style={{ height: '70px' }}>
-            
+
             {/* Left: Dynamic Page Name - Fixed Width so center stays center */}
             <div style={{ width: '250px' }}>
                 <h4 className="mb-0 fw-bold" style={{ color: '#1e293b', fontSize: '1.25rem' }}>{getPageTitle()}</h4>
@@ -38,10 +43,10 @@ const Header = () => {
                     <span className="input-group-text bg-transparent border-0 text-muted">
                         <Search size={18} />
                     </span>
-                    <input 
-                        type="text" 
-                        className="form-control bg-transparent border-0 shadow-none py-2" 
-                        placeholder="Search anything..." 
+                    <input
+                        type="text"
+                        className="form-control bg-transparent border-0 shadow-none py-2"
+                        placeholder="Search anything..."
                         style={{ fontSize: '14px' }}
                     />
                 </div>
@@ -62,9 +67,9 @@ const Header = () => {
                         <div className="text-muted small" style={{ fontSize: '11px' }}>Manager</div>
                     </div>
                     <div className="rounded-circle bg-info overflow-hidden shadow-sm" style={{ width: '38px', height: '38px' }}>
-                        <img 
-                            src="https://ui-avatars.com/api/?name=Shanel+Admin&background=004445&color=fff" 
-                            alt="user" 
+                        <img
+                            src="https://ui-avatars.com/api/?name=Shanel+Admin&background=004445&color=fff"
+                            alt="user"
                             className="w-100 h-100"
                         />
                     </div>

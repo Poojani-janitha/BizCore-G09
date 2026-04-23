@@ -22,7 +22,36 @@ const ACCOUNTS = {
     // EXPENSES
     COGS: '5001',                      // Account_Code: 5001
     SALARY_EXPENSE: '5002',            // Account_Code: 5002
-    DISCOUNT_GIVEN: '5003'             // Account_Code: 5003
+    DISCOUNT_GIVEN: '5003',            // Account_Code: 5003
+    RENT_EXPENSE: '5004',              // Account_Code: 5004
+    UTILITIES_EXPENSE: '5005',         // Account_Code: 5005
+    RAW_MATERIALS_EXPENSE: '5006',     // Account_Code: 5006
+    TRANSPORT_EXPENSE: '5007',         // Account_Code: 5007
+    MAINTENANCE_EXPENSE: '5008',       // Account_Code: 5008
+    MARKETING_EXPENSE: '5009',         // Account_Code: 5009
+    OFFICE_SUPPLIES_EXPENSE: '5010',   // Account_Code: 5010
+    OTHER_EXPENSE: '5011'              // Account_Code: 5011
+};
+
+// Maps expense categories to their account codes
+const EXPENSE_CATEGORY_ACCOUNTS = {
+    'Salary': ACCOUNTS.SALARY_EXPENSE,
+    'Rent': ACCOUNTS.RENT_EXPENSE,
+    'Utilities': ACCOUNTS.UTILITIES_EXPENSE,
+    'Raw_Materials': ACCOUNTS.RAW_MATERIALS_EXPENSE,
+    'Transport': ACCOUNTS.TRANSPORT_EXPENSE,
+    'Maintenance': ACCOUNTS.MAINTENANCE_EXPENSE,
+    'Marketing': ACCOUNTS.MARKETING_EXPENSE,
+    'Office_Supplies': ACCOUNTS.OFFICE_SUPPLIES_EXPENSE,
+    'Other': ACCOUNTS.OTHER_EXPENSE
+};
+
+// Maps income categories to their account codes
+const INCOME_CATEGORY_ACCOUNTS = {
+    Sales: ACCOUNTS.SALES_REVENUE_RETAIL,
+    Interest: ACCOUNTS.OTHER_INCOME,
+    Commission: ACCOUNTS.OTHER_INCOME,
+    Other: ACCOUNTS.OTHER_INCOME
 };
 
 const PAYMENT_METHODS = {
@@ -36,5 +65,7 @@ const PAYMENT_METHODS = {
 
 module.exports = {
     ACCOUNTS,
-    PAYMENT_METHODS
+    PAYMENT_METHODS,
+    EXPENSE_CATEGORY_ACCOUNTS,
+    INCOME_CATEGORY_ACCOUNTS
 };
