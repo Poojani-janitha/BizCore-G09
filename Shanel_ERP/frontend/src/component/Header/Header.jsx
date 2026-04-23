@@ -17,7 +17,12 @@ const Header = () => {
         if (path === '/hr') return 'Human Resources';
         if (path.includes('/hr/employees')) return 'Employees';
         if (path.includes('/hr/attendance')) return 'Attendance';
-        if (path === '/finance') return 'Payment Management';
+        if (path === '/finance') return 'Finance & Accounting';
+        if (path.includes('/finance/make-payment')) return 'Expense Management';
+        if (path.includes('/finance/receive-payment')) return 'Receive Payment';
+        if (path.includes('/finance/general-ledger')) return 'General Ledger';
+        if (path.includes('/finance/payments')) return 'Payments';
+        if (path.includes('/finance/reports')) return 'Finance Reports';
         if (path === '/logout') return 'Logout';
         return 'Dashboard';
     };

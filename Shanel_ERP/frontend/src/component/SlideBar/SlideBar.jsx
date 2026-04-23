@@ -58,7 +58,19 @@ const SlideBar = () => {
                 { label: 'Payroll', to: '/hr/payroll', icon: <DollarSign size={14} /> },
             ]
         },
-        { label: 'Finance', icon: <DollarSign size={18} />, to: '/finance' },
+        { 
+            label: 'Finance & Accounting', 
+            icon: <DollarSign size={18} />, 
+            to: '/finance',
+            subItems: [
+                { label: 'Overview', to: '/finance', icon: <PieChart size={14} /> },
+                { label: 'General Ledger', to: '/finance/general-ledger', icon: <FileText size={14} /> },
+                { label: 'Payments', to: '/finance/payments', icon: <DollarSign size={14} /> },
+                { label: 'Receive Payment', to: '/finance/receive-payment', icon: <CornerUpLeft size={14} /> },
+                { label: 'Make Payment', to: '/finance/make-payment', icon: <Truck size={14} /> },
+                { label: 'Reports', to: '/finance/reports', icon: <BarChart2 size={14} /> },
+            ]
+        },
     ];
 
     const colors = {
