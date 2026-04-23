@@ -21,12 +21,15 @@ import SupplierPurchaseReport from './pages/Inventory/Reports/SupplierPurchaseRe
 import TransferReport from './pages/Inventory/Reports/TransferReport.jsx';
 import AlertsPage from './pages/Inventory/AlertsPage.jsx';
 import POS from './pages/POS/POS.jsx';
+import PaymentManagementPage from './pages/Finance/PaymentManagementPage.jsx';
+import ReceivePaymentPage from './pages/Finance/ReceivePaymentPage.jsx';
+import MakePaymentPage from './pages/Finance/MakePaymentPage.jsx';
 import './App.css';
 import { useState } from 'react';
 
 
 const App = () => {
-  
+
   return (
 
 
@@ -64,13 +67,16 @@ const App = () => {
             <Route path="/hr/payroll" element={<Payroll />} />
             <Route path="/POS" element={<POS />} />
             <Route path="/hr" element={<Hrdashboardpage />} />
-            <Route path="/finance" element={<div>Finance Page</div>} />
+            <Route path="/hr/attendance" element={<Attendance />} />
+            <Route path="/finance" element={<PaymentManagementPage />} />
+            <Route path="/finance/receive-payment" element={<ReceivePaymentPage />} />
+            <Route path="/finance/make-payment" element={<MakePaymentPage />} />
             <Route path="/logout" element={<div>Logout Page</div>} />
-         
+
           </Routes>
         </main>
       </div>
-    </div>   
+    </div>
   )
 }
 

@@ -11,6 +11,8 @@ const productSalesRoutes = require('./routes/sales/SalesRoutes');
 const transferRoutes = require('./routes/inventory/transferRoutes');
 const reportRoutes = require('./routes/inventory/reportRoutes');
 const accountingRoutes = require('./routes/Accounting/SalesAccountRoutes');
+const expenseRoutes = require('./routes/Accounting/expenseRoutes');
+const incomeRoutes = require('./routes/Accounting/incomeRoutes');
 
 const app = express();
 applyMiddleware(app);
@@ -39,6 +41,8 @@ app.use('/api/customer',customerRoutes);
 
 //Finance routes
 app.use('/api/accounting/sales', accountingRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/incomes', incomeRoutes);
 
 //Supplier routes
 
