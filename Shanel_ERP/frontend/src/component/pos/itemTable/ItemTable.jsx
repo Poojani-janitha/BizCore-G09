@@ -95,9 +95,9 @@ const ItemTable = ({ cartItems, setCartItems }) => {
         }
     };
 
-            const res = await axios.get('http://localhost:5000/api/inventory/sales/search', {
-                params: { q: term }
-            });
+            // const res = await axios.get('http://localhost:5000/api/inventory/sales/search', {
+            //     params: { q: term }
+            // });
 
     // Function to handle changes in the unit selection for the item being added. When the user selects a different unit, this function retrieves the conversion factor for that unit relative to the base unit and updates the unit price accordingly. This ensures that the pricing remains accurate regardless of the unit selected by the user.
     const handleUnitChange = async (newUnit) => {
