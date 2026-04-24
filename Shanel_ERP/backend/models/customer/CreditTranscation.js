@@ -1,6 +1,9 @@
+// 
+
 const sequlize = require('../../config/db');
 const { DataTypes } = require('sequelize');
-const {Customer,User} = require('./../index')
+const Customer = require('./customer');
+const User = require('../user/User');
   
 
 //Model for Credit Transaction
