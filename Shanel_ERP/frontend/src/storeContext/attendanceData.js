@@ -36,4 +36,3 @@ export const setLastSavedAttendanceDate = (date) => {
   localStorage.setItem(LAST_SAVED_ATTENDANCE_DATE_KEY, date);
   window.dispatchEvent(new Event('attendance-saved'));
 };
-
