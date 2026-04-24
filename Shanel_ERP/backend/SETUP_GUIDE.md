@@ -42,7 +42,7 @@ npm run dev
 
 **The `ensure-deps.js` script will automatically:**
 - Check if dependencies are installed
-- Run `npm install` if any are missing
+- Run `npm install` if missing
 - Start the server with nodemon
 
 ## 📝 What Happens on Each Pull
