@@ -5,6 +5,8 @@ import Hrdashboardpage from './pages/HR/Hrdashboardpage';
 import EmployeesPage from './pages/HR/EmployeesPage';
 import Attendance from './pages/HR/AttendancePage.jsx';
 import Payroll from './pages/HR/Payroll.jsx';
+import Leave from './pages/HR/Leave.jsx';
+import Reports from './pages/HR/Reports.jsx';
 import Header from './component/Header/Header';
 import ProductPage from './pages/Inventory/ProductPage.jsx';
 import ProductionStock from './pages/Inventory/ProductionStock.jsx';
@@ -21,12 +23,15 @@ import SupplierPurchaseReport from './pages/Inventory/Reports/SupplierPurchaseRe
 import TransferReport from './pages/Inventory/Reports/TransferReport.jsx';
 import AlertsPage from './pages/Inventory/AlertsPage.jsx';
 import POS from './pages/POS/POS.jsx';
+import PaymentManagementPage from './pages/Finance/PaymentManagementPage.jsx';
+import ReceivePaymentPage from './pages/Finance/ReceivePaymentPage.jsx';
+import MakePaymentPage from './pages/Finance/MakePaymentPage.jsx';
 import './App.css';
 import { useState } from 'react';
 
 
 const App = () => {
-  
+
   return (
 
 
@@ -62,15 +67,19 @@ const App = () => {
             <Route path="/hr/employees" element={<EmployeesPage />} />
             <Route path="/hr/attendance" element={<Attendance />} />
             <Route path="/hr/payroll" element={<Payroll />} />
+            <Route path="/hr/leave" element={<Leave />} />
+            <Route path="/hr/reports" element={<Reports />} />
             <Route path="/POS" element={<POS />} />
             <Route path="/hr" element={<Hrdashboardpage />} />
-            <Route path="/finance" element={<div>Finance Page</div>} />
+            <Route path="/finance" element={<PaymentManagementPage />} />
+            <Route path="/finance/receive-payment" element={<ReceivePaymentPage />} />
+            <Route path="/finance/make-payment" element={<MakePaymentPage />} />
             <Route path="/logout" element={<div>Logout Page</div>} />
-         
+
           </Routes>
         </main>
       </div>
-    </div>   
+    </div>
   )
 }
 

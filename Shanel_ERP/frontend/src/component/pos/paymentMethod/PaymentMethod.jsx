@@ -159,7 +159,7 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue }) => {
                         type='number'
                         min='0'
                         step='0.01'
-                        disabled={!isPartial}  
+                        disabled={!isPartial || paymentData.Payment_Method == 'Credit'}  
                         className='form-control form-control-sm'
                         placeholder='Enter partial amount...'
                         value={partialAmount}
@@ -173,7 +173,7 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue }) => {
                     </div>
                 )}
                 {isPartial && customerReturnAmount > 0 && (
-                    <div classN ame='alert alert-success py-2 px-3 mb-2 small'>
+                    <div className='alert alert-success py-2 px-3 mb-2 small'>
                         Customer balance to return: <strong>Rs. {customerReturnAmount.toFixed(2)}</strong>
                     </div>
                 )}
