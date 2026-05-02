@@ -6,6 +6,7 @@ import ProductTable from '../../component/Inventory/Product/ProductTable';
 import ProductModal from '../../component/Inventory/Product/ProductModal';
 import ProductViewModal from '../../component/Inventory/Product/ProductViewModal';
 import { X } from 'react-feather';
+import { useNavigate } from 'react-router-dom';
 
 // Utility function for stock status
 const getStockStatus = (stockCount, minStock) => {
@@ -17,6 +18,7 @@ const getStockStatus = (stockCount, minStock) => {
 };
 
 const ProductPage = ({ typeFilter, pageTitle }) => {
+    const navigate = useNavigate();
 
     //Filtering status
     const [searchTerm, setSearchTerm] = useState('');
@@ -38,6 +40,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     const [stockForm, setStockForm] = useState({ productId: '', qty: '' });
     const [stockError, setStockError] = useState('');
     const [isSavingStock, setIsSavingStock] = useState(false);
+    const [productionPromptProduct, setProductionPromptProduct] = useState(null);
 
     const isIsharaProduct = (product) => (
         product.isIsharaProduct === true ||
@@ -64,6 +67,18 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     const handleCloseModal = () => {
         setEditingProduct(null); // Clear editing state on close
         setShowModal(false);
+    };
+
+    const goToProductionStock = () => {
+        navigate('/inventory/production-stock');
+    };
+
+    const handleProductAdded = (product) => {
+        if (product.type === 'Company' && !product.isIsharaProduct) {
+            setProductionPromptProduct(product);
+        } else {
+            alert("Product added successfully!");
+        }
     };
     
     const fetchProducts = async () => {
@@ -325,9 +340,18 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                 onAddClick={handleAddProduct}
                 onUpdateQtyClick={openQuickStockModal}
                 showUpdateQty={typeFilter === 'Company' || typeFilter === 'Other' || typeFilter === 'Raw'}
+                onProductionStockClick={goToProductionStock}
+                showProductionStock={typeFilter === 'Company'}
                 products={filteredProducts}
             />
-            <ProductModal show={showModal} onHide={handleCloseModal} typeFilter={typeFilter} refreshData={fetchProducts} editData={editingProduct} />
+            <ProductModal
+                show={showModal}
+                onHide={handleCloseModal}
+                typeFilter={typeFilter}
+                refreshData={fetchProducts}
+                editData={editingProduct}
+                onProductAdded={handleProductAdded}
+            />
             <ProductViewModal show={showViewModal} onHide={handleCloseViewModal} product={viewingProduct} />
             <ProductFilters onSearchChange={setSearchTerm} onTypeChange={setSelectedType} onActiveToggle={setActiveOnly} />
 
@@ -496,6 +520,52 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {productionPromptProduct && (
+                <div className='modal d-block' style={{ backgroundColor: 'rgba(15,23,42,0.55)', zIndex: 1060 }}
+                     onClick={(e) => { if (e.target === e.currentTarget) setProductionPromptProduct(null); }}>
+                    <div className='modal-dialog modal-dialog-centered' style={{ maxWidth: '420px' }}>
+                        <div className='modal-content border-0 shadow-lg rounded-4 overflow-hidden'>
+                            <div className='modal-header border-0 px-4 pt-4 pb-2'>
+                                <div>
+                                    <h6 className='fw-bold mb-0'>Product Added</h6>
+                                    <p className='text-muted small mb-0 mt-1' style={{ fontSize: '12px' }}>
+                                        {productionPromptProduct.name} was added successfully.
+                                    </p>
+                                </div>
+                                <button
+                                    type='button'
+                                    className='btn btn-sm btn-light border-0 rounded-circle ms-auto'
+                                    onClick={() => setProductionPromptProduct(null)}
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                            <div className='modal-body px-4 py-3'>
+                                <p className='mb-0 text-dark'>
+                                    Do you want to add stock for this product from Production Stock now?
+                                </p>
+                            </div>
+                            <div className='modal-footer border-0 px-4 pb-4 pt-1 gap-2'>
+                                <button
+                                    type='button'
+                                    className='btn btn-outline-secondary btn-sm px-4 rounded-3'
+                                    onClick={() => setProductionPromptProduct(null)}
+                                >
+                                    Later
+                                </button>
+                                <button
+                                    type='button'
+                                    className='btn btn-dark btn-sm px-4 rounded-3 shadow-sm'
+                                    onClick={goToProductionStock}
+                                >
+                                    Go to Production Stock
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

@@ -4,7 +4,7 @@ import axios from 'axios';
 import Barcode from 'react-barcode';
 import UnitConversionManager from './UnitConversionManager';
 
-const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
+const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProductAdded }) => {
     const initialState = {
         P_Code: '',
         P_Name: '',
@@ -226,7 +226,15 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
                 await axios.post('http://localhost:5000/api/inventory/products', formDataToSend, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
-                alert("Product added successfully!");
+                if (onProductAdded) {
+                    onProductAdded({
+                        name: formData.P_Name,
+                        type: formData.P_Type,
+                        isIsharaProduct: formData.IsIsharaProduct
+                    });
+                } else {
+                    alert("Product added successfully!");
+                }
             }
             refreshData(); 
             handleClose();
