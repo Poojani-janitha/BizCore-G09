@@ -151,8 +151,10 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
         const newErrors = {};
         
         if (!formData.P_Name.trim()) newErrors.P_Name = 'Product name is required';
+        if (!formData.Cost_Price || parseFloat(formData.Cost_Price) <= 0) newErrors.Cost_Price = 'Cost price must be greater than 0';
         if (!formData.Retail_Price || formData.Retail_Price <= 0) newErrors.Retail_Price = 'Retail price must be greater than 0';
         if (!formData.Wholesale_Price || formData.Wholesale_Price <= 0) newErrors.Wholesale_Price = 'Wholesale price must be greater than 0';
+        if (!formData.Barcode || !formData.Barcode.trim()) newErrors.Barcode = 'Barcode is required. Please generate or enter a barcode';
         if (formData.Cost_Price && formData.Retail_Price && parseFloat(formData.Retail_Price) < parseFloat(formData.Cost_Price)) {
             newErrors.Retail_Price = 'Retail price must be greater than cost price';
         }
@@ -168,6 +170,9 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
         const prefix = formData.P_Type === 'Company' ? 'BC' : 'EXT';
         const random = Math.floor(100000000 + Math.random() * 900000000);
         setFormData({ ...formData, Barcode: `${prefix}${random}` });
+        if (errors.Barcode) {
+            setErrors({ ...errors, Barcode: '' });
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -353,9 +358,9 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
 
                                 {/* Pricing Section */}
                                 <div className="col-4">
-                                    <label className="form-label mb-1 small fw-semibold text-muted">Cost (LKR) <span className="text-danger small">{errors.Cost_Price && errors.Cost_Price}</span></label>
+                                    <label className="form-label mb-1 small fw-semibold text-muted">Cost (LKR) * <span className="text-danger small">{errors.Cost_Price && errors.Cost_Price}</span></label>
                                     <input type="number" step="0.01" name="Cost_Price" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Cost_Price ? 'border border-danger' : ''}`}
-                                           value={formData.Cost_Price} onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur} />
+                                           value={formData.Cost_Price} onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur} required />
                                 </div>
                                 <div className="col-4">
                                     <label className="form-label mb-1 small fw-semibold text-muted">Retail (LKR) * <span className="text-danger small">{errors.Retail_Price && errors.Retail_Price}</span></label>
@@ -453,7 +458,9 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
 
                                 {/* Barcode Management Section */}
                                 <div className="col-12 mt-3 mb-3">
-                                    <label className="form-label mb-1 small fw-semibold text-muted">Barcode Management</label>
+                                    <label className="form-label mb-1 small fw-semibold text-muted">
+                                        Barcode Management <span className="text-danger small">{errors.Barcode && errors.Barcode}</span>
+                                    </label>
                                     
                                     {editData ? (
                                         /* Edit Mode: show barcode visual, locked and not editable */
@@ -478,7 +485,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData }) => {
                                                 <input 
                                                     type="text" 
                                                     name="Barcode" 
-                                                    className="form-control border-0 py-2 shadow-none flex-grow-1" 
+                                                    className={`form-control py-2 shadow-none flex-grow-1 ${errors.Barcode ? 'border border-danger' : 'border-0'}`}
                                                     style={{ backgroundColor: '#f1f5f9', borderRadius: '8px', fontSize: '14px', height: '42px' }}
                                                     value={formData.Barcode} 
                                                     onChange={handleChange} 
