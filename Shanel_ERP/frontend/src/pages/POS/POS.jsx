@@ -15,13 +15,20 @@ const POS = () => {
   const [customerData, setCustomerData] = useState({});
   const [paymentData, setPaymentData] = useState({});
   const [action, setAction] = useState({});
+<<<<<<< HEAD
   const[invoiceNo,setInvoiceNo] = useState('');
   const[loading,setLoading] = useState(false);//for display resent sales component after payment, also can be used for loading state in future
   const[holdInvoice,setHoldInvoice] = useState(null);//for storing hold invoice data in local storage, this can be used in future to implement hold and resume invoice feature
   const [priceLevel, setPriceLevel] = useState('Retail'); // Toggle between Retail and Wholesale
+=======
+  const [invoiceNo, setInvoiceNo] = useState('');
+  const [loading, setLoading] = useState(false);//for display resent sales component after payment, also can be used for loading state in future
+  const [holdInvoice, setHoldInvoice] = useState(null);//for storing hold invoice data in local storage, this can be used in future to implement hold and resume invoice feature
+
+>>>>>>> 0e0ff9a (Add finance pages and update components)
 
   const handleInvoiceDataChange = (data) => {
- 
+
     setInvoiceData(data);
     console.log("Updated Invoice Data:", data);
   }
@@ -49,7 +56,7 @@ const POS = () => {
 
       try {
         const response = await axios.post(`http://localhost:5000/api/sales/`, {
-          cutomer: customerData,
+          customer: customerData,
           items: cartItems,
           invoiceDetails: { ...invoiceData, invoiceNo: invoiceNo },
           paymentDetails: paymentData,
@@ -57,17 +64,23 @@ const POS = () => {
           saleType:priceLevel === 'Retail' ? 'Retail' : 'Wholesale',
           action: action
         });
+<<<<<<< HEAD
         console.log("Sale saved successfully:", response.data);
         console.log("Completed Invoice No:", response.data.invoiceNo);
         
+=======
+        console.log("Data sent successfully:", response.data);
+
+>>>>>>> 0e0ff9a (Add finance pages and update components)
         alert(`Sale saved successfully! Invoice No: ${response.data.invoiceNo}`);
-        
+
         // Reset all form data for new transaction
         setInvoiceData({});
         setCartItems([]);
         setCustomerData({});
         setPaymentData({});
         setAction({});
+<<<<<<< HEAD
         setLoading(true);
         
         // Fetch new invoice number for next sale
@@ -85,6 +98,16 @@ const POS = () => {
             console.error("Error fetching new invoice number:", error);
           } finally {
             setLoading(false);
+=======
+
+        // Fetch new invoice number for next sale
+        try {
+          const newResponse = await axios.get('http://localhost:5000/api/sales/generate-invoice-no');
+          if (newResponse.data.success) {
+            setInvoiceNo(newResponse.data.invoiceNo);
+          } else {
+            console.error("Failed to fetch new invoice number:", newResponse.data.message);
+>>>>>>> 0e0ff9a (Add finance pages and update components)
           }
         }, 500);
       } catch (error) {
@@ -99,7 +122,7 @@ const POS = () => {
   useEffect(() => {
     if (action === 'proceedToPayment') {
       sendData();
-      setAction({}); 
+      setAction({});
     }
   }, [action, sendData]);
 
@@ -151,13 +174,13 @@ const POS = () => {
       // Store in local storage
       localStorage.setItem('holdInvoice', JSON.stringify(holdData));
       setHoldInvoice(holdData);
-      
+
       // Reset current invoice
       setInvoiceData({});
       setCartItems([]);
       setPaymentData({});
       setAction({});
-      
+
       alert('Invoice has been held successfully!');
     }
   }, [action, customerData, cartItems, invoiceData, paymentData, invoiceNo]);
@@ -217,8 +240,8 @@ const POS = () => {
               📋 Hold Invoice Pending
             </h6>
             <p style={{ margin: 0, fontSize: '13px', color: '#856404' }}>
-              Customer: <strong>{holdInvoice.customerData?.c_name}</strong> | 
-              Items: <strong>{holdInvoice.cartItems?.length || 0}</strong> | 
+              Customer: <strong>{holdInvoice.customerData?.c_name}</strong> |
+              Items: <strong>{holdInvoice.cartItems?.length || 0}</strong> |
               Time: <strong>{holdInvoice.timestamp}</strong>
             </p>
           </div>
@@ -262,7 +285,7 @@ const POS = () => {
           </div>
         </div>
       )}
-      
+
       {/* Section 1: Customer Info */}
       <div className='card border-0 shadow-sm p-4 mb-3'>
         <CustomerInfo setCustomerData={setCustomerData} invoiceNo={invoiceNo} />
