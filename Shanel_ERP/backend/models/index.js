@@ -28,6 +28,17 @@ SaleAssociations();
 // ===== USER MODELS =====
 const User = require('./user/User');
 
+// ===== HR MODELS =====
+const Employee = require('./hr/Employee');
+const EmployeeLeave = require('./hr/EmployeeLeave');
+const EmployeeDocument = require('./hr/EmployeeDocument');
+const Attendance = require('./hr/Attendance');
+const AttendanceSummary = require('./hr/AttendanceSummary');
+const SalaryStructure = require('./hr/SalaryStructure');
+const Payroll = require('./hr/Payroll');
+const AdvanceSalary = require('./hr/AdvanceSalary');
+const AdvanceRepayment = require('./hr/AdvanceRepayment');
+
 
 // ===== CUSTOMER MODELS =====
 const Customer = require('./customer/customer');
@@ -35,6 +46,10 @@ const Customer = require('./customer/customer');
 /// ===== CUSTOMER ASSOCIATIONS =====
 const CustomerAssociations = require('./customer/CustomerAssosiation');
 CustomerAssociations();
+
+// ===== HR ASSOCIATIONS =====
+const hrAssociations = require('./hr/hrAssociations');
+hrAssociations();
 
 
 // ===== FINANCE MODELS & ASSOCIATIONS =====
@@ -57,6 +72,15 @@ module.exports = {
     CreditTranscation,
     SalesSummaryDaily,
     User,
+    Employee,
+    EmployeeLeave,
+    EmployeeDocument,
+    Attendance,
+    AttendanceSummary,
+    SalaryStructure,
+    Payroll,
+    AdvanceSalary,
+    AdvanceRepayment,
     AccountChart,
     BankAccount,
     BankTransaction,
