@@ -1,14 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText, Box, Calendar, Layers,
-  Download, PlusCircle, PieChart, Activity
+  PlusCircle, Loader, RefreshCw, AlertCircle, ChevronDown, CheckCircle, Lock, Shield
 } from 'react-feather';
+import axios from 'axios';
 import ChartOfAccountsPage from './ChartOfAccountsPage';
+import FiscalPeriodModal from './FiscalPeriodModal';
 
 const GeneralLedgerPage = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('journal_entries');
+  const [activeTab, setActiveTab] = useState('chart_of_accounts');
+  const [journalEntries, setJournalEntries] = useState([]);
+  const [fiscalPeriods, setFiscalPeriods] = useState([]);
+  const [loadingEntries, setLoadingEntries] = useState(false);
+  const [loadingPeriods, setLoadingPeriods] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalEntries, setTotalEntries] = useState(0);
+  
+  // Modal state
+  const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
 
   const tabs = [
     { id: 'chart_of_accounts', label: 'Chart of Accounts', icon: (color) => <Box size={18} color={color} /> },
@@ -17,184 +31,313 @@ const GeneralLedgerPage = () => {
     { id: 'subledger_integration', label: 'Subledger Integration', icon: (color) => <Layers size={18} color={color} /> }
   ];
 
+  useEffect(() => {
+    if (activeTab === 'journal_entries' && journalEntries.length === 0) {
+      fetchJournalEntries(1, true);
+    }
+    if (activeTab === 'fiscal_periods' && fiscalPeriods.length === 0) {
+      fetchFiscalPeriods();
+    }
+  }, [activeTab]);
+
+  const fetchJournalEntries = async (pageNum, reset = false) => {
+    try {
+      if (reset) setLoadingEntries(true);
+      else setLoadingMore(true);
+      
+      const res = await axios.get(`http://localhost:5000/api/journal-entries?page=${pageNum}&limit=10`);
+      if (res.data.success) {
+        if (reset) {
+          setJournalEntries(res.data.data);
+        } else {
+          setJournalEntries(prev => [...prev, ...res.data.data]);
+        }
+        setTotalEntries(res.data.total);
+        setHasMore(pageNum < res.data.totalPages);
+        setPage(pageNum);
+      }
+    } catch (err) {
+      console.error('Error fetching journals:', err);
+      setError('Server error while loading journals');
+    } finally {
+      setLoadingEntries(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const fetchFiscalPeriods = async () => {
+    try {
+      setLoadingPeriods(true);
+      const res = await axios.get('http://localhost:5000/api/fiscal-periods');
+      if (res.data.success) {
+        setFiscalPeriods(res.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching periods:', err);
+      setError('Server error while loading fiscal periods');
+    } finally {
+      setLoadingPeriods(false);
+    }
+  };
+
+  const handleStatusChange = async (id, currentStatus) => {
+    const statuses = ['OPEN', 'CLOSED', 'LOCKED'];
+    const nextStatus = statuses[(statuses.indexOf(currentStatus) + 1) % statuses.length];
+    
+    try {
+      const res = await axios.put(`http://localhost:5000/api/fiscal-periods/${id}/status`, { status: nextStatus });
+      if (res.data.success) {
+        fetchFiscalPeriods();
+      }
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert('Failed to update period status');
+    }
+  };
+
+  const handleSeeMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchJournalEntries(page + 1);
+    }
+  };
+
+  const fmt = (n) => parseFloat(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   const renderJournalEntries = () => (
-    <div style={{ alignSelf: 'stretch', paddingTop: 16, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 16, display: 'flex' }}>
-      <div style={{ alignSelf: 'stretch', background: 'white', boxShadow: '0px 1px 2px -1px rgba(0, 0, 0, 0.10), 0px 1px 3px rgba(0, 0, 0, 0.10)', overflow: 'hidden', borderRadius: 14, outline: '0.80px #E5E7EB solid', outlineOffset: '-0.80px', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'flex' }}>
-        <div style={{ alignSelf: 'stretch', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ alignSelf: 'stretch', height: 40.39, background: '#F9FAFB', borderBottom: '0.80px #F3F4F6 solid', display: 'flex', alignItems: 'center', padding: '0 24px' }}>
-            <div style={{ flex: 1.2, color: '#4A5565', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>Date</div>
-            <div style={{ flex: 1.5, color: '#4A5565', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>JE Number</div>
-            <div style={{ flex: 2.5, color: '#4A5565', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>Description</div>
-            <div style={{ flex: 1.2, color: '#4A5565', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>Reference</div>
-            <div style={{ flex: 1.2, color: '#4A5565', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>Total Debit</div>
-            <div style={{ flex: 1.2, color: '#4A5565', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>Total Credit</div>
-            <div style={{ flex: 1, color: '#4A5565', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>Status</div>
+    <div className="w-full pt-4 flex flex-col gap-4">
+      {error && activeTab === 'journal_entries' && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex justify-between items-center mb-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <AlertCircle size={16} /> {error}
           </div>
-          <div style={{ alignSelf: 'stretch' }}>
-            {[
-              { date: '2026-05-01', je: 'JE-2026-001', desc: 'Monthly Sales Recognition', ref: 'INV-1245', debit: '45,000', credit: '45,000', status: 'Posted' },
-              { date: '2026-05-02', je: 'JE-2026-002', desc: 'Utility Bill Payment', ref: 'PAY-882', debit: '8,500', credit: '8,500', status: 'Posted' },
-            ].map((row, idx) => (
-              <div key={idx} style={{ alignSelf: 'stretch', height: 56.80, borderBottom: '0.80px #F3F4F6 solid', display: 'flex', alignItems: 'center', padding: '0 24px' }}>
-                <div style={{ flex: 1.2, color: '#364153', fontSize: 14, fontFamily: 'Inter', fontWeight: '400' }}>{row.date}</div>
-                <div style={{ flex: 1.5, color: '#0F3D3E', fontSize: 14, fontFamily: 'Inter', fontWeight: '500' }}>{row.je}</div>
-                <div style={{ flex: 2.5, color: '#6A7282', fontSize: 14, fontFamily: 'Inter', fontWeight: '400' }}>{row.desc}</div>
-                <div style={{ flex: 1.2, color: '#6A7282', fontSize: 14, fontFamily: 'Inter', fontWeight: '400' }}>{row.ref}</div>
-                <div style={{ flex: 1.2, color: '#101828', fontSize: 14, fontFamily: 'Inter', fontWeight: '500' }}>{row.debit}</div>
-                <div style={{ flex: 1.2, color: '#101828', fontSize: 14, fontFamily: 'Inter', fontWeight: '500' }}>{row.credit}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'inline-flex', padding: '4px 10px', background: '#DCFCE7', borderRadius: 9999, alignItems: 'center' }}>
-                    <div style={{ color: '#008236', fontSize: 12, fontFamily: 'Inter', fontWeight: '500' }}>{row.status}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <button onClick={() => fetchJournalEntries(1, true)} className="p-1 hover:bg-red-100 rounded transition"><RefreshCw size={16} /></button>
         </div>
+      )}
+
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+        {loadingEntries ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader className="animate-spin text-orange-500 mb-2" size={24} />
+            <p className="text-gray-500 text-sm">Loading journal entries...</p>
+          </div>
+        ) : journalEntries.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <FileText size={48} strokeWidth={1} className="mb-3 opacity-20" />
+            <p>No journal entries found</p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">JE Number</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Reference</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Total Debit</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Total Credit</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {journalEntries.map((entry) => (
+                    <tr key={entry.Journal_ID} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate(`/finance/journal/${entry.Journal_ID}`)}>
+                      <td className="px-6 py-4 text-sm text-gray-600">{entry.Entry_Date}</td>
+                      <td className="px-6 py-4 text-sm font-semibold text-teal-900">{entry.Journal_No}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{entry.Description}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{entry.Reference_No || '—'}</td>
+                      <td className="px-6 py-4 text-sm font-bold text-gray-900 text-right">{fmt(entry.Total_Debit)}</td>
+                      <td className="px-6 py-4 text-sm font-bold text-gray-900 text-right">{fmt(entry.Total_Credit)}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-green-100 text-green-700">
+                          {entry.Status || 'Posted'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex flex-col items-center gap-3">
+              <p className="text-xs text-gray-400 font-medium">
+                Showing {journalEntries.length} of {totalEntries} entries
+              </p>
+              {hasMore && (
+                <button 
+                  onClick={handleSeeMore}
+                  disabled={loadingMore}
+                  className="flex items-center gap-2 px-6 py-2 bg-white border border-gray-200 rounded-full text-sm font-bold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-50"
+                >
+                  {loadingMore ? <Loader size={14} className="animate-spin" /> : <ChevronDown size={14} />}
+                  SEE MORE
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 
-  const renderFiscalPeriods = () => (
-    <div style={{ alignSelf: 'stretch', paddingTop: 16, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 16, display: 'flex' }}>
-      <div style={{ alignSelf: 'stretch', height: 97.60, position: 'relative', display: 'flex', gap: 24 }}>
-        {[
-          { label: 'Current Period', value: 'May 2026', color: '#00A63E', bg: '#DCFCE7' },
-          { label: 'Fiscal Year', value: 'FY 2026-27', color: '#F54900', bg: '#FFEDD4' },
-          { label: 'System Status', value: 'Ready for Posting', color: '#155DFC', bg: '#DBEAFE' }
-        ].map((card, idx) => (
-          <div key={idx} style={{ flex: 1, height: 97.60, padding: 24, background: 'white', boxShadow: '0px 1px 2px -1px rgba(0, 0, 0, 0.10), 0px 1px 3px rgba(0, 0, 0, 0.10)', borderRadius: 14, outline: '0.80px #E5E7EB solid', outlineOffset: '-0.80px', justifyContent: 'flex-start', alignItems: 'center', gap: 16, display: 'inline-flex' }}>
-            <div style={{ width: 48, height: 48, paddingLeft: 12, paddingRight: 12, background: card.bg, borderRadius: 9999, justifyContent: 'center', alignItems: 'center', display: 'flex' }}>
-              {idx === 0 && <Calendar size={20} color={card.color} />}
-              {idx === 1 && <Activity size={20} color={card.color} />}
-              {idx === 2 && <PieChart size={20} color={card.color} />}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: '#99A1AF', fontSize: 12, fontFamily: 'Inter', fontWeight: '700', textTransform: 'uppercase', lineHeight: '16px' }}>{card.label}</div>
-              <div style={{ color: '#0F3D3E', fontSize: 18, fontFamily: 'Inter', fontWeight: '700', lineHeight: '28px' }}>{card.value}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ alignSelf: 'stretch', background: 'white', boxShadow: '0px 1px 2px -1px rgba(0, 0, 0, 0.10), 0px 1px 3px rgba(0, 0, 0, 0.10)', overflow: 'hidden', borderRadius: 14, outline: '0.80px #E5E7EB solid', outlineOffset: '-0.80px', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'flex' }}>
-        <div style={{ alignSelf: 'stretch', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ alignSelf: 'stretch', height: 40.39, background: '#F9FAFB', borderBottom: '0.80px #F3F4F6 solid', display: 'flex', alignItems: 'center', padding: '0 24px' }}>
-            <div style={{ flex: 2, color: '#4A5565', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>Period Name</div>
-            <div style={{ flex: 1.5, color: '#4A5565', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>Start Date</div>
-            <div style={{ flex: 1.5, color: '#4A5565', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>End Date</div>
-            <div style={{ flex: 1.5, color: '#4A5565', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>Status</div>
-            <div style={{ flex: 1.5, textAlign: 'right', color: '#4A5565', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>Actions</div>
-          </div>
-          <div style={{ alignSelf: 'stretch' }}>
-            {[
-              { name: 'January 2026', start: '2026-01-01', end: '2026-01-31', status: 'LOCKED', color: '#C10007', bg: '#FEF2F2', border: '#FFE2E2' },
-              { name: 'February 2026', start: '2026-02-01', end: '2026-02-28', status: 'LOCKED', color: '#C10007', bg: '#FEF2F2', border: '#FFE2E2' },
-              { name: 'March 2026', start: '2026-03-01', end: '2026-03-31', status: 'CLOSED', color: '#CA3500', bg: '#FFF7ED', border: '#FFEDD4' },
-              { name: 'April 2026', start: '2026-04-01', end: '2026-04-30', status: 'OPEN', color: '#008236', bg: '#F0FDF4', border: '#DCFCE7' },
-              { name: 'May 2026', start: '2026-05-01', end: '2026-05-31', status: 'OPEN', color: '#008236', bg: '#F0FDF4', border: '#DCFCE7' },
-            ].map((row, idx) => (
-              <div key={idx} style={{ alignSelf: 'stretch', height: 57.40, borderBottom: '0.80px #F3F4F6 solid', display: 'flex', alignItems: 'center', padding: '0 24px' }}>
-                <div style={{ flex: 2, color: '#0F3D3E', fontSize: 14, fontFamily: 'Inter', fontWeight: '500' }}>{row.name}</div>
-                <div style={{ flex: 1.5, color: '#6A7282', fontSize: 14, fontFamily: 'Inter', fontWeight: '400' }}>{row.start}</div>
-                <div style={{ flex: 1.5, color: '#6A7282', fontSize: 14, fontFamily: 'Inter', fontWeight: '400' }}>{row.end}</div>
-                <div style={{ flex: 1.5 }}>
-                  <div style={{ display: 'inline-flex', padding: '4px 10px', background: row.bg, borderRadius: 9999, outline: `0.80px ${row.border} solid`, alignItems: 'center' }}>
-                    <div style={{ color: row.color, fontSize: 10, fontFamily: 'Inter', fontWeight: '700' }}>{row.status}</div>
-                  </div>
-                </div>
-                <div style={{ flex: 1.5, textAlign: 'right' }}>
-                  <div style={{ color: '#FF6B35', fontSize: 12, fontFamily: 'Inter', fontWeight: '600', cursor: 'pointer' }}>Change Status</div>
-                </div>
+  const renderFiscalPeriods = () => {
+    const currentPeriod = fiscalPeriods.find(p => p.Status === 'OPEN') || { Period_Name: 'None', Status: 'All Closed' };
+    
+    return (
+      <div className="w-full pt-4 flex flex-col gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { label: 'Current Period', value: currentPeriod.Period_Name, color: 'text-green-600', bg: 'bg-green-50', icon: <Calendar size={20} /> },
+            { label: 'Fiscal Year', value: 'FY 2026-27', color: 'text-orange-600', bg: 'bg-orange-50', icon: <RefreshCw size={20} /> },
+            { label: 'System Status', value: currentPeriod.Status === 'OPEN' ? 'Ready for Posting' : 'System Locked', color: 'text-blue-600', bg: 'bg-blue-50', icon: <Shield size={20} /> }
+          ].map((card, idx) => (
+            <div key={idx} className="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${card.bg} ${card.color}`}>
+                {card.icon}
               </div>
-            ))}
-          </div>
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{card.label}</p>
+                <p className="text-lg font-bold text-teal-950">{card.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          {loadingPeriods ? (
+             <div className="flex flex-col items-center justify-center py-20">
+                <Loader className="animate-spin text-orange-500" size={32} />
+             </div>
+          ) : fiscalPeriods.length === 0 ? (
+             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                <Calendar size={48} className="mb-4 opacity-20" />
+                <p>No fiscal periods defined. Please create your first period.</p>
+                <button onClick={() => setIsPeriodModalOpen(true)} className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg font-bold text-sm">Initialize Periods</button>
+             </div>
+          ) : (
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Period Name</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Start Date</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">End Date</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-sm">
+                {fiscalPeriods.map((row) => {
+                  let statusColor = 'text-green-700 bg-green-50';
+                  if (row.Status === 'CLOSED') statusColor = 'text-orange-700 bg-orange-50';
+                  if (row.Status === 'LOCKED') statusColor = 'text-red-700 bg-red-50';
+                  
+                  return (
+                    <tr key={row.Period_ID} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 font-semibold text-teal-950">{row.Period_Name}</td>
+                      <td className="px-6 py-4 text-gray-500">{row.Start_Date}</td>
+                      <td className="px-6 py-4 text-gray-500">{row.End_Date}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${statusColor}`}>
+                          {row.Status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button 
+                          onClick={() => handleStatusChange(row.Period_ID, row.Status)}
+                          className="text-orange-600 font-bold hover:text-orange-700 transition"
+                        >
+                          Change Status
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
-    <div style={{ alignSelf: 'stretch', minHeight: '931.55px', paddingTop: 24, paddingLeft: 24, paddingRight: 24, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'flex' }}>
-      <div style={{ alignSelf: 'stretch', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 24, display: 'flex' }}>
-
-        {/* Header Section */}
-        <div style={{ alignSelf: 'stretch', height: 64, justifyContent: 'space-between', alignItems: 'center', display: 'inline-flex' }}>
-          <div style={{ width: 383.50, height: 64, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 4, display: 'inline-flex' }}>
-            <div style={{ alignSelf: 'stretch', height: 36, position: 'relative' }}>
-              <div style={{ left: 0, top: -1.60, position: 'absolute', color: '#0F3D3E', fontSize: 30, fontFamily: 'Inter', fontWeight: '600', lineHeight: '36px', wordWrap: 'break-word' }}>General Ledger</div>
-            </div>
-            <div style={{ alignSelf: 'stretch', height: 24, position: 'relative' }}>
-              <div style={{ left: 0, top: -2.20, position: 'absolute', color: '#4A5565', fontSize: 16, fontFamily: 'Inter', fontWeight: '400', lineHeight: '24px', wordWrap: 'break-word' }}>Comprehensive financial control and recording system</div>
-            </div>
-          </div>
-          
-          {/* Header Action Buttons (Tab Specific) */}
-          <div style={{ display: 'flex', gap: 12 }}>
-            {activeTab === 'journal_entries' && (
-              <div style={{ padding: '8px 16px', background: '#FF6B35', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0px 1px 2px rgba(0,0,0,0.1)' }}>
-                <PlusCircle size={18} color="white" />
-                <span style={{ color: 'white', fontSize: 15, fontWeight: '500' }}>Create Journal Entry</span>
-              </div>
-            )}
-            {activeTab === 'fiscal_periods' && (
-              <div style={{ padding: '8px 16px', background: '#0F3D3E', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0px 1px 2px rgba(0,0,0,0.1)' }}>
-                <Calendar size={18} color="white" />
-                <span style={{ color: 'white', fontSize: 15, fontWeight: '500' }}>New Fiscal Year</span>
-              </div>
-            )}
-            {activeTab === 'chart_of_accounts' && (
-              <div 
-                onClick={() => navigate('/finance/create-account')}
-                style={{ padding: '8px 16px', background: '#FF6B35', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0px 1px 2px rgba(0,0,0,0.1)' }}
-              >
-                <PlusCircle size={18} color="white" />
-                <span style={{ color: 'white', fontSize: 15, fontWeight: '500' }}>Add New Account</span>
-              </div>
-            )}
-          </div>
+    <div className="w-full min-h-screen bg-[#f8fafc] p-6 flex flex-col gap-6 font-['Inter']">
+      
+      {/* Header Section */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-teal-950 tracking-tight">General Ledger</h1>
+          <p className="text-gray-500 mt-1">Comprehensive financial control and recording system</p>
         </div>
-
-        {/* Tabs Section */}
-        <div style={{ alignSelf: 'stretch', height: 46.40, paddingBottom: 8, overflow: 'hidden', borderBottom: '0.80px #E5E7EB solid', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 4, display: 'inline-flex' }}>
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            const color = isActive ? '#FF6B35' : '#6A7282';
-            return (
-              <div
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                style={{
-                  height: 37.60,
-                  position: 'relative',
-                  background: isActive ? 'rgba(255, 247, 237, 0.30)' : 'transparent',
-                  borderTopLeftRadius: 10,
-                  borderTopRightRadius: 10,
-                  borderBottom: isActive ? `1.60px ${color} solid` : '1.60px rgba(0, 0, 0, 0) solid',
-                  cursor: 'pointer',
-                  padding: '0 16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8
-                }}
-              >
-                {tab.icon(color)}
-                <div style={{ textAlign: 'center', color: color, fontSize: 14, fontFamily: 'Inter', fontWeight: '500', lineHeight: '20px', wordWrap: 'break-word' }}>{tab.label}</div>
-              </div>
-            );
-          })}
+        
+        <div className="flex gap-3">
+          {activeTab === 'journal_entries' && (
+            <button className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold shadow-lg shadow-orange-200 hover:bg-orange-700 transition-all hover:scale-105 active:scale-95">
+              <PlusCircle size={18} /> Create Journal Entry
+            </button>
+          )}
+          {activeTab === 'chart_of_accounts' && (
+            <button 
+              onClick={() => navigate('/finance/create-account')}
+              className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold shadow-lg shadow-orange-200 hover:bg-orange-700 transition-all hover:scale-105 active:scale-95"
+            >
+              <PlusCircle size={18} /> Add New Account
+            </button>
+          )}
+          {activeTab === 'fiscal_periods' && (
+            <button 
+              onClick={() => setIsPeriodModalOpen(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold shadow-lg shadow-orange-200 hover:bg-orange-700 transition-all hover:scale-105 active:scale-95"
+            >
+              <PlusCircle size={18} /> New Fiscal Period
+            </button>
+          )}
         </div>
+      </div>
 
-        {/* Content Section */}
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-gray-200 pb-0 overflow-x-auto">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${
+                isActive 
+                  ? 'border-orange-600 text-orange-600 bg-orange-50/50 rounded-t-xl' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {tab.icon(isActive ? '#ea580c' : '#6b7280')}
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tab Content */}
+      <div className="flex-1">
         {activeTab === 'journal_entries' && renderJournalEntries()}
         {activeTab === 'fiscal_periods' && renderFiscalPeriods()}
         {activeTab === 'chart_of_accounts' && <ChartOfAccountsPage />}
         {activeTab === 'subledger_integration' && (
-          <div style={{ padding: 40, color: '#6A7282', textAlign: 'center', width: '100%' }}>
-            SUBLEDGER INTEGRATION View Coming Soon
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <Layers size={64} strokeWidth={1} className="mb-4 opacity-20" />
+            <h3 className="text-xl font-bold text-gray-500">Integration Hub</h3>
+            <p className="max-w-xs text-center mt-2">Connect subsidiary ledgers for automated posting and synchronization.</p>
+            <span className="mt-4 px-4 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase tracking-widest">Coming Soon</span>
           </div>
         )}
       </div>
+
+      {/* Modal */}
+      <FiscalPeriodModal 
+        isOpen={isPeriodModalOpen} 
+        onClose={() => setIsPeriodModalOpen(false)} 
+        onRefresh={fetchFiscalPeriods} 
+      />
     </div>
   );
 };

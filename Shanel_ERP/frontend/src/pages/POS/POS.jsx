@@ -15,39 +15,33 @@ const POS = () => {
   const [customerData, setCustomerData] = useState({});
   const [paymentData, setPaymentData] = useState({});
   const [action, setAction] = useState({});
-<<<<<<< HEAD
-  const[invoiceNo,setInvoiceNo] = useState('');
-  const[loading,setLoading] = useState(false);//for display resent sales component after payment, also can be used for loading state in future
-  const[holdInvoice,setHoldInvoice] = useState(null);//for storing hold invoice data in local storage, this can be used in future to implement hold and resume invoice feature
-  const [priceLevel, setPriceLevel] = useState('Retail'); // Toggle between Retail and Wholesale
-=======
   const [invoiceNo, setInvoiceNo] = useState('');
-  const [loading, setLoading] = useState(false);//for display resent sales component after payment, also can be used for loading state in future
-  const [holdInvoice, setHoldInvoice] = useState(null);//for storing hold invoice data in local storage, this can be used in future to implement hold and resume invoice feature
+  const [loading, setLoading] = useState(false);
+  const [holdInvoice, setHoldInvoice] = useState(null);
 
->>>>>>> 0e0ff9a (Add finance pages and update components)
+  // FIX 1: Declared missing priceLevel state
+  const [priceLevel, setPriceLevel] = useState('Retail');
+
 
   const handleInvoiceDataChange = (data) => {
-
     setInvoiceData(data);
     console.log("Updated Invoice Data:", data);
   }
 
 
-  //send sales data to backend when action is triggered from ActionButtons component, also validate data before sending
+  // FIX 3: Added all used variables to the useCallback dependency array
   const sendData = useCallback(async () => {
     if (!action) {
       console.warn("No action selected. Data will not be sent.");
       return;
     } else if (action === 'proceedToPayment') {
-      // Validate customer selection
+
       if (!customerData || !customerData.c_id) {
         alert("Please select a customer before proceeding to payment.");
         setAction({});
         return;
       }
 
-      // Validate items exist
       if (!cartItems || cartItems.length === 0) {
         alert("Please add items to the cart before proceeding to payment.");
         setAction({});
@@ -61,64 +55,40 @@ const POS = () => {
           invoiceDetails: { ...invoiceData, invoiceNo: invoiceNo },
           paymentDetails: paymentData,
           priceLevel: priceLevel,
-          saleType:priceLevel === 'Retail' ? 'Retail' : 'Wholesale',
+          saleType: priceLevel === 'Retail' ? 'Retail' : 'Wholesale',
           action: action
         });
-<<<<<<< HEAD
-        console.log("Sale saved successfully:", response.data);
-        console.log("Completed Invoice No:", response.data.invoiceNo);
-        
-=======
         console.log("Data sent successfully:", response.data);
 
->>>>>>> 0e0ff9a (Add finance pages and update components)
         alert(`Sale saved successfully! Invoice No: ${response.data.invoiceNo}`);
 
-        // Reset all form data for new transaction
         setInvoiceData({});
         setCartItems([]);
         setCustomerData({});
         setPaymentData({});
         setAction({});
-<<<<<<< HEAD
-        setLoading(true);
-        
-        // Fetch new invoice number for next sale
-        setTimeout(async () => {
-          try {
-            const newResponse = await axios.get('http://localhost:5000/api/sales/generate-invoice-no');
-            console.log("New invoice number response:", newResponse.data);
-            if (newResponse.data.success) {
-              console.log("Setting new invoice number:", newResponse.data.invoiceNo);
-              setInvoiceNo(newResponse.data.invoiceNo);
-            } else {
-              console.error("Failed to fetch new invoice number:", newResponse.data.message);
-            }
-          } catch (error) {
-            console.error("Error fetching new invoice number:", error);
-          } finally {
-            setLoading(false);
-=======
 
-        // Fetch new invoice number for next sale
+        // FIX 2: Replaced broken `}, 500);` syntax with a proper inner try/catch
         try {
           const newResponse = await axios.get('http://localhost:5000/api/sales/generate-invoice-no');
           if (newResponse.data.success) {
             setInvoiceNo(newResponse.data.invoiceNo);
           } else {
             console.error("Failed to fetch new invoice number:", newResponse.data.message);
->>>>>>> 0e0ff9a (Add finance pages and update components)
           }
-        }, 500);
+        } catch (innerError) {
+          console.error("Failed to fetch new invoice number:", innerError);
+        }
+
       } catch (error) {
         console.error("Error sending data:", error);
         const errorMessage = error.response?.data?.message || error.message || "Error saving sale. Please try again.";
         alert(errorMessage);
       }
     }
-  }, [action]);
+  }, [action, customerData, cartItems, invoiceData, paymentData, priceLevel, invoiceNo]); // FIX 3
 
-  // Trigger sendData when action changes to proceedToPayment
+
   useEffect(() => {
     if (action === 'proceedToPayment') {
       sendData();
@@ -127,7 +97,6 @@ const POS = () => {
   }, [action, sendData]);
 
 
-  // Re-fetch invoice number when component mounts to ensure we have the latest one
   useEffect(() => {
     const fetchInvoiceNo = async () => {
       try {
@@ -149,18 +118,15 @@ const POS = () => {
     fetchInvoiceNo();
   }, []);
 
-  //store hold invoice in local storage and retrieve when component mounts
+
   useEffect(() => {
     if (action === 'holdInvoice') {
-      // Validate that required data exists
       if (!customerData || !invoiceData || cartItems.length === 0) {
         alert('Cannot hold invoice: Missing customer, items, or invoice data');
         setAction({});
         return;
       }
 
-
-      // Create hold invoice object
       const holdData = {
         customerData,
         cartItems,
@@ -168,14 +134,11 @@ const POS = () => {
         paymentData,
         timestamp: new Date().toLocaleTimeString(),
         invoiceNo: invoiceNo,
-        
       };
 
-      // Store in local storage
       localStorage.setItem('holdInvoice', JSON.stringify(holdData));
       setHoldInvoice(holdData);
 
-      // Reset current invoice
       setInvoiceData({});
       setCartItems([]);
       setPaymentData({});
@@ -185,7 +148,7 @@ const POS = () => {
     }
   }, [action, customerData, cartItems, invoiceData, paymentData, invoiceNo]);
 
-  // Load hold invoice from localStorage on component mount
+
   useEffect(() => {
     const storedHoldInvoice = localStorage.getItem('holdInvoice');
     if (storedHoldInvoice) {
@@ -197,7 +160,7 @@ const POS = () => {
     }
   }, []);
 
-  // Function to load held invoice back into the form
+
   const loadHeldInvoice = () => {
     if (holdInvoice) {
       setCustomerData(holdInvoice.customerData);
@@ -210,7 +173,6 @@ const POS = () => {
     }
   };
 
-  // Function to clear held invoice
   const clearHeldInvoice = () => {
     setHoldInvoice(null);
     localStorage.removeItem('holdInvoice');
@@ -218,12 +180,10 @@ const POS = () => {
 
 
   return (
-
     <div className='pos-wrapper w-100' style={{ overflowX: 'hidden' }}>
-      {/* Floating Recent Sales Button */}
+
       <RecentSale />
 
-      {/* Hold Invoice Banner */}
       {holdInvoice && (
         <div style={{
           marginBottom: '16px',
@@ -286,18 +246,14 @@ const POS = () => {
         </div>
       )}
 
-      {/* Section 1: Customer Info */}
       <div className='card border-0 shadow-sm p-4 mb-3'>
         <CustomerInfo setCustomerData={setCustomerData} invoiceNo={invoiceNo} />
-
       </div>
 
-      {/* Section 2: Item Table */}
       <div className='card border-0 shadow-sm p-3 mb-3'>
-        <ItemTable cartItems={cartItems} setCartItems={setCartItems} priceLevel={priceLevel} setPriceLevel={setPriceLevel}/>
+        <ItemTable cartItems={cartItems} setCartItems={setCartItems} priceLevel={priceLevel} setPriceLevel={setPriceLevel} />
       </div>
 
-      {/* Section 3: Bottom Grid */}
       <div className='row g-3'>
         <div className='col-xl-4 col-lg-6'>
           <div className='card border-0 shadow-sm p-3 h-100'>
@@ -317,7 +273,6 @@ const POS = () => {
           </div>
         </div>
 
-        {/* Test Component */}
         <div className='col-12'>
           <div className='card border-0 shadow-sm p-3 h-100'>
             <Test cartItems={cartItems} invoiceData={invoiceData} paymentData={paymentData} customerData={customerData} />

@@ -13,6 +13,11 @@ const reportRoutes = require('./routes/inventory/reportRoutes');
 const accountingRoutes = require('./routes/Accounting/SalesAccountRoutes');
 const expenseRoutes = require('./routes/Accounting/expenseRoutes');
 const incomeRoutes = require('./routes/Accounting/incomeRoutes');
+const creditPaymentRoutes = require('./routes/Accounting/creditPaymentRoutes');
+const chartOfAccountsRoutes = require('./routes/Accounting/chartOfAccountsRoutes');
+const journalEntryRoutes = require('./routes/Accounting/journalEntryRoutes');
+const fiscalPeriodRoutes = require('./routes/Accounting/fiscalPeriodRoutes');
+const financeDashboardRoutes = require('./routes/Accounting/financeDashboardRoutes');
 
 const app = express();
 applyMiddleware(app);
@@ -43,6 +48,11 @@ app.use('/api/customer',customerRoutes);
 app.use('/api/accounting/sales', accountingRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/incomes', incomeRoutes);
+app.use('/api/credit-payments', creditPaymentRoutes);
+app.use('/api/accounts', chartOfAccountsRoutes);
+app.use('/api/journal-entries', journalEntryRoutes);
+app.use('/api/fiscal-periods', fiscalPeriodRoutes);
+app.use('/api/finance/dashboard', financeDashboardRoutes);
 
 //Supplier routes
 

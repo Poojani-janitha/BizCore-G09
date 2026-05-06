@@ -134,11 +134,23 @@ export const filterTransactionsByTab = (transactions, activeTab) => {
   return transactions;
 };
 
+export const fetchDashboardStats = async () => {
+  const response = await axios.get('http://localhost:5000/api/finance/dashboard/stats');
+  return response?.data || { success: false };
+};
+
 export const getPaymentManagementData = async (limit = 500) => {
-  const { incomes, expenses } = await fetchPaymentManagementData(limit);
+  const [baseData, dashboardData] = await Promise.all([
+    fetchPaymentManagementData(limit),
+    fetchDashboardStats()
+  ]);
+
+  const { incomes, expenses } = baseData;
 
   return {
-    summaryData: buildPaymentSummary(incomes, expenses),
+    summaryData: dashboardData.success ? dashboardData.summary : buildPaymentSummary(incomes, expenses),
+    cashFlow: dashboardData.success ? dashboardData.cashFlow : [],
+    distribution: dashboardData.success ? dashboardData.distribution : { income: [], expense: [] },
     transactions: buildPaymentTransactions(incomes, expenses)
   };
 };

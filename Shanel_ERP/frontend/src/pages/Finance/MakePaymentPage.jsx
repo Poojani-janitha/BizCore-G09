@@ -2,26 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DollarSign, CreditCard, FileText, Briefcase, Plus, Trash2, Check, AlertCircle, Clock } from 'react-feather';
 import axios from 'axios';
+import QuickAccountModal from '../../component/Finance/QuickAccountModal';
 
 const API_BASE = 'http://localhost:5000/api/expenses';
 
-const CATEGORIES = [
-    { value: 'Salary', label: 'Salary' },
-    { value: 'Rent', label: 'Rent' },
-    { value: 'Utilities', label: 'Utilities' },
-    { value: 'Raw_Materials', label: 'Raw Materials' },
-    { value: 'Transport', label: 'Transport' },
-    { value: 'Maintenance', label: 'Maintenance' },
-    { value: 'Marketing', label: 'Marketing' },
-    { value: 'Office_Supplies', label: 'Office Supplies' },
-    { value: 'Other', label: 'Other' },
-];
+// No hardcoded categories - all fetched from DB
 
 const PAYMENT_METHODS = [
     { id: 'Cash', label: 'Cash', Icon: DollarSign },
-    { id: 'Bank', label: 'Bank Transfer', Icon: Briefcase },
+    { id: 'Bank', label: 'Bank', Icon: Briefcase },
     { id: 'Cheque', label: 'Cheque', Icon: FileText },
-    { id: 'Credit_Card', label: 'Credit Card', Icon: CreditCard },
 ];
 
 const today = new Date();
@@ -46,6 +36,8 @@ const MakePaymentPage = () => {
 
     // ── Form State ──
     const [expenseDate, setExpenseDate] = useState(isoDate);
+    const [categories, setCategories] = useState([]);
+    const [loadingCategories, setLoadingCategories] = useState(true);
     const [category, setCategory] = useState('');
     const [subcategory, setSubcategory] = useState('');
     const [amount, setAmount] = useState('');
@@ -53,17 +45,49 @@ const MakePaymentPage = () => {
     const [paidTo, setPaidTo] = useState('');
     const [description, setDescription] = useState('');
     const [receiptNo, setReceiptNo] = useState('');
+    
+    // ── Bank Deposit Details ──
+    const [bankName, setBankName] = useState('');
+    const [depositSlipNo, setDepositSlipNo] = useState('');
+    const [depositedBy, setDepositedBy] = useState('');
+    const [depositDate, setDepositDate] = useState(isoDate);
+
+    // ── Cheque Details ──
+    const [chequeNo, setChequeNo] = useState('');
+    const [chequeBank, setChequeBank] = useState('');
+    const [chequeDate, setChequeDate] = useState(isoDate);
 
     // ── UI State ──
     const [submitting, setSubmitting] = useState(false);
     const [alert, setAlert] = useState(null);
     const [recentExpenses, setRecentExpenses] = useState([]);
     const [loadingExpenses, setLoadingExpenses] = useState(true);
+    const [showQuickAccount, setShowQuickAccount] = useState(false);
+    const [missingAccountCode, setMissingAccountCode] = useState('');
 
-    // ── Load recent expenses on mount ──
+    // ── Load data on mount ──
     useEffect(() => {
         fetchRecentExpenses();
+        fetchCategories();
     }, []);
+
+    const fetchCategories = async () => {
+        try {
+            setLoadingCategories(true);
+            const res = await axios.get('http://localhost:5000/api/accounts?type=Expense&active=true');
+            if (res.data.success) {
+                const dbCategories = res.data.data.map(acc => ({
+                    value: acc.Account_Name,
+                    label: acc.Account_Name
+                }));
+                setCategories(dbCategories);
+            }
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        } finally {
+            setLoadingCategories(false);
+        }
+    };
 
     const fetchRecentExpenses = async () => {
         try {
@@ -88,6 +112,15 @@ const MakePaymentPage = () => {
         setPaidTo('');
         setDescription('');
         setReceiptNo('');
+        
+        // Reset banking fields
+        setBankName('');
+        setDepositSlipNo('');
+        setDepositedBy('');
+        setDepositDate(isoDate);
+        setChequeNo('');
+        setChequeBank('');
+        setChequeDate(isoDate);
     };
 
     const handleSubmit = async (e) => {
@@ -116,20 +149,37 @@ const MakePaymentPage = () => {
                 paidTo: paidTo || null,
                 description: description || null,
                 receiptNo: receiptNo || null,
+                
+                // Bank fields
+                bankName: paymentMethod === 'Bank' ? bankName : null,
+                depositSlipNo: paymentMethod === 'Bank' ? depositSlipNo : null,
+                depositedBy: paymentMethod === 'Bank' ? depositedBy : null,
+                depositDate: paymentMethod === 'Bank' ? depositDate : null,
+
+                // Cheque fields
+                chequeNo: paymentMethod === 'Cheque' ? chequeNo : null,
+                chequeBank: paymentMethod === 'Cheque' ? chequeBank : null,
+                chequeDate: paymentMethod === 'Cheque' ? chequeDate : null,
             };
 
             const res = await axios.post(`${API_BASE}/create`, payload);
 
             if (res.data.success) {
-                setAlert({ type: 'success', msg: `✅ Expense recorded! Journal No: ${res.data.data.journal.journalNo}` });
+                setAlert({ type: 'success', msg: `✅ ${res.data.message} | Journal: ${res.data.data.journal.journalNo}` });
                 resetForm();
                 fetchRecentExpenses();
             } else {
                 setAlert({ type: 'danger', msg: res.data.message || 'Failed to create expense.' });
             }
         } catch (err) {
-            const msg = err.response?.data?.message || err.message || 'Server error.';
-            setAlert({ type: 'danger', msg });
+            const msg = err.response?.data?.message || err.message;
+            if (typeof msg === 'string' && msg.includes('not found in ACCOUNT_CHART')) {
+                const codeMatch = msg.match(/\((\d+)\)/);
+                if (codeMatch) setMissingAccountCode(codeMatch[1]);
+                setShowQuickAccount(true);
+            } else {
+                setAlert({ type: 'danger', msg: msg || 'Server error.' });
+            }
         } finally {
             setSubmitting(false);
         }
@@ -171,7 +221,6 @@ const MakePaymentPage = () => {
     return (
         <div style={{ width: '100%', minHeight: '100%', backgroundColor: '#f8fafc', fontFamily: "'Inter', sans-serif" }}>
 
-
             {/* Alert */}
             {alert && (
                 <div className={`alert alert-${alert.type} mx-4 mt-3 mb-0 d-flex align-items-center`} role="alert" style={{ borderRadius: '12px', fontSize: '14px' }}>
@@ -196,10 +245,22 @@ const MakePaymentPage = () => {
                             </div>
                             <div className="col-md-3">
                                 <label style={labelStyle}>Category <span className="text-danger">*</span></label>
-                                <select value={category} onChange={e => setCategory(e.target.value)}
-                                    className="form-select" style={inputStyle} required>
-                                    <option value="">Select category</option>
-                                    {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                                <select 
+                                    value={category} 
+                                    onChange={e => {
+                                        if (e.target.value === 'ADD_NEW') {
+                                            setShowQuickAccount(true);
+                                        } else {
+                                            setCategory(e.target.value);
+                                        }
+                                    }}
+                                    className="form-select" 
+                                    style={inputStyle} 
+                                    required
+                                >
+                                    <option value="">{loadingCategories ? 'Loading...' : 'Select category'}</option>
+                                    {categories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                                    <option value="ADD_NEW" style={{ fontWeight: 'bold', color: '#0d9488' }}>+ Add New Category</option>
                                 </select>
                             </div>
                             <div className="col-md-3">
@@ -240,7 +301,7 @@ const MakePaymentPage = () => {
                             {PAYMENT_METHODS.map(({ id, label, Icon }) => {
                                 const active = paymentMethod === id;
                                 return (
-                                    <div className="col-md-3" key={id}>
+                                    <div className="col-md-4" key={id}>
                                         <div onClick={() => setPaymentMethod(id)}
                                             className="d-flex flex-column align-items-center justify-content-center gap-2"
                                             style={{
@@ -258,6 +319,59 @@ const MakePaymentPage = () => {
                                 );
                             })}
                         </div>
+
+                        {/* Bank Details */}
+                        {paymentMethod === 'Bank' && (
+                            <div className="mt-4 p-3 border rounded-lg bg-light animate-fadeIn">
+                                <h6 style={{ ...sectionTitleStyle, color: '#0d9488' }} className="mb-3">Bank Details</h6>
+                                <div className="row g-3">
+                                    <div className="col-md-3">
+                                        <label style={labelStyle}>Bank Name</label>
+                                        <input type="text" value={bankName} onChange={e => setBankName(e.target.value)}
+                                            placeholder="e.g., BOC, HNB" className="form-control" style={inputStyle} />
+                                    </div>
+                                    <div className="col-md-3">
+                                        <label style={labelStyle}>Deposit Slip No</label>
+                                        <input type="text" value={depositSlipNo} onChange={e => setDepositSlipNo(e.target.value)}
+                                            placeholder="Slip number" className="form-control" style={inputStyle} />
+                                    </div>
+                                    <div className="col-md-3">
+                                        <label style={labelStyle}>Deposited By</label>
+                                        <input type="text" value={depositedBy} onChange={e => setDepositedBy(e.target.value)}
+                                            placeholder="Name" className="form-control" style={inputStyle} />
+                                    </div>
+                                    <div className="col-md-3">
+                                        <label style={labelStyle}>Deposit Date</label>
+                                        <input type="date" value={depositDate} onChange={e => setDepositDate(e.target.value)}
+                                            className="form-control" style={inputStyle} />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Cheque Details */}
+                        {paymentMethod === 'Cheque' && (
+                            <div className="mt-4 p-3 border rounded-lg bg-light animate-fadeIn">
+                                <h6 style={{ ...sectionTitleStyle, color: '#0d9488' }} className="mb-3">Cheque Details</h6>
+                                <div className="row g-3">
+                                    <div className="col-md-4">
+                                        <label style={labelStyle}>Cheque No</label>
+                                        <input type="text" value={chequeNo} onChange={e => setChequeNo(e.target.value)}
+                                            placeholder="Cheque number" className="form-control" style={inputStyle} />
+                                    </div>
+                                    <div className="col-md-4">
+                                        <label style={labelStyle}>Cheque Bank</label>
+                                        <input type="text" value={chequeBank} onChange={e => setChequeBank(e.target.value)}
+                                            placeholder="Bank" className="form-control" style={inputStyle} />
+                                    </div>
+                                    <div className="col-md-4">
+                                        <label style={labelStyle}>Cheque Date</label>
+                                        <input type="date" value={chequeDate} onChange={e => setChequeDate(e.target.value)}
+                                            className="form-control" style={inputStyle} />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Row 3: Expense Summary + Submit */}
@@ -275,12 +389,16 @@ const MakePaymentPage = () => {
                                 <div className="d-flex flex-column gap-2 mt-2">
                                     {[
                                         ['Date', expenseDate || '—'],
-                                        ['Category', CATEGORIES.find(c => c.value === category)?.label || '—'],
+                                        ['Category', categories.find(c => c.value === category)?.label || '—'],
                                         ['Subcategory', subcategory || '—'],
                                         ['Paid To', paidTo || '—'],
                                         ['Payment', PAYMENT_METHODS.find(m => m.id === paymentMethod)?.label || '—'],
                                         ['Receipt #', receiptNo || '—'],
-                                    ].map(([k, v]) => (
+                                        paymentMethod === 'Bank' ? ['Bank', bankName || '—'] : null,
+                                        paymentMethod === 'Bank' ? ['Slip #', depositSlipNo || '—'] : null,
+                                        paymentMethod === 'Cheque' ? ['Cheque #', chequeNo || '—'] : null,
+                                        paymentMethod === 'Cheque' ? ['Cheque Date', chequeDate || '—'] : null,
+                                    ].filter(Boolean).map(([k, v]) => (
                                         <div key={k} className="d-flex justify-content-between">
                                             <span style={{ fontSize: '13px', color: '#64748b' }}>{k}</span>
                                             <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{v}</span>
@@ -391,6 +509,24 @@ const MakePaymentPage = () => {
 
                 </div>
             </form>
+
+            {/* Quick Account Modal */}
+            <QuickAccountModal 
+                isOpen={showQuickAccount} 
+                onClose={() => setShowQuickAccount(false)}
+                initialCode={missingAccountCode}
+                initialType="Expense"
+                onAccountCreated={(acc) => {
+                    setAlert({ type: 'success', msg: `✅ Category '${acc.Account_Name}' added and selected!` });
+                    // Refresh categories list
+                    const newCat = { value: acc.Account_Name, label: acc.Account_Name };
+                    setCategories(prev => {
+                        if (prev.find(p => p.value === newCat.value)) return prev;
+                        return [...prev, newCat];
+                    });
+                    setCategory(acc.Account_Name);
+                }}
+            />
         </div>
     );
 };

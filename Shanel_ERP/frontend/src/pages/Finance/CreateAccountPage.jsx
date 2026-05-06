@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { ArrowLeft, Save, XCircle, Info, ChevronDown, PlusCircle, Layers } from 'react-feather';
 
 const CreateAccountPage = () => {
@@ -24,12 +25,25 @@ const CreateAccountPage = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Account Data Submitted:', formData);
-    // Add API call logic here
-    alert('Account created successfully (Mock)');
-    navigate('/finance');
+    try {
+      const res = await axios.post('http://localhost:5000/api/accounts/create', {
+        accountCode: formData.accountCode,
+        accountName: formData.accountName,
+        accountType: formData.accountType,
+        accountCategory: formData.accountCategory,
+        parentAccountId: formData.parentAccountId,
+        description: formData.description,
+        isActive: formData.isActive
+      });
+      if (res.data.success) {
+        alert('Account created successfully');
+        navigate('/finance');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to create account');
+    }
   };
 
   return (
