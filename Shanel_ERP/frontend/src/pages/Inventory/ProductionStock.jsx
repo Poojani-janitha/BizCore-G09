@@ -103,12 +103,36 @@ const ProductionStock = () => {
                                         })()}
                                     </td>
                                     <td className="text-center align-middle">
-                                        <span
-                                            className={`badge d-inline-block text-center ${item.Status === 'Quality_Check' ? 'bg-info-subtle text-info' : 'bg-warning-subtle text-warning'} px-2`}
-                                            style={{ minWidth: '120px' }}
-                                        >
-                                            {item.Status.replace('_', ' ')}
-                                        </span>
+                                        {(() => {
+                                            const completion = Number(item.Completion || 0);
+                                            let stageName = '';
+                                            let badgeClass = '';
+                                            
+                                            if (item.Status === 'Quality_Check') {
+                                                stageName = 'Quality Check';
+                                                badgeClass = 'bg-info-subtle text-info';
+                                            } else if (item.Status === 'Approved') {
+                                                stageName = 'Approved';
+                                                badgeClass = 'bg-success-subtle text-success';
+                                            } else if (item.Status === 'In_Progress') {
+                                                if (completion < 50) {
+                                                    stageName = 'Start';
+                                                    badgeClass = 'bg-warning-subtle text-warning';
+                                                } else {
+                                                    stageName = 'In Progress';
+                                                    badgeClass = 'bg-warning-subtle text-warning';
+                                                }
+                                            }
+                                            
+                                            return (
+                                                <span
+                                                    className={`badge d-inline-block text-center ${badgeClass} px-2`}
+                                                    style={{ minWidth: '120px' }}
+                                                >
+                                                    {stageName}
+                                                </span>
+                                            );
+                                        })()}
                                     </td>
                                     <td className="text-end">
                                         {Number(item.Completion || 0) < 50 && item.Status === 'In_Progress' && (
