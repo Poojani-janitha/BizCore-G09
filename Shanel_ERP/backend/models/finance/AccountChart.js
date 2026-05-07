@@ -38,6 +38,10 @@ AccountChart.init({
         type: Sequelize.TEXT,
         allowNull: true
     },
+    Current_Balance: {
+        type: Sequelize.DECIMAL(15, 2),
+        defaultValue: 0.00
+    },
     Created_At: {
         type: Sequelize.DATE,
         defaultValue: Sequelize.NOW

@@ -9,6 +9,14 @@ const {
     INCOME_CATEGORY_ACCOUNTS
 } = require('../../constants/Accounting/AccConstants');
 
+// Helper: Get today's date in local timezone as YYYY-MM-DD
+function getLocalDateString() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 class IncomeController {
     // Create income and its journal entry
     async createIncome(req, res) {
@@ -22,7 +30,16 @@ class IncomeController {
                 source,
                 description,
                 receiptNo,
-                paymentMethod
+                paymentMethod,
+                // Bank Deposit fields
+                bankName,
+                depositSlipNo,
+                depositedBy,
+                depositDate,
+                // Cheque fields
+                chequeNo,
+                chequeBank,
+                chequeDate
             } = req.body;
 
             if (!incomeDate || !incomeCategory || !amount || !source || !paymentMethod) {
@@ -41,27 +58,43 @@ class IncomeController {
                 });
             }
 
-            const revenueAccountCode = INCOME_CATEGORY_ACCOUNTS[incomeCategory];
-            if (!revenueAccountCode) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Invalid income category: ${incomeCategory}`
+            // Get the revenue account based on category
+            let revenueAccountCode = INCOME_CATEGORY_ACCOUNTS[incomeCategory];
+            let revenueAccount;
+
+            if (revenueAccountCode) {
+                revenueAccount = await AccountChart.findOne({
+                    where: { Account_Code: revenueAccountCode },
+                    transaction
+                });
+            } else {
+                // Try dynamic lookup by account name if not found in hardcoded map
+                revenueAccount = await AccountChart.findOne({
+                    where: { 
+                        Account_Name: incomeCategory,
+                        Account_Type: 'Revenue',
+                        Is_Active: true
+                    },
+                    transaction
                 });
             }
-
-            const revenueAccount = await AccountChart.findOne({
-                where: { Account_Code: revenueAccountCode },
-                transaction
-            });
 
             if (!revenueAccount) {
                 return res.status(400).json({
                     success: false,
-                    message: `Revenue account (${revenueAccountCode}) not found in ACCOUNT_CHART. Please create it first.`
+                    message: `Income account/category '${incomeCategory}' not found in ACCOUNT_CHART. Please create it first.`
                 });
             }
 
             const debitAccount = await this.getDebitAccount(paymentMethod, transaction);
+
+            // Build detailed description with payment method info
+            let detailedDescription = description || '';
+            if (paymentMethod === 'Bank_Deposit' && bankName) {
+                detailedDescription += `${detailedDescription ? ' | ' : ''}Bank: ${bankName}, Slip: ${depositSlipNo || 'N/A'}, By: ${depositedBy || 'N/A'}, Date: ${depositDate || 'N/A'}`;
+            } else if (paymentMethod === 'Cheque' && chequeNo) {
+                detailedDescription += `${detailedDescription ? ' | ' : ''}Cheque: ${chequeNo}, Bank: ${chequeBank || 'N/A'}, Date: ${chequeDate || 'N/A'}`;
+            }
 
             const income = await Income.create(
                 {
@@ -69,7 +102,7 @@ class IncomeController {
                     Income_Category: incomeCategory,
                     Amount: incomeAmount,
                     Source: source,
-                    Description: description || null,
+                    Description: detailedDescription || null,
                     Receipt_No: receiptNo || null,
                     Account_ID: revenueAccount.Account_ID,
                     Created_By: null,
@@ -230,7 +263,10 @@ class IncomeController {
     async createIncomeJournalEntry(income, revenueAccount, debitAccount, amount, paymentMethod, transaction) {
         const journalNumber = await this.generateJournalNumber('INC-JE');
 
-        const description = `${paymentMethod} income - ${income.Income_Category} from ${income.Source}${
+        // Map payment method to a readable label for journal descriptions
+        const paymentMethodLabel = paymentMethod === 'Bank_Deposit' ? 'Bank Deposit' : paymentMethod;
+
+        const description = `${paymentMethodLabel} income - ${income.Income_Category} from ${income.Source}${
             income.Description ? ` - ${income.Description}` : ''
         }`;
 
@@ -246,12 +282,15 @@ class IncomeController {
                 Total_Credit: amount,
                 Status: 'Posted',
                 Posted_By: null,
-                Posted_Date: new Date(),
+                Posted_Date: getLocalDateString(),
                 Created_By: null
             },
             { transaction }
         );
 
+        // Double-entry journal lines:
+        // DEBIT: Asset account (Cash/Bank/Cheques In Hand) — money received
+        // CREDIT: Revenue account — income recognized
         const journalLines = [
             {
                 Journal_ID: journalEntry.Journal_ID,
@@ -259,7 +298,7 @@ class IncomeController {
                 Line_Number: 1,
                 Debit_Amount: amount,
                 Credit_Amount: 0,
-                Description: `${paymentMethod} received from ${income.Source}`
+                Description: `${paymentMethodLabel} received from ${income.Source}`
             },
             {
                 Journal_ID: journalEntry.Journal_ID,
@@ -273,6 +312,7 @@ class IncomeController {
 
         await JournalEntryLine.bulkCreate(journalLines, { transaction });
 
+        // Update account balances for double-entry
         for (const line of journalLines) {
             await this.updateAccountBalance(
                 line.Account_ID,
@@ -296,17 +336,20 @@ class IncomeController {
         };
     }
 
+    // Maps payment methods to their corresponding Chart of Accounts debit account
+    // Bank_Deposit → Bank Account (1002): DR Bank Account, CR Revenue
+    // Cheque → Cheques In Hand (1005): DR Cheques In Hand, CR Revenue
+    // Cash → Cash In Hand (1001): DR Cash In Hand, CR Revenue
     async getDebitAccount(paymentMethod, transaction) {
         const debitAccountMap = {
             Cash: ACCOUNTS.CASH_IN_HAND,
-            Bank: ACCOUNTS.BANK_ACCOUNT_BOC,
-            Cheque: ACCOUNTS.CHEQUES_IN_HAND,
-            Card: ACCOUNTS.BANK_ACCOUNT_BOC
+            Bank_Deposit: ACCOUNTS.BANK_ACCOUNT_BOC,
+            Cheque: ACCOUNTS.CHEQUES_IN_HAND
         };
 
         const accountCode = debitAccountMap[paymentMethod];
         if (!accountCode) {
-            throw new Error(`Unsupported payment method: ${paymentMethod}`);
+            throw new Error(`Unsupported payment method: ${paymentMethod}. Valid methods are: Cash, Bank_Deposit, Cheque`);
         }
 
         const account = await AccountChart.findOne({

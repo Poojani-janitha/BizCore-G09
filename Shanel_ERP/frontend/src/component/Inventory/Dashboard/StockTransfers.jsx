@@ -5,9 +5,9 @@ import { RefreshCcw, CheckCircle, Clock, ArrowRight, ChevronRight } from 'lucide
 const StockTransfers = ({ transfers = [] }) => {
   const navigate = useNavigate();
   
-  const handleViewAll = () => {
-    navigate('/inventory/stock-transfers');
-  };
+  // const handleViewAll = () => {
+  //   navigate('/inventory/stock-transfers');
+  // };
 
   const getStatusColor = (status) => {
     switch(status?.toLowerCase()) {
@@ -45,7 +45,7 @@ const StockTransfers = ({ transfers = [] }) => {
           </div>
           <button 
             className="btn btn-sm btn-outline-primary fw-bold"
-            onClick={handleViewAll}
+            onClick={() => navigate('/inventory/stock-transfers')}
           >
             View All
           </button>
@@ -65,7 +65,7 @@ const StockTransfers = ({ transfers = [] }) => {
                   style={{ cursor: 'pointer', transition: 'transform 0.2s ease' }}
                   role="button"
                   tabIndex="0"
-                  onClick={handleViewAll}
+                  onClick={() => navigate('/inventory/stock-transfers')}
                   onMouseEnter={(e) => e.currentTarget.style.transform = 'translateX(4px)'}
                   onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
                 >
@@ -106,9 +106,8 @@ const StockTransfers = ({ transfers = [] }) => {
         <div className="border-top px-4 py-3">
           <button 
             className="btn btn-sm btn-outline-primary w-100"
-            onClick={handleViewAll}
-          >
-            View All Transfers <ChevronRight size={14} className="ms-1" style={{ marginBottom: '-2px' }} />
+            onClick={() => navigate('/inventory/stock-transfers')}>
+              View All Transfers 
           </button>
         </div>
       )}

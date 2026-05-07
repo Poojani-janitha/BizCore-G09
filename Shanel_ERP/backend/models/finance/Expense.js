@@ -14,11 +14,7 @@ Expense.init({
         allowNull: false
     },
     Expense_Category: {
-        type: Sequelize.ENUM(
-            'Salary', 'Rent', 'Utilities', 'Raw_Materials',
-            'Transport', 'Maintenance', 'Marketing',
-            'Office_Supplies', 'Other'
-        ),
+        type: Sequelize.STRING(100),
         allowNull: false
     },
     Expense_Subcategory: {

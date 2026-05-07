@@ -77,7 +77,7 @@ const CustomerBuyingPattern = sequelize.define('CustomerBuyingPattern', {
     }
 
 },{
-    tableName: 'customer_buying_pattern ',
+    tableName: 'customer_buying_pattern',
     timestamps: false,
     createdAt: false,
     updatedAt: 'Updated_At'

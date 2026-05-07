@@ -280,7 +280,8 @@ class SalesAccountController {
     //update account balance
     async updateAccountBalance(accountId, debitAmount, creditAmount, transaction) {
         const account = await AccountChart.findOne({
-             where: { Account_ID: accountId }
+             where: { Account_ID: accountId },
+             transaction
         });
 
         if(!account){
@@ -379,7 +380,8 @@ class SalesAccountController {
             }
 
             const account = await AccountChart.findOne({
-                 where: { Account_Code: accountId }
+                 where: { Account_Code: accountId },
+                 transaction
             });
 
             if (!account) {

@@ -19,15 +19,13 @@ const EMPTY_ITEM = {
 
 const toNumber = (value) => parseFloat(value) || 0;
 
-const ItemTable = ({ cartItems, setCartItems,priceLevel,setPriceLevel}) => {
+const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, setSelectedProduct, error, setError }) => {
     const inputRowBg = '#f8faf9';
     const [query, setQuery] = useState('');
     const [allUnits, setAllUnits] = useState([]);// All available units for the selected product
     const [searchResults, setSearchResults] = useState([]);// For product search results dropdown
     const [tempItem, setTempItem] = useState(EMPTY_ITEM);// Temporary state for the item being added to the cart
     const [availableQuantity, setAvailableQuantity] = useState(null); // Available quantity for the selected product
-    const [error, setError] = useState({ field: null, message: null }); // Error state for handling any issues during API calls
-
     const searchInputRef = useRef(null);
 
     // Fetch all units for the selected product
@@ -146,6 +144,7 @@ const ItemTable = ({ cartItems, setCartItems,priceLevel,setPriceLevel}) => {
         }));
         setQuery(product.p_name);
         setSearchResults([]);
+        setSelectedProduct(product); // Set the selected product for InformationBox
         setError(null); // Clear any previous errors
     };
 
@@ -198,9 +197,21 @@ const ItemTable = ({ cartItems, setCartItems,priceLevel,setPriceLevel}) => {
             const res = await axios.get(`http://localhost:5000/api/sales/product-quantity/${productId}`);
             console.log('Product Quantity Response:', res.data);
             if (res.data.success) {
-                const qty = toNumber(res.data.totalQty);
-                setAvailableQuantity(qty);
-                console.log('Available quantity set to:', qty);
+                const shopQty = toNumber(res.data.shopQty);
+                const productionQty = toNumber(res.data.productionQty);
+                const totalQty = toNumber(res.data.totalQty);
+
+                if (location === 'Shop') {
+                    setAvailableQuantity(shopQty);
+                    console.log('Available quantity set to:', shopQty);
+                }
+                else if (location === 'Production') {
+                    setAvailableQuantity(productionQty);
+                    console.log('Available quantity set to:', productionQty);
+                } else {
+                    setAvailableQuantity(totalQty);
+                    console.log('Available quantity set to:', totalQty);
+                }
             }
         }
         catch (error) {
@@ -436,7 +447,7 @@ const ItemTable = ({ cartItems, setCartItems,priceLevel,setPriceLevel}) => {
 
                         {/* CART ITEMS */}
                         {cartItems.map((item, index) => (
-                            <tr key={item.id} className='border-bottom'>
+                            <tr key={item.id} className='border-bottom' onClick={() => setSelectedProduct({ p_id: item.p_id, p_name: item.p_name, p_code: item.p_code })} style={{ cursor: 'pointer' }}>
                                 <td className='text-center text-muted small'>{index + 1}</td>
                                 <td className='small'>{item.p_code}</td>
                                 <td className='fw-medium small'>{item.p_name}</td>
@@ -455,9 +466,9 @@ const ItemTable = ({ cartItems, setCartItems,priceLevel,setPriceLevel}) => {
                     </tbody>
                 </table>
             </div>
-            <label htmlFor="" >Available Quantity</label>
-            <input type="number" className="form-control form-control-sm" value={availableQuantity} readOnly />
         </div>
+
+
     );
 };
 
