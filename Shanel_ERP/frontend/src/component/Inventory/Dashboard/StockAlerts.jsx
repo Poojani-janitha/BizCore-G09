@@ -47,7 +47,7 @@ const StockAlerts = ({ alerts = [] }) => {
               return (
                 <div 
                   key={index} 
-                  className={`p-3 rounded-3 border-start border-4 d-flex justify-content-between align-items-start gap-3 ${color.bg} ${color.border}`}
+                  className={`p-3 rounded-3 border-start border-2 d-flex justify-content-between align-items-start gap-3 ${color.bg} ${color.border}`}
                   style={{ cursor: 'pointer', transition: 'transform 0.2s ease' }}
                   role="button"
                   tabIndex="0"
