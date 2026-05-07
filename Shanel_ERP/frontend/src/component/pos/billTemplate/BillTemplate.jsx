@@ -110,7 +110,7 @@ const BillTemplate = forwardRef(({ cartItems, invoiceData, customerData, company
 
             <div className="bill-footer">
                 <p>Thank you for your purchase!</p>
-                <p className="print-note">*** This is a computer-generated receipt ***</p>
+                {/* <p className="print-note">*** This is a computer-generated receipt ***</p> */}
             </div>
 
         </div>
