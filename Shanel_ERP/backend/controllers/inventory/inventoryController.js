@@ -198,6 +198,7 @@ const getProducts = async (req, res) => {
                 ['Weight', 'weight'],
                 ['Weight_Unit', 'weightUnit'],
                 ['Auto_Generate_Barcode', 'autoGenerateBarcode'],
+                ['Is_Ishara_Product', 'isIsharaProduct'],
                 ['Created_By', 'createdBy'],
                 ['Status', 'status'],
                 ['Created_At', 'createdAt'],
@@ -257,6 +258,8 @@ const addProduct = async (req, res) => {
             }
         }
 
+        const isIsharaProduct = req.body.isIsharaProduct === 'true' || req.body.isIsharaProduct === true;
+
         // Transform camelCase field names to database column names
         const productData = {
             P_Code: req.body.code,
@@ -280,6 +283,7 @@ const addProduct = async (req, res) => {
             Barcode: req.body.barcode,
             Barcode_Type: req.body.barcodeType,
             Auto_Generate_Barcode: req.body.autoGenerateBarcode === 'true' || req.body.autoGenerateBarcode === true,
+            Is_Ishara_Product: isIsharaProduct,
             Created_By: req.body.createdBy,
             // Status will default to "In Stock" as per model definition
         };
@@ -316,7 +320,7 @@ const addProduct = async (req, res) => {
             inventoryLocation = 'Shop';
         } else if (req.body.type === 'Raw') {
             inventoryLocation = 'Production';
-        } else if (req.body.type === 'Company' && req.body.isIsharaProduct) {
+        } else if (req.body.type === 'Company' && isIsharaProduct) {
             // Ishara products (Company items that skip production)
             inventoryLocation = 'Shop';
         }
@@ -353,6 +357,8 @@ const updateProduct = async (req, res) => {
             }
         }
         
+        const isIsharaProduct = req.body.isIsharaProduct === 'true' || req.body.isIsharaProduct === true;
+
         // Transform camelCase field names to database column names
         const updateData = {
             P_Code: req.body.code,
@@ -375,7 +381,8 @@ const updateProduct = async (req, res) => {
             Weight_Unit: req.body.weightUnit,
             Barcode: req.body.barcode,
             Barcode_Type: req.body.barcodeType,
-            Auto_Generate_Barcode: req.body.autoGenerateBarcode === 'true' || req.body.autoGenerateBarcode === true
+            Auto_Generate_Barcode: req.body.autoGenerateBarcode === 'true' || req.body.autoGenerateBarcode === true,
+            Is_Ishara_Product: isIsharaProduct
             // Status is NOT updated as it's calculated dynamically based on stock levels
         };
 
@@ -417,7 +424,7 @@ const updateProduct = async (req, res) => {
             inventoryLocation = 'Shop';
         } else if (req.body.type === 'Raw') {
             inventoryLocation = 'Production';
-        } else if (req.body.type === 'Company' && req.body.isIsharaProduct) {
+        } else if (req.body.type === 'Company' && isIsharaProduct) {
             // Ishara products (Company items that skip production)
             inventoryLocation = 'Shop';
         }

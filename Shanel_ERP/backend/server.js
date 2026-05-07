@@ -2,6 +2,9 @@ const express = require("express");
 const path = require("path");
 require('dotenv').config();
 
+/** Load Sequelize models & associations before routes so HR/inventory use one shared registry */
+require('./models');
+
 const applyMiddleware = require('./middleware/appMiddleware');
 const inventoryRoutes = require('./routes/inventory/inventory');
 const productionRoutes = require('./routes/inventory/productionRoutes');
@@ -18,6 +21,7 @@ const salesManagementRoutes = require('./routes/saleManagement/SaleManagementRou
 const databaseCon = require('./config/db');
 const seedBanks = require('./scripts/seedBanks');
 const seedProducts = require('./scripts/seedProducts');
+const hrRoutes = require('./routes/hr/hrRoutes');
 
 const app = express();
 applyMiddleware(app);
@@ -44,7 +48,8 @@ app.use('/api/banks', bankRoutes);
 //Customer routes
 app.use('/api/customer',customerRoutes);
 
-//HR routes
+// HR routes
+app.use('/api/hr', hrRoutes);
 
 //Finance routes
 app.use('/api/accounting/sales', accountingRoutes);

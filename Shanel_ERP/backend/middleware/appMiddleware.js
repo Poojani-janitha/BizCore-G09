@@ -9,13 +9,15 @@ const envOrigins = (process.env.CLIENT_URL || '')
 const allowedOrigins = new Set([
     ...envOrigins,
     'http://localhost:5173',
-    'http://localhost:5174'
+    'http://localhost:5174',
+    'http://localhost:5175'
 ]);
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const corsOptions = {
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.has(origin)) {
+        const isLocalhostDev = /^http:\/\/localhost:\d+$/.test(origin || '');
+        if (!origin || allowedOrigins.has(origin) || isLocalhostDev) {
             return callback(null, true);
         }
         return callback(new Error(`CORS blocked for origin: ${origin}`));
