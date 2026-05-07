@@ -142,7 +142,7 @@ const GeneralLedgerPage = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {journalEntries.map((entry) => (
-                    <tr key={entry.Journal_ID} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate(`/finance/journal/${entry.Journal_ID}`)}>
+                    <tr key={entry.Journal_ID} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 text-sm text-gray-600">{entry.Entry_Date}</td>
                       <td className="px-6 py-4 text-sm font-semibold text-teal-900">{entry.Journal_No}</td>
                       <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{entry.Description}</td>
@@ -277,14 +277,7 @@ const GeneralLedgerPage = () => {
               <PlusCircle size={18} /> Create Journal Entry
             </button>
           )}
-          {activeTab === 'chart_of_accounts' && (
-            <button 
-              onClick={() => navigate('/finance/create-account')}
-              className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold shadow-lg shadow-orange-200 hover:bg-orange-700 transition-all hover:scale-105 active:scale-95"
-            >
-              <PlusCircle size={18} /> Add New Account
-            </button>
-          )}
+          {activeTab === 'chart_of_accounts' && null}
           {activeTab === 'fiscal_periods' && (
             <button 
               onClick={() => setIsPeriodModalOpen(true)}

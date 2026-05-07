@@ -1,5 +1,5 @@
 const sequelize = require('../../config/db');
-const { Product, UnitConversion, Sale,Inventory, Customer,Payment,SaleItem } = require('../../models/index');
+const { Product, UnitConversion, Sale, Inventory, Customer, Payment, SaleItem } = require('../../models/index');
 const { Op, where } = require('sequelize');
 
 const searchProducts = async (req, res) => {
@@ -147,7 +147,7 @@ const allUnits = async (req, res) => {
     try {
         const { productId } = req.query;
         console.log('Fetching units for product ID:', productId);
-        
+
         const units = await UnitConversion.findAll({
             where: {
                 P_ID: productId
@@ -214,42 +214,42 @@ const getBaseUnitQty = async (req, res) => {
 };
 
 const generateInvoiceNo = async (req, res) => {
-     try {
-            let newInvoiceNo;
-            const currentYear = new Date().getFullYear();
-            const lastSale = await Sale.findOne({
-                order: [['Created_At', 'DESC']]
-            });
+    try {
+        let newInvoiceNo;
+        const currentYear = new Date().getFullYear();
+        const lastSale = await Sale.findOne({
+            order: [['Created_At', 'DESC']]
+        });
 
-            let nextSequence = 1;
+        let nextSequence = 1;
 
-            if (lastSale) {
-                const lastInvoiceNo = lastSale.Invoice_No;
-                const match = lastInvoiceNo.match(/^INV-(\d{4})-(\d{6})$/);
+        if (lastSale) {
+            const lastInvoiceNo = lastSale.Invoice_No;
+            const match = lastInvoiceNo.match(/^INV-(\d{4})-(\d{6})$/);
 
-                if (match && parseInt(match[1], 10) === currentYear) {
-                    nextSequence = parseInt(match[2], 10) + 30; // Increment by 30 for each new invoice
-                }
+            if (match && parseInt(match[1], 10) === currentYear) {
+                nextSequence = parseInt(match[2], 10) + 30; // Increment by 30 for each new invoice
             }
-
-            newInvoiceNo = `INV-${currentYear}-${String(nextSequence).padStart(6, '0')}`;
-            
-            console.log("Generated Invoice No:", newInvoiceNo);
-
-            return res.status(200).json({
-                invoiceNo: newInvoiceNo,
-                success: true,
-                message: "Invoice number generated successfully"
-            });
-        } catch (error) {
-            return res.status(500).json({
-                success: false,
-                message: "Error generating invoice number",
-                error: error.message
-            });
         }
 
-   
+        newInvoiceNo = `INV-${currentYear}-${String(nextSequence).padStart(6, '0')}`;
+
+        console.log("Generated Invoice No:", newInvoiceNo);
+
+        return res.status(200).json({
+            invoiceNo: newInvoiceNo,
+            success: true,
+            message: "Invoice number generated successfully"
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Error generating invoice number",
+            error: error.message
+        });
+    }
+
+
 }
 
 //post sales data from POS to backend
@@ -294,7 +294,7 @@ const postSalesData = async (req, res) => {
             });
         }
 
-        
+
 
         // Get current date/time as fallback if not provided
         const now = new Date();
@@ -483,7 +483,7 @@ const postSalesData = async (req, res) => {
 
 //  get the quntity of product in the inventory 
 const getProductQuntity = async (req, res) => {
-    try{
+    try {
         const { productId } = req.params;
         console.log('Fetching quantity for product:', productId);
         
@@ -513,14 +513,14 @@ const getProductQuntity = async (req, res) => {
         console.log(`Shop quantity: ${shopQty}, Production quantity: ${productionQty}, Total quantity for product ID ${productId}:`, totalQty);
         
         res.status(200).json({
-            success:true,
+            success: true,
             productId: productId,
             shopQty: shopQty,
             productionQty: productionQty,
            totalQty: totalQty 
         });
 
-    }catch(error){
+    } catch (error) {
         console.error("Error fetching product quantity from inventory:", error);
         res.status(500).json({
             success: false,
@@ -534,14 +534,14 @@ const getProductQuntity = async (req, res) => {
 const getAllSales = async (req, res) => {
     try {
         const sales = await Sale.findAll({
-            where: { 
+            where: {
                 Status: 'Active',
                 Sale_Date: {
                     [Op.gte]: new Date(new Date().setDate(new Date().getDate() - 7)) // Last 7 days
                 }
             },
             attributes: [
-               
+
                 'Invoice_No',
                 'C_ID',
                 'Sale_Date',
@@ -549,28 +549,28 @@ const getAllSales = async (req, res) => {
                 'Total_Amount',
                 'Paid_Amount',
                 'Payment_Status'
-            ],include: [{
+            ], include: [{
                 model: Customer,
                 attributes: ['C_Name']
             }], order: [['Created_At', 'DESC']]
 
-            });
+        });
 
 
-            const formateData = sales.map((s) => {
-                return {
-                    invoice_no: s.Invoice_No,
-                    c_id: s.C_ID,
-                    customer_name: s.Customer?.C_Name || 'Unknown',
-                    sale_date: s.Sale_Date,
-                    sale_time: s.Sale_Time,
-                    total_amount: parseFloat(s.Total_Amount),
-                    balance: parseFloat(s.Total_Amount) - parseFloat(s.Paid_Amount),
-                    payment_status: s.Payment_Status
-                }
+        const formateData = sales.map((s) => {
+            return {
+                invoice_no: s.Invoice_No,
+                c_id: s.C_ID,
+                customer_name: s.Customer?.C_Name || 'Unknown',
+                sale_date: s.Sale_Date,
+                sale_time: s.Sale_Time,
+                total_amount: parseFloat(s.Total_Amount),
+                balance: parseFloat(s.Total_Amount) - parseFloat(s.Paid_Amount),
+                payment_status: s.Payment_Status
             }
-            );
-          
+        }
+        );
+
         return res.status(200).json({
             success: true,
             count: sales.length,
@@ -586,6 +586,6 @@ const getAllSales = async (req, res) => {
         })
     }
 
-}         
-module.exports = { searchProducts, allUnits, getBaseUnitQty, postSalesData, generateInvoiceNo ,getProductQuntity,getAllSales};
+}
+module.exports = { searchProducts, allUnits, getBaseUnitQty, postSalesData, generateInvoiceNo, getProductQuntity, getAllSales };
 

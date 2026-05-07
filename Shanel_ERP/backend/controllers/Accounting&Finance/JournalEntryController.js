@@ -40,7 +40,7 @@ class JournalEntryController {
                 where: { Journal_ID: id },
                 include: [{
                     model: JournalEntryLine,
-                    as: 'lines',
+                    as: 'Lines',
                     include: [{
                         model: AccountChart,
                         attributes: ['Account_Name', 'Account_Code']

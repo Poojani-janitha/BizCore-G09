@@ -54,6 +54,7 @@ const SlideBar = () => {
                 { label: 'General Ledger', to: '/finance/general-ledger', icon: <FileText size={14} /> },
                 { label: 'Receive Payment', to: '/finance/receive-payment', icon: <CornerUpLeft size={14} /> },
                 { label: 'Make Payment', to: '/finance/make-payment', icon: <Truck size={14} /> },
+                { label: 'Correction', to: '/finance/edit-transactions', icon: <RefreshCw size={14} /> },
                 { label: 'Reports', to: '/finance/reports', icon: <BarChart2 size={14} /> },
             ]
         },

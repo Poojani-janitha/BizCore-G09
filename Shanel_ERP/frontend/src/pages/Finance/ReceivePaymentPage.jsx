@@ -72,9 +72,11 @@ const ReceivePaymentPage = () => {
   const fetchCategories = async () => {
     try {
       setLoadingCategories(true);
-      const res = await axios.get('http://localhost:5000/api/accounts?type=Revenue&active=true');
+      const res = await axios.get('http://localhost:5000/api/accounts?active=true');
       if (res.data.success) {
-        setIncomeCategories(res.data.data.map(acc => acc.Account_Name));
+        // Store full account objects to filter by type later if needed
+        const accounts = res.data.data;
+        setIncomeCategories(accounts.map(acc => acc.Account_Name));
       }
     } catch (error) {
       console.error('Error fetching income categories:', error);
@@ -128,10 +130,21 @@ const ReceivePaymentPage = () => {
     setPaymentType(type); setSelectedCustomer(null); setSelectedInvoice(null);
     setCustomerSearch(''); setOutstandingInvoices([]); setAlert(null);
     setFormData({
-      customerName: '', amount: '', incomeCategory: 'Sales', description: '',
-      paymentMethod: 'Cash', date: new Date().toISOString().split('T')[0], referenceNo: '',
-      bankName: '', depositSlipNo: '', depositedBy: '', depositDate: '',
-      chequeNo: '', chequeBank: '', chequeDate: '', creditTransId: ''
+      customerName: '', 
+      amount: '', 
+      incomeCategory: type === 'credit' ? 'Accounts Receivable' : 'Sales', 
+      description: '',
+      paymentMethod: 'Cash', 
+      date: new Date().toISOString().split('T')[0], 
+      referenceNo: '',
+      bankName: '', 
+      depositSlipNo: '', 
+      depositedBy: '', 
+      depositDate: '',
+      chequeNo: '', 
+      chequeBank: '', 
+      chequeDate: '', 
+      creditTransId: ''
     });
   };
 
@@ -439,8 +452,9 @@ const ReceivePaymentPage = () => {
           {/* Row 3: Category + Notes */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
             <div>
-              <label className={label}>Income Category</label>
+              <label className={label}>{paymentType === 'credit' ? 'Receivable Account' : 'Income Category'}</label>
               <select name="incomeCategory" value={formData.incomeCategory} 
+                disabled={paymentType === 'credit'}
                 onChange={e => {
                   if (e.target.value === 'ADD_NEW') {
                     setShowQuickAccount(true);
@@ -448,7 +462,7 @@ const ReceivePaymentPage = () => {
                     handleChange(e);
                   }
                 }}
-                className="w-full h-11 rounded-lg border border-gray-200 px-3 outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+                className={`w-full h-11 rounded-lg border px-3 outline-none focus:ring-2 focus:ring-teal-500 text-sm ${paymentType === 'credit' ? 'bg-gray-50 border-gray-200 text-gray-500 cursor-not-allowed' : 'border-gray-200 text-gray-900'}`}>
                 <option value="">{loadingCategories ? 'Loading...' : '-- Select Category --'}</option>
                 {incomeCategories.map(c => <option key={c} value={c}>{c}</option>)}
                 <option value="ADD_NEW" style={{ fontWeight: 'bold', color: '#0d9488' }}>+ Add New Category</option>

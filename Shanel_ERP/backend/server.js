@@ -17,6 +17,7 @@ const accountingRoutes = require('./routes/Accounting/SalesAccountRoutes');
 const expenseRoutes = require('./routes/Accounting/expenseRoutes');
 const incomeRoutes = require('./routes/Accounting/incomeRoutes');
 const creditPaymentRoutes = require('./routes/Accounting/creditPaymentRoutes');
+const supplierPaymentRoutes = require('./routes/Accounting/supplierPaymentRoutes');
 const chartOfAccountsRoutes = require('./routes/Accounting/chartOfAccountsRoutes');
 const journalEntryRoutes = require('./routes/Accounting/journalEntryRoutes');
 const fiscalPeriodRoutes = require('./routes/Accounting/fiscalPeriodRoutes');
@@ -65,6 +66,7 @@ app.use('/api/accounts', chartOfAccountsRoutes);
 app.use('/api/journal-entries', journalEntryRoutes);
 app.use('/api/fiscal-periods', fiscalPeriodRoutes);
 app.use('/api/finance/dashboard', financeDashboardRoutes);
+app.use('/api/supplier-payments', supplierPaymentRoutes);
 
 
 //Supplier routes
