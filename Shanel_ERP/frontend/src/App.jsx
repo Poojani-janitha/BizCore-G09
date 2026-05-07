@@ -30,6 +30,7 @@ import GeneralLedgerPage from './pages/Finance/GeneralLedgerPage.jsx';
 import ChartOfAccountsPage from './pages/Finance/ChartOfAccountsPage.jsx';
 import AccountLedgerPage from './pages/Finance/AccountLedgerPage.jsx';
 import CreateAccountPage from './pages/Finance/CreateAccountPage.jsx';
+import ReportsPage from './pages/Finance/ReportsPage.jsx';
 import './App.css';
 import { useState } from 'react';
 
@@ -82,6 +83,7 @@ const App = () => {
             <Route path="/finance/chart-of-accounts" element={<ChartOfAccountsPage />} />
             <Route path="/finance/ledger/:accountCode" element={<AccountLedgerPage />} />
             <Route path="/finance/create-account" element={<CreateAccountPage />} />
+            <Route path="/finance/reports" element={<ReportsPage />} />
             <Route path="/logout" element={<div>Logout Page</div>} />
           </Routes>
         </main>

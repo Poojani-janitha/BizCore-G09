@@ -103,7 +103,8 @@ export const buildPaymentTransactions = (incomes, expenses) => {
     method: row.Income_Category,
     amount: `+ Rs. ${formatNumber(row.Amount)}`,
     amountColor: '#008236',
-    rawDate: row.Income_Date
+    rawDate: row.Income_Date,
+    createdAt: row.Created_At
   }));
 
   const expenseTransactions = expenses.map((row) => ({
@@ -115,11 +116,16 @@ export const buildPaymentTransactions = (incomes, expenses) => {
     method: row.Payment_Method || 'N/A',
     amount: `- Rs. ${formatNumber(row.Amount)}`,
     amountColor: '#C10007',
-    rawDate: row.Expense_Date
+    rawDate: row.Expense_Date,
+    createdAt: row.Created_At
   }));
 
   return [...incomeTransactions, ...expenseTransactions]
-    .sort((a, b) => new Date(b.rawDate) - new Date(a.rawDate));
+    .sort((a, b) => {
+      const dateCompare = new Date(b.rawDate) - new Date(a.rawDate);
+      if (dateCompare !== 0) return dateCompare;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
 };
 
 export const filterTransactionsByTab = (transactions, activeTab) => {

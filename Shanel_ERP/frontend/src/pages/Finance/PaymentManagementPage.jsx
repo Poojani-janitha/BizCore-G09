@@ -140,12 +140,16 @@ const PaymentManagementPage = () => {
       </div>
 
       {/* Recent Activity */}
-      <TransactionTable transactions={transactions.slice(0, 5)} />
+      <TransactionTable 
+        transactions={transactions.slice(0, 10)} 
+        title="Recent Activity"
+        subtitle="Last 10 financial movements (In & Out)"
+      />
     </div>
   );
 
   return (
-    <div className="w-full min-h-screen bg-[#f8fafc] px-4 md:px-6 py-8">
+    <div className="w-full min-h-screen bg-white px-4 md:px-6 py-8">
       <main className="w-full max-w-[1400px] mx-auto">
         <section className="w-full flex flex-col gap-8">
           
