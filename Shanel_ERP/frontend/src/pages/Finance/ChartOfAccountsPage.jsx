@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, PlusCircle, Loader, RefreshCw } from 'react-feather';
 import axios from 'axios';
+import QuickAccountModal from '../../component/Finance/QuickAccountModal';
 
 const ChartOfAccountsPage = () => {
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Modal state
+  const [modalData, setModalData] = useState({ isOpen: false, type: 'Asset', category: '' });
 
   useEffect(() => {
     fetchAccounts();
@@ -39,6 +43,16 @@ const ChartOfAccountsPage = () => {
     { title: "Expenses", accounts: accounts.filter(a => a.Account_Type === 'Expense') }
   ];
 
+  const handleQuickAdd = (type) => {
+    // Determine a default category label based on the type
+    let defaultCategory = '';
+    if (type === 'Asset') defaultCategory = 'Current Asset';
+    if (type === 'Liability') defaultCategory = 'Current Liability';
+    if (type === 'Expense') defaultCategory = 'Operating Expense';
+    
+    setModalData({ isOpen: true, type, category: defaultCategory });
+  };
+
   const handleAccountClick = (code) => {
     navigate(`/finance/ledger/${code}`);
   };
@@ -66,14 +80,21 @@ const ChartOfAccountsPage = () => {
 
       <div className="self-stretch flex flex-col gap-8 pb-10 w-full">
         {groupedAccounts.map((category, catIdx) => (
-          category.accounts.length > 0 && (
-            <div key={catIdx} className="self-stretch flex flex-col gap-4">
-              <div className="flex items-center gap-4">
-                <h2 className="text-sm font-bold text-cyan-950 uppercase tracking-wider">{category.title}</h2>
-                <div className="flex-1 h-[1px] bg-gray-200"></div>
-                <span className="text-xs text-gray-400 font-medium">{category.accounts.length} accounts</span>
-              </div>
+          <div key={catIdx} className="self-stretch flex flex-col gap-4">
+            <div className="flex items-center gap-4">
+              <h2 className="text-sm font-bold text-cyan-950 uppercase tracking-wider">{category.title}</h2>
+              <button 
+                onClick={() => handleQuickAdd(category.title.replace(/s$/, ''))}
+                className="p-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition-all active:scale-90"
+                title={`Quick Add ${category.title.replace(/s$/, '')}`}
+              >
+                <PlusCircle size={16} />
+              </button>
+              <div className="flex-1 h-[1px] bg-gray-200"></div>
+              <span className="text-xs text-gray-400 font-medium">{category.accounts.length} accounts</span>
+            </div>
 
+            {category.accounts.length > 0 ? (
               <div className="self-stretch bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
@@ -114,10 +135,23 @@ const ChartOfAccountsPage = () => {
                   </table>
                 </div>
               </div>
-            </div>
-          )
+            ) : (
+              <div className="py-6 px-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200 text-center">
+                <p className="text-xs text-gray-400">No {category.title.toLowerCase()} configured yet.</p>
+              </div>
+            )}
+          </div>
         ))}
       </div>
+
+      {/* Quick Add Modal */}
+      <QuickAccountModal 
+        isOpen={modalData.isOpen}
+        onClose={() => setModalData({ ...modalData, isOpen: false })}
+        initialType={modalData.type}
+        initialCategory={modalData.category}
+        onAccountCreated={() => fetchAccounts()}
+      />
     </div>
   );
 };

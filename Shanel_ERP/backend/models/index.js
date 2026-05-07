@@ -32,6 +32,10 @@ const User = require('./user/User');
 // ===== CUSTOMER MODELS =====
 const Customer = require('./customer/customer');
 
+// ===== SUPPLIER MODELS =====
+const Supplier = require('./supplier/Supplier');
+const SupplierTransaction = require('./supplier/SupplierTransaction');
+
 /// ===== CUSTOMER ASSOCIATIONS =====
 const CustomerAssociations = require('./customer/CustomerAssosiation');
 CustomerAssociations();
@@ -63,5 +67,7 @@ module.exports = {
     JournalEntry,
     JournalEntryLine,
     Expense,
-    Income
+    Income,
+    Supplier,
+    SupplierTransaction
 };

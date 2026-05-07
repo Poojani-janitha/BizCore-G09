@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Save, XCircle, Info, ChevronDown, PlusCircle, Layers } from 'react-feather';
 
 const CreateAccountPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
   const [formData, setFormData] = useState({
     accountCode: '',
     accountName: '',
@@ -14,6 +16,15 @@ const CreateAccountPage = () => {
     isActive: true,
     description: ''
   });
+
+  // Pre-fill account type from query parameter if available
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const type = params.get('type');
+    if (type) {
+      setFormData(prev => ({ ...prev, accountType: type }));
+    }
+  }, [location]);
 
   const accountTypes = ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'];
 

@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, AlertCircle, CheckCircle } from 'react-feather';
 import axios from 'axios';
 
-const QuickAccountModal = ({ isOpen, onClose, initialCode = '', initialType = 'Asset', onAccountCreated }) => {
+const QuickAccountModal = ({ isOpen, onClose, initialCode = '', initialType = 'Asset', initialCategory = '', onAccountCreated }) => {
     const [formData, setFormData] = useState({
         accountCode: initialCode,
         accountName: '',
         accountType: initialType,
+        accountCategory: initialCategory,
         description: ''
     });
     const [loading, setLoading] = useState(false);
@@ -18,7 +19,8 @@ const QuickAccountModal = ({ isOpen, onClose, initialCode = '', initialType = 'A
             setFormData(prev => ({ 
                 ...prev, 
                 accountCode: initialCode,
-                accountType: initialType 
+                accountType: initialType,
+                accountCategory: initialCategory 
             }));
             setSuccess(false);
             setError(null);
@@ -28,7 +30,7 @@ const QuickAccountModal = ({ isOpen, onClose, initialCode = '', initialType = 'A
                 fetchNextCode(initialType);
             }
         }
-    }, [isOpen, initialCode, initialType]);
+    }, [isOpen, initialCode, initialType, initialCategory]);
 
     const fetchNextCode = async (type) => {
         try {
@@ -102,15 +104,44 @@ const QuickAccountModal = ({ isOpen, onClose, initialCode = '', initialType = 'A
                                 </div>
                             )}
 
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className={labelStyle}>Type *</label>
+                                    <select 
+                                        className={inputStyle}
+                                        value={formData.accountType}
+                                        onChange={e => {
+                                            const newType = e.target.value;
+                                            setFormData({...formData, accountType: newType});
+                                            fetchNextCode(newType);
+                                        }}
+                                    >
+                                        {['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'].map(type => (
+                                            <option key={type} value={type}>{type}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={labelStyle}>Code *</label>
+                                    <input 
+                                        type="text" 
+                                        required 
+                                        className={inputStyle}
+                                        placeholder="e.g. 1001"
+                                        value={formData.accountCode}
+                                        onChange={e => setFormData({...formData, accountCode: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+
                             <div>
-                                <label className={labelStyle}>Account Code *</label>
+                                <label className={labelStyle}>Account Category</label>
                                 <input 
                                     type="text" 
-                                    required 
                                     className={inputStyle}
-                                    placeholder="e.g. 1001"
-                                    value={formData.accountCode}
-                                    onChange={e => setFormData({...formData, accountCode: e.target.value})}
+                                    placeholder="e.g. Current Asset"
+                                    value={formData.accountCategory}
+                                    onChange={e => setFormData({...formData, accountCategory: e.target.value})}
                                 />
                             </div>
 
@@ -124,24 +155,6 @@ const QuickAccountModal = ({ isOpen, onClose, initialCode = '', initialType = 'A
                                     value={formData.accountName}
                                     onChange={e => setFormData({...formData, accountName: e.target.value})}
                                 />
-                            </div>
-
-                            <div>
-                                <label className={labelStyle}>Account Type *</label>
-                                <select 
-                                    className={inputStyle}
-                                    value={formData.accountType}
-                                    onChange={e => {
-                                        const newType = e.target.value;
-                                        setFormData({...formData, accountType: newType});
-                                        // Auto-fetch code for new type if current code is empty or matches a typical range start
-                                        fetchNextCode(newType);
-                                    }}
-                                >
-                                    {['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'].map(type => (
-                                        <option key={type} value={type}>{type}</option>
-                                    ))}
-                                </select>
                             </div>
 
                             <div>

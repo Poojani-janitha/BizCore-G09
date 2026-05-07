@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DollarSign, CreditCard, FileText, Briefcase, Plus, Trash2, Check, AlertCircle, Clock } from 'react-feather';
+import { DollarSign, CreditCard, FileText, Briefcase, Plus, Trash2, Check, AlertCircle, Clock, Search, ChevronDown, User } from 'react-feather';
 import axios from 'axios';
 import QuickAccountModal from '../../component/Finance/QuickAccountModal';
 
 const API_BASE = 'http://localhost:5000/api/expenses';
-
-// No hardcoded categories - all fetched from DB
 
 const PAYMENT_METHODS = [
     { id: 'Cash', label: 'Cash', Icon: DollarSign },
@@ -15,7 +13,6 @@ const PAYMENT_METHODS = [
 ];
 
 const today = new Date();
-const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 const isoDate = today.toISOString().split('T')[0];
 
 const fmt = (n) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -33,6 +30,9 @@ const statusBadge = (status) => {
 
 const MakePaymentPage = () => {
     const navigate = useNavigate();
+
+    // ── Payment Type State ──
+    const [paymentType, setPaymentType] = useState('general'); // 'general' or 'credit'
 
     // ── Form State ──
     const [expenseDate, setExpenseDate] = useState(isoDate);
@@ -57,6 +57,16 @@ const MakePaymentPage = () => {
     const [chequeBank, setChequeBank] = useState('');
     const [chequeDate, setChequeDate] = useState(isoDate);
 
+    // ── Supplier / Credit States ──
+    const [suppliers, setSuppliers] = useState([]);
+    const [selectedSupplier, setSelectedSupplier] = useState(null);
+    const [outstandingBills, setOutstandingBills] = useState([]);
+    const [selectedBill, setSelectedBill] = useState(null);
+    const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+    const [loadingBills, setLoadingBills] = useState(false);
+    const [supplierSearch, setSupplierSearch] = useState('');
+    const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+
     // ── UI State ──
     const [submitting, setSubmitting] = useState(false);
     const [alert, setAlert] = useState(null);
@@ -69,12 +79,13 @@ const MakePaymentPage = () => {
     useEffect(() => {
         fetchRecentExpenses();
         fetchCategories();
-    }, []);
+        if (paymentType === 'credit') fetchSuppliers();
+    }, [paymentType]);
 
     const fetchCategories = async () => {
         try {
             setLoadingCategories(true);
-            const res = await axios.get('http://localhost:5000/api/accounts?type=Expense&active=true');
+            const res = await axios.get('http://localhost:5000/api/accounts?active=true');
             if (res.data.success) {
                 const dbCategories = res.data.data.map(acc => ({
                     value: acc.Account_Name,
@@ -87,6 +98,24 @@ const MakePaymentPage = () => {
         } finally {
             setLoadingCategories(false);
         }
+    };
+
+    const fetchSuppliers = async () => {
+        try {
+            setLoadingSuppliers(true);
+            const res = await axios.get('http://localhost:5000/api/supplier-payments');
+            if (res.data.success) setSuppliers(res.data.data || []);
+        } catch (e) { console.error(e); }
+        finally { setLoadingSuppliers(false); }
+    };
+
+    const fetchOutstandingBills = async (id) => {
+        setLoadingBills(true);
+        try {
+            const res = await axios.get(`http://localhost:5000/api/supplier-payments/bills/${id}`);
+            if (res.data?.success) setOutstandingBills(res.data.data || []);
+        } catch (e) { setOutstandingBills([]); }
+        finally { setLoadingBills(false); }
     };
 
     const fetchRecentExpenses = async () => {
@@ -103,17 +132,42 @@ const MakePaymentPage = () => {
         }
     };
 
+    useEffect(() => {
+        if (paymentType === 'credit' && selectedSupplier) fetchOutstandingBills(selectedSupplier.S_ID);
+    }, [paymentType, selectedSupplier]);
+
+    const handleSelectSupplier = (s) => {
+        setSelectedSupplier(s); 
+        setSupplierSearch(s.S_Name);
+        setShowSupplierDropdown(false); 
+        setSelectedBill(null);
+        setCategory('Accounts Payable');
+        setPaidTo(s.S_Name);
+        setAmount('');
+        setReceiptNo('');
+    };
+
+    const handleSelectBill = (bill) => {
+        if (!bill) {
+            setSelectedBill(null);
+            setAmount('');
+            setReceiptNo('');
+            return;
+        }
+        setSelectedBill(bill);
+        setAmount(bill.remainingAmount.toFixed(2));
+        setReceiptNo(bill.referenceNo);
+    };
+
     const resetForm = () => {
         setExpenseDate(isoDate);
-        setCategory('');
+        setCategory(paymentType === 'credit' ? 'Accounts Payable' : '');
         setSubcategory('');
         setAmount('');
         setPaymentMethod('Cash');
         setPaidTo('');
         setDescription('');
         setReceiptNo('');
-        
-        // Reset banking fields
         setBankName('');
         setDepositSlipNo('');
         setDepositedBy('');
@@ -121,65 +175,83 @@ const MakePaymentPage = () => {
         setChequeNo('');
         setChequeBank('');
         setChequeDate(isoDate);
+        setSelectedBill(null);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setAlert(null);
 
-        if (!expenseDate || !category || !amount || !paymentMethod) {
-            setAlert({ type: 'danger', msg: 'Please fill in all required fields: Date, Category, Amount, and Payment Method.' });
-            return;
+        if (paymentType === 'credit') {
+            if (!selectedSupplier || !selectedBill || !amount || !paymentMethod) {
+                setAlert({ type: 'danger', msg: 'Please select Supplier, Bill, Amount, and Payment Method.' });
+                return;
+            }
+        } else {
+            if (!expenseDate || !category || !amount || !paymentMethod) {
+                setAlert({ type: 'danger', msg: 'Please fill in required fields: Date, Category, Amount, and Method.' });
+                return;
+            }
         }
 
         const expenseAmount = parseFloat(amount);
         if (isNaN(expenseAmount) || expenseAmount <= 0) {
-            setAlert({ type: 'danger', msg: 'Amount must be a valid positive number.' });
+            setAlert({ type: 'danger', msg: 'Amount must be a positive number.' });
             return;
         }
 
         setSubmitting(true);
         try {
-            const payload = {
+            const commonPayload = {
                 expenseDate,
-                expenseCategory: category,
-                expenseSubcategory: subcategory || null,
-                amount: expenseAmount,
                 paymentMethod,
-                paidTo: paidTo || null,
+                amount: expenseAmount,
                 description: description || null,
-                receiptNo: receiptNo || null,
-                
-                // Bank fields
-                bankName: paymentMethod === 'Bank' ? bankName : null,
-                depositSlipNo: paymentMethod === 'Bank' ? depositSlipNo : null,
-                depositedBy: paymentMethod === 'Bank' ? depositedBy : null,
-                depositDate: paymentMethod === 'Bank' ? depositDate : null,
-
-                // Cheque fields
-                chequeNo: paymentMethod === 'Cheque' ? chequeNo : null,
-                chequeBank: paymentMethod === 'Cheque' ? chequeBank : null,
-                chequeDate: paymentMethod === 'Cheque' ? chequeDate : null,
+                bankName: (paymentMethod === 'Bank') ? bankName : null,
+                depositSlipNo: (paymentMethod === 'Bank') ? depositSlipNo : null,
+                depositedBy: (paymentMethod === 'Bank') ? depositedBy : null,
+                depositDate: (paymentMethod === 'Bank') ? depositDate : null,
+                chequeNo: (paymentMethod === 'Cheque') ? chequeNo : null,
+                chequeBank: (paymentMethod === 'Cheque') ? chequeBank : null,
+                chequeDate: (paymentMethod === 'Cheque') ? chequeDate : null,
             };
 
-            const res = await axios.post(`${API_BASE}/create`, payload);
+            let res;
+            if (paymentType === 'credit') {
+                const payload = {
+                    ...commonPayload,
+                    supplierId: selectedSupplier.S_ID,
+                    referenceNo: receiptNo,
+                    supplierTransId: selectedBill.supplierTransId,
+                    paymentDate: expenseDate,
+                    notes: description
+                };
+                res = await axios.post('http://localhost:5000/api/supplier-payments/pay-credit', payload);
+            } else {
+                const payload = {
+                    ...commonPayload,
+                    expenseCategory: category,
+                    expenseSubcategory: subcategory || null,
+                    paidTo: paidTo || null,
+                    receiptNo: receiptNo || null,
+                };
+                res = await axios.post(`${API_BASE}/create`, payload);
+            }
 
             if (res.data.success) {
-                setAlert({ type: 'success', msg: `✅ ${res.data.message} | Journal: ${res.data.data.journal.journalNo}` });
+                setAlert({ type: 'success', msg: `✅ ${res.data.message} | Journal: ${res.data.data.journal?.journalNo || 'N/A'}` });
                 resetForm();
+                if (paymentType === 'credit') {
+                    setSelectedSupplier(null);
+                    setSupplierSearch('');
+                    setOutstandingBills([]);
+                }
                 fetchRecentExpenses();
             } else {
-                setAlert({ type: 'danger', msg: res.data.message || 'Failed to create expense.' });
+                setAlert({ type: 'danger', msg: res.data.message || 'Failed.' });
             }
         } catch (err) {
-            const msg = err.response?.data?.message || err.message;
-            if (typeof msg === 'string' && msg.includes('not found in ACCOUNT_CHART')) {
-                const codeMatch = msg.match(/\((\d+)\)/);
-                if (codeMatch) setMissingAccountCode(codeMatch[1]);
-                setShowQuickAccount(true);
-            } else {
-                setAlert({ type: 'danger', msg: msg || 'Server error.' });
-            }
+            setAlert({ type: 'danger', msg: err.response?.data?.message || err.message });
         } finally {
             setSubmitting(false);
         }
@@ -218,8 +290,15 @@ const MakePaymentPage = () => {
         fontFamily: "'Inter', sans-serif"
     };
 
+    const filteredSuppliers = suppliers.filter(s => 
+        s.S_Name.toLowerCase().includes(supplierSearch.toLowerCase()) ||
+        s.S_Code.toLowerCase().includes(supplierSearch.toLowerCase())
+    );
+
     return (
         <div style={{ width: '100%', minHeight: '100%', backgroundColor: '#f8fafc', fontFamily: "'Inter', sans-serif" }}>
+
+            {/* Alert */}
 
             {/* Alert */}
             {alert && (
@@ -234,62 +313,151 @@ const MakePaymentPage = () => {
             <form onSubmit={handleSubmit}>
                 <div className="p-4 d-flex flex-column gap-4">
 
-                    {/* Row 1: Expense Details */}
+                    {/* Prominent Toggle Switch */}
+                    <div className="d-flex gap-3">
+                        {[
+                          { id: 'general', label: 'General Expense', icon: <DollarSign size={16}/>, color: '#0d9488', bg: '#ecfdf5', dark: '#065f46' },
+                          { id: 'credit', label: 'Credit Payable', icon: <FileText size={16}/>, color: '#ea580c', bg: '#fff7ed', dark: '#c2410c' }
+                        ].map(t => (
+                            <button key={t.id} type="button" onClick={() => { setPaymentType(t.id); resetForm(); if(t.id==='credit') fetchSuppliers(); }}
+                                className="flex-1 h-14 rounded-xl border-2 font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2"
+                                style={paymentType === t.id ? {
+                                    backgroundColor: t.bg,
+                                    borderColor: t.color,
+                                    color: t.dark,
+                                    boxShadow: `0 4px 6px -1px ${t.color}20`
+                                } : { backgroundColor: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
+                                {t.icon} {t.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Row 1: Context Selection (Supplier/Bill or Category) */}
                     <div className="bg-white p-4" style={cardStyle}>
-                        <p style={sectionTitleStyle}>Expense Details</p>
-                        <div className="row g-3 mt-1">
-                            <div className="col-md-3">
-                                <label style={labelStyle}>Expense Date <span className="text-danger">*</span></label>
-                                <input type="date" value={expenseDate} onChange={e => setExpenseDate(e.target.value)}
-                                    className="form-control" style={inputStyle} required />
+                        <p style={sectionTitleStyle}>{paymentType === 'general' ? 'Expense Details' : 'Supplier & Bill Selection'}</p>
+                        
+                        {paymentType === 'credit' ? (
+                            <div className="row g-3 mt-1">
+                                {/* Supplier Search */}
+                                <div className="col-md-5 position-relative">
+                                    <label style={labelStyle}>Search Supplier <span className="text-danger">*</span></label>
+                                    <div className="input-group">
+                                        <span className="input-group-text bg-white border-end-0" style={{ borderRadius: '10px 0 0 10px' }}>
+                                            <Search size={16} color="#64748b" />
+                                        </span>
+                                        <input 
+                                            type="text" 
+                                            value={supplierSearch}
+                                            onChange={(e) => { setSupplierSearch(e.target.value); setShowSupplierDropdown(true); }}
+                                            onFocus={() => setShowSupplierDropdown(true)}
+                                            placeholder="Type supplier name or code..."
+                                            className="form-control border-start-0" 
+                                            style={{ ...inputStyle, borderRadius: '0 10px 10px 0' }}
+                                        />
+                                    </div>
+                                    
+                                    {showSupplierDropdown && supplierSearch && (
+                                        <div className="position-absolute w-100 mt-1 bg-white border shadow-lg overflow-auto" 
+                                             style={{ zIndex: 1000, borderRadius: '12px', maxHeight: '250px' }}>
+                                            {loadingSuppliers ? (
+                                                <div className="p-3 text-center small text-muted">Loading suppliers...</div>
+                                            ) : filteredSuppliers.length === 0 ? (
+                                                <div className="p-3 text-center small text-muted">No suppliers found</div>
+                                            ) : (
+                                                filteredSuppliers.map(s => (
+                                                    <div 
+                                                        key={s.S_ID} 
+                                                        onClick={() => handleSelectSupplier(s)}
+                                                        className="p-3 border-bottom cursor-pointer hover-bg-light d-flex justify-content-between align-items-center"
+                                                        style={{ cursor: 'pointer' }}>
+                                                        <div>
+                                                            <div className="fw-bold text-dark small">{s.S_Name}</div>
+                                                            <div className="text-muted" style={{ fontSize: '11px' }}>{s.S_Code} | {s.City}</div>
+                                                        </div>
+                                                        <div className="text-end">
+                                                            <div className="text-danger fw-bold small">Rs. {fmt(s.Current_Balance)}</div>
+                                                            <div className="text-muted" style={{ fontSize: '10px' }}>Balance</div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Bill Selection */}
+                                <div className="col-md-4">
+                                    <label style={labelStyle}>Select Outstanding Bill <span className="text-danger">*</span></label>
+                                    <select 
+                                        className="form-select" 
+                                        style={inputStyle}
+                                        value={selectedBill?.supplierTransId || ''}
+                                        onChange={(e) => handleSelectBill(outstandingBills.find(b => b.supplierTransId === parseInt(e.target.value)))}
+                                        disabled={!selectedSupplier}>
+                                        <option value="">{loadingBills ? 'Loading bills...' : 'Select a bill...'}</option>
+                                        {outstandingBills.map(bill => (
+                                            <option key={bill.supplierTransId} value={bill.supplierTransId}>
+                                                {bill.referenceNo} ({bill.transactionDate}) - Rs. {fmt(bill.remainingAmount)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="col-md-3">
+                                    <label style={labelStyle}>Payment Date <span className="text-danger">*</span></label>
+                                    <input type="date" value={expenseDate} onChange={e => setExpenseDate(e.target.value)}
+                                        className="form-control" style={inputStyle} required />
+                                </div>
                             </div>
-                            <div className="col-md-3">
-                                <label style={labelStyle}>Category <span className="text-danger">*</span></label>
-                                <select 
-                                    value={category} 
-                                    onChange={e => {
-                                        if (e.target.value === 'ADD_NEW') {
-                                            setShowQuickAccount(true);
-                                        } else {
-                                            setCategory(e.target.value);
-                                        }
-                                    }}
-                                    className="form-select" 
-                                    style={inputStyle} 
-                                    required
-                                >
-                                    <option value="">{loadingCategories ? 'Loading...' : 'Select category'}</option>
-                                    {categories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                                    <option value="ADD_NEW" style={{ fontWeight: 'bold', color: '#0d9488' }}>+ Add New Category</option>
-                                </select>
+                        ) : (
+                            <div className="row g-3 mt-1">
+                                <div className="col-md-3">
+                                    <label style={labelStyle}>Expense Date <span className="text-danger">*</span></label>
+                                    <input type="date" value={expenseDate} onChange={e => setExpenseDate(e.target.value)}
+                                        className="form-control" style={inputStyle} required />
+                                </div>
+                                <div className="col-md-3">
+                                    <label style={labelStyle}>Category <span className="text-danger">*</span></label>
+                                    <select 
+                                        value={category} 
+                                        onChange={e => e.target.value === 'ADD_NEW' ? setShowQuickAccount(true) : setCategory(e.target.value)}
+                                        className="form-select" 
+                                        style={inputStyle} 
+                                        required
+                                    >
+                                        <option value="">{loadingCategories ? 'Loading...' : 'Select category'}</option>
+                                        {categories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                                        <option value="ADD_NEW" style={{ fontWeight: 'bold', color: '#0d9488' }}>+ Add New Category</option>
+                                    </select>
+                                </div>
+                                <div className="col-md-3">
+                                    <label style={labelStyle}>Subcategory</label>
+                                    <input type="text" value={subcategory} onChange={e => setSubcategory(e.target.value)}
+                                        placeholder="e.g., Electricity Bill" className="form-control" style={inputStyle} />
+                                </div>
+                                <div className="col-md-3">
+                                    <label style={labelStyle}>Amount (Rs.) <span className="text-danger">*</span></label>
+                                    <input type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)}
+                                        placeholder="0.00" className="form-control" style={inputStyle} required />
+                                </div>
                             </div>
-                            <div className="col-md-3">
-                                <label style={labelStyle}>Subcategory</label>
-                                <input type="text" value={subcategory} onChange={e => setSubcategory(e.target.value)}
-                                    placeholder="e.g., Electricity Bill" className="form-control" style={inputStyle} />
-                            </div>
-                            <div className="col-md-3">
-                                <label style={labelStyle}>Amount (Rs.) <span className="text-danger">*</span></label>
-                                <input type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)}
-                                    placeholder="0.00" className="form-control" style={inputStyle} required />
-                            </div>
-                        </div>
+                        )}
 
                         <div className="row g-3 mt-1">
                             <div className="col-md-4">
-                                <label style={labelStyle}>Paid To</label>
+                                <label style={labelStyle}>{paymentType === 'credit' ? 'Supplier Name' : 'Paid To'}</label>
                                 <input type="text" value={paidTo} onChange={e => setPaidTo(e.target.value)}
-                                    placeholder="Vendor / Payee name" className="form-control" style={inputStyle} />
+                                    placeholder="Vendor / Payee name" className="form-control" style={inputStyle} readOnly={paymentType === 'credit'} />
                             </div>
                             <div className="col-md-4">
-                                <label style={labelStyle}>Receipt No</label>
+                                <label style={labelStyle}>{paymentType === 'credit' ? 'Bill Number' : 'Receipt No'}</label>
                                 <input type="text" value={receiptNo} onChange={e => setReceiptNo(e.target.value)}
-                                    placeholder="Receipt or invoice number" className="form-control" style={inputStyle} />
+                                    placeholder="Receipt or invoice number" className="form-control" style={inputStyle} readOnly={paymentType === 'credit'} />
                             </div>
                             <div className="col-md-4">
                                 <label style={labelStyle}>Description</label>
                                 <input type="text" value={description} onChange={e => setDescription(e.target.value)}
-                                    placeholder="Brief description of the expense" className="form-control" style={inputStyle} />
+                                    placeholder="Brief description of the payment" className="form-control" style={inputStyle} />
                             </div>
                         </div>
                     </div>
@@ -331,17 +499,17 @@ const MakePaymentPage = () => {
                                             placeholder="e.g., BOC, HNB" className="form-control" style={inputStyle} />
                                     </div>
                                     <div className="col-md-3">
-                                        <label style={labelStyle}>Deposit Slip No</label>
+                                        <label style={labelStyle}>Transfer Reference</label>
                                         <input type="text" value={depositSlipNo} onChange={e => setDepositSlipNo(e.target.value)}
-                                            placeholder="Slip number" className="form-control" style={inputStyle} />
+                                            placeholder="Ref number" className="form-control" style={inputStyle} />
                                     </div>
                                     <div className="col-md-3">
-                                        <label style={labelStyle}>Deposited By</label>
+                                        <label style={labelStyle}>Transfer By</label>
                                         <input type="text" value={depositedBy} onChange={e => setDepositedBy(e.target.value)}
                                             placeholder="Name" className="form-control" style={inputStyle} />
                                     </div>
                                     <div className="col-md-3">
-                                        <label style={labelStyle}>Deposit Date</label>
+                                        <label style={labelStyle}>Transfer Date</label>
                                         <input type="date" value={depositDate} onChange={e => setDepositDate(e.target.value)}
                                             className="form-control" style={inputStyle} />
                                     </div>
@@ -376,29 +544,23 @@ const MakePaymentPage = () => {
 
                     {/* Row 3: Expense Summary + Submit */}
                     <div className="bg-white overflow-hidden" style={cardStyle}>
-                        {/* Summary Header */}
                         <div className="px-4 py-3" style={{ background: 'linear-gradient(135deg, #004445, #0d5c4f)' }}>
-                            <h6 className="text-white fw-bold mb-0" style={{ letterSpacing: '0.5px' }}>EXPENSE SUMMARY</h6>
+                            <h6 className="text-white fw-bold mb-0" style={{ letterSpacing: '0.5px' }}>PAYMENT SUMMARY</h6>
                             <small style={{ color: '#99f6e4', fontSize: '11px' }}>Review before submitting</small>
                         </div>
 
                         <div className="row g-0 p-4">
-                            {/* Details */}
                             <div className="col-md-4 pe-4">
                                 <p style={sectionTitleStyle}>Details</p>
                                 <div className="d-flex flex-column gap-2 mt-2">
                                     {[
+                                        ['Type', paymentType === 'general' ? 'General Expense' : 'Credit Payable'],
                                         ['Date', expenseDate || '—'],
-                                        ['Category', categories.find(c => c.value === category)?.label || '—'],
-                                        ['Subcategory', subcategory || '—'],
+                                        ['Category', category || '—'],
                                         ['Paid To', paidTo || '—'],
-                                        ['Payment', PAYMENT_METHODS.find(m => m.id === paymentMethod)?.label || '—'],
-                                        ['Receipt #', receiptNo || '—'],
-                                        paymentMethod === 'Bank' ? ['Bank', bankName || '—'] : null,
-                                        paymentMethod === 'Bank' ? ['Slip #', depositSlipNo || '—'] : null,
-                                        paymentMethod === 'Cheque' ? ['Cheque #', chequeNo || '—'] : null,
-                                        paymentMethod === 'Cheque' ? ['Cheque Date', chequeDate || '—'] : null,
-                                    ].filter(Boolean).map(([k, v]) => (
+                                        ['Method', PAYMENT_METHODS.find(m => m.id === paymentMethod)?.label || '—'],
+                                        ['Ref #', receiptNo || '—'],
+                                    ].map(([k, v]) => (
                                         <div key={k} className="d-flex justify-content-between">
                                             <span style={{ fontSize: '13px', color: '#64748b' }}>{k}</span>
                                             <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{v}</span>
@@ -407,7 +569,6 @@ const MakePaymentPage = () => {
                                 </div>
                             </div>
 
-                            {/* Description */}
                             <div className="col-md-4 px-4 border-start">
                                 <p style={sectionTitleStyle}>Description</p>
                                 <p className="mt-2" style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>
@@ -415,7 +576,6 @@ const MakePaymentPage = () => {
                                 </p>
                             </div>
 
-                            {/* Total + Submit */}
                             <div className="col-md-4 ps-4 border-start">
                                 <p style={sectionTitleStyle}>Total Amount</p>
                                 <div className="mt-2 p-4 text-center" style={{ backgroundColor: '#fff7ed', borderRadius: '16px' }}>
@@ -425,7 +585,7 @@ const MakePaymentPage = () => {
                                     </h2>
                                 </div>
                                 <button type="submit" disabled={submitting}
-                                    className="btn w-100 mt-3 fw-bold"
+                                    className="btn w-100 mt-3 fw-bold shadow-sm"
                                     style={{
                                         height: '48px',
                                         borderRadius: '14px',
@@ -433,67 +593,46 @@ const MakePaymentPage = () => {
                                         color: '#fff',
                                         fontSize: '14px',
                                         border: 'none',
-                                        letterSpacing: '0.3px',
-                                        boxShadow: '0 4px 12px rgba(249,115,22,0.3)',
-                                        cursor: submitting ? 'not-allowed' : 'pointer',
                                         opacity: submitting ? 0.7 : 1,
-                                        transition: 'all 0.2s'
                                     }}>
-                                    {submitting ? '⏳ Submitting...' : '💸 SUBMIT EXPENSE'}
+                                    {submitting ? '⏳ Submitting...' : '💸 CONFIRM PAYMENT'}
                                 </button>
-                                <p className="text-center text-muted mt-2" style={{ fontSize: '11px' }}>
-                                    Creates journal entry automatically
-                                </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Row 4: Recent Expenses Table */}
+                    {/* Row 4: Recent Transactions */}
                     <div className="bg-white overflow-hidden" style={cardStyle}>
                         <div className="px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
-                            <div>
-                                <p style={sectionTitleStyle} className="mb-0">Recent Expenses</p>
-                            </div>
+                            <p style={sectionTitleStyle} className="mb-0">Recent Transactions</p>
                             <small className="text-muted">{recentExpenses.length} records</small>
                         </div>
 
                         {loadingExpenses ? (
-                            <div className="text-center py-5">
-                                <div className="spinner-border spinner-border-sm text-muted" role="status"></div>
-                                <p className="text-muted mt-2" style={{ fontSize: '13px' }}>Loading expenses...</p>
-                            </div>
-                        ) : recentExpenses.length === 0 ? (
-                            <div className="text-center py-5">
-                                <Clock size={32} className="text-muted mb-2" />
-                                <p className="text-muted" style={{ fontSize: '13px' }}>No expenses recorded yet</p>
-                            </div>
+                            <div className="text-center py-5"><div className="spinner-border spinner-border-sm text-muted"></div></div>
                         ) : (
                             <div className="table-responsive">
                                 <table className="table table-hover mb-0" style={{ fontSize: '13px' }}>
                                     <thead style={{ backgroundColor: '#f8fafc' }}>
                                         <tr>
-                                            <th className="fw-semibold text-muted border-0 px-4 py-3" style={{ fontSize: '11px' }}>ID</th>
-                                            <th className="fw-semibold text-muted border-0 py-3" style={{ fontSize: '11px' }}>DATE</th>
-                                            <th className="fw-semibold text-muted border-0 py-3" style={{ fontSize: '11px' }}>CATEGORY</th>
-                                            <th className="fw-semibold text-muted border-0 py-3" style={{ fontSize: '11px' }}>PAID TO</th>
-                                            <th className="fw-semibold text-muted border-0 py-3" style={{ fontSize: '11px' }}>PAYMENT</th>
-                                            <th className="fw-semibold text-muted border-0 py-3 text-end" style={{ fontSize: '11px' }}>AMOUNT</th>
-                                            <th className="fw-semibold text-muted border-0 py-3 text-center" style={{ fontSize: '11px' }}>STATUS</th>
+                                            <th className="fw-semibold text-muted border-0 px-4 py-3 small">ID</th>
+                                            <th className="fw-semibold text-muted border-0 py-3 small">DATE</th>
+                                            <th className="fw-semibold text-muted border-0 py-3 small">CATEGORY</th>
+                                            <th className="fw-semibold text-muted border-0 py-3 small">PAID TO</th>
+                                            <th className="fw-semibold text-muted border-0 py-3 small">PAYMENT</th>
+                                            <th className="fw-semibold text-muted border-0 py-3 text-end small">AMOUNT</th>
+                                            <th className="fw-semibold text-muted border-0 py-3 text-center small">STATUS</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {recentExpenses.map((exp) => (
                                             <tr key={exp.Expense_ID}>
-                                                <td className="px-4 py-3 text-muted">#{exp.Expense_ID}</td>
+                                                <td className="px-4 py-3 text-muted small">#{exp.Expense_ID}</td>
                                                 <td className="py-3">{exp.Expense_Date}</td>
-                                                <td className="py-3">
-                                                    <span className="badge bg-light text-dark border" style={{ fontWeight: 500, fontSize: '11px' }}>
-                                                        {exp.Expense_Category?.replace('_', ' ')}
-                                                    </span>
-                                                </td>
+                                                <td className="py-3 small fw-bold text-dark">{exp.Expense_Category}</td>
                                                 <td className="py-3">{exp.Paid_To || '—'}</td>
-                                                <td className="py-3">{exp.Payment_Method?.replace('_', ' ')}</td>
-                                                <td className="py-3 text-end fw-semibold">Rs. {fmt(parseFloat(exp.Amount) || 0)}</td>
+                                                <td className="py-3">{exp.Payment_Method}</td>
+                                                <td className="py-3 text-end fw-bold">Rs. {fmt(parseFloat(exp.Amount) || 0)}</td>
                                                 <td className="py-3 text-center">
                                                     <span className={`badge ${statusBadge(exp.Status)}`} style={{ fontSize: '10px', padding: '4px 10px', borderRadius: '20px' }}>
                                                         {exp.Status}
@@ -506,7 +645,6 @@ const MakePaymentPage = () => {
                             </div>
                         )}
                     </div>
-
                 </div>
             </form>
 
@@ -518,12 +656,8 @@ const MakePaymentPage = () => {
                 initialType="Expense"
                 onAccountCreated={(acc) => {
                     setAlert({ type: 'success', msg: `✅ Category '${acc.Account_Name}' added and selected!` });
-                    // Refresh categories list
                     const newCat = { value: acc.Account_Name, label: acc.Account_Name };
-                    setCategories(prev => {
-                        if (prev.find(p => p.value === newCat.value)) return prev;
-                        return [...prev, newCat];
-                    });
+                    setCategories(prev => [...prev, newCat]);
                     setCategory(acc.Account_Name);
                 }}
             />
