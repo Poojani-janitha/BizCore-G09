@@ -15,7 +15,7 @@ Income.init(
             allowNull: false
         },
         Income_Category: {
-            type: Sequelize.ENUM('Sales', 'Interest', 'Commission', 'Other'),
+            type: Sequelize.STRING(100),
             allowNull: false
         },
         Amount: {

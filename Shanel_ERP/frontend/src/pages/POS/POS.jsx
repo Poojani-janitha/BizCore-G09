@@ -92,20 +92,19 @@ const POS = () => {
     }
   };
 
-  //send sales data to backend when action is triggered from ActionButtons component, also validate data before sending
+  // FIX 3: Added all used variables to the useCallback dependency array
   const sendData = useCallback(async () => {
     if (!action) {
       console.warn("No action selected. Data will not be sent.");
       return;
     } else if (action === 'proceedToPayment') {
-      // Validate customer selection
+
       if (!customerData || !customerData.c_id) {
         setError({ field: 'customer', message: 'Please select a customer before proceeding to payment.' });
         setAction({});
         return;
       }
 
-      // Validate items exist
       if (!cartItems || cartItems.length === 0) {
         setError({ field: 'cart', message: 'Please add items to the cart before proceeding to payment.' });
         setAction({});
@@ -119,7 +118,7 @@ const POS = () => {
       }
       try {
         const response = await axios.post(`http://localhost:5000/api/sales/`, {
-          cutomer: customerData,
+          customer: customerData,
           items: cartItems,
           invoiceDetails: { ...invoiceData, invoiceNo: invoiceNo },
           paymentDetails: paymentData,
@@ -167,7 +166,6 @@ const POS = () => {
     }
   }, [action, handlePrint]);
 
-  // Trigger sendData when action changes to proceedToPayment
   useEffect(() => {
     if (action === 'proceedToPayment') {
       sendData();
@@ -183,7 +181,6 @@ const POS = () => {
   }, [action, sendData]);
 
 
-  // Re-fetch invoice number when component mounts to ensure we have the latest one
   useEffect(() => {
     const fetchInvoiceNo = async () => {
       try {
@@ -205,18 +202,15 @@ const POS = () => {
     fetchInvoiceNo();
   }, []);
 
-  //store hold invoice in local storage and retrieve when component mounts
+
   useEffect(() => {
     if (action === 'holdInvoice') {
-      // Validate that required data exists
       if (!customerData || !invoiceData || cartItems.length === 0) {
         setError({ field: 'holdInvoice', message: 'Cannot hold invoice: Missing customer, items, or invoice data' });
         setAction({});
         return;
       }
 
-
-      // Create hold invoice object
       const holdData = {
         customerData,
         cartItems,
@@ -227,7 +221,6 @@ const POS = () => {
         location: location
       };
 
-      // Store in local storage
       localStorage.setItem('holdInvoice', JSON.stringify(holdData));
       setHoldInvoice(holdData);
 
@@ -242,7 +235,7 @@ const POS = () => {
     }
   }, [action, customerData, cartItems, invoiceData, paymentData, invoiceNo]);
 
-  // Load hold invoice from localStorage on component mount
+
   useEffect(() => {
     const storedHoldInvoice = localStorage.getItem('holdInvoice');
     if (storedHoldInvoice) {
@@ -254,7 +247,7 @@ const POS = () => {
     }
   }, []);
 
-  // Function to load held invoice back into the form
+
   const loadHeldInvoice = () => {
     if (holdInvoice) {
       setCustomerData(holdInvoice.customerData);
@@ -267,7 +260,6 @@ const POS = () => {
     }
   };
 
-  // Function to clear held invoice
   const clearHeldInvoice = () => {
     setHoldInvoice(null);
     localStorage.removeItem('holdInvoice');
@@ -275,12 +267,10 @@ const POS = () => {
 
 
   return (
-
     <div className='pos-wrapper w-100' style={{ overflowX: 'hidden' }}>
-      {/* Floating Recent Sales Button */}
+
       <RecentSale />
 
-      {/* Hold Invoice Banner */}
       {holdInvoice && (
         <div style={{
           marginBottom: '16px',
@@ -349,7 +339,6 @@ const POS = () => {
 
       </div>
 
-      {/* Section 2: Item Table */}
       <div className='card border-0 shadow-sm p-3 mb-3'>
         <ItemTable cartItems={cartItems} setCartItems={setCartItems} priceLevel={priceLevel} setPriceLevel={setPriceLevel} location={location} setSelectedProduct={setSelectedProduct} error={error} setError={setError} />
         
