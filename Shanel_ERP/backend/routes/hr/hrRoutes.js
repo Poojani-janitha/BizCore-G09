@@ -31,7 +31,8 @@ const {
     bulkAttendance,
     updateAttendance,
     getAttendanceSummaries,
-    upsertAttendanceSummary
+    upsertAttendanceSummary,
+    deleteAttendance
 } = require('../../controllers/hr/attendanceController');
 
 const {
@@ -83,6 +84,7 @@ router.get('/attendance', getAttendance);
 router.post('/attendance', upsertAttendance);
 router.post('/attendance/bulk', bulkAttendance);
 router.put('/attendance/:attendanceId', updateAttendance);
+router.delete('/attendance/:attendanceId', deleteAttendance);
 
 // --- Salary structure ---
 router.get('/salary-structure', getSalaryStructures);
