@@ -88,7 +88,8 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
         const activeMethods = [];
         if (toNumber(payments.cashTendered) > 0) activeMethods.push('Cash');
         if (toNumber(payments.cheque) > 0) activeMethods.push('Cheque');
-        if (toNumber(payments.bankTrf) > 0) activeMethods.push('Bank Transfer');
+        if (toNumber(payments.bankTrf) > 0) activeMethods.push('Bank_Transfer');
+        if (paymentStatus.credit > 0) activeMethods.push('Credit');
 
         let methodString = activeMethods.length > 1 ? 'Mixed' : (activeMethods.length === 1 ? activeMethods[0] : 'Pending');
         const totalPaymentAmount = appliedValue + toNumber(payments.cheque) + toNumber(payments.bankTrf);

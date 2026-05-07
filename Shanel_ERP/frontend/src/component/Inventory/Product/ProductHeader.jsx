@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
-import { Plus, Download, ChevronDown } from 'react-feather';
+import { Plus, Download, ChevronDown, PlusCircle, Truck } from 'react-feather';
 import { generatePDF } from '../../../services/reportGenerator';
 
-const ProductHeader = ({ title, onAddClick, products = [] }) => {
+const ProductHeader = ({
+    title,
+    onAddClick,
+    onUpdateQtyClick,
+    showUpdateQty = false,
+    onProductionStockClick,
+    showProductionStock = false,
+    products = []
+}) => {
     const [showExportMenu, setShowExportMenu] = useState(false);
 
     // Prepare data for export
@@ -178,6 +186,22 @@ const ProductHeader = ({ title, onAddClick, products = [] }) => {
                     onClick={onAddClick}>
                     <Plus size={14}/> Add New Product
                 </button>
+                {showUpdateQty && (
+                    <button
+                        className='btn btn-success btn-sm d-flex align-items-center gap-2 px-3 shadow-sm'
+                        onClick={onUpdateQtyClick}
+                    >
+                        <PlusCircle size={14}/> Update Qty
+                    </button>
+                )}
+                {showProductionStock && (
+                    <button
+                        className='btn btn-outline-dark btn-sm d-flex align-items-center gap-2 px-3 shadow-sm'
+                        onClick={onProductionStockClick}
+                    >
+                        <Truck size={14}/> Add Production Stock
+                    </button>
+                )}
             </div>
         </div>
     );

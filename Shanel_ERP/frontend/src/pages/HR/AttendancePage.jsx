@@ -379,58 +379,95 @@
 // export default Attendance;
 
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import HrStatsCard from '../../component/HR/Dashboard/HrStatsCard';
-import { generateEmployees, EMP_KEY } from '../../storeContext/employeesData';
-import { getAttendanceForDate, setAttendanceForDate, setLastSavedAttendanceDate } from '../../storeContext/attendanceData';
+
+const API_BASE = 'http://localhost:5000/api/hr';
 
 const Attendance = () => {
   const today = new Date().toISOString().split('T')[0];
   const [employees, setEmployees] = useState([]);
   const [date, setDate] = useState(today);
   const [attendance, setAttendance] = useState({});
-  const loadEmployees = () => {
-    const stored = localStorage.getItem(EMP_KEY);
-    let list = [];
-    if (stored) {
-      try { list = JSON.parse(stored); } catch { list = generateEmployees(); }
-    } else {
-      list = generateEmployees();
-      localStorage.setItem(EMP_KEY, JSON.stringify(list));
-    }
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-    setEmployees(list);
-    const storedAttendance = getAttendanceForDate(date);
-    setAttendance(prev => Object.fromEntries(
-      list.map(emp => [
-        emp.id,
-        storedAttendance?.[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 },
-      ])
-    ));
+  const mapEmployee = (emp) => ({
+    id: String(emp.Employee_ID),
+    name: emp.Full_Name || '',
+    role: emp.Role || '',
+  });
+
+  const mapStatusToUi = (status) => {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized === 'present') return 'present';
+    if (normalized === 'leave') return 'leave';
+    return 'absent';
+  };
+
+  const mapStatusToApi = (status) => {
+    if (status === 'present') return 'Present';
+    if (status === 'leave') return 'Leave';
+    return 'Absent';
+  };
+
+  const initializeAttendance = (employeeList, attendanceRows = []) => {
+    const byEmployeeId = {};
+    attendanceRows.forEach((row) => {
+      const empId = String(row.Employee_ID);
+      byEmployeeId[empId] = {
+        status: mapStatusToUi(row.Status),
+        timeIn: row.Check_In_Time || '',
+        timeOut: row.Check_Out_Time || '',
+        otHours: Number(row.Overtime_Hours || 0),
+      };
+    });
+
+    setAttendance(
+      Object.fromEntries(
+        employeeList.map((emp) => [
+          emp.id,
+          byEmployeeId[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 },
+        ])
+      )
+    );
+  };
+
+  const loadEmployeesAndAttendance = async (selectedDate) => {
+    try {
+      setLoading(true);
+      setError('');
+      const [employeesRes, attendanceRes] = await Promise.all([
+        axios.get(`${API_BASE}/employees`),
+        axios.get(`${API_BASE}/attendance`, { params: { from: selectedDate, to: selectedDate } }),
+      ]);
+
+      const employeeList = Array.isArray(employeesRes?.data?.data)
+        ? employeesRes.data.data.map(mapEmployee)
+        : [];
+      setEmployees(employeeList);
+
+      const attendanceRows = Array.isArray(attendanceRes?.data?.data)
+        ? attendanceRes.data.data
+        : [];
+      initializeAttendance(employeeList, attendanceRows);
+    } catch (err) {
+      console.error('loadEmployeesAndAttendance error:', err);
+      setError('Failed to load attendance data from server.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    loadEmployees();
-
-    const syncEmployees = () => loadEmployees();
-    window.addEventListener('employees-updated', syncEmployees);
-    window.addEventListener('storage', syncEmployees);
-    return () => {
-      window.removeEventListener('employees-updated', syncEmployees);
-      window.removeEventListener('storage', syncEmployees);
-    };
+    loadEmployeesAndAttendance(today);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    // When the date changes, load saved attendance for that day (keeping employee list in sync)
-    if (!employees.length) return;
-    const storedAttendance = getAttendanceForDate(date);
-    setAttendance(prev => Object.fromEntries(
-      employees.map(emp => [
-        emp.id,
-        storedAttendance?.[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 },
-      ])
-    ));
-  }, [date]); // eslint-disable-line react-hooks/exhaustive-deps
+    loadEmployeesAndAttendance(date);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date]);
 
   const [submitted, setSubmitted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -511,19 +548,15 @@ const Attendance = () => {
       const current = prev[id] || {};
       if (field !== 'status') {
         const updatedRecord = applyAttendanceRules({ ...current, [field]: value });
-        const next = {
+        return {
           ...prev,
           [id]: updatedRecord,
         };
-        setAttendanceForDate(date, next);
-        return next;
       }
 
       const nextStatus = value;
       const next = applyAttendanceRules({ ...current, status: nextStatus });
-      const updated = { ...prev, [id]: next };
-      setAttendanceForDate(date, updated);
-      return updated;
+      return { ...prev, [id]: next };
     });
   };
 
@@ -544,18 +577,46 @@ const Attendance = () => {
         };
         updated[emp.id] = applyAttendanceRules(updated[emp.id]);
       });
-      setAttendanceForDate(date, updated);
       return updated;
     });
   };
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
-    setAttendanceForDate(date, attendance);
-    setLastSavedAttendanceDate(date);
-    console.log('Attendance Data:', { date, attendance });
-    // TODO: send to backend via fetch/axios
+  const handleSubmit = async () => {
+    try {
+      const records = employees.map((emp) => {
+        const rec = attendance[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 };
+        const totalHours = getWorkHours(rec.timeIn, rec.timeOut);
+        return {
+          Employee_ID: Number(emp.id),
+          Attendance_Date: date,
+          Check_In_Time: rec.timeIn || null,
+          Check_Out_Time: rec.timeOut || null,
+          Total_Hours: totalHours > 0 ? Number(totalHours.toFixed(2)) : null,
+          Status: mapStatusToApi(rec.status),
+          Is_Late: false,
+          Late_Minutes: 0,
+          Is_Overtime: Number(rec.otHours || 0) > 0,
+          Overtime_Hours: Number(rec.otHours || 0),
+          Marked_By: 'Manual'
+        };
+      });
+
+      const response = await axios.post(`${API_BASE}/attendance/bulk`, { records });
+      const results = Array.isArray(response?.data?.results) ? response.data.results : [];
+      const failed = results.filter((r) => !r.ok);
+      if (failed.length > 0) {
+        const first = failed[0];
+        throw new Error(first.error || 'Some attendance rows failed to save');
+      }
+
+      // Reload from DB so UI always reflects exactly what is stored in ATTENDANCE table.
+      await loadEmployeesAndAttendance(date);
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 3000);
+    } catch (err) {
+      console.error('handleSubmit attendance error:', err);
+      alert(err?.response?.data?.message || err?.message || 'Failed to save attendance');
+    }
   };
 
   const summary = {
@@ -595,6 +656,7 @@ const Attendance = () => {
         <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
           Mark attendance for all employees · Work hours: 8:00 AM – 4:00 PM
         </p>
+        {error && <p style={{ margin: '8px 0 0 0', color: '#b91c1c', fontSize: '13px' }}>{error}</p>}
       </div>
 
       {/* Summary Cards */}
@@ -655,6 +717,7 @@ const Attendance = () => {
         background: '#fff', borderRadius: '12px', border: '1px solid #e8e8e8',
         boxShadow: '0 1px 4px rgba(0,0,0,0.05)', overflow: 'hidden', marginBottom: '20px',
       }}>
+        {loading && <div style={{ padding: '8px 20px', color: '#64748b' }}>Loading attendance...</div>}
         {/* ✅ FIX: Header and row grids now both use the same 8-column layout (removed duplicate Profile column) */}
         <div style={{
           display: 'grid',
