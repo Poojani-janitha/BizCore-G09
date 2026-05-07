@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { useState } from 'react'
 import axios from 'axios';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Package } from 'lucide-react';
 import CustomerForm from './CustomerForm';
 
 const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
@@ -132,6 +132,7 @@ const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
   return (
     <div className="container-fluid p-0">
       <div className='row g-3 align-items-end'> {/* align-items-end keeps all inputs level */}
+         
 
         {/* Customer Input Group */}
         <div className='col-12 col-md-auto'>
@@ -262,7 +263,7 @@ const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
 
       </div>
     </div>
-  )
+  );
 }
 
-export default CustomerInfo
+export default CustomerInfo;
