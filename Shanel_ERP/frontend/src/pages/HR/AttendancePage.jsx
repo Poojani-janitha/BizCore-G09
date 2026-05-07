@@ -742,9 +742,9 @@ const Attendance = () => {
           const rec = attendance[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 };
 
           const roleText = String(emp.role || '').toLowerCase();
-          const isProductionOrStaffRole = roleText.includes('production') || roleText.includes('staff');
+          const isExcludedFromTea = roleText.includes('cashier') || roleText.includes('manager');
           const workedHours = getWorkHours(rec.timeIn, rec.timeOut);
-          const teaCost = rec.status === 'present' && isProductionOrStaffRole && rec.timeIn && rec.timeOut && workedHours >= 4 ? 'Rs 60' : '—';
+          const teaCost = rec.status === 'present' && !isExcludedFromTea && rec.timeIn && rec.timeOut && workedHours >= 4 ? 'Rs 60' : '—';
 
           const rowBg = index % 2 === 0 ? '#fff' : '#fafbfc';
 
