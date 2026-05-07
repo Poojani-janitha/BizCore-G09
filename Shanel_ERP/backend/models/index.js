@@ -69,10 +69,10 @@ const FinanceAssociations = require('./finance/associations');
 const { AccountChart, BankAccount, BankTransaction, JournalEntry, JournalEntryLine, Expense, Income } = FinanceAssociations;
 
 
-module.exports = { 
-    Product, 
-    Production, 
-    Inventory, 
+module.exports = {
+    Product,
+    Production,
+    Inventory,
     StockTransfer,
     StockAdjustment,
     UnitConversion,

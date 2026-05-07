@@ -1,5 +1,5 @@
 const sequelize = require('../../config/db');
-const { Product, UnitConversion, Sale, Inventory, Customer, Payment, SaleItem } = require('../../models/index');
+const { Product, UnitConversion, Sale,Inventory, Customer,Payment,SaleItem, CreditTranscation } = require('../../models/index');
 const { Op, where } = require('sequelize');
 
 const searchProducts = async (req, res) => {
@@ -195,7 +195,7 @@ const getBaseUnitQty = async (req, res) => {
         if (conversion) {
             return res.json({
                 success: true,
-                conversionQty: parseFloat(conversion.Unit_Convwersion),
+                conversionQty: parseFloat(conversion.Unit_Conversion),
                 isBase: conversion.Is_Base_Unit
             });
         }
@@ -217,6 +217,8 @@ const generateInvoiceNo = async (req, res) => {
     try {
         let newInvoiceNo;
         const currentYear = new Date().getFullYear();
+        
+        // Find the most recent sale
         const lastSale = await Sale.findOne({
             order: [['Created_At', 'DESC']]
         });
@@ -225,16 +227,37 @@ const generateInvoiceNo = async (req, res) => {
 
         if (lastSale) {
             const lastInvoiceNo = lastSale.Invoice_No;
-            const match = lastInvoiceNo.match(/^INV-(\d{4})-(\d{6})$/);
-
-            if (match && parseInt(match[1], 10) === currentYear) {
-                nextSequence = parseInt(match[2], 10) + 30; // Increment by 30 for each new invoice
+            console.log("Last Invoice No found in DB:", lastInvoiceNo);
+            
+            // Try to match the standard format: INV-YYYY-XXXXXX
+            const standardMatch = lastInvoiceNo.match(/^INV-(\d{4})-(\d+)$/);
+            
+            if (standardMatch) {
+                const yearPart = parseInt(standardMatch[1], 10);
+                const sequencePart = parseInt(standardMatch[2], 10);
+                
+                if (yearPart === currentYear) {
+                    nextSequence = sequencePart + 1;
+                } else {
+                    // New year, reset sequence
+                    nextSequence = 1;
+                }
+            } else {
+                // Fallback: If it doesn't match the standard format, try to extract any trailing number
+                const trailingNumberMatch = lastInvoiceNo.match(/(\d+)$/);
+                if (trailingNumberMatch) {
+                    nextSequence = parseInt(trailingNumberMatch[1], 10) + 1;
+                } else {
+                    // No numbers found at all, just start at 1
+                    nextSequence = 1;
+                }
             }
         }
 
+        // Format: INV-YYYY-000001 (standardizing to 6 digits for the sequence part)
         newInvoiceNo = `INV-${currentYear}-${String(nextSequence).padStart(6, '0')}`;
-
-        console.log("Generated Invoice No:", newInvoiceNo);
+        
+        console.log("Generated New Invoice No:", newInvoiceNo);
 
         return res.status(200).json({
             invoiceNo: newInvoiceNo,
@@ -242,88 +265,83 @@ const generateInvoiceNo = async (req, res) => {
             message: "Invoice number generated successfully"
         });
     } catch (error) {
+        console.error("Error in generateInvoiceNo:", error);
         return res.status(500).json({
             success: false,
             message: "Error generating invoice number",
             error: error.message
         });
     }
-
-
 }
+
 
 //post sales data from POS to backend
 const postSalesData = async (req, res) => {
+    const t = await sequelize.transaction();
     try {
-        const { cutomer, items, invoiceDetails, paymentDetails, action, saleType, priceLevel } = req.body;
+        const { customer: customerReq, items, invoiceDetails, paymentDetails, action, saleType, priceLevel, location } = req.body;
+
 
         const resolvedSaleType = saleType || invoiceDetails?.saleType || 'Retail';
         const resolvedPriceLevel = priceLevel || invoiceDetails?.priceLevel || 'Retail';
 
-        console.log("Received Sales Data:", {
-            cutomer,
-            items,
-            invoiceDetails,
-            paymentDetails,
-            action,
-            saleType: resolvedSaleType,
-            priceLevel: resolvedPriceLevel
+        console.log("Processing POS Sale:", {
+            invoiceNo: invoiceDetails?.invoiceNo,
+            customerID: customerReq?.c_id,
+            total: invoiceDetails?.finalTotal,
+            paid: paymentDetails?.Payment_Amount
         });
 
-        // Validate customer data
-        if (!cutomer || !cutomer.c_id) {
-            return res.status(400).json({
-                success: false,
-                message: "Customer data is required with valid customer ID"
-            });
+        // Basic Validation
+        if (!customerReq || !customerReq.c_id) {
+            await t.rollback();
+            return res.status(400).json({ success: false, message: "Customer data is required" });
+        }
+        if (!items || !items.length) {
+            await t.rollback();
+            return res.status(400).json({ success: false, message: "Cart cannot be empty" });
         }
 
-        // Validate items
-        if (!items || !Array.isArray(items) || items.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: "At least one item is required in the sale"
-            });
-        }
-
-        // Validate invoice details
-        if (!invoiceDetails || !invoiceDetails.invoiceNo) {
-            return res.status(400).json({
-                success: false,
-                message: "Invoice details with valid invoice number are required"
-            });
-        }
-
-
-
-        // Get current date/time as fallback if not provided
         const now = new Date();
         const saleDate = invoiceDetails?.invoiceDate || now.toISOString().split('T')[0];
         const saleTime = invoiceDetails?.invoiceTime || now.toTimeString().split(' ')[0];
-        const paymentAmount = Number(paymentDetails?.Payment_Amount ?? invoiceDetails?.finalTotal ?? 0);
+        
+        const invoiceTotal = parseFloat(invoiceDetails?.finalTotal || 0);
+        const paymentAmount = parseFloat(paymentDetails?.Payment_Amount || 0);
+        
+        // Calculate Payment Status and Balance Due for the Sale record
+        let salePaymentStatus = 'Paid';
+        let saleBalanceDue = 0;
+        if (paymentAmount < invoiceTotal) {
+            salePaymentStatus = paymentAmount > 0 ? 'Partially_Paid' : 'Unpaid';
+            saleBalanceDue = invoiceTotal - paymentAmount;
+        }
 
-        // Create sale with the invoice number passed from frontend
+        // 1. Create Sale Record
         const sale = await Sale.create({
             Invoice_No: invoiceDetails.invoiceNo,
-            C_ID: cutomer.c_id,
+            C_ID: customerReq.c_id,
             Sale_Date: saleDate,
             Sale_Time: saleTime,
-            Location: invoiceDetails?.location || 'Shop',
+            Location: location || invoiceDetails?.location || 'Shop',
             Sale_Type: resolvedSaleType,
+
             Price_Level: resolvedPriceLevel,
-            Subtotal: invoiceDetails.subTotal,
+            Subtotal: parseFloat(invoiceDetails.subTotal || 0),
             Discount_Percentage: 0,
-            Discount_Amount: invoiceDetails.discountAmount,
+            Discount_Amount: parseFloat(invoiceDetails.discountAmount || 0),
             Tax_Rate: 0,
-            Tax_Amount: invoiceDetails.taxTotal,
-            Total_Amount: invoiceDetails.finalTotal,
-            Payment_Status: 'Paid',
-            Paid_Amount: paymentAmount,
+            Tax_Amount: parseFloat(invoiceDetails.taxTotal || 0),
+            Total_Amount: invoiceTotal,
+            Payment_Status: salePaymentStatus,
+            Paid_Amount: Math.min(paymentAmount, invoiceTotal), // Capped at invoice total for the sale record
+            Balance_Due: saleBalanceDue,
             Bill_Printed: false,
             Status: 'Active'
-        });
-        const createPayment = await Payment.create({
+        }, { transaction: t });
 
+        // 2. Create Payment Record (detailed breakdown)
+        const payment = await Payment.create({
             Sale_ID: sale.Sale_Id,
             Payment_Date: saleDate,
             Payment_Time: saleTime,
@@ -331,154 +349,163 @@ const postSalesData = async (req, res) => {
             Status: 'Active',
             Payment_Method: paymentDetails?.Payment_Method || 'Cash',
             Payment_Amount: paymentAmount,
-            Invoice_Total: invoiceDetails.finalTotal,
-            Cash_Tendered: paymentDetails?.Cash_Tendered || 0,
-            Cash_Amount: paymentDetails?.Applied_Value || 0,
-            Cash_Change: paymentDetails?.Change || 0,
-            Cheque_Amount: paymentDetails?.Cheque_Amount || 0,
-            Bank_Transfer_Amount: paymentDetails?.Bank_Transfer_Amount || 0,
-            Credit_Amount: paymentDetails?.Credit_Amount || 0,
+            Invoice_Total: invoiceTotal,
+            Cash_Tendered: parseFloat(paymentDetails?.Cash_Tendered || 0),
+            Cash_Amount: parseFloat(paymentDetails?.Applied_Value || 0),
+            Cash_Change: parseFloat(paymentDetails?.Change || 0),
+            Cheque_Amount: parseFloat(paymentDetails?.Cheque_Amount || 0),
+            Bank_Transfer_Amount: parseFloat(paymentDetails?.Bank_Transfer_Amount || 0),
+            Credit_Amount: parseFloat(paymentDetails?.Credit_Amount || 0),
             Keep_Balance: paymentDetails?.Keep_Balance || false,
             Cheque_Ref: paymentDetails?.Cheque_Ref || '',
             Bank_Ref: paymentDetails?.Bank_Ref || '',
+            Cheque_No: paymentDetails?.Cheque_No || '',
+            Cheque_Date: paymentDetails?.Cheque_Date || null,
+            Cheque_Bank: paymentDetails?.Cheque_Bank || '',
+            Cheque_Branch: paymentDetails?.Cheque_Branch || '',
             Cheque_Delivered_By: paymentDetails?.Cheque_Delivered_By || ''
-        }).catch(paymentError => {
-            console.error("Payment Creation Error Details:", paymentError.errors || paymentError.message);
-            throw new Error(`Failed to create payment: ${paymentError.message}`);
-        });
+        }, { transaction: t });
 
+        // 3. Update Customer Balance and Credit Transactions
+        const customer = await Customer.findByPk(customerReq.c_id, { transaction: t });
+        if (!customer) throw new Error("Customer profile not found");
 
-        if(paymentDetails.Credit_Amount > 0){
-            const customer = await Customer.findByPk(cutomer.c_id);
-            if(customer){
-                const newBalance = parseFloat(customer.Current_Balance) + parseFloat(paymentDetails.Credit_Amount);
-                await customer.update({ Current_Balance: newBalance });
-            }
-            const creditTransaction = await CreditTransaction.create({
-                C_ID: cutomer.c_id,
+        let currentCustomerBalance = parseFloat(customer.Current_Balance || 0);
+
+        // Scenario A: Credit Taken (Amount not paid now)
+        if (parseFloat(paymentDetails.Credit_Amount) > 0) {
+            const creditTaken = parseFloat(paymentDetails.Credit_Amount);
+            currentCustomerBalance += creditTaken;
+            
+            await CreditTranscation.create({
+                Customer_ID: customerReq.c_id,
                 Sale_ID: sale.Sale_Id,
                 Transaction_Date: saleDate,
-                Transaction_Time: saleTime,
-                Amount: paymentDetails.Credit_Amount,
-                Type: 'Credit',
-                Ref_No: `CR-${sale.Sale_Id}`,
-                Status: 'Active'
-            });
+                Transaction_Type: 'Credit_Taken',
+                Amount: creditTaken,
+                Running_Balance: currentCustomerBalance,
+                Reference_No: `CR-${sale.Sale_Id}`,
+                Notes: `Credit taken for invoice ${sale.Invoice_No}`
+            }, { transaction: t });
         }
 
+        // Scenario B: Overpayment applied to customer account (Keep Balance)
+        if (paymentDetails.Keep_Balance && paymentAmount > invoiceTotal) {
+            const overpayment = paymentAmount - invoiceTotal;
+            currentCustomerBalance -= overpayment; // Allow negative balance (this is customer credit)
+            
+            await CreditTranscation.create({
+                Customer_ID: customerReq.c_id,
+                Sale_ID: sale.Sale_Id,
+                Pay_ID: payment.Pay_ID,
+                Transaction_Date: saleDate,
+                Transaction_Type: 'Credit_Paid',
+                Amount: overpayment,
+                Running_Balance: currentCustomerBalance,
+                Reference_No: `OVERPAY-${sale.Sale_Id}`,
+                Notes: `Overpayment from invoice ${sale.Invoice_No} kept as customer balance`
+            }, { transaction: t });
+        }
 
-        
+        // Update the final customer balance
+        await customer.update({ Current_Balance: currentCustomerBalance }, { transaction: t });
 
-
-
-        // Process each sale item and create SaleItem records
+        // 4. Process Sale Items and Inventory
         const saleItemsData = await Promise.all(items.map(async (item) => {
-            const qty = Number(item.quntity ?? item.quantity ?? 0);
-            const unitPrice = Number(item.unit_price ?? 0);
-            const discountPct = Number(item.discount ?? 0);
-            const lineTaxRate = Number(item.tax ?? item.tax_rate ?? 0);
-            const lineSubtotal = Number(item.subTotal ?? 0);
-            const lineTaxAmount = Number(item.taxAmount ?? item.tax_amount ?? 0);
-            const lineTotal = Number(item.total ?? item.total_amount ?? (lineSubtotal + lineTaxAmount));
-
+            const qty = parseFloat(item.quntity ?? item.quantity ?? 0);
+            
+            // Find correct unit for conversion
             let unit = await UnitConversion.findOne({
-                where: {
-                    P_ID: item.p_id,
-                    Unit_Name: item.p_unit || item.unit || null,
-                },
-                attributes: ['U_ID', 'Unit_Conversion'],
-                raw: true,
+                where: { P_ID: item.p_id, Unit_Name: item.p_unit || item.unit || null },
+                transaction: t
             });
-
             if (!unit) {
                 unit = await UnitConversion.findOne({
-                    where: {
-                        P_ID: item.p_id,
-                        Is_Base_Unit: true,
-                    },
-                    attributes: ['U_ID', 'Unit_Conversion'],
-                    raw: true,
+                    where: { P_ID: item.p_id, Is_Base_Unit: true },
+                    transaction: t
                 });
             }
 
-            const unitConversion = Number(unit?.Unit_Conversion ?? item.conversionFactor ?? 1);
+            const unitConversion = parseFloat(unit?.Unit_Conversion ?? item.conversionFactor ?? 1);
+            const baseUnitQty = qty * unitConversion;
 
-            return {
+            // Prepare SaleItem record
+            const saleItem = {
                 Sale_ID: sale.Sale_Id,
                 P_ID: item.p_id,
                 U_ID: unit?.U_ID ?? 1,
                 Quantity: qty,
-                Base_Unit_Qty: qty * unitConversion,// Convert to base unit quantity
-                Unit_Price: unitPrice,
+                Base_Unit_Qty: baseUnitQty,
+                Unit_Price: parseFloat(item.unit_price || 0),
                 Price_Level_Used: resolvedPriceLevel,
-                Line_Discount_Percentage: discountPct,
-                Line_Discount_Amount: Number(item.discountAmount ?? 0),
-                Line_Subtotal: lineSubtotal,
-                Line_Tax_Rate: lineTaxRate,
-                Line_Tax_Amount: lineTaxAmount,
-                Line_Total: lineTotal,
-                Location_Taken_From: invoiceDetails?.location || 'Shop',
+                Line_Discount_Percentage: parseFloat(item.discount || 0),
+                Line_Discount_Amount: parseFloat(item.discountAmount || 0),
+                Line_Subtotal: parseFloat(item.subTotal || 0),
+                Line_Tax_Rate: parseFloat(item.tax || 0),
+                Line_Tax_Amount: parseFloat(item.taxAmount || 0),
+                Line_Total: parseFloat(item.total || 0),
+                Location_Taken_From: location || invoiceDetails?.location || 'Shop',
                 Status: 'Active',
             };
-        }));
 
-        console.log("Creating SaleItems with data:", JSON.stringify(saleItemsData, null, 2));
-        await SaleItem.bulkCreate(saleItemsData).catch(saleItemError => {
-            console.error("SaleItem Creation Error Details:", saleItemError.errors || saleItemError.message);
-            throw new Error(`Failed to create sale items: ${saleItemError.message}`);
-        });
 
-        // Update inventory for each item
-        const updateInventoryPromises = saleItemsData.map(async (item) => {
+            // Strict Inventory Update
             const inventoryRecord = await Inventory.findOne({
-                where: {
-                    P_ID: item.P_ID,
-                    Location: item.Location_Taken_From
-                }
+                where: { 
+                    P_ID: item.p_id, 
+                    Location: saleItem.Location_Taken_From 
+                },
+                transaction: t
             });
 
-            if (inventoryRecord) {
-                const newQty = parseFloat(inventoryRecord.Qty) - parseFloat(item.Base_Unit_Qty);
-                return inventoryRecord.update({ Qty: newQty });
-            } else {
-                return Inventory.create({
-                    P_ID: item.P_ID,
-                    Location: item.Location_Taken_From,
-                    Qty: -parseFloat(item.Base_Unit_Qty)
-                });
+            if (!inventoryRecord) {
+                throw new Error(`Item '${item.p_name || item.p_code}' not found in ${saleItem.Location_Taken_From} inventory.`);
             }
-        });
 
-        await Promise.all(updateInventoryPromises);
+            const currentQty = parseFloat(inventoryRecord.Qty || 0);
+            if (currentQty < baseUnitQty) {
+                throw new Error(`Insufficient stock for '${item.p_name || item.p_code}' in ${saleItem.Location_Taken_From}. Available: ${currentQty}, Requested: ${baseUnitQty}`);
+            }
+
+            await inventoryRecord.decrement('Qty', { 
+                by: baseUnitQty, 
+                transaction: t 
+            });
+
+
+
+            return saleItem;
+        }));
+
+        // Bulk create SaleItems
+        await SaleItem.bulkCreate(saleItemsData, { transaction: t });
+
+        // 5. Commit Transaction
+        await t.commit();
+
+        console.log(`Sale successfully processed: ${sale.Invoice_No}`);
 
         return res.status(200).json({
             success: true,
-            message: "Sales data processed successfully",
+            message: "Sale processed successfully",
             invoiceNo: sale.Invoice_No,
             saleId: sale.Sale_Id
         });
 
     } catch (error) {
-        console.error("Error in postSalesData:", error);
-        console.error("Error Stack:", error.stack);
-        console.error("Full Error Object:", JSON.stringify(error, null, 2));
-        
-        // Provide specific error information
-        let errorMessage = "Error processing sales data";
-        if (error.name === 'SequelizeValidationError') {
-            errorMessage = error.errors.map(e => e.message).join(', ');
-        } else if (error.message) {
-            errorMessage = error.message;
-        }
+        if (t) await t.rollback();
+        console.error("Critical Error in postSalesData:", error);
         
         res.status(500).json({
             success: false,
-            message: errorMessage,
-            error: error.message,
-            details: error.errors || null
+            message: error.message || "A critical error occurred while processing the sale.",
+            error: error.name
         });
     }
 }
+
+
+
 
 
 //  get the quntity of product in the inventory 
@@ -586,6 +613,50 @@ const getAllSales = async (req, res) => {
         })
     }
 
+}         
+
+const updateBillPrintStatus = async (req, res) => {
+    try {
+        const { invoiceNo } = req.params;
+        const { printed } = req.body;
+
+        if (!invoiceNo) {
+            return res.status(400).json({ success: false, message: "Invoice number is required" });
+        }
+
+        const sale = await Sale.findOne({ where: { Invoice_No: invoiceNo } });
+
+        if (!sale) {
+            return res.status(404).json({ success: false, message: "Sale not found" });
+        }
+
+        const updateData = {
+            Bill_Printed: !!printed,
+            Bill_Print_Count: (sale.Bill_Print_Count || 0) + 1,
+            Last_Print_Date: new Date()
+        };
+
+        if (!sale.First_Print_Date) {
+            updateData.First_Print_Date = new Date();
+        }
+
+        await sale.update(updateData);
+
+        return res.status(200).json({
+            success: true,
+            message: "Bill print status updated successfully",
+            printCount: updateData.Bill_Print_Count
+        });
+    } catch (error) {
+        console.error("Error in updateBillPrintStatus:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error updating bill print status",
+            error: error.message
+        });
+    }
 }
-module.exports = { searchProducts, allUnits, getBaseUnitQty, postSalesData, generateInvoiceNo, getProductQuntity, getAllSales };
+
+module.exports = { searchProducts, allUnits, getBaseUnitQty, postSalesData, generateInvoiceNo ,getProductQuntity,getAllSales, updateBillPrintStatus};
+
 

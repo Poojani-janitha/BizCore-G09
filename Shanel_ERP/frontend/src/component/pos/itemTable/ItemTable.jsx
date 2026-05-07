@@ -8,7 +8,7 @@ const EMPTY_ITEM = {
     p_id: '',
     p_code: '',
     p_name: '',
-    p_unit: 'Packet',
+    p_unit: '',
     base_unit_price: 0,
     unit_price: 0,
     discount: 0,
@@ -19,7 +19,7 @@ const EMPTY_ITEM = {
 
 const toNumber = (value) => parseFloat(value) || 0;
 
-const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, setSelectedProduct, error, setError }) => {
+const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, location, selectedProduct, setSelectedProduct, error, setError }) => {
     const inputRowBg = '#f8faf9';
     const [query, setQuery] = useState('');
     const [allUnits, setAllUnits] = useState([]);// All available units for the selected product
@@ -40,8 +40,15 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, setSele
                 const res = await axios.get(`http://localhost:5000/api/sales/units?productId=${tempItem.p_id}`);
                 console.log('Units API Response:', res.data);
                 if (res.data.success) {
-                    setAllUnits(res.data.units || []);
-                    console.log('Units set to:', res.data.units);
+                    const units = res.data.units || [];
+                    setAllUnits(units);
+                    
+                    // If no unit is selected yet, find and set the base unit (Priority: Is_Base_Unit flag, then Conversion factor 1)
+                    if (!tempItem.p_unit && units.length > 0) {
+                        const baseUnit = units.find(u => (typeof u === 'object' && (u.Is_Base_Unit || u.Unit_Conversion == 1))) || units[0];
+                        const unitName = typeof baseUnit === 'string' ? baseUnit : baseUnit.Unit_Name;
+                        handleUnitChange(unitName);
+                    }
                 }
             } catch (error) {
                 console.error('Units fetch error', error);
@@ -138,7 +145,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, setSele
             p_name: product.p_name,
             base_unit_price: priceLevel === "Retail" ? toNumber(product.retail_price) : toNumber(product.wholesale_price),
             unit_price: priceLevel === "Retail" ? toNumber(product.retail_price) : toNumber(product.wholesale_price),
-            p_unit: product.base_unit || allUnits[0]?.Unit_Name || 'Packet',
+            p_unit: '',
             tax: toNumber(product.tax_rate),
             conversionFactor: 1, // Base unit has conversion factor of 1
         }));
@@ -165,11 +172,25 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, setSele
         }
 
 
-        //check if there is any error related to quantity before adding the item to the cart. If there is an error (like quantity exceeding available stock), it prevents the item from being added and logs a warning. This ensures that only valid items with correct quantities are added to the cart, maintaining data integrity and preventing issues during checkout.
-        if (error?.field === 'quantity') {
+        // Check if there is any error related to quantity
+        if (error?.field === 'quantity' || (error?.message && error.message.includes('available'))) {
             console.warn('Cannot add item: quantity error exists');
             return;
         }
+
+        // Check for duplicates (same product ID AND same unit)
+        const isDuplicate = cartItems.some(item => 
+            item.p_id === tempItem.p_id && item.p_unit === tempItem.p_unit
+        );
+
+        if (isDuplicate) {
+            setError({ 
+                field: 'general', 
+                message: `Item "${tempItem.p_name}" (${tempItem.p_unit}) is already in the cart. Please update the existing quantity instead.` 
+            });
+            return;
+        }
+
 
         const newItem = {
             ...hydrateComputedFields(tempItem),
@@ -186,10 +207,31 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, setSele
     // Function to update a specific field of an item in the cart based on user input. When the user changes a value (like quantity, price, discount, etc.) for an item in the cart, this function updates that field and recalculates the subtotal, tax amount, and total for that item to ensure that the cart reflects the most current and accurate information.
     const updateCartItem = (index, field, value) => {
         const updatedCart = [...cartItems];
-        updatedCart[index][field] = value;
+        const item = updatedCart[index];
+
+        if (field === 'quntity') {
+            const numQty = toNumber(value);
+            const conversionFactor = item.conversionFactor || 1;
+            const convertedQty = numQty * conversionFactor;
+
+            if (availableQuantity !== null && item.p_id === (tempItem.p_id || selectedProduct?.p_id) && convertedQty > availableQuantity) {
+                setError({ field: 'general', message: `Only ${availableQuantity} units available in ${location} stock` });
+                // Reset to 0 to prevent bypassing validation
+                updatedCart[index][field] = 0;
+            } else {
+                if (error?.message?.includes('available in')) {
+                    setError({ field: null, message: null });
+                }
+                updatedCart[index][field] = value;
+            }
+        } else {
+            updatedCart[index][field] = value;
+        }
+
         updatedCart[index] = hydrateComputedFields(updatedCart[index]);
         setCartItems(updatedCart);
     };
+
 
     //fuction to get availabale quntity of the product in inventory when user select the product from search result
     const fetchProductQuantity = async (productId) => {
@@ -201,16 +243,21 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, setSele
                 const productionQty = toNumber(res.data.productionQty);
                 const totalQty = toNumber(res.data.totalQty);
 
+                let qtyToCheck = 0;
                 if (location === 'Shop') {
-                    setAvailableQuantity(shopQty);
-                    console.log('Available quantity set to:', shopQty);
-                }
-                else if (location === 'Production') {
-                    setAvailableQuantity(productionQty);
-                    console.log('Available quantity set to:', productionQty);
+                    qtyToCheck = shopQty;
+                } else if (location === 'Production') {
+                    qtyToCheck = productionQty;
                 } else {
-                    setAvailableQuantity(totalQty);
-                    console.log('Available quantity set to:', totalQty);
+                    qtyToCheck = totalQty;
+                }
+
+                setAvailableQuantity(qtyToCheck);
+
+                // Auto-check if out of stock
+                if (qtyToCheck <= 0) {
+                    setError({ field: 'general', message: `Product is out of stock in ${location}` });
+                    setTempItem(prev => ({ ...prev, quntity: 0 }));
                 }
             }
         }
@@ -219,16 +266,19 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, setSele
         }
     };
 
-    //useEffect to call fetchProductQuantity when tempItem.p_id changes
+
+    //useEffect to call fetchProductQuantity when tempItem.p_id, selectedProduct, or location changes
     useEffect(() => {
-        if (tempItem.p_id) {
-            console.log('Fetching quantity for product:', tempItem.p_id);
-            fetchProductQuantity(tempItem.p_id);
+        const productId = tempItem.p_id || selectedProduct?.p_id;
+        if (productId) {
+            fetchProductQuantity(productId);
         }
         else {
             setAvailableQuantity(null);
         }
-    }, [tempItem.p_id]);
+    }, [tempItem.p_id, selectedProduct?.p_id, location]);
+
+
 
     // Monitor error state changes
     useEffect(() => {
@@ -247,7 +297,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, setSele
         setTempItem((prev) => ({ ...prev, quntity: numQty }));
 
         const conversionFactor = tempItem.conversionFactor || 1;
-        const convertedQty = numQty / conversionFactor; // Convert to base unit quantity for comparison
+        const convertedQty = numQty * conversionFactor; // Convert to base unit quantity for comparison
 
         console.log('Qty Change Details:', {
             inputQty: qty,
@@ -259,21 +309,27 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, setSele
         });
 
         if (availableQuantity !== null && convertedQty > availableQuantity) {
-            console.log('ERROR: Quantity exceeds available stock');
-            setError({ field: 'quantity', message: `Only ${availableQuantity} units available in stock` });
+            setError({ field: 'general', message: `Only ${availableQuantity} units available in ${location} stock` });
+            // Reset quantity to 0 to block the 'Add' button permanently until a valid qty is entered
+            setTempItem((prev) => ({ ...prev, quntity: 0 }));
         }
         else {
-            console.log(' Quantity is valid');
-            setError(null);
+            if (error?.message?.includes('available in')) {
+                setError({ field: null, message: null });
+            }
         }
+
     };
+
+
 
     //display error  when 
     const handleOnFocusDiscount = () => {
         if (!tempItem.discount_allowed) {
-            setError({ field: 'discount', message: 'Discount not allowed for this product' });
+            setError({ field: 'general', message: 'Discount not allowed for this product' });
         }
     };
+
 
 
 
@@ -348,17 +404,8 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, setSele
                 </div>
             </div>
 
-            {/* Error message display */}
-            {error?.field === 'quantity' && (
-                <div className='alert alert-danger alert-dismissible fade show mx-3 mt-3' role='alert'>
-                    <strong> Quantity Error:</strong> {error.message}
-                </div>
-            )}
-            {error?.field === 'discount' && (
-                <div className='alert alert-warning alert-dismissible fade show mx-3 mt-3' role='alert'>
-                    <strong> Discount Not Allowed:</strong> {error.message}
-                </div>
-            )}
+            {/* Local alert displays removed to use global alerts in POS.jsx */}
+
 
             <div className='table-responsive' style={{ minHeight: '300px', overflowX: 'auto' }}>
                 <table className='table table-sm table-hover align-middle mb-0' style={{ width: '100%', minWidth: '1000px' }}>
@@ -426,7 +473,8 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, setSele
                                     ))}
                                 </select>
                             </td>
-                            <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.unit_price} onChange={(e) => setTempItem({ ...tempItem, unit_price: e.target.value })} /></td>
+                            <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.unit_price} onChange={(e) => setTempItem({ ...tempItem, unit_price: e.target.value })} readOnly /></td>
+
                             <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.discount} onChange={(e) => setTempItem({ ...tempItem, discount: e.target.value })} onFocus={handleOnFocusDiscount} /></td>
                             <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.tax} onChange={(e) => setTempItem({ ...tempItem, tax: e.target.value })} readOnly /></td>
                             <td>
@@ -441,8 +489,16 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, setSele
                             <td><input type='number' className='form-control form-control-sm text-center' value={tempItem.free} onChange={(e) => setTempItem({ ...tempItem, free: e.target.value })} /></td>
                             <td className='text-end fw-bold text-primary'>{currentEntryTotal.toFixed(2)}</td>
                             <td className='text-center'>
-                                <button onClick={addItem} className='btn btn-primary btn-sm'><Plus size={16} /></button>
+                                <button 
+                                    onClick={addItem} 
+                                    className='btn btn-primary btn-sm'
+                                    disabled={!tempItem.p_code || !tempItem.p_unit || (error?.message?.includes('available in'))}
+                                    title={error?.message?.includes('available in') ? error.message : "Add to cart"}
+                                >
+                                    <Plus size={16} />
+                                </button>
                             </td>
+
                         </tr>
 
                         {/* CART ITEMS */}
@@ -452,7 +508,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, setSele
                                 <td className='small'>{item.p_code}</td>
                                 <td className='fw-medium small'>{item.p_name}</td>
                                 <td className='small'>{item.p_unit}</td>
-                                <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.unit_price} onChange={(e) => updateCartItem(index, 'unit_price', e.target.value)} /></td>
+                                <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.unit_price} onChange={(e) => updateCartItem(index, 'unit_price', e.target.value)} readOnly /></td>
                                 <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.discount} onChange={(e) => updateCartItem(index, 'discount', e.target.value)} /></td>
                                 <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.tax} onChange={(e) => updateCartItem(index, 'tax', e.target.value)} readOnly /></td>
                                 <td><input type='number' className='form-control form-control-sm border-0 text-center fw-bold text-success p-0' value={item.quntity} onChange={(e) => updateCartItem(index, 'quntity', e.target.value)} /></td>

@@ -2,7 +2,7 @@ import React, { forwardRef } from "react";
 
 import './BillTemplate.css'
 
-const BillTemplate = forwardRef(({ cartItems, invoiceData, customerData, companyInfo }, ref) => {
+const BillTemplate = forwardRef(({ cartItems, invoiceData, customerData, companyInfo, invoiceNo }, ref) => {
     const subtotal = cartItems.reduce((sum, item) => sum + (item.total || 0), 0);//reduce uses a callback function to iterate through the cartItems array and calculate the total price for each item (item.total) and adds it to the accumulated sum. The initial value of sum is set to 0.
     const tax = invoiceData?.taxAmount || 0;
     const discount = invoiceData?.discountAmount || 0;
@@ -28,6 +28,13 @@ const BillTemplate = forwardRef(({ cartItems, invoiceData, customerData, company
                 <span>Time: </span>
                 <strong>{new Date().toLocaleTimeString()}</strong>
             </div>
+
+            <div className="row-item">
+                <span>Invoice No: </span>
+                <strong>{invoiceNo || invoiceData?.invoiceNo || 'N/A'}</strong>
+            </div>
+
+
 
             <hr />
 
@@ -103,7 +110,7 @@ const BillTemplate = forwardRef(({ cartItems, invoiceData, customerData, company
 
             <div className="bill-footer">
                 <p>Thank you for your purchase!</p>
-                <p className="print-note">*** This is a computer-generated receipt ***</p>
+                {/* <p className="print-note">*** This is a computer-generated receipt ***</p> */}
             </div>
 
         </div>
