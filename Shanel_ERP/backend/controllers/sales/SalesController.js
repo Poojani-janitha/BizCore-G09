@@ -19,6 +19,61 @@ const searchProducts = async (req, res) => {
 
         const searchTerm = q.trim();
 
+        //check search term in sinhala or english language and search accordingly
+        const isSinhala = /^[\u0D80-\u0DFF]+$/.test(searchTerm);
+
+        if (isSinhala) {
+            // Search by Sinhala name
+            const products = await Product.findAll({
+                where: {
+                    P_Name_Sinhala: { [Op.like]: `${searchTerm}%` }
+                }, attributes: [
+                    'P_ID',
+                    'P_Name',
+                    'P_Code',
+                    'P_Type',
+                    'Base_Unit',
+                    'Status',
+                    'Cost_Price',
+                    'Retail_Price',
+                    'Wholesale_Price',
+                    'Min_Stock',
+                    'Tax_Rate',
+                    'Image_Path'
+
+                ], limit: parseFloat(Limit),
+                order: [['P_Name', 'ASC']]
+            });
+
+            const formateData = products.map((p) => {
+                return {
+                    p_id: p.P_ID,
+                    p_name: p.P_Name,
+                    p_code: p.P_Code,
+                    p_type: p.P_Type,
+                    base_unit: p.Base_Unit,
+                    status: p.Status,
+                    cost_price: parseFloat(p.Cost_Price),
+                    retail_price: parseFloat(p.Retail_Price),
+                    wholesale_price: parseFloat(p.Wholesale_Price),
+                    min_stock: parseFloat(p.Min_Stock),
+                    tax_rate: parseFloat(p.Tax_Rate),
+                    image_path: p.Image_Path
+                }
+            });
+
+            //show retrive data in the console
+            console.log("Search Products Result (Sinhala):", formateData);
+
+            return res.status(200).json({
+                success: true,
+                products: formateData,
+                count: formateData.length
+            });
+        }
+
+        // Search by English name or code
+
 
         const products = await Product.findAll({
             where: {
@@ -253,7 +308,7 @@ const postSalesData = async (req, res) => {
             C_ID: cutomer.c_id,
             Sale_Date: saleDate,
             Sale_Time: saleTime,
-            Location: 'Shop',
+            Location: invoiceDetails?.location || 'Shop',
             Sale_Type: resolvedSaleType,
             Price_Level: resolvedPriceLevel,
             Subtotal: invoiceDetails.subTotal,
@@ -268,16 +323,52 @@ const postSalesData = async (req, res) => {
             Status: 'Active'
         });
         const createPayment = await Payment.create({
+
             Sale_ID: sale.Sale_Id,
-            Payment_Method: paymentDetails?.Payment_Method || 'Cash',
-            Payment_Amount: paymentAmount,
             Payment_Date: saleDate,
             Payment_Time: saleTime,
-            Bank_Name: paymentDetails?.Bank_Name || null,
-            Card_Number: paymentDetails?.Card_Number || null,
-            Notes: paymentDetails?.Notes || null,
-            Status: 'Active'
+            Receipt_No: `RCPT-${sale.Sale_Id}`,
+            Status: 'Active',
+            Payment_Method: paymentDetails?.Payment_Method || 'Cash',
+            Payment_Amount: paymentAmount,
+            Invoice_Total: invoiceDetails.finalTotal,
+            Cash_Tendered: paymentDetails?.Cash_Tendered || 0,
+            Cash_Amount: paymentDetails?.Applied_Value || 0,
+            Cash_Change: paymentDetails?.Change || 0,
+            Cheque_Amount: paymentDetails?.Cheque_Amount || 0,
+            Bank_Transfer_Amount: paymentDetails?.Bank_Transfer_Amount || 0,
+            Credit_Amount: paymentDetails?.Credit_Amount || 0,
+            Keep_Balance: paymentDetails?.Keep_Balance || false,
+            Cheque_Ref: paymentDetails?.Cheque_Ref || '',
+            Bank_Ref: paymentDetails?.Bank_Ref || '',
+            Cheque_Delivered_By: paymentDetails?.Cheque_Delivered_By || ''
+        }).catch(paymentError => {
+            console.error("Payment Creation Error Details:", paymentError.errors || paymentError.message);
+            throw new Error(`Failed to create payment: ${paymentError.message}`);
         });
+
+
+        if(paymentDetails.Credit_Amount > 0){
+            const customer = await Customer.findByPk(cutomer.c_id);
+            if(customer){
+                const newBalance = parseFloat(customer.Current_Balance) + parseFloat(paymentDetails.Credit_Amount);
+                await customer.update({ Current_Balance: newBalance });
+            }
+            const creditTransaction = await CreditTransaction.create({
+                C_ID: cutomer.c_id,
+                Sale_ID: sale.Sale_Id,
+                Transaction_Date: saleDate,
+                Transaction_Time: saleTime,
+                Amount: paymentDetails.Credit_Amount,
+                Type: 'Credit',
+                Ref_No: `CR-${sale.Sale_Id}`,
+                Status: 'Active'
+            });
+        }
+
+
+        
+
 
 
         // Process each sale item and create SaleItem records
@@ -317,7 +408,7 @@ const postSalesData = async (req, res) => {
                 P_ID: item.p_id,
                 U_ID: unit?.U_ID ?? 1,
                 Quantity: qty,
-                Base_Unit_Qty: qty * unitConversion,
+                Base_Unit_Qty: qty * unitConversion,// Convert to base unit quantity
                 Unit_Price: unitPrice,
                 Price_Level_Used: resolvedPriceLevel,
                 Line_Discount_Percentage: discountPct,
@@ -326,12 +417,39 @@ const postSalesData = async (req, res) => {
                 Line_Tax_Rate: lineTaxRate,
                 Line_Tax_Amount: lineTaxAmount,
                 Line_Total: lineTotal,
-                Location_Taken_From: 'Shop',
+                Location_Taken_From: invoiceDetails?.location || 'Shop',
                 Status: 'Active',
             };
         }));
 
-        await SaleItem.bulkCreate(saleItemsData);
+        console.log("Creating SaleItems with data:", JSON.stringify(saleItemsData, null, 2));
+        await SaleItem.bulkCreate(saleItemsData).catch(saleItemError => {
+            console.error("SaleItem Creation Error Details:", saleItemError.errors || saleItemError.message);
+            throw new Error(`Failed to create sale items: ${saleItemError.message}`);
+        });
+
+        // Update inventory for each item
+        const updateInventoryPromises = saleItemsData.map(async (item) => {
+            const inventoryRecord = await Inventory.findOne({
+                where: {
+                    P_ID: item.P_ID,
+                    Location: item.Location_Taken_From
+                }
+            });
+
+            if (inventoryRecord) {
+                const newQty = parseFloat(inventoryRecord.Qty) - parseFloat(item.Base_Unit_Qty);
+                return inventoryRecord.update({ Qty: newQty });
+            } else {
+                return Inventory.create({
+                    P_ID: item.P_ID,
+                    Location: item.Location_Taken_From,
+                    Qty: -parseFloat(item.Base_Unit_Qty)
+                });
+            }
+        });
+
+        await Promise.all(updateInventoryPromises);
 
         return res.status(200).json({
             success: true,
@@ -342,10 +460,22 @@ const postSalesData = async (req, res) => {
 
     } catch (error) {
         console.error("Error in postSalesData:", error);
+        console.error("Error Stack:", error.stack);
+        console.error("Full Error Object:", JSON.stringify(error, null, 2));
+        
+        // Provide specific error information
+        let errorMessage = "Error processing sales data";
+        if (error.name === 'SequelizeValidationError') {
+            errorMessage = error.errors.map(e => e.message).join(', ');
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+        
         res.status(500).json({
             success: false,
-            message: "Error processing sales data",
-            error: error.message
+            message: errorMessage,
+            error: error.message,
+            details: error.errors || null
         });
     }
 }
@@ -357,22 +487,36 @@ const getProductQuntity = async (req, res) => {
         const { productId } = req.params;
         console.log('Fetching quantity for product:', productId);
         
-        const invetoryRecords = await Inventory.findAll({
-            where:{
-                P_ID:productId,
-                Location:'Shop'
+
+        //total quntity in shop location
+        const shopInventory = await Inventory.findOne({
+            where: {
+                P_ID: productId,
+                Location: 'Shop'
             },
-            attributes:[
-                [sequelize.fn('SUM', sequelize.col('Qty')), 'totalQty'  ]
-            ]
+            attributes: ['Qty']
         });
 
-        const totalQty = parseFloat(invetoryRecords[0]?.dataValues?.totalQty) || 0;
-        console.log(`Total quantity for product ID ${productId}:`, totalQty);
+        const productionInventory = await Inventory.findOne({
+            where: {
+                P_ID: productId,
+                Location: 'Production'
+            },
+            attributes: ['Qty']
+        });
 
+        const shopQty = parseFloat(shopInventory?.Qty) || 0;
+        const productionQty = parseFloat(productionInventory?.Qty) || 0;
+
+        const totalQty = shopQty + productionQty;
+       
+        console.log(`Shop quantity: ${shopQty}, Production quantity: ${productionQty}, Total quantity for product ID ${productId}:`, totalQty);
+        
         res.status(200).json({
             success:true,
             productId: productId,
+            shopQty: shopQty,
+            productionQty: productionQty,
            totalQty: totalQty 
         });
 

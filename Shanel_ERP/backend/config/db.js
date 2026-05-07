@@ -3,10 +3,17 @@ const { Sequelize } = require('sequelize');
 const sequelize = new Sequelize(
     process.env.DB_NAME || 'shanel_erp', //
     process.env.DB_USER || 'root',
-    process.env.DB_PASS || '12345',
+    process.env.DB_PASS || '1234',
     {
         host: process.env.DB_HOST || 'localhost',
         dialect: 'mysql',
+        dialectOptions: {
+            charset: 'utf8mb4'
+        },
+        define: {
+            charset: 'utf8mb4',
+            collate: 'utf8mb4_unicode_ci'
+        },
         logging: false, // Set to true if you want to see the SQL in the terminal
         pool: {
             max: 5,

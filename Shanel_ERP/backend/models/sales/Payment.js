@@ -11,6 +11,8 @@ const Payment = sequelize.define('Payment',{
         type: DataTypes.INTEGER,
         allowNull: false
     },
+    
+    // ==================== TRANSACTION BASICS ====================
     Payment_Date: {
         type: DataTypes.DATEONLY,
         allowNull: false
@@ -19,134 +21,185 @@ const Payment = sequelize.define('Payment',{
         type: DataTypes.TIME,
         allowNull: false
     },
-    Payment_Method: {
-        type: DataTypes.ENUM('Cash', 'Bank_Deposit', 'Cheque', 'Credit', 'Card'),
-        allowNull: false
+    Receipt_No: {
+        type: DataTypes.STRING(30),
+        allowNull: true,
+        unique: true
     },
+    Status: {
+        type: DataTypes.ENUM('Active', 'Void'),
+        defaultValue: 'Active'
+    },
+    
+    // ==================== PAYMENT AMOUNT & METHOD ====================
     Payment_Amount: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
+        comment: 'Total amount paid towards invoice',
         get() {
             return parseFloat(this.getDataValue('Payment_Amount'));
         }
     },
-
-    // Cash -----------------------------------------
-    Cash_Received_By: {
-        type: DataTypes.INTEGER,
-        allowNull: true
+    Payment_Method: {
+        type: DataTypes.ENUM('Cash', 'Cheque', 'Bank_Transfer', 'Credit', 'Mixed', 'Pending'),
+        allowNull: false,
+        comment: 'Single method or Multiple methods (Mixed)'
     },
+    Invoice_Total: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        comment: 'Total invoice amount at time of payment',
+        get() {
+            return parseFloat(this.getDataValue('Invoice_Total'));
+        }
+    },
+    
+    // ==================== CASH PAYMENT ====================
     Cash_Tendered: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: true,
+        comment: 'Amount customer handed over in cash',
         get() {
             return parseFloat(this.getDataValue('Cash_Tendered'));
+        }
+    },
+    Cash_Amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        comment: 'Amount applied from cash to invoice',
+        get() {
+            return parseFloat(this.getDataValue('Cash_Amount'));
         }
     },
     Cash_Change: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: true,
+        comment: 'Change returned to customer',
         get() {
             return parseFloat(this.getDataValue('Cash_Change'));
         }
     },
-
-    // Bank Deposit ----------------------------------
-    Bank_Name: {
-        type: DataTypes.STRING(100),
-        allowNull: true
-    },
-    Deposit_Slip_No: {
-        type: DataTypes.STRING(100),
-        allowNull: true
-    },
-    Deposited_By: {
-        type: DataTypes.INTEGER,
-        allowNull: true
-    },
-    Deposit_Date: {
-        type: DataTypes.DATEONLY,
-        allowNull: true
-    },
-
-    // Cheque ----------------------------------
+    
+    // ==================== CHEQUE PAYMENT ====================
     Cheque_No: {
         type: DataTypes.STRING(100),
-        allowNull: true
+        allowNull: true,
+        comment: 'Cheque number'
     },
     Cheque_Date: {
         type: DataTypes.DATEONLY,
-        allowNull: true
+        allowNull: true,
+        comment: 'Cheque date'
     },
     Cheque_Bank: {
         type: DataTypes.STRING(100),
-        allowNull: true
+        allowNull: true,
+        comment: 'Bank name on cheque'
+    },
+    Cheque_Branch: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        comment: 'Branch name on cheque'
+    },
+    Cheque_Amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        comment: 'Amount on cheque',
+        get() {
+            return parseFloat(this.getDataValue('Cheque_Amount'));
+        }
+    },
+    Cheque_Delivered_By: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        comment: 'Person who delivered the cheque'
     },
     Cheque_Status: {
         type: DataTypes.ENUM('Pending', 'Cleared', 'Bounced'),
         defaultValue: 'Pending',
-        allowNull: true
+        allowNull: true,
+        comment: 'Cheque clearing status'
     },
     Cleared_Date: {
         type: DataTypes.DATEONLY,
-        allowNull: true
+        allowNull: true,
+        comment: 'Date cheque was cleared'
     },
-
-    // Card ----------------------------------
-    Card_Type: {
-        type: DataTypes.ENUM('Visa', 'MasterCard', 'Amex', 'Other'),
-        allowNull: true
-    },
-    Card_Last_4_Digits: {
-        type: DataTypes.STRING(4),
-        allowNull: true
-    },
-    Card_Transaction_ID: {
+    Cheque_Ref: {
         type: DataTypes.STRING(100),
-        allowNull: true
+        allowNull: true,
+        comment: 'Reference/memo on cheque'
     },
-
-    // Credit ----------------------------------
-    Credit_Note_No: {
+    
+    // ==================== BANK TRANSFER ====================
+    Bank_Transfer_Amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        comment: 'Amount transferred via bank',
+        get() {
+            return parseFloat(this.getDataValue('Bank_Transfer_Amount'));
+        }
+    },
+    Bank_Name: {
         type: DataTypes.STRING(100),
-        allowNull: true
+        allowNull: true,
+        comment: 'Bank name for transfer'
     },
-    Credit_Terms: {
+    Bank_Branch: {
         type: DataTypes.STRING(100),
-        allowNull: true
+        allowNull: true,
+        comment: 'Branch name for transfer'
     },
-
-    // Common ----------------------------------
-    Reference_No: {
+    Bank_Ref: {
         type: DataTypes.STRING(100),
-        allowNull: true
+        allowNull: true,
+        comment: 'Bank transaction reference/UTR'
     },
-    Notes: {
-        type: DataTypes.TEXT,
-        allowNull: true
+    
+    // ==================== CREDIT/BALANCE ====================
+    Credit_Amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        comment: 'Amount kept as customer credit',
+        get() {
+            return parseFloat(this.getDataValue('Credit_Amount'));
+        }
     },
-    Received_By: {
-        type: DataTypes.INTEGER,
-        allowNull: true
+    Keep_Balance: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: 'Flag: customer chose to keep remaining as balance'
     },
-
-    // Receipt ----------------------------------
+    Credit_Ref: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        comment: 'Credit note reference'
+    },
+    
+    // ==================== RECEIPT ====================
     Receipt_Printed: {
         type: DataTypes.BOOLEAN,
-        defaultValue: false
+        defaultValue: false,
+        comment: 'Flag: receipt has been printed'
     },
     Receipt_Print_Date: {
         type: DataTypes.DATE,
-        allowNull: true
+        allowNull: true,
+        comment: 'Timestamp when receipt was printed'
     },
-    Receipt_No: {
-        type: DataTypes.STRING(30),
-        allowNull: true
+    
+    // ==================== ADDITIONAL INFO ====================
+    Received_By: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        comment: 'User ID who processed payment'
     },
-    Status: {
-        type: DataTypes.ENUM('Active', 'Void'),
-        defaultValue: 'Active'
+    Notes: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        comment: 'Payment notes/remarks'
     }
+
 },{
     tableName:'payment',
     timestamps: true,

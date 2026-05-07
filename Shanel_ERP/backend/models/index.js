@@ -7,11 +7,19 @@ const StockAdjustment = require('./inventory/StockAdjustment');
 const UnitConversion = require('./inventory/UnitConversion');
 const ProductReturn = require('./inventory/ProductReturn');
 
+// ===== BANK MODELS =====
+const Bank = require('./Bank/Bank');
+const Branch = require('./Bank/Branch');
+
 
 
 // ===== INVENTORY ASSOCIATIONS =====
 const InventoryAssociations = require('./inventory/InventoryAssosiation');
 InventoryAssociations();
+
+// ===== BANK ASSOCIATIONS =====
+const BankAssociations = require('./Bank/associations');
+BankAssociations;
 
 
 //===== SALES MODELS =====
@@ -63,5 +71,7 @@ module.exports = {
     JournalEntry,
     JournalEntryLine,
     Expense,
-    Income
+    Income,
+    Bank,
+    Branch
 };

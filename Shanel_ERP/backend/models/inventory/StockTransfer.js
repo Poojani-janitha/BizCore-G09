@@ -12,9 +12,9 @@ const StockTransfer = sequelize.define('StockTransfer', {
     Transfer_Time: { type: DataTypes.TIME, allowNull: true },
     Reason: { type: DataTypes.TEXT, allowNull: true },
     Status: { type: DataTypes.ENUM('Pending', 'Completed', 'Rejected'), defaultValue: 'Pending' },
-    Transferred_By: { type: DataTypes.STRING(100), allowNull: true },
-    Received_By: { type: DataTypes.STRING(100), allowNull: true },
-    Created_By: { type: DataTypes.STRING(100), allowNull: true }
+    Transferred_By: { type: DataTypes.INTEGER, allowNull: true, comment: 'References User_ID' },
+    Received_By: { type: DataTypes.INTEGER, allowNull: true, comment: 'References User_ID' },
+    Created_By: { type: DataTypes.INTEGER, allowNull: true, comment: 'References User_ID' }
 }, {
     tableName: 'stock_transfer',
     timestamps: true,
