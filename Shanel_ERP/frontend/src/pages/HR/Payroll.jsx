@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { DollarSign, Calculator, Send, Download, CheckCircle, AlertCircle, Edit2, Save, X } from 'lucide-react';
 import { generateEmployees, EMP_KEY } from '../../storeContext/employeesData';
 
@@ -82,11 +83,15 @@ const generatePayrollData = (employees) => {
 
 export default function Payroll() {
   const [payrollRecords, setPayrollRecords] = useState([]);
-  const [selectedMonth, setSelectedMonth] = useState('2026-02');
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [showBankModal, setShowBankModal] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [bankDetails, setBankDetails] = useState({
     bankName: '',
     accountNumber: '',
@@ -94,39 +99,81 @@ export default function Payroll() {
     notes: '',
   });
 
-  // Initialize payroll data from employees
-  useEffect(() => {
-    const storedPayroll = localStorage.getItem(PAYROLL_KEY);
-    if (storedPayroll) {
-      try {
-        setPayrollRecords(JSON.parse(storedPayroll));
-      } catch {
-        initializePayroll();
-      }
-    } else {
-      initializePayroll();
+  const API_BASE = 'http://localhost:5000/api/hr';
+
+  // Fetch employees and payroll for selected month
+  const fetchPayrollData = async (monthStr) => {
+    try {
+      setLoading(true);
+      const [year, month] = monthStr.split('-');
+      
+      const [empRes, payRes] = await Promise.all([
+        axios.get(`${API_BASE}/employees`),
+        axios.get(`${API_BASE}/payroll`, { params: { month, year } })
+      ]);
+
+      const employees = Array.isArray(empRes?.data?.data) ? empRes.data.data : [];
+      const dbPayrolls = Array.isArray(payRes?.data?.data) ? payRes.data.data : [];
+      
+      // Map DB payrolls by Employee_ID for quick lookup
+      const payrollMap = Object.fromEntries(dbPayrolls.map(p => [p.Employee_ID, p]));
+
+      const combinedRecords = employees.map(emp => {
+        const empId = emp.Employee_ID;
+        const dbRec = payrollMap[empId];
+        const role = emp.Role || 'Staff';
+        
+        if (dbRec) {
+          return {
+            id: empId,
+            payrollId: dbRec.Payroll_ID,
+            employeeCode: emp.Employee_Code || `EMP-${String(empId).padStart(3, '0')}`,
+            employeeName: emp.Full_Name,
+            employeeRole: role,
+            salaryType: getSalaryConfig(role).salaryType,
+            basicSalary: Number(dbRec.Basic_Salary || 0),
+            productionEarnings: Number(dbRec.Production_Earnings || 0),
+            overtimeEarnings: Number(dbRec.Overtime_Earnings || 0),
+            attendanceBonus: Number(dbRec.Attendance_Bonus || 0),
+            teaAllowance: Number(dbRec.Tea_Allowance || 0),
+            grossSalary: Number(dbRec.Gross_Salary || 0),
+            epfEmployee: Number(dbRec.EPF_Employee_Deduction || 0),
+            etfEmployee: Number(dbRec.ETF_Employee_Deduction || 0),
+            advanceDeduction: Number(dbRec.Advance_Deduction || 0),
+            totalDeductions: Number(dbRec.Total_Deductions || 0),
+            netSalary: Number(dbRec.Net_Salary || 0),
+            status: dbRec.Payment_Status || 'Pending',
+          };
+        } else {
+          // Draft locally if not in DB
+          const config = getSalaryConfig(role);
+          const salary = calculateSalary(config);
+          return {
+            id: empId,
+            payrollId: null,
+            employeeCode: emp.Employee_Code || `EMP-${String(empId).padStart(3, '0')}`,
+            employeeName: emp.Full_Name,
+            employeeRole: role,
+            salaryType: config.salaryType,
+            ...salary,
+            overtimeHours: 0,
+            status: 'Pending',
+          };
+        }
+      });
+
+      setPayrollRecords(combinedRecords);
+    } catch (error) {
+      console.error('Failed to load payroll data:', error);
+      alert('Failed to load payroll data');
+    } finally {
+      setLoading(false);
     }
-  }, []);
-
-  const initializePayroll = () => {
-    const storedEmployees = localStorage.getItem(EMP_KEY);
-    let employees = [];
-
-    if (storedEmployees) {
-      try {
-        employees = JSON.parse(storedEmployees);
-      } catch {
-        employees = generateEmployees();
-      }
-    } else {
-      employees = generateEmployees();
-      localStorage.setItem(EMP_KEY, JSON.stringify(employees));
-    }
-
-    const payroll = generatePayrollData(employees);
-    setPayrollRecords(payroll);
-    localStorage.setItem(PAYROLL_KEY, JSON.stringify(payroll));
   };
+
+  useEffect(() => {
+    fetchPayrollData(selectedMonth);
+  }, [selectedMonth]);
 
   const updatePayrollField = (field, value) => {
     setEditForm((prev) => ({ ...prev, [field]: value }));
@@ -137,26 +184,55 @@ export default function Payroll() {
     setEditForm({ ...record });
   };
 
-  const saveEdit = () => {
+  const persistRecord = async (recordData, newStatus) => {
+    const [year, month] = selectedMonth.split('-');
+    const payload = {
+      Employee_ID: recordData.id,
+      Pay_Period_Month: Number(month),
+      Pay_Period_Year: Number(year),
+      Basic_Salary: recordData.basicSalary,
+      Production_Earnings: recordData.productionEarnings,
+      Overtime_Earnings: recordData.overtimeEarnings,
+      Attendance_Bonus: recordData.attendanceBonus,
+      Tea_Allowance: recordData.teaAllowance,
+      Gross_Salary: recordData.grossSalary,
+      EPF_Employee_Deduction: recordData.epfEmployee,
+      ETF_Employee_Deduction: recordData.etfEmployee,
+      Advance_Deduction: recordData.advanceDeduction,
+      Total_Deductions: recordData.totalDeductions,
+      Net_Salary: recordData.netSalary,
+      Payment_Status: newStatus || recordData.status
+    };
+
+    if (recordData.payrollId) {
+      await axios.put(`${API_BASE}/payroll/${recordData.payrollId}`, payload);
+    } else {
+      await axios.post(`${API_BASE}/payroll`, payload);
+    }
+  };
+
+  const saveEdit = async () => {
     if (!editingId) return;
 
-    const config = getSalaryConfig(editForm.employeeRole);
-    const salary = calculateSalary(config, editForm.overtimeHours, editForm.advanceDeduction);
-
-    const updated = payrollRecords.map((record) =>
-      record.id === editingId
-        ? {
-            ...record,
-            overtimeHours: editForm.overtimeHours,
-            advanceDeduction: editForm.advanceDeduction,
-            ...salary,
-          }
-        : record
-    );
-
-    setPayrollRecords(updated);
-    localStorage.setItem(PAYROLL_KEY, JSON.stringify(updated));
-    setEditingId(null);
+    try {
+      setLoading(true);
+      const config = getSalaryConfig(editForm.employeeRole);
+      const salary = calculateSalary(config, editForm.overtimeHours, editForm.advanceDeduction);
+      
+      const newRecordData = {
+        ...editForm,
+        ...salary
+      };
+      
+      await persistRecord(newRecordData, newRecordData.status);
+      await fetchPayrollData(selectedMonth);
+      setEditingId(null);
+    } catch (error) {
+      console.error('Failed to save payroll:', error);
+      alert(error?.response?.data?.message || 'Failed to save payroll');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const cancelEdit = () => {
@@ -164,18 +240,39 @@ export default function Payroll() {
     setEditForm({});
   };
 
-  const approveRecord = (id) => {
-    const updated = payrollRecords.map((record) =>
-      record.id === id ? { ...record, status: 'Approved' } : record
-    );
-    setPayrollRecords(updated);
-    localStorage.setItem(PAYROLL_KEY, JSON.stringify(updated));
+  const approveRecord = async (record) => {
+    try {
+      setLoading(true);
+      await persistRecord(record, 'Approved');
+      await fetchPayrollData(selectedMonth);
+    } catch (error) {
+      console.error('Failed to approve payroll:', error);
+      alert('Failed to approve payroll');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const approveAll = () => {
-    const updated = payrollRecords.map((record) => ({ ...record, status: 'Approved' }));
-    setPayrollRecords(updated);
-    localStorage.setItem(PAYROLL_KEY, JSON.stringify(updated));
+  const approveAll = async () => {
+    const pendingRecords = payrollRecords.filter(r => r.status === 'Pending');
+    if (pendingRecords.length === 0) {
+      alert('No pending records to approve.');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      for (const record of pendingRecords) {
+        await persistRecord(record, 'Approved');
+      }
+      await fetchPayrollData(selectedMonth);
+      alert('All pending records approved successfully!');
+    } catch (error) {
+      console.error('Failed to approve all:', error);
+      alert('Some records failed to approve. Check the console.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredRecords = payrollRecords.filter((record) =>

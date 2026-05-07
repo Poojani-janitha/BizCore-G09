@@ -7,11 +7,19 @@ const StockAdjustment = require('./inventory/StockAdjustment');
 const UnitConversion = require('./inventory/UnitConversion');
 const ProductReturn = require('./inventory/ProductReturn');
 
+// ===== BANK MODELS =====
+const Bank = require('./Bank/Bank');
+const Branch = require('./Bank/Branch');
+
 
 
 // ===== INVENTORY ASSOCIATIONS =====
 const InventoryAssociations = require('./inventory/InventoryAssosiation');
 InventoryAssociations();
+
+// ===== BANK ASSOCIATIONS =====
+const BankAssociations = require('./Bank/associations');
+BankAssociations;
 
 
 //===== SALES MODELS =====
@@ -28,6 +36,17 @@ SaleAssociations();
 // ===== USER MODELS =====
 const User = require('./user/User');
 
+// ===== HR MODELS =====
+const Employee = require('./hr/Employee');
+const EmployeeLeave = require('./hr/EmployeeLeave');
+const EmployeeDocument = require('./hr/EmployeeDocument');
+const Attendance = require('./hr/Attendance');
+const AttendanceSummary = require('./hr/AttendanceSummary');
+const SalaryStructure = require('./hr/SalaryStructure');
+const Payroll = require('./hr/Payroll');
+const AdvanceSalary = require('./hr/AdvanceSalary');
+const AdvanceRepayment = require('./hr/AdvanceRepayment');
+
 
 // ===== CUSTOMER MODELS =====
 const Customer = require('./customer/customer');
@@ -39,6 +58,10 @@ const SupplierTransaction = require('./supplier/SupplierTransaction');
 /// ===== CUSTOMER ASSOCIATIONS =====
 const CustomerAssociations = require('./customer/CustomerAssosiation');
 CustomerAssociations();
+
+// ===== HR ASSOCIATIONS =====
+const hrAssociations = require('./hr/hrAssociations');
+hrAssociations();
 
 
 // ===== FINANCE MODELS & ASSOCIATIONS =====
@@ -61,6 +84,15 @@ module.exports = {
     CreditTranscation,
     SalesSummaryDaily,
     User,
+    Employee,
+    EmployeeLeave,
+    EmployeeDocument,
+    Attendance,
+    AttendanceSummary,
+    SalaryStructure,
+    Payroll,
+    AdvanceSalary,
+    AdvanceRepayment,
     AccountChart,
     BankAccount,
     BankTransaction,
@@ -70,4 +102,6 @@ module.exports = {
     Income,
     Supplier,
     SupplierTransaction
+    Bank,
+    Branch
 };

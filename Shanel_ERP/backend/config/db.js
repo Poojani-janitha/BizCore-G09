@@ -1,25 +1,46 @@
 const { Sequelize } = require('sequelize');
 
-const sequelize = new Sequelize(
-    process.env.DB_NAME || 'shanel_erp', //
-    process.env.DB_USER || 'root',
-    process.env.DB_PASS || '12345',
-    {
-        host: process.env.DB_HOST || 'localhost',
-        dialect: 'mysql',
-        logging: false, // Set to true if you want to see the SQL in the terminal
-        pool: {
-            max: 5,
-            min: 0,
-            acquire: 30000,
-            idle: 10000
-        }
-    }
-);
+const dbName = process.env.DB_NAME || 'shanel_erp';
+const dbUser = process.env.DB_USER || 'root';
+const dbPass = process.env.DB_PASS ?? '12345';
+const dbHost = process.env.DB_HOST || 'localhost';
+const dbPort = Number(process.env.DB_PORT || 3306);
 
-// Test the connection
-sequelize.authenticate()
-    .then(() => console.log('✅ Database connected with Sequelize'))
-    .catch(err => console.error('❌ Unable to connect to the database:', err));
+const logging =
+    process.env.DB_LOGGING === '1' || process.env.DB_LOGGING === 'true'
+        ? console.log
+        : false;
+
+const sequelize = new Sequelize(dbName, dbUser, dbPass, {
+    host: dbHost,
+    port: dbPort,
+    dialect: 'mysql',
+    logging,
+    dialectOptions: {
+        charset: 'utf8mb4',
+        supportBigNumbers: true,
+        bigNumberStrings: true
+    },
+  dialectOptions: {
+            charset: 'utf8mb4'
+        },
+  define: {
+            charset: 'utf8mb4',
+            collate: 'utf8mb4_unicode_ci'
+        },
+  pool: {
+        max: Number(process.env.DB_POOL_MAX || 10),
+        min: 0,
+        acquire: 30000,
+        idle: 10000
+    }
+});
+
+sequelize
+    .authenticate()
+    .then(() =>
+        console.log(`✅ Database connected (${dbHost}:${dbPort}/${dbName})`)
+    )
+    .catch((err) => console.error('❌ Unable to connect to the database:', err.message));
 
 module.exports = sequelize;

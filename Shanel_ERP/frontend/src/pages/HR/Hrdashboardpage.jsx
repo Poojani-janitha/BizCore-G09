@@ -56,87 +56,78 @@
 // export default Hrdashboardpage;
 
 import React, { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
 import HrStatsCard from '../../component/HR/Dashboard/HrStatsCard';
 import QuickActions from '../../component/HR/Dashboard/Quickactions';
-import { EMP_KEY, generateEmployees } from '../../storeContext/employeesData';
-import { getAttendanceForDate, loadAttendanceStore } from '../../storeContext/attendanceData';
+
+const API_BASE = 'http://localhost:5000/api/hr';
 
 const Hrdashboardpage = () => {
   const today = new Date().toISOString().split('T')[0];
-  const employees = useMemo(() => {
+  
+  const [employees, setEmployees] = useState([]);
+  const [attendances, setAttendances] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const getMonthStart = (dateStr) => {
+    const d = new Date(dateStr);
+    d.setDate(1);
+    return d.toISOString().split('T')[0];
+  };
+
+  const getMonthEnd = (dateStr) => {
+    const d = new Date(dateStr);
+    d.setMonth(d.getMonth() + 1);
+    d.setDate(0);
+    return d.toISOString().split('T')[0];
+  };
+
+  const fetchDashboardData = async () => {
     try {
-      const storedEmployees = localStorage.getItem(EMP_KEY);
-      return storedEmployees ? JSON.parse(storedEmployees) : generateEmployees();
-    } catch {
-      return generateEmployees();
+      setLoading(true);
+      const startOfMonth = getMonthStart(today);
+      const endOfMonth = getMonthEnd(today);
+      
+      const [empRes, attRes] = await Promise.all([
+        axios.get(`${API_BASE}/employees`),
+        axios.get(`${API_BASE}/attendance`, { params: { from: startOfMonth, to: endOfMonth } })
+      ]);
+      
+      setEmployees(empRes.data?.data || []);
+      setAttendances(attRes.data?.data || []);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [today]);
 
   const totalEmployees = employees.length || 1;
 
-  const getMonthKey = (dateStr) => dateStr.slice(0, 7); // YYYY-MM
-
-  const computeTodaySummary = () => {
-    const todayAttendance = getAttendanceForDate(today);
-    const present = employees.filter(e => todayAttendance?.[e.id]?.status === 'present').length;
-    const leave = employees.filter(e => todayAttendance?.[e.id]?.status === 'leave').length;
+  const todaySummary = useMemo(() => {
+    const todayAtt = attendances.filter(a => a.Attendance_Date === today);
+    const present = todayAtt.filter(a => String(a.Status).toLowerCase() === 'present').length;
+    const leave = todayAtt.filter(a => String(a.Status).toLowerCase() === 'leave').length;
     return { present, leave };
-  };
+  }, [attendances, today]);
 
-  const [todaySummary, setTodaySummary] = useState(() => computeTodaySummary());
-  const [refreshTick, setRefreshTick] = useState(0);
-
-  const computeBonusEligible = () => {
-    const store = loadAttendanceStore();
-    const monthKey = getMonthKey(today);
-    const [yearStr, monthStr] = monthKey.split('-');
-    const year = Number(yearStr);
-    const month = Number(monthStr); // 1-12
-    if (!year || !month) return 0;
-
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const requiredDates = Array.from({ length: daysInMonth }, (_, idx) => {
-      const day = String(idx + 1).padStart(2, '0');
-      return `${monthKey}-${day}`;
+  const bonusEligible = useMemo(() => {
+    const presentDaysByEmp = {};
+    attendances.forEach(a => {
+      if (String(a.Status).toLowerCase() === 'present') {
+        presentDaysByEmp[a.Employee_ID] = (presentDaysByEmp[a.Employee_ID] || 0) + 1;
+      }
     });
-
-    // By default show 0 until the full month is marked
-    const hasWholeMonth = requiredDates.every(d => store[d]);
-    if (!hasWholeMonth) return 0;
-
-    const presentDaysByEmp = Object.fromEntries(employees.map(e => [e.id, 0]));
-    requiredDates.forEach(d => {
-      const daily = store[d] || {};
-      employees.forEach(e => {
-        if (daily?.[e.id]?.status === 'present') presentDaysByEmp[e.id] += 1;
-      });
-    });
-
-    // "more than 25 days"
-    return employees.filter(e => (presentDaysByEmp[e.id] || 0) > 25).length;
-  };
-
-  const [bonusEligible, setBonusEligible] = useState(() => computeBonusEligible());
-
-  useEffect(() => {
-    const refresh = () => {
-      setTodaySummary(computeTodaySummary());
-      setBonusEligible(computeBonusEligible());
-      setRefreshTick(t => t + 1);
-    };
-    refresh();
-    window.addEventListener('attendance-updated', refresh);
-    window.addEventListener('storage', refresh);
-    return () => {
-      window.removeEventListener('attendance-updated', refresh);
-      window.removeEventListener('storage', refresh);
-    };
-  }, [totalEmployees]); // eslint-disable-line react-hooks/exhaustive-deps
+    return employees.filter(e => (presentDaysByEmp[e.Employee_ID] || 0) > 25).length;
+  }, [attendances, employees]);
 
   const attendanceTrend = useMemo(() => {
     const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const store = loadAttendanceStore();
-
+    
     const toDateKey = (dateObj) => {
       const year = dateObj.getFullYear();
       const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -144,9 +135,8 @@ const Hrdashboardpage = () => {
       return `${year}-${month}-${day}`;
     };
 
-    // Week starts on Monday (Mon=0 ... Sun=6).
     const now = new Date();
-    const jsDay = now.getDay(); // Sun=0 ... Sat=6
+    const jsDay = now.getDay();
     const mondayOffset = (jsDay + 6) % 7;
     const monday = new Date(now);
     monday.setDate(now.getDate() - mondayOffset);
@@ -155,12 +145,14 @@ const Hrdashboardpage = () => {
       const date = new Date(monday);
       date.setDate(monday.getDate() + index);
       const dateKey = toDateKey(date);
-      const dayAttendance = store?.[dateKey] || {};
-      const present = employees.filter(e => dayAttendance?.[e.id]?.status === 'present').length;
-      const percent = Math.round((present / totalEmployees) * 100);
+      
+      const dayAtt = attendances.filter(a => a.Attendance_Date === dateKey);
+      const present = dayAtt.filter(a => String(a.Status).toLowerCase() === 'present').length;
+      const percent = totalEmployees > 0 ? Math.round((present / totalEmployees) * 100) : 0;
+      
       return { day, present, percent, dateKey };
     });
-  }, [employees, totalEmployees, refreshTick]);
+  }, [attendances, totalEmployees]);
 
   const stats = [
     { title: 'Total Employees', value: String(totalEmployees), subtitle: 'Active employees', icon: '👥', color: 'blue' },
