@@ -101,7 +101,7 @@ module.exports = {
     Expense,
     Income,
     Supplier,
-    SupplierTransaction
+    SupplierTransaction,
     Bank,
     Branch
 };

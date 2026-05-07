@@ -2,7 +2,7 @@ const { Sequelize } = require('sequelize');
 
 const dbName = process.env.DB_NAME || 'shanel_erp';
 const dbUser = process.env.DB_USER || 'root';
-const dbPass = process.env.DB_PASS ?? '12345';
+const dbPass = process.env.DB_PASS ?? '1234';
 const dbHost = process.env.DB_HOST || 'localhost';
 const dbPort = Number(process.env.DB_PORT || 3306);
 
