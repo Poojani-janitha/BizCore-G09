@@ -207,7 +207,6 @@ const POS = () => {
 
 
 
-      // Validate items exist
       if (!cartItems || cartItems.length === 0) {
         setError({ field: 'general', message: 'Your cart is empty. Please add items before saving or printing.' });
         setAction({});
@@ -344,10 +343,9 @@ const POS = () => {
     fetchInvoiceNo();
   }, []);
 
-  //store hold invoice in local storage and retrieve when component mounts
+
   useEffect(() => {
     if (action === 'holdInvoice') {
-      // Validate that required data exists
       if (!customerData || !invoiceData || cartItems.length === 0) {
         setError({ field: 'holdInvoice', message: 'Cannot hold invoice: Missing customer, items, or invoice data' });
         setAction({});
@@ -434,7 +432,6 @@ const POS = () => {
 
 
   return (
-
     <div className='pos-wrapper w-100' style={{ overflowX: 'hidden' }}>
       {/* Global Floating Alerts */}
       <div style={{

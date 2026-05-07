@@ -147,7 +147,7 @@ const allUnits = async (req, res) => {
     try {
         const { productId } = req.query;
         console.log('Fetching units for product ID:', productId);
-        
+
         const units = await UnitConversion.findAll({
             where: {
                 P_ID: productId
@@ -510,7 +510,7 @@ const postSalesData = async (req, res) => {
 
 //  get the quntity of product in the inventory 
 const getProductQuntity = async (req, res) => {
-    try{
+    try {
         const { productId } = req.params;
         console.log('Fetching quantity for product:', productId);
         
@@ -540,14 +540,14 @@ const getProductQuntity = async (req, res) => {
         console.log(`Shop quantity: ${shopQty}, Production quantity: ${productionQty}, Total quantity for product ID ${productId}:`, totalQty);
         
         res.status(200).json({
-            success:true,
+            success: true,
             productId: productId,
             shopQty: shopQty,
             productionQty: productionQty,
            totalQty: totalQty 
         });
 
-    }catch(error){
+    } catch (error) {
         console.error("Error fetching product quantity from inventory:", error);
         res.status(500).json({
             success: false,
@@ -561,14 +561,14 @@ const getProductQuntity = async (req, res) => {
 const getAllSales = async (req, res) => {
     try {
         const sales = await Sale.findAll({
-            where: { 
+            where: {
                 Status: 'Active',
                 Sale_Date: {
                     [Op.gte]: new Date(new Date().setDate(new Date().getDate() - 7)) // Last 7 days
                 }
             },
             attributes: [
-               
+
                 'Invoice_No',
                 'C_ID',
                 'Sale_Date',
@@ -576,28 +576,28 @@ const getAllSales = async (req, res) => {
                 'Total_Amount',
                 'Paid_Amount',
                 'Payment_Status'
-            ],include: [{
+            ], include: [{
                 model: Customer,
                 attributes: ['C_Name']
             }], order: [['Created_At', 'DESC']]
 
-            });
+        });
 
 
-            const formateData = sales.map((s) => {
-                return {
-                    invoice_no: s.Invoice_No,
-                    c_id: s.C_ID,
-                    customer_name: s.Customer?.C_Name || 'Unknown',
-                    sale_date: s.Sale_Date,
-                    sale_time: s.Sale_Time,
-                    total_amount: parseFloat(s.Total_Amount),
-                    balance: parseFloat(s.Total_Amount) - parseFloat(s.Paid_Amount),
-                    payment_status: s.Payment_Status
-                }
+        const formateData = sales.map((s) => {
+            return {
+                invoice_no: s.Invoice_No,
+                c_id: s.C_ID,
+                customer_name: s.Customer?.C_Name || 'Unknown',
+                sale_date: s.Sale_Date,
+                sale_time: s.Sale_Time,
+                total_amount: parseFloat(s.Total_Amount),
+                balance: parseFloat(s.Total_Amount) - parseFloat(s.Paid_Amount),
+                payment_status: s.Payment_Status
             }
-            );
-          
+        }
+        );
+
         return res.status(200).json({
             success: true,
             count: sales.length,
