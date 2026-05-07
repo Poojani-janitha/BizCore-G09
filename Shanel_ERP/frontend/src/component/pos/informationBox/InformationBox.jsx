@@ -1,8 +1,8 @@
-import React from 'react'
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 
-const InformationBox = ({ customerData, selectedProduct, location, setLocation }) => {
+const InformationBox = ({ customerData, selectedProduct, location, setLocation, setError, cartItems }) => {
+
     const [availableStock, setAvailableStock] = useState(null);
 
     const toNumber = (value) => parseFloat(value) || 0;
@@ -25,6 +25,25 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation }
         }
     };
 
+    useEffect(() => {
+        if (selectedProduct?.p_id) {
+            fetchProductQuantity(selectedProduct.p_id);
+        } else {
+            setAvailableStock(null);
+        }
+    }, [selectedProduct]);
+
+    const handleLocationChange = (newLoc) => {
+        if (newLoc === location) return;
+        if (cartItems && cartItems.length > 0) {
+            setError({ field: 'general', message: "Cannot change location while there are items in the cart. Please clear the cart first." });
+            return;
+        }
+        setLocation(newLoc);
+    };
+
+
+
     return (
         <div style={{
             display: 'flex',
@@ -45,8 +64,9 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation }
                 {/* Outstanding Balance */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>Outstanding Balance:</span>
-                    <span style={{ fontSize: '12px', color: '#d9534f', fontWeight: '600' }}>Rs. {toNumber(customerData?.Current_Balance).toFixed(2)}</span>
+                    <span style={{ fontSize: '12px', color: '#d9534f', fontWeight: '600' }}>Rs. {toNumber(customerData?.current_balance ?? customerData?.Current_Balance).toFixed(2)}</span>
                 </div>
+
 
                 {/* Selected Product Name */}
                 {selectedProduct?.p_name && (
@@ -85,14 +105,15 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation }
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
                 {/* Shop Option */}
                 <div 
-                    onClick={() => setLocation('Shop')}
+                    onClick={() => handleLocationChange('Shop')}
                     style={{ 
                         display: 'flex', 
                         alignItems: 'center', 
                         gap: '6px', 
                         padding: '4px 8px', 
                         borderRadius: '4px', 
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        opacity: cartItems?.length > 0 && location !== 'Shop' ? 0.6 : 1
                     }}
                 >
                     <input
@@ -101,7 +122,7 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation }
                         name="locationToggle"
                         id="infoLocationShop"
                         checked={location === 'Shop'}
-                        onChange={() => setLocation('Shop')}
+                        onChange={() => handleLocationChange('Shop')}
                         style={{ width: '13px', height: '13px', cursor: 'pointer' }}
                     />
                     <label 
@@ -119,14 +140,15 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation }
 
                 {/* Production Option */}
                 <div 
-                    onClick={() => setLocation('Production')}
+                    onClick={() => handleLocationChange('Production')}
                     style={{ 
                         display: 'flex', 
                         alignItems: 'center', 
                         gap: '6px', 
                         padding: '4px 8px', 
                         borderRadius: '4px', 
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        opacity: cartItems?.length > 0 && location !== 'Production' ? 0.6 : 1
                     }}
                 >
                     <input
@@ -135,9 +157,10 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation }
                         name="locationToggle"
                         id="infoLocationProduction"
                         checked={location === 'Production'}
-                        onChange={() => setLocation('Production')}
+                        onChange={() => handleLocationChange('Production')}
                         style={{ width: '13px', height: '13px', cursor: 'pointer' }}
                     />
+
                     <label 
                         htmlFor="infoLocationProduction"
                         className="mb-0 fw-bold cursor-pointer production-label" 

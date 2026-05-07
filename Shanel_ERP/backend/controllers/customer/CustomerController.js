@@ -125,7 +125,7 @@ const searchCustomers = async (req, res) => {
         const formateData = customer.map((c) => {
 
             const creditLimit = parseFloat(c.Credit_Limit) || 0;
-            const currentBalance = parseFloat(c.CurrentBalance) || 0;
+            const currentBalance = parseFloat(c.Current_Balance) || 0;
             const availableCredit = creditLimit - currentBalance;
 
 
