@@ -59,56 +59,77 @@ const InvoiceTotal = ({ cartItems, onChangeInvoiceData }) => {
     }
   }, [summary, onChangeInvoiceData]);
 
-  return (
-    <div className='d-flex flex-column h-100'>
-      <h6 className='mb-3 fw-semibold text-primary'>Invoice Total</h6>
-      <div className='invoice-total-card rounded p-4 text-dark flex-grow-1 d-flex flex-column justify-content-center border shadow-sm bg-white'>
-
-        <div className='text-center mb-3'>
-          <div className='display-5 fw-bold'>
-            Rs. {summary.finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-          </div>
-        </div>
-
-        <div className='border-top border-secondary border-opacity-25 pt-3'>
-          {/* Items Count */}
-          <div className='d-flex justify-content-between mb-2 align-items-center'>
-            <span className="text-muted">Items :</span>
-            <span className="fw-bold">{summary.count}</span>
-          </div>
-
-          {/* discount */}
-          <div className='d-flex justify-content-between mb-2 align-items-center'>
-            <span className="text-muted">Total Discount :</span>
-            <div className="input-group input-group-sm w-50">
-              <input
-                type="number"
-                className="form-control text-end text-danger fw-bold shadow-none"
-                value={discount}
-                onChange={(e) => setDiscount(e.target.value)}
-                onFocus={(e) => e.target.select()}
-              />
-              <select
-                className="form-select border-start-0 text-secondary"
-                style={{ maxWidth: '65px', fontSize: '0.8rem' }}
-                value={discountType}
-                onChange={(e) => setDiscountType(e.target.value)}
-              >
-                <option value="percentage">%</option>
-                <option value="amount">Rs.</option>
-              </select>
+    return (
+        <div className="h-100 d-flex flex-column" style={{ borderRadius: '8px' }}>
+            {/* Header and Piece Count Row */}
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="m-0 fw-bold text-primary text-uppercase" style={{ fontSize: '0.8rem', letterSpacing: '0.5px' }}>
+                    Invoice Summary
+                </h6>
+                <div className="d-flex align-items-center gap-2">
+                    <span className="text-muted small fw-bold">No Of Pcs:</span>
+                    <span className="badge bg-secondary rounded-pill px-3">{summary.count.toFixed(2)}</span>
+                </div>
             </div>
-          </div>
 
-          {/* Tax Total */}
-          <div className='d-flex justify-content-between mb-2 align-items-center'>
-            <span className="text-muted">Tax Total :</span>
-            <span className="fw-semibold">Rs. {summary.taxTotal.toFixed(2)}</span>
-          </div>
+            {/* Flat Grid Layout */}
+            <div className="row g-2 flex-grow-1">
+                {/* Discount Section */}
+                <div className="col-md-3">
+                    <div className="p-2 rounded bg-white border h-100 d-flex flex-column justify-content-center shadow-sm">
+                        <label className="d-block text-muted small fw-bold mb-1 text-center">Total Discount</label>
+                        <div className="input-group input-group-sm">
+                            <input
+                                type="number"
+                                className="form-control border-0 bg-light text-end fw-bold text-danger shadow-none"
+                                value={discount}
+                                onChange={(e) => setDiscount(e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                            />
+                            <select
+                                className="form-select border-0 bg-light small font-monospace"
+                                style={{ maxWidth: '55px', fontSize: '0.7rem' }}
+                                value={discountType}
+                                onChange={(e) => setDiscountType(e.target.value)}
+                            >
+                                <option value="percentage">%</option>
+                                <option value="amount">Rs</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tax Section */}
+                <div className="col-md-3">
+                    <div className="p-2 rounded border h-100 d-flex flex-column justify-content-center text-center shadow-sm" style={{ background: '#fff5f5' }}>
+                        <label className="d-block text-muted small fw-bold mb-1">Tax Total</label>
+                        <div className="fw-bold text-dark fs-5">
+                            {summary.taxTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Free Value Placeholder */}
+                <div className="col-md-3">
+                    <div className="p-2 rounded border h-100 d-flex flex-column justify-content-center text-center shadow-sm" style={{ background: '#f0fff4' }}>
+                        <label className="d-block text-muted small fw-bold mb-1">Free Value</label>
+                        <div className="fw-bold text-success fs-5">0.00</div>
+                    </div>
+                </div>
+
+                {/* Main Display: Invoice Total */}
+                <div className="col-md-3">
+                    <div className="p-2 rounded border h-100 d-flex flex-column justify-content-center text-center shadow-sm" style={{ background: '#f5f3ff', borderLeft: '4px solid #7c3aed' }}>
+                        <label className="d-block text-primary small fw-bold mb-1">Invoice Total</label>
+                        <div className="fs-4 fw-bolder text-primary">
+                            <small className="fs-6 me-1">Rs.</small>
+                            {summary.finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default InvoiceTotal;

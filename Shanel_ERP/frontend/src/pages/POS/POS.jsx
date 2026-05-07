@@ -8,24 +8,89 @@ import Test from './Test'
 import { useState } from 'react'
 import axios from 'axios'
 import RecentSale from '../../component/pos/recentSale/RecentSale'
+import InformationBox from '../../component/pos/informationBox/InformationBox'
+import BillTemplate from '../../component/pos/billTemplate/BillTemplate'
+import { useRef } from 'react'
+import { useReactToPrint } from 'react-to-print';
 
 const POS = () => {
   const [cartItems, setCartItems] = useState([]);
   const [invoiceData, setInvoiceData] = useState({});
   const [customerData, setCustomerData] = useState({});
   const [paymentData, setPaymentData] = useState({});
-  const [action, setAction] = useState({});
-  const[invoiceNo,setInvoiceNo] = useState('');
-  const[loading,setLoading] = useState(false);//for display resent sales component after payment, also can be used for loading state in future
-  const[holdInvoice,setHoldInvoice] = useState(null);//for storing hold invoice data in local storage, this can be used in future to implement hold and resume invoice feature
+  const [action, setAction] = useState({});// This state is used to trigger actions like proceeding to payment or holding invoice, it can be set from ActionButtons component and will be monitored in useEffect to perform corresponding actions
+  const [invoiceNo, setInvoiceNo] = useState('');
+  const [loading, setLoading] = useState(false);//for display resent sales component after payment, also can be used for loading state in future
+  const [holdInvoice, setHoldInvoice] = useState(null);//for storing hold invoice data in local storage, this can be used in future to implement hold and resume invoice feature
   const [priceLevel, setPriceLevel] = useState('Retail'); // Toggle between Retail and Wholesale
+  const [location, setLocation] = useState('Shop'); // toggle between  shop and production
+  const [selectedProduct, setSelectedProduct] = useState(null); // Store the currently selected product for which we want to show information in InformationBox
+  const [error, setError] = useState({ field: null, message: null }); // Error state for handling any issues during API calls
+  const [successMessage, setSuccessMessage] = useState(null); // Success message state for displaying any success messages after actions
 
   const handleInvoiceDataChange = (data) => {
- 
+
     setInvoiceData(data);
     console.log("Updated Invoice Data:", data);
   }
 
+  const billPrintRef = useRef();// Reference for the BillTemplate component to trigger print
+
+  // Function to handle printing the bill using react-to-print
+  const handlePrint = useReactToPrint({
+    contentRef: billPrintRef,
+    documentTitle: `Invoice_${invoiceNo}`,
+    onAfterPrint: async () => {
+      // After printing, reset form data for new transaction
+      await resetFormAfterSale(invoiceNo);
+      
+      // Update bill print status
+      try {
+        await updateBillPrintStatus();
+      } catch (error) {
+        console.error("Error updating print status:", error);
+      }
+    },
+    onPrintError: (error) => {
+      console.error("Print failed:", error);
+      // Still reset form even if print fails
+      resetFormAfterSale(invoiceNo);
+    }
+  });
+
+
+  // Function to update the bill print status in the backend after printing the bill, this is optional and can be customized based on your backend API and requirements
+  const updateBillPrintStatus = async () => {
+    try {
+      await axios.put(`http://localhost:5000/api/sales/update-print-status/${invoiceNo}`, {
+        printed: true
+      });
+      console.log(`Bill print status updated for invoice ${invoiceNo}`);
+    } catch (error) {
+      console.error(`Error updating bill print status for invoice ${invoiceNo}:`, error);
+    }
+  };
+
+  // Function to reset form and fetch new invoice number after sale
+  const resetFormAfterSale = async (completedInvoiceNo) => {
+    try {
+      // Reset all form data
+      setInvoiceData({});
+      setCartItems([]);
+      setCustomerData({});
+      setPaymentData({});
+      
+      // Fetch new invoice number for next sale
+      const newResponse = await axios.get('http://localhost:5000/api/sales/generate-invoice-no');
+      if (newResponse.data.success) {
+        setInvoiceNo(newResponse.data.invoiceNo);
+      }
+    } catch (error) {
+      console.error("Error resetting form:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   //send sales data to backend when action is triggered from ActionButtons component, also validate data before sending
   const sendData = useCallback(async () => {
@@ -35,18 +100,23 @@ const POS = () => {
     } else if (action === 'proceedToPayment') {
       // Validate customer selection
       if (!customerData || !customerData.c_id) {
-        alert("Please select a customer before proceeding to payment.");
+        setError({ field: 'customer', message: 'Please select a customer before proceeding to payment.' });
         setAction({});
         return;
       }
 
       // Validate items exist
       if (!cartItems || cartItems.length === 0) {
-        alert("Please add items to the cart before proceeding to payment.");
+        setError({ field: 'cart', message: 'Please add items to the cart before proceeding to payment.' });
         setAction({});
         return;
       }
 
+      if (!invoiceNo) {
+        setError({ field: 'invoiceNo', message: 'Invoice number is missing. Please try again.' });
+        setAction({});
+        return;
+      }
       try {
         const response = await axios.post(`http://localhost:5000/api/sales/`, {
           cutomer: customerData,
@@ -54,52 +124,61 @@ const POS = () => {
           invoiceDetails: { ...invoiceData, invoiceNo: invoiceNo },
           paymentDetails: paymentData,
           priceLevel: priceLevel,
-          saleType:priceLevel === 'Retail' ? 'Retail' : 'Wholesale',
+          saleType: priceLevel === 'Retail' ? 'Retail' : 'Wholesale',
+          location: location,
           action: action
         });
+        
+        // Attempt print, but don't let it block the form reset
+        try {
+          if (billPrintRef.current) {
+            handlePrint();
+          } else {
+            console.warn("Bill template ref not available for printing");
+            // Still reset form even if print fails
+            resetFormAfterSale(response.data.invoiceNo);
+          }
+        } catch (printError) {
+          console.error("Print error:", printError);
+          // Continue anyway - sale was saved successfully
+          resetFormAfterSale(response.data.invoiceNo);
+        }
+
+        setAction({}); // Reset action after processing 
         console.log("Sale saved successfully:", response.data);
         console.log("Completed Invoice No:", response.data.invoiceNo);
-        
-        alert(`Sale saved successfully! Invoice No: ${response.data.invoiceNo}`);
-        
-        // Reset all form data for new transaction
-        setInvoiceData({});
-        setCartItems([]);
-        setCustomerData({});
-        setPaymentData({});
-        setAction({});
-        setLoading(true);
-        
-        // Fetch new invoice number for next sale
-        setTimeout(async () => {
-          try {
-            const newResponse = await axios.get('http://localhost:5000/api/sales/generate-invoice-no');
-            console.log("New invoice number response:", newResponse.data);
-            if (newResponse.data.success) {
-              console.log("Setting new invoice number:", newResponse.data.invoiceNo);
-              setInvoiceNo(newResponse.data.invoiceNo);
-            } else {
-              console.error("Failed to fetch new invoice number:", newResponse.data.message);
-            }
-          } catch (error) {
-            console.error("Error fetching new invoice number:", error);
-          } finally {
-            setLoading(false);
-          }
-        }, 500);
+
+        setSuccessMessage(`Sale saved successfully! Invoice No: ${response.data.invoiceNo}`);
       } catch (error) {
         console.error("Error sending data:", error);
         const errorMessage = error.response?.data?.message || error.message || "Error saving sale. Please try again.";
-        alert(errorMessage);
+        setError({ field: 'general', message: errorMessage });
+        setLoading(false);
       }
+    } else if (action === 'printInvoice' || action === 'print') {
+      // Handle print action
+      if (!invoiceNo || !cartItems || cartItems.length === 0) {
+        setError({ field: 'print', message: 'No sale data to print. Please complete a sale first.' });
+        setAction({});
+        return;
+      }
+      handlePrint();
+      setAction({});
     }
-  }, [action]);
+  }, [action, handlePrint]);
 
   // Trigger sendData when action changes to proceedToPayment
   useEffect(() => {
     if (action === 'proceedToPayment') {
       sendData();
-      setAction({}); 
+      setAction({});
+    }
+  }, [action, sendData]);
+
+  // Trigger sendData when action changes to print
+  useEffect(() => {
+    if (action === 'printInvoice' || action === 'print') {
+      sendData();
     }
   }, [action, sendData]);
 
@@ -131,7 +210,7 @@ const POS = () => {
     if (action === 'holdInvoice') {
       // Validate that required data exists
       if (!customerData || !invoiceData || cartItems.length === 0) {
-        alert('Cannot hold invoice: Missing customer, items, or invoice data');
+        setError({ field: 'holdInvoice', message: 'Cannot hold invoice: Missing customer, items, or invoice data' });
         setAction({});
         return;
       }
@@ -145,20 +224,21 @@ const POS = () => {
         paymentData,
         timestamp: new Date().toLocaleTimeString(),
         invoiceNo: invoiceNo,
-        
+        location: location
       };
 
       // Store in local storage
       localStorage.setItem('holdInvoice', JSON.stringify(holdData));
       setHoldInvoice(holdData);
-      
+
       // Reset current invoice
       setInvoiceData({});
       setCartItems([]);
       setPaymentData({});
       setAction({});
-      
-      alert('Invoice has been held successfully!');
+
+      setError({ field: 'holdInvoice', message: 'Invoice has been held successfully!' });
+      setSuccessMessage('Invoice has been held successfully!');
     }
   }, [action, customerData, cartItems, invoiceData, paymentData, invoiceNo]);
 
@@ -217,8 +297,8 @@ const POS = () => {
               📋 Hold Invoice Pending
             </h6>
             <p style={{ margin: 0, fontSize: '13px', color: '#856404' }}>
-              Customer: <strong>{holdInvoice.customerData?.c_name}</strong> | 
-              Items: <strong>{holdInvoice.cartItems?.length || 0}</strong> | 
+              Customer: <strong>{holdInvoice.customerData?.c_name}</strong> |
+              Items: <strong>{holdInvoice.cartItems?.length || 0}</strong> |
               Time: <strong>{holdInvoice.timestamp}</strong>
             </p>
           </div>
@@ -262,44 +342,72 @@ const POS = () => {
           </div>
         </div>
       )}
-      
+
       {/* Section 1: Customer Info */}
       <div className='card border-0 shadow-sm p-4 mb-3'>
-        <CustomerInfo setCustomerData={setCustomerData} invoiceNo={invoiceNo} />
+        <CustomerInfo setCustomerData={setCustomerData} invoiceNo={invoiceNo} setLocation={setLocation} location={location} setError={setError} />
 
       </div>
 
       {/* Section 2: Item Table */}
       <div className='card border-0 shadow-sm p-3 mb-3'>
-        <ItemTable cartItems={cartItems} setCartItems={setCartItems} priceLevel={priceLevel} setPriceLevel={setPriceLevel}/>
+        <ItemTable cartItems={cartItems} setCartItems={setCartItems} priceLevel={priceLevel} setPriceLevel={setPriceLevel} location={location} setSelectedProduct={setSelectedProduct} error={error} setError={setError} />
+        
+        {/* Information Box - Horizontal Line Below Cart */}
+        <div className='row g-3'>
+          <div className='col-12'>
+            <InformationBox 
+              customerData={customerData} 
+              selectedProduct={selectedProduct} 
+              setError={setError} 
+              location={location} 
+              setLocation={setLocation} 
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Section 3: Bottom Grid */}
+      {/* Section 2.5: Payment Form - Under Item Table */}
+      <div className='card border-0 shadow-sm p-3 mb-3'>
+        <PaymentMethod paymentData={paymentData} setPaymentData={setPaymentData} totalDue={invoiceData?.finalTotal || 0} setError={setError} />
+      </div>
+
+      {/* Section 3: Bottom Grid - Invoice Total and Action Buttons */}
+      <div className='card border-0 shadow-sm p-3 mb-3'>
+        <div className='row g-3'>
+          <div className='col-lg-6'>
+            <InvoiceTotal cartItems={cartItems} onChangeInvoiceData={handleInvoiceDataChange} setError={setError} />
+          </div>
+          <div className='col-lg-6'>
+            <ActionButtons setAction={setAction} setError={setError} />
+          </div>
+        </div>
+      </div>
+
       <div className='row g-3'>
-        <div className='col-xl-4 col-lg-6'>
-          <div className='card border-0 shadow-sm p-3 h-100'>
-            <InvoiceTotal cartItems={cartItems} onChangeInvoiceData={handleInvoiceDataChange} />
-          </div>
-        </div>
-
-        <div className='col-xl-4 col-lg-6'>
-          <div className='card border-0 shadow-sm p-3 h-100'>
-            <PaymentMethod paymentData={paymentData} setPaymentData={setPaymentData} totalDue={invoiceData?.finalTotal || 0} />
-          </div>
-        </div>
-
-        <div className='col-xl-4 col-lg-12'>
-          <div className='card border-0 shadow-sm p-3 h-100'>
-            <ActionButtons setAction={setAction} />
-          </div>
-        </div>
-
         {/* Test Component */}
         <div className='col-12'>
           <div className='card border-0 shadow-sm p-3 h-100'>
-            <Test cartItems={cartItems} invoiceData={invoiceData} paymentData={paymentData} customerData={customerData} />
+            <Test cartItems={cartItems} invoiceData={invoiceData} paymentData={paymentData} customerData={customerData} setError={setError} />
           </div>
         </div>
+
+
+        {/* Hidden bill template for printing */}
+        <div style={{ display: 'none' }}>
+          <BillTemplate
+            ref={billPrintRef}
+            cartItems={cartItems}
+            invoiceData={invoiceData}
+            customerData={customerData}
+            companyInfo={{
+              name: 'Shanel ERP System',
+              phone: '+1234567890'
+            }}
+          />
+        </div>
+
+
       </div>
 
     </div>
