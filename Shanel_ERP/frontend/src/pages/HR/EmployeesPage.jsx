@@ -99,6 +99,16 @@ const mapEmployeeFromApi = (emp) => ({
   raw: emp,
 });
 
+const defaultAddForm = {
+  Full_Name: '', Name_With_Initials: '', NIC: '', Date_Of_Birth: '', Gender: '', Marital_Status: '',
+  Contact_Phone: '', Contact_Phone_2: '', Email: '', City: '', Department: 'HR', Role: 'Staff',
+  Salary_Category: 'Monthly_Fixed', Employee_Type: 'Permanent', Hire_Date: '', Confirmation_Date: '',
+  Status: 'Active', EPF_Eligible: 'Yes', ETF_Eligible: 'Yes', EPF_Number: '', Bank_Name: '',
+  Bank_Account_No: '', Bank_Branch: '', Bank_Account_Name: '', Permanent_Address: '',
+  Current_Address: '', Emergency_Contact_Name: '', Emergency_Contact_Phone: '',
+  Emergency_Contact_Relationship: '', Notes: '', image: ''
+};
+
 const EmployeesPage = () => {
   const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -106,7 +116,7 @@ const EmployeesPage = () => {
   const [viewingEmployee, setViewingEmployee] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
-  const [addForm, setAddForm] = useState({ name: '', role: 'Staff', email: '', phone: '', department: 'HR', image: '' });
+  const [addForm, setAddForm] = useState(defaultAddForm);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const dragItem = useRef();
@@ -217,8 +227,8 @@ const EmployeesPage = () => {
 
   const addEmployee = (e) => {
     e?.stopPropagation();
-    if (!addForm.name?.trim() || !addForm.phone?.trim()) {
-      alert('Name and phone are required');
+    if (!addForm.Full_Name?.trim() || !addForm.Contact_Phone?.trim()) {
+      alert('Full Name and Contact Phone are required');
       return;
     }
 
@@ -226,22 +236,19 @@ const EmployeesPage = () => {
       try {
         const now = new Date();
         const employeeCode = `EMP-${Date.now().toString().slice(-6)}`;
-        const hireDate = now.toISOString().slice(0, 10);
+        const hireDate = addForm.Hire_Date || now.toISOString().slice(0, 10);
+        
         const payload = {
           Employee_Code: employeeCode,
-          Full_Name: addForm.name.trim(),
-          Role: addForm.role || 'Staff',
-          Email: addForm.email?.trim() || null,
-          Contact_Phone: addForm.phone?.trim(),
-          Department: addForm.department || 'HR',
-          Salary_Category: 'Monthly_Fixed',
+          ...addForm,
+          Full_Name: addForm.Full_Name.trim(),
           Hire_Date: hireDate,
-          Employee_Type: 'Permanent',
-          Status: 'Active'
         };
+        delete payload.image;
+
         await axios.post(`${API_BASE}/employees`, payload);
         await fetchEmployees();
-        setAddForm({ name: '', role: 'Staff', email: '', phone: '', department: 'HR', image: '' });
+        setAddForm(defaultAddForm);
         setShowAddForm(false);
       } catch (err) {
         console.error('addEmployee error:', err);
@@ -252,7 +259,7 @@ const EmployeesPage = () => {
 
   const cancelAdd = () => {
     setShowAddForm(false);
-    setAddForm({ name: '', role: 'Staff', email: '', phone: '', department: 'HR', image: '' });
+    setAddForm(defaultAddForm);
   };
 
   const deleteEmployee = (emp, e) => {
@@ -362,29 +369,151 @@ const EmployeesPage = () => {
         }}>
           <h5 style={{ margin: '0 0 16px 0', color: '#1a1a2e', fontSize: '15px' }}>Add New Employee</h5>
           <div className="row g-2">
-            <div className="col-12 col-md-4">
-              <label className="form-label small mb-0">Name *</label>
-              <input className="form-control form-control-sm" placeholder="Full name" value={addForm.name} onChange={e => updateAddFormField('name', e.target.value)} />
+            <div className="col-12 col-md-6">
+              <label className="form-label small mb-0">Full Name *</label>
+              <input className="form-control form-control-sm" placeholder="Full name" value={addForm.Full_Name} onChange={e => updateAddFormField('Full_Name', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-6">
+              <label className="form-label small mb-0">Name With Initials</label>
+              <input className="form-control form-control-sm" placeholder="e.g. J. Doe" value={addForm.Name_With_Initials} onChange={e => updateAddFormField('Name_With_Initials', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
-              <label className="form-label small mb-0">Role</label>
-              <input className="form-control form-control-sm" placeholder="e.g. Staff, Manager" value={addForm.role} onChange={e => updateAddFormField('role', e.target.value)} />
+              <label className="form-label small mb-0">NIC</label>
+              <input className="form-control form-control-sm" placeholder="NIC number" value={addForm.NIC} onChange={e => updateAddFormField('NIC', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Date Of Birth</label>
+              <input type="date" className="form-control form-control-sm" value={addForm.Date_Of_Birth} onChange={e => updateAddFormField('Date_Of_Birth', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Gender</label>
+              <select className="form-select form-select-sm" value={addForm.Gender} onChange={e => updateAddFormField('Gender', e.target.value)}>
+                <option value="">Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Marital Status</label>
+              <select className="form-select form-select-sm" value={addForm.Marital_Status} onChange={e => updateAddFormField('Marital_Status', e.target.value)}>
+                <option value="">Select</option>
+                <option value="Single">Single</option>
+                <option value="Married">Married</option>
+                <option value="Divorced">Divorced</option>
+                <option value="Widowed">Widowed</option>
+              </select>
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Contact Phone *</label>
+              <input className="form-control form-control-sm" placeholder="+94-71-555-1234" value={addForm.Contact_Phone} onChange={e => updateAddFormField('Contact_Phone', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Contact Phone 2</label>
+              <input className="form-control form-control-sm" placeholder="Alternative phone" value={addForm.Contact_Phone_2} onChange={e => updateAddFormField('Contact_Phone_2', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Email</label>
+              <input type="email" className="form-control form-control-sm" placeholder="email@example.com" value={addForm.Email} onChange={e => updateAddFormField('Email', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">City</label>
+              <input className="form-control form-control-sm" placeholder="City" value={addForm.City} onChange={e => updateAddFormField('City', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Department</label>
-              <input className="form-control form-control-sm" placeholder="e.g. HR" value={addForm.department} onChange={e => updateAddFormField('department', e.target.value)} />
+              <input className="form-control form-control-sm" placeholder="e.g. HR" value={addForm.Department} onChange={e => updateAddFormField('Department', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Role</label>
+              <input className="form-control form-control-sm" placeholder="e.g. Staff, Manager" value={addForm.Role} onChange={e => updateAddFormField('Role', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Salary Category</label>
+              <input className="form-control form-control-sm" placeholder="e.g. Monthly_Fixed" value={addForm.Salary_Category} onChange={e => updateAddFormField('Salary_Category', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Employee Type</label>
+              <input className="form-control form-control-sm" placeholder="e.g. Permanent" value={addForm.Employee_Type} onChange={e => updateAddFormField('Employee_Type', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Hire Date</label>
+              <input type="date" className="form-control form-control-sm" value={addForm.Hire_Date} onChange={e => updateAddFormField('Hire_Date', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Confirmation Date</label>
+              <input type="date" className="form-control form-control-sm" value={addForm.Confirmation_Date} onChange={e => updateAddFormField('Confirmation_Date', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Status</label>
+              <select className="form-select form-select-sm" value={addForm.Status} onChange={e => updateAddFormField('Status', e.target.value)}>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Terminated">Terminated</option>
+                <option value="Resigned">Resigned</option>
+              </select>
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">EPF Eligible</label>
+              <select className="form-select form-select-sm" value={addForm.EPF_Eligible} onChange={e => updateAddFormField('EPF_Eligible', e.target.value)}>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">ETF Eligible</label>
+              <select className="form-select form-select-sm" value={addForm.ETF_Eligible} onChange={e => updateAddFormField('ETF_Eligible', e.target.value)}>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">EPF Number</label>
+              <input className="form-control form-control-sm" placeholder="EPF Number" value={addForm.EPF_Number} onChange={e => updateAddFormField('EPF_Number', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Bank Name</label>
+              <input className="form-control form-control-sm" placeholder="Bank Name" value={addForm.Bank_Name} onChange={e => updateAddFormField('Bank_Name', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Bank Account No</label>
+              <input className="form-control form-control-sm" placeholder="Account Number" value={addForm.Bank_Account_No} onChange={e => updateAddFormField('Bank_Account_No', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0">Bank Branch</label>
+              <input className="form-control form-control-sm" placeholder="Branch Name" value={addForm.Bank_Branch} onChange={e => updateAddFormField('Bank_Branch', e.target.value)} />
             </div>
             <div className="col-12 col-md-6">
-              <label className="form-label small mb-0">Email</label>
-              <input className="form-control form-control-sm" type="email" placeholder="email@shanel.local" value={addForm.email} onChange={e => updateAddFormField('email', e.target.value)} />
+              <label className="form-label small mb-0">Bank Account Name</label>
+              <input className="form-control form-control-sm" placeholder="Account Name" value={addForm.Bank_Account_Name} onChange={e => updateAddFormField('Bank_Account_Name', e.target.value)} />
             </div>
             <div className="col-12 col-md-6">
-              <label className="form-label small mb-0">Phone</label>
-              <input className="form-control form-control-sm" placeholder="+94-71-555-1234" value={addForm.phone} onChange={e => updateAddFormField('phone', e.target.value)} />
+              <label className="form-label small mb-0">Emergency Contact Name</label>
+              <input className="form-control form-control-sm" placeholder="Emergency Contact" value={addForm.Emergency_Contact_Name} onChange={e => updateAddFormField('Emergency_Contact_Name', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-6">
+              <label className="form-label small mb-0">Emergency Contact Phone</label>
+              <input className="form-control form-control-sm" placeholder="Emergency Phone" value={addForm.Emergency_Contact_Phone} onChange={e => updateAddFormField('Emergency_Contact_Phone', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-6">
+              <label className="form-label small mb-0">Emergency Contact Relationship</label>
+              <input className="form-control form-control-sm" placeholder="Relationship" value={addForm.Emergency_Contact_Relationship} onChange={e => updateAddFormField('Emergency_Contact_Relationship', e.target.value)} />
+            </div>
+            <div className="col-12">
+              <label className="form-label small mb-0">Permanent Address</label>
+              <textarea className="form-control form-control-sm" placeholder="Permanent Address" value={addForm.Permanent_Address} onChange={e => updateAddFormField('Permanent_Address', e.target.value)} rows={2} />
+            </div>
+            <div className="col-12">
+              <label className="form-label small mb-0">Current Address</label>
+              <textarea className="form-control form-control-sm" placeholder="Current Address" value={addForm.Current_Address} onChange={e => updateAddFormField('Current_Address', e.target.value)} rows={2} />
+            </div>
+            <div className="col-12">
+              <label className="form-label small mb-0">Notes</label>
+              <textarea className="form-control form-control-sm" placeholder="Any additional notes" value={addForm.Notes} onChange={e => updateAddFormField('Notes', e.target.value)} rows={2} />
             </div>
           </div>
           <div className="d-flex gap-2 mt-3">
-            <button className="btn btn-primary btn-sm" onClick={addEmployee} disabled={!addForm.name?.trim()}>Save Employee</button>
+            <button className="btn btn-primary btn-sm" onClick={addEmployee} disabled={!addForm.Full_Name?.trim() || !addForm.Contact_Phone?.trim()}>Save Employee</button>
             <button className="btn btn-secondary btn-sm" onClick={cancelAdd}>Cancel</button>
           </div>
         </div>
