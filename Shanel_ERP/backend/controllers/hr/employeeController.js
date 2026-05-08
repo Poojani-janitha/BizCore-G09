@@ -74,14 +74,25 @@ const getEmployeeById = async (req, res) => {
 const createEmployee = async (req, res) => {
     try {
         const payload = { ...req.body };
-        if (!payload.Employee_Code || !payload.Full_Name || !payload.Contact_Phone || !payload.Hire_Date || !payload.Role || !payload.Department || !payload.Salary_Category) {
+
+        if (!payload.Full_Name || !payload.Contact_Phone || !payload.Hire_Date || !payload.Role || !payload.Department || !payload.Salary_Category) {
             return res.status(400).json({
                 success: false,
-                message: 'Missing required fields: Employee_Code, Full_Name, Contact_Phone, Hire_Date, Role, Department, Salary_Category'
+                message: 'Missing required fields: Full_Name, Contact_Phone, Hire_Date, Role, Department, Salary_Category'
             });
         }
 
+        // 1. Create with a temporary code (required by the model's NOT NULL constraint)
+        const tempCode = `PENDING-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        payload.Employee_Code = tempCode;
+
         const created = await Employee.create(payload);
+
+        // 2. Immediately update with the real code based on the generated Employee_ID
+        // We use padStart(3, '0') to maintain the EMP-023 format
+        const realCode = `EMP-${String(created.Employee_ID).padStart(3, '0')}`;
+        await created.update({ Employee_Code: realCode });
+
         return res.status(201).json({ success: true, data: created });
     } catch (error) {
         console.error('createEmployee error:', error);

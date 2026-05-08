@@ -235,11 +235,9 @@ const EmployeesPage = () => {
     (async () => {
       try {
         const now = new Date();
-        const employeeCode = `EMP-${Date.now().toString().slice(-6)}`;
         const hireDate = addForm.Hire_Date || now.toISOString().slice(0, 10);
         
         const payload = {
-          Employee_Code: employeeCode,
           ...addForm,
           Full_Name: addForm.Full_Name.trim(),
           Hire_Date: hireDate,

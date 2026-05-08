@@ -330,11 +330,31 @@ const upsertAttendanceSummary = async (req, res) => {
     }
 };
 
+const deleteAttendance = async (req, res) => {
+    try {
+        const { attendanceId } = req.params;
+        const row = await Attendance.findByPk(attendanceId);
+        if (!row) {
+            return res.status(404).json({ success: false, message: 'Attendance record not found' });
+        }
+        await row.destroy();
+        return res.status(200).json({ success: true, message: 'Attendance record deleted' });
+    } catch (error) {
+        console.error('deleteAttendance error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to delete attendance',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     getAttendance,
     upsertAttendance,
     bulkAttendance,
     updateAttendance,
     getAttendanceSummaries,
-    upsertAttendanceSummary
+    upsertAttendanceSummary,
+    deleteAttendance
 };
