@@ -72,7 +72,8 @@ const ReceivePaymentPage = () => {
   const fetchCategories = async () => {
     try {
       setLoadingCategories(true);
-      const res = await axios.get('http://localhost:5000/api/accounts?active=true');
+      // Only fetch Revenue (Income) accounts for the income category dropdown
+      const res = await axios.get('http://localhost:5000/api/accounts?active=true&type=Revenue');
       if (res.data.success) {
         // Store full account objects to filter by type later if needed
         const accounts = res.data.data;
