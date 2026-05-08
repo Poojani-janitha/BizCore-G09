@@ -724,7 +724,7 @@ const Attendance = () => {
           <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Mark All:</span>
           {['present', 'leave', 'absent'].map(s => (
             <button key={s} onClick={() => markAll(s)} style={{
-              padding: '6px 14px', borderRadius: '8px', border: 'none',
+              padding: '6px 14px', borderRadius: '8px',
               background: statusColors[s].bg, color: statusColors[s].color,
               fontSize: '12px', fontWeight: 600, cursor: 'pointer',
               border: `1px solid ${statusColors[s].border}20`,

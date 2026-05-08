@@ -112,7 +112,7 @@ const getPayrolls = async (req, res) => {
                 {
                     model: Employee,
                     as: 'Employee',
-                    attributes: ['Employee_ID', 'Employee_Code', 'Full_Name', 'Department']
+                    attributes: ['Employee_ID', 'Employee_Code', 'Full_Name']
                 }
             ],
             order: [
@@ -139,7 +139,7 @@ const getPayrollById = async (req, res) => {
                 {
                     model: Employee,
                     as: 'Employee',
-                    attributes: ['Employee_ID', 'Employee_Code', 'Full_Name', 'Department', 'EPF_Eligible', 'ETF_Eligible']
+                    attributes: ['Employee_ID', 'Employee_Code', 'Full_Name', 'EPF_Eligible', 'ETF_Eligible']
                 }
             ]
         });
