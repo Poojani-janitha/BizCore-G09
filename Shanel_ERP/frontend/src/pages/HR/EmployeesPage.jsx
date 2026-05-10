@@ -298,7 +298,19 @@ const EmployeesPage = () => {
         setShowAddForm(false);
       } catch (err) {
         console.error('addEmployee error:', err);
-        alert(err?.response?.data?.message || 'Failed to add employee');
+        
+        // Build error message with validation details
+        let errorMsg = err?.response?.data?.message || 'Failed to add employee';
+        
+        // Add validation errors if present
+        if (err?.response?.data?.validationErrors && Array.isArray(err.response.data.validationErrors)) {
+          const validationDetails = err.response.data.validationErrors
+            .map(e => `${e.path}: ${e.message}`)
+            .join('\n');
+          errorMsg = `${errorMsg}\n\n${validationDetails}`;
+        }
+        
+        alert(errorMsg);
       }
     })();
   };
@@ -359,7 +371,7 @@ const EmployeesPage = () => {
           letterSpacing: '-0.5px',
         }}>
           <span style={{
-            background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
+            background: 'linear-gradient(135deg, #0d9488, #0f172a)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>Employees</span>
@@ -493,11 +505,19 @@ const EmployeesPage = () => {
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Role</label>
-              <input className="form-control form-control-sm" placeholder="e.g. Staff, Manager" value={addForm.Role} onChange={e => updateAddFormField('Role', e.target.value)} />
+              <select className="form-select form-select-sm" value={addForm.Role} onChange={e => updateAddFormField('Role', e.target.value)}>
+                <option value="Staff">Staff</option>
+                <option value="Cashier">Cashier</option>
+                <option value="Staff (Production)">Staff (Production)</option>
+                <option value="Manager">Manager</option>
+              </select>
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Salary Category</label>
-              <input className="form-control form-control-sm" placeholder="e.g. Monthly_Fixed" value={addForm.Salary_Category} onChange={e => updateAddFormField('Salary_Category', e.target.value)} />
+              <select className="form-select form-select-sm" value={addForm.Salary_Category} onChange={e => updateAddFormField('Salary_Category', e.target.value)}>
+                <option value="Monthly_Fixed">Monthly Fixed</option>
+                <option value="Card_Based">Card Based</option>
+              </select>
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Employee Type</label>
@@ -544,7 +564,20 @@ const EmployeesPage = () => {
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Bank Name</label>
-              <input className="form-control form-control-sm" placeholder="Bank Name" value={addForm.Bank_Name} onChange={e => updateAddFormField('Bank_Name', e.target.value)} />
+              <select className="form-select form-select-sm" value={addForm.Bank_Name} onChange={e => updateAddFormField('Bank_Name', e.target.value)}>
+                <option value="">Select Bank</option>
+                <option value="Bank of Ceylon">Bank of Ceylon</option>
+                <option value="People's Bank">People's Bank</option>
+                <option value="Commercial Bank">Commercial Bank</option>
+                <option value="Hatton National Bank">Hatton National Bank</option>
+                <option value="Sampath Bank">Sampath Bank</option>
+                <option value="Seylan Bank">Seylan Bank</option>
+                <option value="Nations Trust Bank">Nations Trust Bank</option>
+                <option value="DFCC Bank">DFCC Bank</option>
+                <option value="Pan Asia Bank">Pan Asia Bank</option>
+                <option value="Union Bank">Union Bank</option>
+                <option value="NDB Bank">NDB Bank</option>
+              </select>
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Bank Account No</label>
@@ -643,7 +676,7 @@ const EmployeesPage = () => {
                       borderRadius: '50%',
                       overflow: 'hidden',
                       flexShrink: 0,
-                      background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                      background: 'linear-gradient(135deg, rgb(13, 148, 136), rgb(15, 23, 42))',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -707,7 +740,12 @@ const EmployeesPage = () => {
                   </div>
                   <div className="mb-2">
                     <label className="form-label small mb-0">Role</label>
-                    <input className="form-control form-control-sm" value={editForm.role} onChange={e => updateEditField('role', e.target.value)} />
+                    <select className="form-select form-select-sm" value={editForm.role} onChange={e => updateEditField('role', e.target.value)}>
+                      <option value="Staff">Staff</option>
+                      <option value="Cashier">Cashier</option>
+                      <option value="Staff (Production)">Staff (Production)</option>
+                      <option value="Manager">Manager</option>
+                    </select>
                   </div>
                   <div className="mb-2">
                     <label className="form-label small mb-0">Email</label>
@@ -726,7 +764,7 @@ const EmployeesPage = () => {
                     <div onClick={e => triggerImagePick(emp.id, e)} style={{ cursor: 'pointer', display: 'inline-block' }} title="Click to change">
                       <div style={{
                         width: 64, height: 64, borderRadius: '50%', overflow: 'hidden',
-                        background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'linear-gradient(135deg, rgb(13, 148, 136), rgb(15, 23, 42))', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         color: '#fff', fontSize: '20px', fontWeight: 700, border: '2px solid #e8e8e8',
                       }}>
                         {editForm.image ? (

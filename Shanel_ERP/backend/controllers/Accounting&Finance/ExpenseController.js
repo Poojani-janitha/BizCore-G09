@@ -99,10 +99,13 @@ class ExpenseController {
                 detailedDescription += ` | Cheque: ${chequeNo}, Bank: ${chequeBank || 'N/A'}, Date: ${chequeDate || 'N/A'}`;
             }
 
+            const allowedCategories = ['Salary', 'Rent', 'Utilities', 'Raw_Materials', 'Transport', 'Maintenance', 'Marketing', 'Office_Supplies', 'Other'];
+            const dbCategory = allowedCategories.includes(expenseCategory) ? expenseCategory : 'Other';
+
             // Create the expense record
             const expense = await Expense.create({
                 Expense_Date: expenseDate,
-                Expense_Category: expenseCategory,
+                Expense_Category: dbCategory,
                 Expense_Subcategory: expenseSubcategory || null,
                 Amount: expenseAmount,
                 Payment_Method: paymentMethod,
@@ -124,7 +127,8 @@ class ExpenseController {
                 creditAccount,
                 expenseAmount,
                 paymentMethod,
-                transaction
+                transaction,
+                expenseCategory
             );
 
             await transaction.commit();
@@ -163,14 +167,15 @@ class ExpenseController {
 
 
     // ─── CREATE JOURNAL ENTRY FOR EXPENSE ─────────────────────────────────────
-    async createExpenseJournalEntry(expense, expenseAccount, creditAccount, amount, paymentMethod, transaction) {
+    async createExpenseJournalEntry(expense, expenseAccount, creditAccount, amount, paymentMethod, transaction, originalCategory) {
 
         // Generate journal number
         const journalNumber = await this.generateJournalNumber('EXP-JE');
 
         // Prepare description
         const paymentMethodLabel = paymentMethod === 'Bank' ? 'Bank Payment' : paymentMethod;
-        const description = `${paymentMethodLabel} - ${expense.Expense_Category}${expense.Paid_To ? ` to ${expense.Paid_To}` : ''} - ${expense.Description || ''}`;
+        const categoryLabel = originalCategory || expense.Expense_Category;
+        const description = `${paymentMethodLabel} - ${categoryLabel}${expense.Paid_To ? ` to ${expense.Paid_To}` : ''} - ${expense.Description || ''}`;
 
         // Create journal entry
         const journalEntry = await JournalEntry.create({
@@ -200,7 +205,7 @@ class ExpenseController {
             Line_Number: 1,
             Debit_Amount: amount,
             Credit_Amount: 0,
-            Description: `${expense.Expense_Category} expense${expense.Paid_To ? ` - paid to ${expense.Paid_To}` : ''}`
+            Description: `${categoryLabel} expense${expense.Paid_To ? ` - paid to ${expense.Paid_To}` : ''}`
         });
 
         // Line 2: CREDIT - Cash/Bank/Cheque Account (decreases asset)
@@ -210,7 +215,7 @@ class ExpenseController {
             Line_Number: 2,
             Debit_Amount: 0,
             Credit_Amount: amount,
-            Description: `${paymentMethodLabel} for ${expense.Expense_Category} expense${
+            Description: `${paymentMethodLabel} for ${categoryLabel} expense${
                 expense.Description.includes('|') ? ` (${expense.Description.split('|').slice(1).join('|').trim()})` : ''
             }`
         });

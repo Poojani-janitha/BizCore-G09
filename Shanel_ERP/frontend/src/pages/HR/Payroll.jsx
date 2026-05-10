@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Calculator, Send, Download, CheckCircle, AlertCircle, Edit2, Save, X, Eye, Printer, FileText } from 'lucide-react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const API_BASE = 'http://localhost:5000/api/hr';
 
@@ -446,7 +446,7 @@ export default function Payroll() {
       `Rs. ${r.netSalary.toLocaleString()}`
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 45,
@@ -458,7 +458,7 @@ export default function Payroll() {
 
     const finalY = doc.lastAutoTable.finalY || 150;
     doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text(`Total Net Payable: Rs. ${totalNet.toLocaleString()}`, 14, finalY + 15);
 
     doc.save(`Payroll_Report_${selectedMonth}.pdf`);
@@ -597,7 +597,15 @@ export default function Payroll() {
     <div style={{ minHeight: '100vh', background: '#f5f6fa', padding: '28px 32px', fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif" }}>
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>Payroll Management</h1>
+          <h1 style={{ 
+            margin: 0, 
+            fontSize: '26px', 
+            fontWeight: 900, 
+            background: 'linear-gradient(135deg, rgb(13, 148, 136), rgb(15, 23, 42))',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            letterSpacing: '-0.02em' 
+          }}>Payroll Management</h1>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>Calculate salaries for {selectedMonth}</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>

@@ -32,10 +32,6 @@ const Employee = sequelize.define(
             defaultValue: 'Permanent'
         },
         Role: { type: DataTypes.STRING(100), allowNull: false },
-        Department: {
-            type: DataTypes.ENUM('Production', 'Sales', 'Finance', 'Admin', 'HR', 'Warehouse'),
-            allowNull: false
-        },
         Salary_Category: {
             type: DataTypes.ENUM('Monthly_Fixed', 'Daily_Rate', 'Production_Based', 'Hybrid'),
             allowNull: false

@@ -96,10 +96,13 @@ class IncomeController {
                 detailedDescription += `${detailedDescription ? ' | ' : ''}Cheque: ${chequeNo}, Bank: ${chequeBank || 'N/A'}, Date: ${chequeDate || 'N/A'}`;
             }
 
+            const allowedCategories = ['Sales', 'Interest', 'Commission', 'Other'];
+            const dbCategory = allowedCategories.includes(incomeCategory) ? incomeCategory : 'Other';
+
             const income = await Income.create(
                 {
                     Income_Date: incomeDate,
-                    Income_Category: incomeCategory,
+                    Income_Category: dbCategory,
                     Amount: incomeAmount,
                     Source: source,
                     Description: detailedDescription || null,
@@ -117,7 +120,8 @@ class IncomeController {
                 debitAccount,
                 incomeAmount,
                 paymentMethod,
-                transaction
+                transaction,
+                incomeCategory
             );
 
             await transaction.commit();
@@ -260,13 +264,14 @@ class IncomeController {
         }
     }
 
-    async createIncomeJournalEntry(income, revenueAccount, debitAccount, amount, paymentMethod, transaction) {
+    async createIncomeJournalEntry(income, revenueAccount, debitAccount, amount, paymentMethod, transaction, originalCategory) {
         const journalNumber = await this.generateJournalNumber('INC-JE');
 
         // Map payment method to a readable label for journal descriptions
         const paymentMethodLabel = paymentMethod === 'Bank_Deposit' ? 'Bank Deposit' : paymentMethod;
 
-        const description = `${paymentMethodLabel} income - ${income.Income_Category} from ${income.Source}${
+        const categoryLabel = originalCategory || income.Income_Category;
+        const description = `${paymentMethodLabel} income - ${categoryLabel} from ${income.Source}${
             income.Description ? ` - ${income.Description}` : ''
         }`;
 
@@ -306,7 +311,7 @@ class IncomeController {
                 Line_Number: 2,
                 Debit_Amount: 0,
                 Credit_Amount: amount,
-                Description: `${income.Income_Category} income recognized`
+                Description: `${categoryLabel} income recognized`
             }
         ];
 

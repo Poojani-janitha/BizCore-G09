@@ -177,8 +177,8 @@ const Hrdashboardpage = () => {
           color: '#1a1a2e',
           letterSpacing: '-0.5px',
         }}>
-          <span style={{
-            background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
+          <span style={{ 
+            background: 'linear-gradient(135deg, #0d9488, #0f172a)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>HR Dashboard</span>

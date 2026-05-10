@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Search, Plus, Package } from 'lucide-react';
 import CustomerForm from './CustomerForm';
 
-const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
+const CustomerInfo = ({ customerData, setCustomerData ,invoiceNo,WALKIN_CUSTOMER}) => {
 
   const date = new Date();
   const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD format
@@ -42,21 +42,20 @@ const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
   // }, [customerID])
 
 
-  // Create a walk-in customer object
-  const WALKIN_CUSTOMER = {
-    c_id: 9,
-    customer_code: 'WALKIN',
-    c_name: 'Walk-in Customer',
-    phone1: 'N/A',
-    customer_type: 'Retail',
-    price_level: 'Retail',
-    credit_allowed: false,
-    credit_status: 'NOT_ALLOWED'
-  };
+  
 
   const[result,setResult]= useState([]);//for search results dropdown
   const[query,setQuery]= useState('Walk-in Customer'); //default to walk-in customer, also used to control the input field
   const[selectedCustomer,setSelected]= useState(WALKIN_CUSTOMER);//selected customer object
+
+  // Sync internal state with external customerData (for resets)
+  useEffect(() => {
+    if (customerData && customerData.customer_code === 'WALKIN') {
+      setQuery('Walk-in Customer');
+      setSelected(WALKIN_CUSTOMER);
+    }
+  }, [customerData, WALKIN_CUSTOMER]);
+
 
   // Set Walk-in Customer as default when component mounts
  useEffect(() => {

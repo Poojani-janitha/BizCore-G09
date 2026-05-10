@@ -131,8 +131,8 @@ const Leave = () => {
     }}>
       <div style={{ marginBottom: '18px' }}>
         <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 800, letterSpacing: '-0.5px' }}>
-          <span style={{
-            background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
+          <span style={{ 
+            background: 'linear-gradient(135deg, #0d9488, #0f172a)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>

@@ -70,7 +70,12 @@ const EmployeeDetail = () => {
           </div>
           <div className="mb-3">
             <label className="form-label">Role</label>
-            <input className="form-control" value={employee.role} onChange={e => handleChange('role', e.target.value)} />
+            <select className="form-select" value={employee.role} onChange={e => handleChange('role', e.target.value)}>
+              <option value="Staff">Staff</option>
+              <option value="Cashier">Cashier</option>
+              <option value="Staff (Production)">Staff (Production)</option>
+              <option value="Manager">Manager</option>
+            </select>
           </div>
           <div className="mb-3">
             <label className="form-label">Email</label>
