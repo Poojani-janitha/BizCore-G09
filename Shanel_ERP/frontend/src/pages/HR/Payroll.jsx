@@ -132,14 +132,12 @@ export default function Payroll() {
       const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
       
       const [empRes, payRes, attRes] = await Promise.all([
-        axios.get(`${API_BASE}/employees`),
+        axios.get(`${API_BASE}/employees`, { params: { status: 'Active' } }),
         axios.get(`${API_BASE}/payroll`, { params: { month, year } }),
         axios.get(`${API_BASE}/attendance`, { params: { from: firstDay, to: lastDay } })
       ]);
 
-      const employees = Array.isArray(empRes?.data?.data) 
-        ? empRes.data.data.filter(e => e.Role !== 'Manager') 
-        : [];
+      const employees = Array.isArray(empRes?.data?.data) ? empRes.data.data : [];
       const dbPayrolls = Array.isArray(payRes?.data?.data) ? payRes.data.data : [];
       const attendances = Array.isArray(attRes?.data?.data) ? attRes.data.data : [];
       
@@ -464,6 +462,68 @@ export default function Payroll() {
     doc.save(`Payroll_Report_${selectedMonth}.pdf`);
   };
 
+  const handleMailToBank = async () => {
+    if (!bankDetails.recipientEmail || !bankDetails.bankName) {
+      alert('Please enter bank name and recipient email.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const doc = new jsPDF();
+      const friendlyMonth = getFriendlyMonth(selectedMonth);
+      const [year, month] = selectedMonth.split('-');
+
+      // Generate PDF (Similar to savePDF but for bank)
+      doc.setFontSize(22);
+      doc.setTextColor(30, 58, 95);
+      doc.text(`Monthly Paysheet - ${friendlyMonth}`, 14, 22);
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Bank: ${bankDetails.bankName}`, 14, 30);
+      doc.text(`Shanel ERP - HR Management System`, 14, 35);
+      doc.line(14, 40, 196, 40);
+
+      const tableColumn = ["Emp Code", "Name", "Role", "Gross Salary", "Deductions", "Net Payable"];
+      const tableRows = filteredRecords.map(r => [
+        r.employeeCode,
+        r.employeeName,
+        r.employeeRole,
+        `Rs. ${r.grossSalary.toLocaleString()}`,
+        `Rs. ${r.totalDeductions.toLocaleString()}`,
+        `Rs. ${r.netSalary.toLocaleString()}`
+      ]);
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 45,
+        styles: { fontSize: 9, cellPadding: 4 },
+        headStyles: { fillColor: [30, 58, 95], textColor: 255 },
+        margin: { top: 45 }
+      });
+
+      const pdfBase64 = doc.output('datauristring');
+
+      await axios.post(`${API_BASE}/payroll/mail-to-bank`, {
+        recipientEmail: bankDetails.recipientEmail,
+        bankName: bankDetails.bankName,
+        month,
+        year,
+        pdfBase64,
+        notes: bankDetails.notes
+      });
+
+      alert('Paysheet successfully mailed to the bank!');
+      setShowBankModal(false);
+    } catch (error) {
+      console.error('Mail to bank error:', error);
+      alert(error?.response?.data?.message || 'Failed to send mail. Ensure your backend email configuration is correct.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const exportToCSV = () => {
     const friendlyMonth = getFriendlyMonth(selectedMonth);
     const headers = ['Employee Code', 'Employee Name', 'Role', 'Gross Salary', 'EPF', 'ETF', 'Advance', 'Other Ded', 'Net Salary', 'Status'];
@@ -617,6 +677,9 @@ export default function Payroll() {
           </button>
           <button onClick={exportToCSV} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#64748b', transition: 'all 0.2s' }}>
             <Download size={16} color="#0d9488" /> Export CSV
+          </button>
+          <button onClick={() => setShowBankModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', background: 'linear-gradient(135deg, #1e3a5f, #0f172a)', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(30,58,95,0.2)' }}>
+            <Send size={16} /> Mail to Bank
           </button>
           <button onClick={approveAll} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', background: 'linear-gradient(135deg, #0d9488, #0f766e)', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(13,148,136,0.2)' }}>
             <CheckCircle size={16} /> Approve All
@@ -790,7 +853,7 @@ export default function Payroll() {
           </div>
           <div>
             <p style={{ margin: '0 0 4px 0', fontSize: '12px', fontWeight: 700, color: '#475569' }}>BONUS & TEA</p>
-            <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>Rs. 2,500 Bonus if > 20 days. Tea Allw. auto-calculated from Attendance.</p>
+            <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>Rs. 2,500 Bonus if &gt; 20 days. Tea Allw. auto-calculated from Attendance.</p>
           </div>
         </div>
       </div>
@@ -933,6 +996,76 @@ export default function Payroll() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button onClick={() => setShowAdjModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #d1d5db', background: 'white', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
               <button onClick={saveAdjustments} style={{ padding: '12px 32px', borderRadius: '12px', border: 'none', background: '#0d9488', color: 'white', fontWeight: 700, cursor: 'pointer' }}>Apply Adjustments</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bank Mailing Modal */}
+      {showBankModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'white', borderRadius: '20px', padding: '32px', width: '95%', maxWidth: '500px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#1e293b' }}>Mail Paysheet to Bank</h2>
+                <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>Send monthly breakdown to bank for processing</p>
+              </div>
+              <button onClick={() => setShowBankModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={24} /></button>
+            </div>
+
+            <div style={{ display: 'grid', gap: '16px', marginBottom: '32px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Bank Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Bank of Ceylon"
+                  value={bankDetails.bankName}
+                  onChange={(e) => setBankDetails({ ...bankDetails, bankName: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Recipient Email</label>
+                <input
+                  type="email"
+                  placeholder="bank-officer@example.com"
+                  value={bankDetails.recipientEmail}
+                  onChange={(e) => setBankDetails({ ...bankDetails, recipientEmail: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Additional Notes</label>
+                <textarea
+                  placeholder="Any specific instructions for the bank..."
+                  value={bankDetails.notes}
+                  onChange={(e) => setBankDetails({ ...bankDetails, notes: e.target.value })}
+                  rows={3}
+                  style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', resize: 'none' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button onClick={() => setShowBankModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #d1d5db', background: 'white', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+              <button 
+                onClick={handleMailToBank} 
+                disabled={loading}
+                style={{ 
+                  padding: '12px 32px', 
+                  borderRadius: '12px', 
+                  border: 'none', 
+                  background: loading ? '#94a3b8' : '#1e3a5f', 
+                  color: 'white', 
+                  fontWeight: 700, 
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {loading ? 'Sending...' : <><Send size={18} /> Send to Bank</>}
+              </button>
             </div>
           </div>
         </div>

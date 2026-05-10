@@ -44,6 +44,7 @@ const {
     createPayroll,
     updatePayroll,
     computePayrollDraft,
+    mailPayrollToBank,
     getAdvances,
     createAdvance,
     updateAdvance,
@@ -93,6 +94,7 @@ router.put('/salary-structure/:salaryId', updateSalaryStructure);
 
 // --- Payroll (specific paths before :payrollId) ---
 router.get('/payroll/draft', computePayrollDraft);
+router.post('/payroll/mail-to-bank', mailPayrollToBank);
 router.get('/payroll', getPayrolls);
 router.get('/payroll/:payrollId', getPayrollById);
 router.post('/payroll', createPayroll);

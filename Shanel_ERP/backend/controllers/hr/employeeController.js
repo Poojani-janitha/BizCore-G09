@@ -29,10 +29,17 @@ const getEmployees = async (req, res) => {
             order: [['Full_Name', 'ASC']]
         });
 
+        // Normalize status for frontend consistency
+        const normalizedRows = rows.map(row => {
+            const data = row.toJSON();
+            if (!data.Status) data.Status = 'Active';
+            return data;
+        });
+
         return res.status(200).json({
             success: true,
-            count: rows.length,
-            data: rows
+            count: normalizedRows.length,
+            data: normalizedRows
         });
     } catch (error) {
         console.error('getEmployees error:', error);
@@ -122,8 +129,8 @@ const validateEmployeeFields = async (payload) => {
         errors.push({ path: 'Employee_Type', message: 'Employee_Type must be one of: Permanent, Contract, Casual, Intern' });
     }
 
-    if (payload.Status && payload.Status !== '' && !['Active', 'On_Leave', 'Suspended', 'Resigned', 'Terminated'].includes(payload.Status)) {
-        errors.push({ path: 'Status', message: 'Status must be one of: Active, On_Leave, Suspended, Resigned, Terminated' });
+    if (payload.Status && payload.Status !== '' && !['Active', 'On_Leave', 'Suspended', 'Resigned', 'Terminated', 'Inactive'].includes(payload.Status)) {
+        errors.push({ path: 'Status', message: 'Status must be one of: Active, On_Leave, Suspended, Resigned, Terminated, Inactive' });
     }
 
     // DATE FIELDS - Nullable but must be valid if provided
@@ -179,6 +186,13 @@ const validateEmployeeFields = async (payload) => {
         const existingNIC = await Employee.findOne({ where: { NIC: payload.NIC } });
         if (existingNIC) {
             errors.push({ path: 'NIC', message: 'NIC must be unique (already exists in database)' });
+        }
+    }
+
+    if (payload.Email && String(payload.Email).trim() !== '') {
+        const existingEmail = await Employee.findOne({ where: { Email: payload.Email } });
+        if (existingEmail) {
+            errors.push({ path: 'Email', message: 'Email must be unique (already exists in database)' });
         }
     }
 
@@ -299,8 +313,23 @@ const updateEmployeeStatus = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Employee not found' });
         }
 
-        await employee.update({ Status });
-        return res.status(200).json({ success: true, data: employee });
+        // Force update using raw SQL with explicit ID to bypass any Sequelize instance issues
+        await Employee.sequelize.query(
+            'UPDATE EMPLOYEE SET Status = :status, Updated_At = :now WHERE Employee_ID = :id',
+            {
+                replacements: { 
+                    status: Status, 
+                    id: employee.Employee_ID, 
+                    now: new Date() 
+                },
+                type: Employee.sequelize.QueryTypes.UPDATE
+            }
+        );
+
+        return res.status(200).json({ 
+            success: true, 
+            message: `Employee status updated to ${Status}`
+        });
     } catch (error) {
         console.error('updateEmployeeStatus error:', error);
         return res.status(500).json({
@@ -440,19 +469,24 @@ const deleteEmployee = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Employee not found' });
         }
 
-        // Unlink any user account before delete to avoid FK issues and stale link.
-        await User.update(
-            { Employee_ID: null },
-            { where: { Employee_ID: employee.Employee_ID } }
+        // Force update using raw query to ensure persistence
+        await Employee.sequelize.query(
+            'UPDATE EMPLOYEE SET Status = "Inactive", Updated_At = NOW() WHERE Employee_ID = :id',
+            {
+                replacements: { id: employee.Employee_ID },
+                type: Employee.sequelize.QueryTypes.UPDATE
+            }
         );
 
-        await employee.destroy();
-        return res.status(200).json({ success: true, message: 'Employee deleted successfully' });
+        return res.status(200).json({ 
+            success: true, 
+            message: 'Employee successfully marked as Inactive in database' 
+        });
     } catch (error) {
         console.error('deleteEmployee error:', error);
         return res.status(500).json({
             success: false,
-            message: 'Failed to delete employee',
+            message: 'Failed to deactivate employee',
             error: error.message
         });
     }

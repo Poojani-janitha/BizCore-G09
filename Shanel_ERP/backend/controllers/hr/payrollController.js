@@ -517,6 +517,73 @@ const recordAdvanceRepayment = async (req, res) => {
     }
 };
 
+const nodemailer = require('nodemailer');
+
+const mailPayrollToBank = async (req, res) => {
+    try {
+        const { recipientEmail, bankName, month, year, pdfBase64, notes } = req.body;
+
+        if (!recipientEmail || !pdfBase64) {
+            return res.status(400).json({
+                success: false,
+                message: 'Recipient email and PDF content are required'
+            });
+        }
+
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+            return res.status(500).json({
+                success: false,
+                message: 'Server configuration error: EMAIL_USER or EMAIL_PASS is missing in .env'
+            });
+        }
+
+        // Use the 'gmail' service shortcut for better reliability
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        const mailOptions = {
+            from: `"Shanel ERP - HR" <${process.env.EMAIL_USER}>`,
+            to: recipientEmail,
+            subject: `Monthly Paysheet - ${bankName} - ${month}/${year}`,
+            text: `Dear ${bankName} Team,\n\nPlease find attached the monthly paysheet for ${month}/${year}.\n\nNotes: ${notes || 'No additional notes.'}\n\nRegards,\nHR Management - Shanel ERP`,
+            attachments: [
+                {
+                    filename: `Paysheet_${month}_${year}.pdf`,
+                    content: pdfBase64.split('base64,')[1],
+                    encoding: 'base64'
+                }
+            ]
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Paysheet successfully mailed to the bank'
+        });
+    } catch (error) {
+        console.error('mailPayrollToBank error:', error);
+        let message = 'Failed to send email. Please check your SMTP configuration.';
+        
+        if (error.code === 'EAUTH') {
+            message = 'Authentication failed. Please ensure you have entered a valid Google App Password in the .env file.';
+        } else if (error.code === 'ESOCKET') {
+            message = 'Network error. Could not connect to the email server.';
+        }
+
+        return res.status(500).json({
+            success: false,
+            message,
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     getSalaryStructures,
     createSalaryStructure,
@@ -530,5 +597,6 @@ module.exports = {
     createAdvance,
     updateAdvance,
     getAdvanceRepayments,
-    recordAdvanceRepayment
+    recordAdvanceRepayment,
+    mailPayrollToBank
 };

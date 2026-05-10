@@ -89,7 +89,7 @@ const Hrdashboardpage = () => {
       const endOfMonth = getMonthEnd(today);
       
       const [empRes, attRes] = await Promise.all([
-        axios.get(`${API_BASE}/employees`),
+        axios.get(`${API_BASE}/employees`, { params: { status: 'Active' } }),
         axios.get(`${API_BASE}/attendance`, { params: { from: startOfMonth, to: endOfMonth } })
       ]);
       
@@ -104,6 +104,9 @@ const Hrdashboardpage = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    // Auto-refresh every 5 minutes to stay updated daily/hourly
+    const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, [today]);
 
   const totalEmployees = employees.length || 1;
@@ -184,7 +187,7 @@ const Hrdashboardpage = () => {
           }}>HR Dashboard</span>
         </h1>
         <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-          February 2026 · Payroll cycle ends on 10th
+          {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric', day: 'numeric' })} · Daily Updates Enabled
         </p>
       </div>
 

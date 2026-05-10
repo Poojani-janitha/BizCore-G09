@@ -437,7 +437,7 @@ const Attendance = () => {
       setLoading(true);
       setError('');
       const [employeesRes, attendanceRes] = await Promise.all([
-        axios.get(`${API_BASE}/employees`),
+        axios.get(`${API_BASE}/employees`, { params: { status: 'Active' } }),
         axios.get(`${API_BASE}/attendance`, { params: { from: selectedDate, to: selectedDate } }),
       ]);
 

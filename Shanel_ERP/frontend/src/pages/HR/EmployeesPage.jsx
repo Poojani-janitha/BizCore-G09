@@ -95,7 +95,7 @@ const mapEmployeeFromApi = (emp) => ({
   image: emp.Photo_Path || '',
   employeeCode: emp.Employee_Code || '',
   salaryCategory: emp.Salary_Category || '',
-  status: emp.Status || 'Active',
+  status: emp.Status ? (emp.Status.charAt(0).toUpperCase() + emp.Status.slice(1)) : 'Active',
   raw: emp,
 });
 
@@ -133,7 +133,7 @@ const EmployeesPage = () => {
     try {
       setIsLoading(true);
       setError('');
-      const response = await axios.get(`${API_BASE}/employees`);
+      const response = await axios.get(`${API_BASE}/employees`, { params: { status: 'Active', _t: Date.now() } });
       const list = Array.isArray(response?.data?.data)
         ? response.data.data.map(mapEmployeeFromApi)
         : [];
@@ -328,7 +328,9 @@ const EmployeesPage = () => {
     (async () => {
       try {
         await axios.delete(`${API_BASE}/employees/${emp.id}`);
-        const updated = employees.filter(item => String(item.id) !== String(emp.id));
+        const updated = employees.map(item => 
+          String(item.id) === String(emp.id) ? { ...item, status: 'Inactive', raw: { ...item.raw, Status: 'Inactive' } } : item
+        );
         persistEmployees(updated);
         if (String(editingId) === String(emp.id)) {
           setEditingId(null);
@@ -337,6 +339,24 @@ const EmployeesPage = () => {
       } catch (err) {
         console.error('deleteEmployee error:', err);
         alert(err?.response?.data?.message || 'Failed to delete employee');
+      }
+    })();
+  };
+
+  const activateEmployee = (emp, e) => {
+    e?.stopPropagation();
+    const confirmed = window.confirm(`Activate employee "${emp.name}"?`);
+    if (!confirmed) return;
+    (async () => {
+      try {
+        await axios.patch(`${API_BASE}/employees/${emp.id}/status`, { Status: 'Active' });
+        const updated = employees.map(item => 
+          String(item.id) === String(emp.id) ? { ...item, status: 'Active', raw: { ...item.raw, Status: 'Active' } } : item
+        );
+        persistEmployees(updated);
+      } catch (err) {
+        console.error('activateEmployee error:', err);
+        alert(err?.response?.data?.message || 'Failed to activate employee');
       }
     })();
   };
@@ -664,6 +684,9 @@ const EmployeesPage = () => {
                   minHeight: '170px',
                   border: '1px solid #e8e8e8',
                   boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                  opacity: emp.status === 'Inactive' ? 0.6 : 1,
+                  filter: emp.status === 'Inactive' ? 'grayscale(0.5)' : 'none',
+                  background: emp.status === 'Inactive' ? '#f1f5f9' : '#fff'
                 }}
               >
                 <div className="card-body d-flex flex-column align-items-center text-center pt-3 pb-2">
@@ -702,6 +725,19 @@ const EmployeesPage = () => {
                     <h5 className="card-title mb-1" style={{ fontSize: '18px' }}>{emp.name}</h5>
                     <p className="mb-0"><small className="text-muted" style={{ fontSize: '12px' }}>{emp.role}</small></p>
                     <p className="mb-0"><small className="text-muted" style={{ fontSize: '12px' }}>{emp.email}</small></p>
+                    <div className="d-flex justify-content-center align-items-center gap-2 mt-1 mb-2">
+                      <span style={{
+                        fontSize: '10px',
+                        fontWeight: 900,
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        background: emp.status === 'Inactive' ? '#fee2e2' : '#ecfdf5',
+                        color: emp.status === 'Inactive' ? '#dc2626' : '#059669',
+                        textTransform: 'uppercase'
+                      }}>
+                        {emp.status}
+                      </span>
+                    </div>
                     <div className="d-flex justify-content-center gap-2 mt-2">
                       <button
                         className="btn btn-outline-secondary btn-sm py-0 px-2"
@@ -709,8 +745,18 @@ const EmployeesPage = () => {
                       >
                         View
                       </button>
-                      <button className="btn btn-outline-primary btn-sm py-0 px-2" onClick={e => startEdit(emp, e)}>Edit</button>
-                      <button className="btn btn-outline-danger btn-sm py-0 px-2" onClick={e => deleteEmployee(emp, e)}>Delete</button>
+                      <button
+                        className="btn btn-outline-primary btn-sm py-0 px-2"
+                        onClick={e => startEdit(emp, e)}
+                        disabled={emp.status === 'Inactive'}
+                      >
+                        Edit
+                      </button>
+                      {emp.status === 'Inactive' ? (
+                        <button className="btn btn-outline-success btn-sm py-0 px-2" onClick={e => activateEmployee(emp, e)}>Activate</button>
+                      ) : (
+                        <button className="btn btn-outline-danger btn-sm py-0 px-2" onClick={e => deleteEmployee(emp, e)}>Delete</button>
+                      )}
                     </div>
                   </div>
                 </div>
