@@ -119,6 +119,7 @@ const EmployeesPage = () => {
   const [addForm, setAddForm] = useState(defaultAddForm);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [errors, setErrors] = useState({});
   const dragItem = useRef();
   const dragOverItem = useRef();
   const fileInputRef = useRef();
@@ -223,12 +224,59 @@ const EmployeesPage = () => {
 
   const updateAddFormField = (field, value) => {
     setAddForm(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    const { Full_Name, Contact_Phone, Email, NIC, EPF_Eligible, EPF_Number, Hire_Date } = addForm;
+
+    if (!Full_Name?.trim()) {
+      newErrors.Full_Name = 'Required';
+    } else if (Full_Name.trim().length < 3) {
+      newErrors.Full_Name = 'Min 3 characters';
+    }
+
+    if (!Contact_Phone?.trim()) {
+      newErrors.Contact_Phone = 'Required';
+    } else if (!/^\+?[\d\s-]{10,}$/.test(Contact_Phone.trim())) {
+      newErrors.Contact_Phone = 'Invalid format';
+    }
+
+    if (Email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(Email.trim())) {
+      newErrors.Email = 'Invalid email';
+    }
+
+    if (!NIC?.trim()) {
+      newErrors.NIC = 'Required';
+    } else {
+      const nic = NIC.trim();
+      if (!/^\d{9}[vVxX]$/.test(nic) && !/^\d{12}$/.test(nic)) {
+        newErrors.NIC = 'Invalid format';
+      }
+    }
+
+    if (!Hire_Date) {
+      newErrors.Hire_Date = 'Required';
+    }
+
+    if (EPF_Eligible === 'Yes' && !EPF_Number?.trim()) {
+      newErrors.EPF_Number = 'Required if eligible';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const addEmployee = (e) => {
     e?.stopPropagation();
-    if (!addForm.Full_Name?.trim() || !addForm.Contact_Phone?.trim()) {
-      alert('Full Name and Contact Phone are required');
+    if (!validateForm()) {
       return;
     }
 
@@ -258,6 +306,7 @@ const EmployeesPage = () => {
   const cancelAdd = () => {
     setShowAddForm(false);
     setAddForm(defaultAddForm);
+    setErrors({});
   };
 
   const deleteEmployee = (emp, e) => {
@@ -368,16 +417,20 @@ const EmployeesPage = () => {
           <h5 style={{ margin: '0 0 16px 0', color: '#1a1a2e', fontSize: '15px' }}>Add New Employee</h5>
           <div className="row g-2">
             <div className="col-12 col-md-6">
-              <label className="form-label small mb-0">Full Name *</label>
-              <input className="form-control form-control-sm" placeholder="Full name" value={addForm.Full_Name} onChange={e => updateAddFormField('Full_Name', e.target.value)} />
+              <label className="form-label small mb-0" style={{ color: errors.Full_Name ? '#dc2626' : 'inherit' }}>
+                Full Name * {errors.Full_Name && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Full_Name})</span>}
+              </label>
+              <input className="form-control form-control-sm" style={{ borderColor: errors.Full_Name ? '#dc2626' : '#ced4da' }} placeholder="Full name" value={addForm.Full_Name} onChange={e => updateAddFormField('Full_Name', e.target.value)} />
             </div>
             <div className="col-12 col-md-6">
               <label className="form-label small mb-0">Name With Initials</label>
               <input className="form-control form-control-sm" placeholder="e.g. J. Doe" value={addForm.Name_With_Initials} onChange={e => updateAddFormField('Name_With_Initials', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
-              <label className="form-label small mb-0">NIC</label>
-              <input className="form-control form-control-sm" placeholder="NIC number" value={addForm.NIC} onChange={e => updateAddFormField('NIC', e.target.value)} />
+              <label className="form-label small mb-0" style={{ color: errors.NIC ? '#dc2626' : 'inherit' }}>
+                NIC * {errors.NIC && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.NIC})</span>}
+              </label>
+              <input className="form-control form-control-sm" style={{ borderColor: errors.NIC ? '#dc2626' : '#ced4da' }} placeholder="NIC number" value={addForm.NIC} onChange={e => updateAddFormField('NIC', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Date Of Birth</label>
@@ -403,16 +456,20 @@ const EmployeesPage = () => {
               </select>
             </div>
             <div className="col-12 col-md-4">
-              <label className="form-label small mb-0">Contact Phone *</label>
-              <input className="form-control form-control-sm" placeholder="+94-71-555-1234" value={addForm.Contact_Phone} onChange={e => updateAddFormField('Contact_Phone', e.target.value)} />
+              <label className="form-label small mb-0" style={{ color: errors.Contact_Phone ? '#dc2626' : 'inherit' }}>
+                Contact Phone * {errors.Contact_Phone && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Contact_Phone})</span>}
+              </label>
+              <input className="form-control form-control-sm" style={{ borderColor: errors.Contact_Phone ? '#dc2626' : '#ced4da' }} placeholder="+94-71-555-1234" value={addForm.Contact_Phone} onChange={e => updateAddFormField('Contact_Phone', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Contact Phone 2</label>
               <input className="form-control form-control-sm" placeholder="Alternative phone" value={addForm.Contact_Phone_2} onChange={e => updateAddFormField('Contact_Phone_2', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
-              <label className="form-label small mb-0">Email</label>
-              <input type="email" className="form-control form-control-sm" placeholder="email@example.com" value={addForm.Email} onChange={e => updateAddFormField('Email', e.target.value)} />
+              <label className="form-label small mb-0" style={{ color: errors.Email ? '#dc2626' : 'inherit' }}>
+                Email {errors.Email && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Email})</span>}
+              </label>
+              <input type="email" className="form-control form-control-sm" style={{ borderColor: errors.Email ? '#dc2626' : '#ced4da' }} placeholder="email@example.com" value={addForm.Email} onChange={e => updateAddFormField('Email', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">City</label>
@@ -435,8 +492,10 @@ const EmployeesPage = () => {
               <input className="form-control form-control-sm" placeholder="e.g. Permanent" value={addForm.Employee_Type} onChange={e => updateAddFormField('Employee_Type', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
-              <label className="form-label small mb-0">Hire Date</label>
-              <input type="date" className="form-control form-control-sm" value={addForm.Hire_Date} onChange={e => updateAddFormField('Hire_Date', e.target.value)} />
+              <label className="form-label small mb-0" style={{ color: errors.Hire_Date ? '#dc2626' : 'inherit' }}>
+                Hire Date * {errors.Hire_Date && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Hire_Date})</span>}
+              </label>
+              <input type="date" className="form-control form-control-sm" style={{ borderColor: errors.Hire_Date ? '#dc2626' : '#ced4da' }} value={addForm.Hire_Date} onChange={e => updateAddFormField('Hire_Date', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Confirmation Date</label>
@@ -466,8 +525,10 @@ const EmployeesPage = () => {
               </select>
             </div>
             <div className="col-12 col-md-4">
-              <label className="form-label small mb-0">EPF Number</label>
-              <input className="form-control form-control-sm" placeholder="EPF Number" value={addForm.EPF_Number} onChange={e => updateAddFormField('EPF_Number', e.target.value)} />
+              <label className="form-label small mb-0" style={{ color: errors.EPF_Number ? '#dc2626' : 'inherit' }}>
+                EPF Number {errors.EPF_Number && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.EPF_Number})</span>}
+              </label>
+              <input className="form-control form-control-sm" style={{ borderColor: errors.EPF_Number ? '#dc2626' : '#ced4da' }} placeholder="EPF Number" value={addForm.EPF_Number} onChange={e => updateAddFormField('EPF_Number', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Bank Name</label>
@@ -511,7 +572,7 @@ const EmployeesPage = () => {
             </div>
           </div>
           <div className="d-flex gap-2 mt-3">
-            <button className="btn btn-primary btn-sm" onClick={addEmployee} disabled={!addForm.Full_Name?.trim() || !addForm.Contact_Phone?.trim()}>Save Employee</button>
+            <button className="btn btn-primary btn-sm" onClick={addEmployee}>Save Employee</button>
             <button className="btn btn-secondary btn-sm" onClick={cancelAdd}>Cancel</button>
           </div>
         </div>
