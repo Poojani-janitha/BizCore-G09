@@ -235,11 +235,9 @@ const EmployeesPage = () => {
     (async () => {
       try {
         const now = new Date();
-        const employeeCode = `EMP-${Date.now().toString().slice(-6)}`;
         const hireDate = addForm.Hire_Date || now.toISOString().slice(0, 10);
         
         const payload = {
-          Employee_Code: employeeCode,
           ...addForm,
           Full_Name: addForm.Full_Name.trim(),
           Hire_Date: hireDate,
@@ -252,7 +250,19 @@ const EmployeesPage = () => {
         setShowAddForm(false);
       } catch (err) {
         console.error('addEmployee error:', err);
-        alert(err?.response?.data?.message || 'Failed to add employee');
+        
+        // Build error message with validation details
+        let errorMsg = err?.response?.data?.message || 'Failed to add employee';
+        
+        // Add validation errors if present
+        if (err?.response?.data?.validationErrors && Array.isArray(err.response.data.validationErrors)) {
+          const validationDetails = err.response.data.validationErrors
+            .map(e => `${e.path}: ${e.message}`)
+            .join('\n');
+          errorMsg = `${errorMsg}\n\n${validationDetails}`;
+        }
+        
+        alert(errorMsg);
       }
     })();
   };

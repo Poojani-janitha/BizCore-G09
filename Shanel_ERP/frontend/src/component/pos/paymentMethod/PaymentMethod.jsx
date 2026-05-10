@@ -14,7 +14,6 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
     });
 
     const [references, setReferences] = useState({
-        chequeRef: '',
         bankRef: '',
         creditRef: '',
         chequeNo: '',
@@ -32,7 +31,7 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
         if (!paymentData || Object.keys(paymentData).length === 0) {
             setPayments({ cashTendered: '', applied: '', cheque: '', bankTrf: '' });
             setReferences({
-                chequeRef: '', bankRef: '', creditRef: '', chequeNo: '',
+                bankRef: '', creditRef: '', chequeNo: '',
                 chequeDate: '', cheque_bank: '', cheque_branch: '', cheque_delivered_by: ''
             });
             setKeepBalance(false);
@@ -111,7 +110,6 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
             Cheque_Bank: references.cheque_bank,
             Cheque_Branch: references.cheque_branch,
             Cheque_Delivered_By: references.cheque_delivered_by,
-            Cheque_Ref: references.chequeRef,
             Bank_Ref: references.bankRef,
             Credit_Ref: references.creditRef
         });

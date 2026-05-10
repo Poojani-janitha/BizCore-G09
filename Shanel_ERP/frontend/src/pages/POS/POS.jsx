@@ -16,7 +16,7 @@ import { Trash2, PauseCircle, Package } from 'lucide-react';
 
 // Create a walk-in customer object
 const WALKIN_CUSTOMER = {
-  c_id: 20,
+  c_id: 4,
   customer_code: 'WALKIN',
   c_name: 'Walk-in Customer',
   phone1: 'N/A',

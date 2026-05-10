@@ -100,7 +100,6 @@ class ChartOfAccountsController {
                 Parent_Account_ID: parentAccountId || null,
                 Description: description || null,
                 Is_Active: isActive !== undefined ? isActive : true,
-                Current_Balance: 0,
                 Created_At: new Date(),
                 Updated_At: new Date()
             });

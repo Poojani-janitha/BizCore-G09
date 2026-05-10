@@ -26,7 +26,7 @@ const getLeaves = async (req, res) => {
                 {
                     model: Employee,
                     as: 'Employee',
-                    attributes: ['Employee_ID', 'Employee_Code', 'Full_Name', 'Department']
+                    attributes: ['Employee_ID', 'Employee_Code', 'Full_Name']
                 }
             ],
             order: [['Applied_Date', 'DESC']]
@@ -50,7 +50,7 @@ const getLeaveById = async (req, res) => {
                 {
                     model: Employee,
                     as: 'Employee',
-                    attributes: ['Employee_ID', 'Employee_Code', 'Full_Name', 'Department']
+                    attributes: ['Employee_ID', 'Employee_Code', 'Full_Name']
                 }
             ]
         });

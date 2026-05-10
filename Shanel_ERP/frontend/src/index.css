@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* in reports  make sure the sidebar doesn't show up in the print-out: */
 @media print {
     .no-print, .sidebar, .navbar {

@@ -85,7 +85,8 @@ const MakePaymentPage = () => {
     const fetchCategories = async () => {
         try {
             setLoadingCategories(true);
-            const res = await axios.get('http://localhost:5000/api/accounts?active=true');
+            // Only fetch Expense accounts for the category dropdown
+            const res = await axios.get('http://localhost:5000/api/accounts?active=true&type=Expense');
             if (res.data.success) {
                 const dbCategories = res.data.data.map(acc => ({
                     value: acc.Account_Name,

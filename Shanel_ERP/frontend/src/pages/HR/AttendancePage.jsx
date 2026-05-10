@@ -416,6 +416,7 @@ const Attendance = () => {
     attendanceRows.forEach((row) => {
       const empId = String(row.Employee_ID);
       byEmployeeId[empId] = {
+        attendanceId: row.Attendance_ID,
         status: mapStatusToUi(row.Status),
         timeIn: row.Check_In_Time || '',
         timeOut: row.Check_Out_Time || '',
@@ -619,6 +620,39 @@ const Attendance = () => {
     }
   };
 
+  const handleDelete = async (empId) => {
+    const record = attendance[empId];
+    if (!record || !record.attendanceId) {
+      // Just clear local UI state if it hasn't been saved to DB yet
+      setAttendance(prev => ({
+        ...prev,
+        [empId]: { status: 'absent', timeIn: '', timeOut: '', otHours: 0 }
+      }));
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to delete this attendance record?')) return;
+
+    try {
+      setLoading(true);
+      await axios.delete(`${API_BASE}/attendance/${record.attendanceId}`);
+
+      // Update local state to reflect deletion
+      setAttendance(prev => ({
+        ...prev,
+        [empId]: { status: 'absent', timeIn: '', timeOut: '', otHours: 0 }
+      }));
+
+      // Reload to ensure totals are correct
+      loadEmployeesAndAttendance(date);
+    } catch (err) {
+      console.error('handleDelete error:', err);
+      alert(err?.response?.data?.message || 'Failed to delete attendance record');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const summary = {
     present: employees.filter(e => attendance[e.id]?.status === 'present').length,
     leave: employees.filter(e => attendance[e.id]?.status === 'leave').length,
@@ -690,7 +724,7 @@ const Attendance = () => {
           <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Mark All:</span>
           {['present', 'leave', 'absent'].map(s => (
             <button key={s} onClick={() => markAll(s)} style={{
-              padding: '6px 14px', borderRadius: '8px', border: 'none',
+              padding: '6px 14px', borderRadius: '8px',
               background: statusColors[s].bg, color: statusColors[s].color,
               fontSize: '12px', fontWeight: 600, cursor: 'pointer',
               border: `1px solid ${statusColors[s].border}20`,
