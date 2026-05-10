@@ -1,0 +1,119 @@
+.bill-template {
+  width: 80mm;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  background: white;
+  color: #000;
+}
+
+.bill-header {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.bill-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.company-name {
+  margin: 5px 0 0 0;
+  font-weight: bold;
+}
+
+.company-contact {
+  margin: 3px 0;
+  font-size: 10px;
+}
+
+.bill-section {
+  margin: 10px 0;
+}
+
+.bill-section h5 {
+  margin: 5px 0;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.row-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 3px 0;
+  font-size: 11px;
+}
+
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 5px 0;
+}
+
+.items-table thead {
+  border-top: 1px solid #000;
+  border-bottom: 1px solid #000;
+}
+
+.items-table th {
+  text-align: left;
+  padding: 3px 0;
+  font-weight: bold;
+  font-size: 10px;
+}
+
+.items-table td {
+  padding: 3px 0;
+  font-size: 10px;
+}
+
+.items-table th:last-child,
+.items-table td:last-child {
+  text-align: right;
+}
+
+.bill-summary {
+  margin: 10px 0;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0;
+  font-size: 11px;
+}
+
+.summary-row.total {
+  border-top: 2px solid #000;
+  border-bottom: 2px solid #000;
+  padding: 5px 0;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.bill-footer {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 10px;
+}
+
+.print-note {
+  margin: 3px 0;
+  font-style: italic;
+}
+
+@media print {
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  
+  .bill-template {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+}

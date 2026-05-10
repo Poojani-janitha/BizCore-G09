@@ -88,7 +88,7 @@ const CustomerNofification = sequlize.define('CustomerNotification',{
     }
 
 },{
-    tableName: 'customer_notifications ',
+    tableName: 'customer_notifications',
     timestamps: true,
     createdAt: 'Created_At',
     updatedAt: false

@@ -1,0 +1,20 @@
+{
+  "header": {
+    "search": "සොයන්න...",
+    "language": "භාෂාව",
+    "english": "English",
+    "sinhala": "සිංහල",
+    "tamil": "දෙමළ"
+  },
+  "customer": {
+    "title": "පාරිභෝගික කළමනාකරණය",
+    "add_new": "එක් කරන්න",
+    "add_title": "නව පාරිභෝගිකයෙකු එක් කරන්න",
+    "search_placeholder": "පාරිභෝගිකයා සොයන්න...",
+    "walk_in": "පැමිණි පාරිභෝගිකයා",
+    "label": "පාරිභෝගිකයා",
+    "invoice_date": "ඉන්වොයිස් දිනය",
+    "invoice_no": "ඉන්වොයිස් අංකය",
+    "terminal": "ටර්මිනලය"
+  }
+}

@@ -1,66 +1,157 @@
 import React from 'react';
+import { ArrowUpRight, ArrowDownLeft, Calendar, User, FileText, CreditCard } from 'react-feather';
 
-const TransactionTable = ({ transactions }) => {
+const TransactionTable = ({ transactions = [], title = "Recent Activity", subtitle = "Last 10 transactions" }) => {
+  
+  const fmt = (n) => parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   const getTransactionBadge = (type) => {
-    if (type === 'IN') {
-      return (
-        <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#DCFCE7]">
-          <span className="text-[#008236] text-xs font-semibold">⬇️ IN</span>
-          <span className="text-[#008236] text-xs font-semibold">REC</span>
-        </div>
-      );
-    }
+    const isIncome = type === 'IN' || type === 'Income' || type === 'Received';
     return (
-      <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#FFE2E2]">
-        <span className="text-[#C10007] text-xs font-semibold">⬆️ OUT</span>
-        <span className="text-[#C10007] text-xs font-semibold">PAY</span>
+      <div style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '6px 12px',
+        borderRadius: '20px',
+        backgroundColor: isIncome ? '#ecfdf5' : '#fef2f2',
+        color: isIncome ? '#059669' : '#dc2626',
+        fontSize: '11px',
+        fontWeight: 700
+      }}>
+        {isIncome ? <ArrowDownLeft size={12} /> : <ArrowUpRight size={12} />}
+        {isIncome ? 'RECEIVED' : 'PAID OUT'}
       </div>
     );
   };
 
+  const renderAmount = (tr) => {
+    // If amount is already a string with "Rs.", use it directly
+    if (typeof tr.amount === 'string' && tr.amount.includes('Rs.')) {
+      return tr.amount;
+    }
+    
+    // Fallback to formatting raw numbers
+    const val = tr.amount || tr.Amount || 0;
+    const isIncome = tr.type === 'IN' || tr.type === 'Income' || tr.type === 'Received';
+    return `${isIncome ? '+ ' : '- '}Rs. ${fmt(val)}`;
+  };
+
+  const cardStyle = {
+    borderRadius: '20px',
+    border: '1px solid #e2e8f0',
+    backgroundColor: '#ffffff',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    overflow: 'hidden'
+  };
+
+  const tableHeaderStyle = {
+    fontSize: '11px',
+    fontWeight: 700,
+    color: '#64748b',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    padding: '16px 24px',
+    backgroundColor: '#f8fafc',
+    borderBottom: '1px solid #e2e8f0'
+  };
+
+  const cellStyle = {
+    padding: '16px 24px',
+    fontSize: '14px',
+    color: '#334155',
+    verticalAlign: 'middle',
+    borderBottom: '1px solid #f1f5f9'
+  };
+
   return (
-    <div className="rounded-lg border border-[#F3F4F6] bg-white shadow-sm overflow-hidden">
+    <div style={cardStyle} className="animate-fadeIn">
       {/* Header */}
-      <div className="border-b border-[#E5E7EB] p-6">
-        <h3 className="text-[#101828] text-lg font-semibold mb-1">Recent Activity</h3>
-        <p className="text-[#4A5565] text-sm">Last 10 transactions</p>
+      <div className="p-4 border-bottom d-flex justify-content-between align-items-center bg-white">
+        <div>
+          <h5 className="mb-0 fw-bold" style={{ color: '#1e293b' }}>{title}</h5>
+          <p className="mb-0 text-muted small">{subtitle}</p>
+        </div>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div className="table-responsive">
+        <table className="table table-hover mb-0">
           <thead>
-            <tr className="bg-gradient-to-r from-[#009689] to-[#00786F]">
-              <th className="px-6 py-3 text-left text-white text-sm font-semibold">Type</th>
-              <th className="px-6 py-3 text-left text-white text-sm font-semibold">Date</th>
-              <th className="px-6 py-3 text-left text-white text-sm font-semibold">Party</th>
-              <th className="px-6 py-3 text-left text-white text-sm font-semibold">Description</th>
-              <th className="px-6 py-3 text-left text-white text-sm font-semibold">Method</th>
-              <th className="px-6 py-3 text-right text-white text-sm font-semibold">Amount</th>
-              <th className="px-6 py-3 text-left text-white text-sm font-semibold">Action</th>
+            <tr>
+              <th style={tableHeaderStyle}>Flow</th>
+              <th style={tableHeaderStyle}>Date</th>
+              <th style={tableHeaderStyle}>Entity / Description</th>
+              <th style={tableHeaderStyle}>Method</th>
+              <th style={tableHeaderStyle} className="text-end">Amount</th>
             </tr>
           </thead>
           <tbody>
-            {transactions.map((transaction, index) => (
-              <tr key={transaction.id} className={`${index < transactions.length - 1 ? 'border-b border-[#F3F4F6]' : ''} hover:bg-gray-50 transition-colors`}>
-                <td className="px-6 py-4">{getTransactionBadge(transaction.type)}</td>
-                <td className="px-6 py-4 text-[#101828] text-sm">{transaction.date}</td>
-                <td className="px-6 py-4 text-[#101828] text-sm font-medium">{transaction.party}</td>
-                <td className="px-6 py-4 text-[#4A5565] text-sm">{transaction.description}</td>
-                <td className="px-6 py-4 text-[#4A5565] text-sm">{transaction.method}</td>
-                <td className="px-6 py-4 text-right font-bold text-sm" style={{ color: transaction.amountColor }}>
-                  {transaction.amount}
-                </td>
-                <td className="px-6 py-4">
-                  <button className="px-3 py-2 text-[#009689] text-sm font-medium rounded hover:bg-[#F0FDFA] transition-colors">
-                    View
-                  </button>
+            {transactions.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="text-center py-5 text-muted small">
+                  No transactions found in this period
                 </td>
               </tr>
-            ))}
+            ) : (
+              transactions.map((tr, idx) => (
+                <tr key={idx} style={{ transition: 'background-color 0.2s' }}>
+                  <td style={cellStyle}>{getTransactionBadge(tr.type)}</td>
+                  <td style={cellStyle}>
+                    <div className="d-flex align-items-center gap-2">
+                      <Calendar size={14} color="#94a3b8" />
+                      {tr.date}
+                    </div>
+                  </td>
+                  <td style={cellStyle}>
+                    <div className="d-flex flex-column">
+                      <span className="fw-bold text-dark d-flex align-items-center gap-2">
+                        <User size={14} color="#0d9488" />
+                        {tr.party || tr.Source || tr.Paid_To}
+                      </span>
+                      <small className="text-muted d-flex align-items-center gap-2">
+                        <FileText size={12} />
+                        {tr.description || tr.Notes}
+                      </small>
+                    </div>
+                  </td>
+                  <td style={cellStyle}>
+                    <div className="d-flex align-items-center gap-2">
+                      <FileText size={14} color="#94a3b8" />
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: '#64748b',
+                        textTransform: 'uppercase'
+                      }}>
+                        {tr.method || tr.Payment_Method}
+                      </span>
+                    </div>
+                  </td>
+                  <td style={{ ...cellStyle, textAlign: 'right' }}>
+                    <span style={{ 
+                      fontWeight: 800, 
+                      color: (tr.type === 'IN' || tr.type === 'Income' || tr.type === 'Received') ? '#059669' : '#dc2626' 
+                    }}>
+                      {renderAmount(tr)}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+      
+      <style>{`
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };
