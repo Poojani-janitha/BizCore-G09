@@ -64,6 +64,7 @@ export const generatePDF = (title, columns, data, fileName) => {
 
     // Draw table header
     doc.setFillColor(249, 115, 22);
+    doc.rect(margin, yPosition, pageWidth - 2 * margin, rowHeight, 'F'); // Draw background
     doc.setTextColor(255, 255, 255);
     doc.setFont(undefined, 'bold');
     doc.setFontSize(9);
@@ -88,6 +89,7 @@ export const generatePDF = (title, columns, data, fileName) => {
 
             // Repeat header on new page
             doc.setFillColor(249, 115, 22);
+            doc.rect(margin, yPosition, pageWidth - 2 * margin, rowHeight, 'F'); // Draw background
             doc.setTextColor(255, 255, 255);
             doc.setFont(undefined, 'bold');
             doc.setFontSize(9);
@@ -111,7 +113,8 @@ export const generatePDF = (title, columns, data, fileName) => {
         // Draw row data
         columns.forEach((col, colIdx) => {
             const xPos = margin + colIdx * colWidth;
-            const value = row[col];
+            // Support both array rows (legacy) and object rows
+            const value = Array.isArray(row) ? row[colIdx] : row[col];
             let displayValue = '-';
 
             if (value !== null && value !== undefined) {

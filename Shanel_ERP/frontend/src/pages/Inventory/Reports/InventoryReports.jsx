@@ -38,11 +38,11 @@ const InventoryReports = () => {
 
     const getTableColumns = (reportKey) => {
         const columnMap = {
-            'current-stock': ['P_Code', 'P_Name', 'productionStock', 'salesStock', 'Total_Stock'],
-            'daily-production': ['P_Code', 'P_Name', 'Batch_No', 'Actual_Qty', 'Production_Date', 'Cost_Per_Unit', 'Status'],
+            'current-stock': ['P_Code', 'P_Name', 'Base_Unit', 'productionStock', 'salesStock', 'Total_Stock'],
+            'daily-production': ['P_Code', 'P_Name', 'Base_Unit', 'Batch_No', 'Actual_Qty', 'Production_Date', 'Cost_Per_Unit', 'Status'],
             'purchases': ['PO_No', 'Supplier', 'PO_Date', 'Total_Amount', 'Payment_Status', 'Status'],
-            'transfers': ['ST_ID', 'P_Name', 'From_Location', 'To_Location', 'Qty', 'Transfer_Date', 'Status'],
-            'expiry': ['P_Code', 'P_Name', 'Batch_No', 'Exp_Date', 'Days_Left'],
+            'transfers': ['ST_ID', 'P_Name', 'Base_Unit', 'From_Location', 'To_Location', 'Qty', 'Transfer_Date', 'Status'],
+            'expiry': ['P_Code', 'P_Name', 'Base_Unit', 'Batch_No', 'Exp_Date', 'Days_Left'],
             'supplier-purchases': ['S_Code', 'S_Name', 'Total_Orders', 'Total_Spent']
         };
         return columnMap[reportKey] || [];

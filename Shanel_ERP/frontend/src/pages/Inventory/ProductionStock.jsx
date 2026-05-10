@@ -3,6 +3,11 @@ import axios from 'axios';
 import { Play, Trash2, CheckCircle, Loader } from 'react-feather';
 import ProductionModal from '../../component/Inventory/Production/ProductionModal';
 
+const formatStock = (value) => {
+    const num = parseFloat(value) || 0;
+    return Number.isInteger(num) ? num : num.toFixed(2);
+};
+
 const ProductionStock = () => {
     const [wip, setWip] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -85,7 +90,7 @@ const ProductionStock = () => {
                                 <tr key={item.PR_ID}>
                                     <td className='text-primary fw-medium ps-4'>{item.Batch_No}</td>
                                     <td className='fw-bold'>{item.P_Name}</td>
-                                    <td>{item.Total_Qty_Produced}</td>
+                                    <td>{formatStock(item.Total_Qty_Produced)} {item.Base_Unit}</td>
                                     <td>{item.Production_Date ? new Date(item.Production_Date).toLocaleDateString() : 'N/A'}</td>
                                     <td>{item.Exp_Date ? new Date(item.Exp_Date).toLocaleDateString() : 'N/A'}</td>
                                     <td style={{ minWidth: '150px' }}>
@@ -185,7 +190,7 @@ const ProductionStock = () => {
                                     <tr key={item.PR_ID}>
                                         <td className='text-primary fw-medium ps-4'>{item.Batch_No}</td>
                                         <td className='fw-bold'>{item.P_Name}</td>
-                                        <td>{item.Total_Qty_Produced}</td>
+                                        <td>{formatStock(item.Total_Qty_Produced)} {item.Base_Unit}</td>
                                         <td>{item.Production_Date ? new Date(item.Production_Date).toLocaleDateString() : 'N/A'}</td>
                                         <td>{item.Exp_Date ? new Date(item.Exp_Date).toLocaleDateString() : 'N/A'}</td>
                                         <td>

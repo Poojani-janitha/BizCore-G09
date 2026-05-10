@@ -1,4 +1,4 @@
-const { Product, Inventory, Production, UnitConversion, StockTransfer } = require('../../models/index');
+const { Product, Inventory, Production, UnitConversion, StockTransfer, Supplier } = require('../../models/index');
 const sequelize = require('../../config/db');
 const { Op } = require('sequelize');
 
@@ -37,8 +37,11 @@ const getDashboardStats = async (req, res) => {
         // --- 2. LOW STOCK ALERTS ---
         // Logic: Find products where Total Inventory <= Min_Stock
         const products = await Product.findAll({
-            attributes: ['P_Name', 'Min_Stock', 'P_Type'],
-            include: [{ model: Inventory, as: 'inventories', attributes: ['Qty'] }]
+            attributes: ['P_Name', 'Min_Stock', 'P_Type', 'Base_Unit'],
+            include: [
+                { model: Inventory, as: 'inventories', attributes: ['Qty'] },
+                { model: Supplier, as: 'supplier', attributes: ['S_Name', 'Phone_No', 'Email'], required: false }
+            ]
         });
 
         const alerts = [];
@@ -49,7 +52,11 @@ const getDashboardStats = async (req, res) => {
                     name: p.P_Name,
                     type: p.P_Type,
                     current: total,
-                    min: p.Min_Stock
+                    min: p.Min_Stock,
+                    baseUnit: p.Base_Unit,
+                    supplierName: p.supplier ? p.supplier.S_Name : null,
+                    supplierPhone: p.supplier ? p.supplier.Phone_No : null,
+                    supplierEmail: p.supplier ? p.supplier.Email : null
                 });
             }
         });
@@ -84,7 +91,7 @@ const getDashboardStats = async (req, res) => {
             success: true,
             stockLevel: stockLevelData,
             distribution,
-            alerts: alerts.slice(0, 5),
+            alerts: alerts, // Return all alerts so alerts page can show full list
             transfers: transfers,
             summary: {
                 companyItems,
@@ -200,6 +207,7 @@ const getProducts = async (req, res) => {
                 ['Auto_Generate_Barcode', 'autoGenerateBarcode'],
                 ['Is_Ishara_Product', 'isIsharaProduct'],
                 ['Created_By', 'createdBy'],
+                ['S_ID', 'supplierId'],
                 ['Status', 'status'],
                 ['Created_At', 'createdAt'],
                 ['Updated_At', 'updatedAt'],
@@ -285,6 +293,7 @@ const addProduct = async (req, res) => {
             Auto_Generate_Barcode: req.body.autoGenerateBarcode === 'true' || req.body.autoGenerateBarcode === true,
             Is_Ishara_Product: isIsharaProduct,
             Created_By: req.body.createdBy,
+            S_ID: req.body.supplierId ? parseInt(req.body.supplierId) : null,
             // Status will default to "In Stock" as per model definition
         };
 
@@ -382,7 +391,8 @@ const updateProduct = async (req, res) => {
             Barcode: req.body.barcode,
             Barcode_Type: req.body.barcodeType,
             Auto_Generate_Barcode: req.body.autoGenerateBarcode === 'true' || req.body.autoGenerateBarcode === true,
-            Is_Ishara_Product: isIsharaProduct
+            Is_Ishara_Product: isIsharaProduct,
+            S_ID: req.body.supplierId ? parseInt(req.body.supplierId) : null
             // Status is NOT updated as it's calculated dynamically based on stock levels
         };
 

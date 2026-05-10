@@ -84,7 +84,7 @@ const InventoryDashboard = () => {
           {/* Lists Section */}
           <div className="row g-4">
             <div className="col-lg-6">
-              <StockAlerts alerts={data.alerts} />
+              <StockAlerts alerts={data.alerts ? data.alerts.slice(0, 5) : []} />
             </div>
             <div className="col-lg-6">
               <StockTransfers transfers={data.transfers} />

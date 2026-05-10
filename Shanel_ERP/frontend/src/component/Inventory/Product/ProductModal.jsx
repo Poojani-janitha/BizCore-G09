@@ -3,6 +3,7 @@ import { X, Save, RefreshCw, Upload } from 'react-feather';
 import axios from 'axios';
 import Barcode from 'react-barcode';
 import UnitConversionManager from './UnitConversionManager';
+import SupplierModal from './SupplierModal';
 
 const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProductAdded }) => {
     const initialState = {
@@ -22,7 +23,8 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
         Auto_Generate_Barcode: false,
         Status: 'In Stock',
         InitialQty: 0,  // For "Other" and "Raw" items only
-        IsIsharaProduct: false  // For Company items: true = Ishara (direct supply), false = regular production
+        IsIsharaProduct: false,  // For Company items: true = Ishara (direct supply), false = regular production
+        supplierId: ''
     };
 
     const [formData, setFormData] = useState(initialState);
@@ -31,6 +33,19 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
     const [errors, setErrors] = useState({});
     const [baseUnit, setBaseUnit] = useState('Packet');
     const [units, setUnits] = useState([]);
+    const [suppliers, setSuppliers] = useState([]);
+    const [showSupplierModal, setShowSupplierModal] = useState(false);
+
+    const fetchSuppliers = async () => {
+        try {
+            const res = await axios.get('http://localhost:5000/api/inventory/suppliers');
+            if (res.data.success) {
+                setSuppliers(res.data.data);
+            }
+        } catch (error) {
+            console.error("Error fetching suppliers:", error);
+        }
+    };
 
     // Generate next product code based on existing products
     const generateNextProductCode = async () => {
@@ -59,6 +74,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
     // Sync typeFilter whenever the page changes or modal opens
     useEffect(() => {
         if (show) {
+            fetchSuppliers();
             if (editData) {
                 setFormData({
                     id: editData.id,
@@ -78,7 +94,8 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                     Auto_Generate_Barcode: editData.autoGenerateBarcode || false,
                     Status: editData.status || 'In Stock',
                     InitialQty: (editData.type === 'Other' || editData.type === 'Raw' || editData.isIsharaProduct) ? (editData.stockCount ?? 0) : 0,
-                    IsIsharaProduct: editData.isIsharaProduct || false
+                    IsIsharaProduct: editData.isIsharaProduct || false,
+                    supplierId: editData.supplierId || ''
                 });
                 // Set existing image preview
                 if (editData.imagePath) {
@@ -106,6 +123,14 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
             setErrors({});
         }
     }, [show, typeFilter, editData]);
+
+    // Sync baseUnit state with formData.Base_Unit
+    useEffect(() => {
+        setFormData(prev => ({
+            ...prev,
+            Base_Unit: baseUnit
+        }));
+    }, [baseUnit]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -155,6 +180,9 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
         if (!formData.Retail_Price || formData.Retail_Price <= 0) newErrors.Retail_Price = 'Retail price must be greater than 0';
         if (!formData.Wholesale_Price || formData.Wholesale_Price <= 0) newErrors.Wholesale_Price = 'Wholesale price must be greater than 0';
         if (!formData.Barcode || !formData.Barcode.trim()) newErrors.Barcode = 'Barcode is required. Please generate or enter a barcode';
+        if(!formData.InitialQty) newErrors.InitialQty = 'Initial quantity is required for this product type';
+        if(!formData.Min_Stock )newErrors.Min_Stock = 'Minimum stock level is required';
+        if(!formData.Reorder_Level) newErrors.Reorder_Level = 'Reorder level is required';
         if (formData.Cost_Price && formData.Retail_Price && parseFloat(formData.Retail_Price) < parseFloat(formData.Cost_Price)) {
             newErrors.Retail_Price = 'Retail price must be greater than cost price';
         }
@@ -167,12 +195,17 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
 
     // Professional Barcode Generator Logic
     const generateBarcode = () => {
-        const prefix = formData.P_Type === 'Company' ? 'BC' : 'EXT';
+        const prefix = formData.P_Type === 'Company' ? 'CMP' : formData.P_Type === 'Other' ? 'OTH' : 'RAW';
         const random = Math.floor(100000000 + Math.random() * 900000000);
         setFormData({ ...formData, Barcode: `${prefix}${random}` });
         if (errors.Barcode) {
             setErrors({ ...errors, Barcode: '' });
         }
+    };
+
+    const handleSupplierCreated = (newSup) => {
+        setSuppliers(prev => [...prev, newSup]);
+        setFormData(prev => ({ ...prev, supplierId: newSup.S_ID }));
     };
 
     const handleSubmit = async (e) => {
@@ -203,6 +236,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
             formDataToSend.append('barcode', formData.Barcode || null);
             formDataToSend.append('autoGenerateBarcode', formData.Auto_Generate_Barcode);
             formDataToSend.append('isIsharaProduct', formData.IsIsharaProduct);
+            formDataToSend.append('supplierId', formData.supplierId || '');
             
             // Initial Quantity for supplier items and Ishara products
             if (formData.P_Type === 'Other' || formData.P_Type === 'Raw' || (formData.P_Type === 'Company' && formData.IsIsharaProduct)) {
@@ -268,7 +302,8 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
     if (!show) return null;
 
     return (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)', zIndex: 1050 }}>
+        <>
+            <div className="modal d-block" style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)', zIndex: 1050 }}>
             <div className="modal-dialog modal-md modal-dialog-centered"> 
                 <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                     <form onSubmit={handleSubmit}>
@@ -388,23 +423,55 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                                            value={formData.Tax_Rate} onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur} />
                                 </div>
                                 <div className="col-6 mt-2">
-                                    <label className="form-label mb-1 small fw-semibold text-muted">Min Stock</label>
-                                    <input type="number" step="0.01" name="Min_Stock" className="form-control form-control-sm bg-light border-0 py-2" 
+                                    <label className="form-label mb-1 small fw-semibold text-muted">Min Stock * <span className="text-danger small">{errors.Min_Stock && errors.Min_Stock}</span></label>
+                                    <input type="number" step="0.01" name="Min_Stock" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Min_Stock ? 'border border-danger' : ''}`}
                                            value={formData.Min_Stock} onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur} />
                                 </div>
+
+                                {/* Supplier Section - For Supplier Items (Other/Raw) */}
+                                {(formData.P_Type === 'Other' || formData.P_Type === 'Raw') && (
+                                    <div className="col-12 mt-2 border-top pt-2">
+                                        <div className="d-flex justify-content-between align-items-center mb-1">
+                                            <label className="form-label small fw-semibold text-muted mb-0">Supplier</label>
+                                            <button 
+                                                type="button" 
+                                                className="btn btn-xs btn-outline-primary fw-bold" 
+                                                style={{ fontSize: '10px', padding: '2px 8px' }}
+                                                onClick={() => setShowSupplierModal(true)}
+                                            >
+                                                + Register New Supplier
+                                            </button>
+                                        </div>
+
+                                        <select 
+                                            name="supplierId" 
+                                            className="form-select form-select-sm bg-light border-0 py-2 shadow-none"
+                                            value={formData.supplierId}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="">-- Select Supplier (Optional) --</option>
+                                            {suppliers.map(sup => (
+                                                <option key={sup.S_ID} value={sup.S_ID}>
+                                                    {sup.S_Name} {sup.Phone_No ? `(${sup.Phone_No})` : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
 
                                 {/* Initial Quantity - For Supplier Items (Other/Raw) and Ishara Products */}
                                 {(formData.P_Type === 'Other' || formData.P_Type === 'Raw' || (formData.P_Type === 'Company' && formData.IsIsharaProduct)) && (
                                     <div className="col-6 mt-2">
                                         <label className="form-label mb-1 small fw-semibold text-muted">
                                             {formData.P_Type === 'Company' ? 'Supplied Qty' : editData ? 'Current Stock' : 'Initial Qty'} {formData.P_Type === 'Other' ? '(Supplier)' : formData.P_Type === 'Company' ? '(Received)' : '(Received)'}
+                                            * <span className="text-danger small">{errors.InitialQty && errors.InitialQty}</span>
                                         </label>
                                         <div className="d-flex align-items-center" style={{ gap: '8px' }}>
                                             <input 
                                                 type="number" 
                                                 step="0.01" 
                                                 name="InitialQty" 
-                                                className="form-control form-control-sm bg-light border-0 py-2 flex-grow-1" 
+                                                className={`form-control form-control-sm bg-light border-0 py-2 flex-grow-1 ${errors.InitialQty ? 'border border-danger' : ''}`} 
                                                 value={formData.InitialQty} 
                                                 onChange={handleChange} 
                                                 onFocus={handleFocus} 
@@ -421,8 +488,8 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
 
                                 {/* Reorder Level */}
                                 <div className="col-12 mt-2">
-                                    <label className="form-label mb-1 small fw-semibold text-muted">Reorder Level</label>
-                                    <input type="number" step="0.01" name="Reorder_Level" className="form-control form-control-sm bg-light border-0 py-2" 
+                                    <label className="form-label mb-1 small fw-semibold text-muted">Reorder Level * <span className="text-danger small">{errors.Reorder_Level && errors.Reorder_Level}</span></label>
+                                    <input type="number" step="0.01" name="Reorder_Level" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Reorder_Level ? 'border border-danger' : ''}`} 
                                            value={formData.Reorder_Level} onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur} />
                                 </div>
 
@@ -533,14 +600,22 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                         {/* Professional Footer */}
                         <div className="modal-footer border-0 p-4 pt-2">
                             <button type="button" className="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm fw-bold me-auto" onClick={handleClose}>Cancel</button>
-                            <button type="submit" className="btn btn-dark px-4 py-2 rounded-3 shadow-sm fw-bold">
+                            <button type="submit" className="btn btn-dark px-3 py-2 rounded-3 shadow-sm fw-bold">
                                 <Save size={16} className="me-2" /> {editData ? 'Update Product' : 'Add Product'}
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
-        </div>
+            </div>
+
+            {/* High Detailed Supplier Modal Popup */}
+            <SupplierModal 
+                show={showSupplierModal}
+                onHide={() => setShowSupplierModal(false)}
+                onSupplierAdded={handleSupplierCreated}
+            />
+        </>
     );
 };
 

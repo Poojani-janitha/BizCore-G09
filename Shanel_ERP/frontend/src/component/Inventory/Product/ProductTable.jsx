@@ -23,6 +23,11 @@ const getStatusBadgeClass = (status) => {
     }
 };
 
+const formatStock = (value) => {
+    const num = parseFloat(value) || 0;
+    return Number.isInteger(num) ? num : num.toFixed(2);
+};
+
 const thStyle = {
     color: '#fff',
     fontSize: '0.75rem',
@@ -89,9 +94,9 @@ const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint, onView, 
                                 <td className='fw-medium text-primary'>{Math.round(p.taxRate || 0)}%</td>
                                 <td>
                                     <span className={p.minStock && parseFloat(p.stockCount) < parseFloat(p.minStock) ? 'text-danger fw-bold' : ''}>
-                                        {p.stockCount || 0} 
+                                        {formatStock(p.stockCount)} {p.baseUnit || ''} 
                                     </span>
-                                    <div className='text-muted' style={{fontSize: '10px'}}>Min: {p.minStock}</div>
+                                    <div className='text-muted' style={{fontSize: '10px'}}>Min: {formatStock(p.minStock)}</div>
                                 </td>
                                 <td>
                                     <span className={`badge rounded-pill fw-semibold ${

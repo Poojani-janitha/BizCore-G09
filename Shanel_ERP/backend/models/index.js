@@ -6,6 +6,7 @@ const StockTransfer = require('./inventory/StockTransfer');
 const StockAdjustment = require('./inventory/StockAdjustment');
 const UnitConversion = require('./inventory/UnitConversion');
 const ProductReturn = require('./inventory/ProductReturn');
+const Supplier = require('./inventory/Supplier');
 
 
 
@@ -50,6 +51,7 @@ module.exports = {
     StockAdjustment,
     UnitConversion,
     ProductReturn,
+    Supplier,
     Customer,
     Sale,
     SaleItem,

@@ -2,6 +2,11 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { AlertTriangle, Bell, AlertCircle, TrendingDown, Phone, ExternalLink } from "react-feather";
 
+const formatStock = (value) => {
+    const num = parseFloat(value) || 0;
+    return Number.isInteger(num) ? num : num.toFixed(2);
+};
+
 const AlertsPage = () => {
   const [alerts, setAlerts] = useState([]);
   const [expiryAlerts, setExpiryAlerts] = useState([]);
@@ -36,7 +41,7 @@ const AlertsPage = () => {
           .filter(batch => batch.Status === 'Approved')
           .filter(batch => batch.DaysToExpire !== null && batch.DaysToExpire <= 60)
           .sort((a, b) => (a.DaysToExpire || 999) - (b.DaysToExpire || 999));
-        
+
         setExpiryAlerts(expiringSoon);
       }
     } catch (err) {
@@ -97,8 +102,8 @@ const AlertsPage = () => {
       {/* Metric Cards */}
       <div className="row g-3 mb-4">
         <div className="col-lg-3 col-md-6">
-          <MetricCard 
-            title="Total Alerts" 
+          <MetricCard
+            title="Total Alerts"
             value={totalAlerts}
             subtitle="All alerts"
             icon={<Bell size={20} className="text-primary" />}
@@ -106,8 +111,8 @@ const AlertsPage = () => {
           />
         </div>
         <div className="col-lg-3 col-md-6">
-          <MetricCard 
-            title="Active Alerts" 
+          <MetricCard
+            title="Active Alerts"
             value={activeAlerts}
             subtitle="Needs attention"
             icon={<AlertTriangle size={20} className="text-warning" />}
@@ -115,8 +120,8 @@ const AlertsPage = () => {
           />
         </div>
         <div className="col-lg-3 col-md-6">
-          <MetricCard 
-            title="Critical Alerts" 
+          <MetricCard
+            title="Critical Alerts"
             value={criticalAlerts.length}
             subtitle="Urgent"
             icon={<AlertCircle size={20} className="text-danger" />}
@@ -124,8 +129,8 @@ const AlertsPage = () => {
           />
         </div>
         <div className="col-lg-3 col-md-6">
-          <MetricCard 
-            title="Low Stock Items" 
+          <MetricCard
+            title="Low Stock Items"
             value={lowStockAlerts.length}
             subtitle="Items"
             icon={<TrendingDown size={20} className="text-info" />}
@@ -143,33 +148,30 @@ const AlertsPage = () => {
           {/* Tabs */}
           <div className="d-flex gap-0 mb-4 border-bottom" style={{ overflow: 'auto' }}>
             <button
-              className={`btn btn-sm border-0 fw-semibold ${
-                activeTab === "all"
+              className={`btn btn-sm border-0 fw-semibold ${activeTab === "all"
                   ? "border-bottom border-primary text-primary"
                   : "text-muted"
-              } rounded-0 pb-2`}
+                } rounded-0 pb-2`}
               onClick={() => setActiveTab("all")}
               style={{ borderBottom: activeTab === "all" ? "3px solid #0d6efd" : "none" }}
             >
               All Alerts ({totalAlerts})
             </button>
             <button
-              className={`btn btn-sm border-0 fw-semibold ${
-                activeTab === "low"
+              className={`btn btn-sm border-0 fw-semibold ${activeTab === "low"
                   ? "border-bottom border-primary text-primary"
                   : "text-muted"
-              } rounded-0 pb-2 ms-3`}
+                } rounded-0 pb-2 ms-3`}
               onClick={() => setActiveTab("low")}
               style={{ borderBottom: activeTab === "low" ? "3px solid #0d6efd" : "none" }}
             >
               Low Stock ({lowStockAlerts.length})
             </button>
             <button
-              className={`btn btn-sm border-0 fw-semibold ${
-                activeTab === "expiry"
+              className={`btn btn-sm border-0 fw-semibold ${activeTab === "expiry"
                   ? "border-bottom border-primary text-primary"
                   : "text-muted"
-              } rounded-0 pb-2 ms-3`}
+                } rounded-0 pb-2 ms-3`}
               onClick={() => setActiveTab("expiry")}
               style={{ borderBottom: activeTab === "expiry" ? "3px solid #0d6efd" : "none" }}
             >
@@ -198,7 +200,6 @@ const AlertsPage = () => {
                         <th className="fw-semibold text-dark text-end">Days to Expiry</th>
                         <th className="fw-semibold text-dark text-end">Qty</th>
                         <th className="fw-semibold text-dark">Status</th>
-                        <th className="fw-semibold text-dark text-end pe-3">Actions</th>
                       </>
                     ) : (
                       <>
@@ -210,7 +211,6 @@ const AlertsPage = () => {
                         <th className="fw-semibold text-dark">Shortage</th>
                         <th className="fw-semibold text-dark">Status</th>
                         <th className="fw-semibold text-dark">Contact</th>
-                        <th className="fw-semibold text-dark text-end pe-3">Actions</th>
                       </>
                     )}
                   </tr>
@@ -228,7 +228,7 @@ const AlertsPage = () => {
                         }
                         return dateStr;
                       };
-                      
+
                       return (
                         <tr key={index} className="border-bottom">
                           <td className="ps-3">
@@ -238,16 +238,11 @@ const AlertsPage = () => {
                           <td className="text-muted">{formattedDate(alert.Production_Date)}</td>
                           <td className="text-muted">{formattedDate(alert.Exp_Date)}</td>
                           <td className="text-end fw-semibold text-danger">{daysToExpiry} days</td>
-                          <td className="text-end">{alert.Total_Qty_Produced || 0}</td>
+                          <td className="text-end">{formatStock(alert.Total_Qty_Produced || 0)} {alert.Base_Unit}</td>
                           <td>
                             <span className={`badge ${statusBadge}`}>
                               {daysToExpiry <= 7 ? "🔴 Urgent" : daysToExpiry <= 30 ? "🟠 Warning" : "🔵 Soon"}
                             </span>
-                          </td>
-                          <td className="text-end pe-3">
-                            <button className="btn btn-sm btn-link text-primary p-0">
-                              <ExternalLink size={16} />
-                            </button>
                           </td>
                         </tr>
                       );
@@ -268,10 +263,10 @@ const AlertsPage = () => {
                           </td>
                           <td className="fw-semibold text-dark">{alert.name}</td>
                           <td className="text-muted">{alert.type || 'N/A'}</td>
-                          <td className="text-end fw-semibold text-danger">{alert.current}</td>
-                          <td className="text-end">{alert.min}</td>
+                          <td className="text-end fw-semibold text-danger">{formatStock(alert.current)} {alert.baseUnit}</td>
+                          <td className="text-end">{formatStock(alert.min)} {alert.baseUnit}</td>
                           <td className="text-center">
-                            <span className="badge bg-light text-dark">{shortage}</span>
+                            <span className="badge bg-light text-dark">{formatStock(shortage)} {alert.baseUnit}</span>
                           </td>
                           <td>
                             <small className="text-capitalize text-muted">
@@ -279,15 +274,16 @@ const AlertsPage = () => {
                             </small>
                           </td>
                           <td>
-                            <a href="#" className="text-primary small d-flex align-items-center gap-1">
-                              <Phone size={14} />
-                              <span>Contact</span>
-                            </a>
-                          </td>
-                          <td className="text-end pe-3">
-                            <button className="btn btn-sm btn-link text-primary p-0">
-                              <ExternalLink size={16} />
-                            </button>
+                            {alert.supplierName ? (
+                              <a href={alert.supplierPhone ? `tel:${alert.supplierPhone}` : '#'} className="text-primary small d-flex flex-column text-decoration-none" title={alert.supplierPhone ? `Call ${alert.supplierName}` : 'No phone number available'}>
+                                <span className="fw-bold d-flex align-items-center gap-1">
+                                  <Phone size={12} /> {alert.supplierName}
+                                </span>
+                                {alert.supplierPhone && <small className="text-muted" style={{ marginLeft: '16px', fontSize: '11px' }}>{alert.supplierPhone}</small>}
+                              </a>
+                            ) : (
+                              <small className="text-muted">Not specified</small>
+                            )}
                           </td>
                         </tr>
                       );

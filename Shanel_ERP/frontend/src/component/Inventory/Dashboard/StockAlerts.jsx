@@ -12,8 +12,10 @@ const StockAlerts = ({ alerts = [] }) => {
   };
 
   const getSeverity = (alert) => {
-    if (alert.quantity === 0) return 'critical';
-    if (alert.quantity < alert.minStock / 2) return 'critical';
+    const currentQty = alert.current !== undefined ? alert.current : alert.quantity;
+    const min = alert.min !== undefined ? alert.min : alert.minStock;
+    if (currentQty === 0) return 'critical';
+    if (currentQty < min / 2) return 'critical';
     return 'low';
   };
 
@@ -60,10 +62,10 @@ const StockAlerts = ({ alerts = [] }) => {
                       {alert.name || alert.productName || 'Unknown Item'}
                     </div>
                     <small className="text-muted d-block mt-1">
-                      Current: {alert.quantity || 0} units
+                      Current: {alert.current !== undefined ? alert.current : alert.quantity || 0} {alert.baseUnit || 'units'}
                     </small>
                     <small className="text-muted d-block">
-                      Min: {alert.minStock || 0} units
+                      Min: {alert.min !== undefined ? alert.min : alert.minStock || 0} {alert.baseUnit || 'units'}
                     </small>
                   </div>
                   <div className="d-flex flex-column align-items-end gap-1" style={{ flexShrink: 0 }}>
