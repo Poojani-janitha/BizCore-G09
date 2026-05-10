@@ -28,11 +28,11 @@ const databaseCon = require('./config/db');
 const seedBanks = require('./scripts/seedBanks');
 const seedProducts = require('./scripts/seedProducts');
 const hrRoutes = require('./routes/hr/hrRoutes');
+const userRoutes = require('./routes/user/userRoutes');
+const authMiddleware = require('./middleware/authMiddleware');
 
 const app = express();
 applyMiddleware(app);
-
-
 
 // ─── STATIC FILE SERVING (for product images) ─────────────────────────────────
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -52,7 +52,7 @@ app.use('/api/banks', bankRoutes);
 
 
 //Customer routes
-app.use('/api/customer',customerRoutes);
+app.use('/api/customer', customerRoutes);
 
 // HR routes
 app.use('/api/hr', hrRoutes);
@@ -72,6 +72,9 @@ app.use('/api/supplier-payments', supplierPaymentRoutes);
 //Supplier routes
 
 
+
+//user authentication routes
+app.use('/api/users', userRoutes);
 
 //sales management routes
 

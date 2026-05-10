@@ -32,25 +32,29 @@ import AccountLedgerPage from './pages/Finance/AccountLedgerPage.jsx';
 import CreateAccountPage from './pages/Finance/CreateAccountPage.jsx';
 import EditTransactionsPage from './pages/Finance/EditTransactionsPage.jsx';
 import ReportsPage from './pages/Finance/ReportsPage.jsx';
+import LoginForm from './pages/User/LoginForm.jsx';
+import UserDashboard from './pages/User/userDashboard.jsx';
+import Logout from './pages/User/Logout.jsx';
 import './App.css';
 import { useState } from 'react';
 
-
 const App = () => {
 
+  const isAuthenticated = !!localStorage.getItem('token');
+
   return (
-
-
     <div className="d-flex w-100" style={{ height: '100vh', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
-      <SlideBar />
+      {isAuthenticated && <SlideBar />}
 
       {/* Main content Wrapper */}
       <div className="flex-grow-1 d-flex flex-column main-content-wrapper" style={{ height: '100vh', overflow: 'hidden' }}>
-        <Header />
+        {isAuthenticated && <Header />}
 
         <main className='p-4 flex-grow-1' style={{ overflowY: 'auto' }}>
           <Routes>
-            <Route path="/home" element={<div>Home Page</div>} />
+            <Route path="/login" element={<LoginForm />} />
+            
+            <Route path="/home" element={isAuthenticated ? <div>Home Page</div> : <Navigate to="/login" />} />
 
             <Route path="/inventory" element={<Inventory_Dashboard />} />
             <Route path="/inventory/company-items" element={<ProductPage pageTitle="Company Items" typeFilter="Company" />} />
@@ -77,6 +81,7 @@ const App = () => {
             <Route path="/hr/reports" element={<Reports />} />
             <Route path="/POS" element={<POS />} />
             <Route path="/hr" element={<Hrdashboardpage />} />
+            
             <Route path="/finance" element={<PaymentManagementPage />} />
             <Route path="/finance/receive-payment" element={<ReceivePaymentPage />} />
             <Route path="/finance/make-payment" element={<MakePaymentPage />} />
@@ -86,7 +91,11 @@ const App = () => {
             <Route path="/finance/create-account" element={<CreateAccountPage />} />
             <Route path="/finance/reports" element={<ReportsPage />} />
             <Route path="/finance/edit-transactions" element={<EditTransactionsPage />} />
-            <Route path="/logout" element={<div>Logout Page</div>} />
+            
+            <Route path="/user-management" element={<UserDashboard />} />
+            
+            <Route path="/logout" element={<Logout />} />
+            <Route path="/" element={<Navigate to={isAuthenticated ? "/home" : "/login"} />} />
           </Routes>
         </main>
       </div>

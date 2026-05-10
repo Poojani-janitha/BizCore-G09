@@ -42,7 +42,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                 if (res.data.success) {
                     const units = res.data.units || [];
                     setAllUnits(units);
-                    
+
                     // If no unit is selected yet, find and set the base unit (Priority: Is_Base_Unit flag, then Conversion factor 1)
                     if (!tempItem.p_unit && units.length > 0) {
                         const baseUnit = units.find(u => (typeof u === 'object' && (u.Is_Base_Unit || u.Unit_Conversion == 1))) || units[0];
@@ -179,14 +179,14 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         }
 
         // Check for duplicates (same product ID AND same unit)
-        const isDuplicate = cartItems.some(item => 
+        const isDuplicate = cartItems.some(item =>
             item.p_id === tempItem.p_id && item.p_unit === tempItem.p_unit
         );
 
         if (isDuplicate) {
-            setError({ 
-                field: 'general', 
-                message: `Item "${tempItem.p_name}" (${tempItem.p_unit}) is already in the cart. Please update the existing quantity instead.` 
+            setError({
+                field: 'general',
+                message: `Item "${tempItem.p_name}" (${tempItem.p_unit}) is already in the cart. Please update the existing quantity instead.`
             });
             return;
         }
@@ -489,8 +489,8 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                             <td><input type='number' className='form-control form-control-sm text-center' value={tempItem.free} onChange={(e) => setTempItem({ ...tempItem, free: e.target.value })} /></td>
                             <td className='text-end fw-bold text-primary'>{currentEntryTotal.toFixed(2)}</td>
                             <td className='text-center'>
-                                <button 
-                                    onClick={addItem} 
+                                <button
+                                    onClick={addItem}
                                     className='btn btn-primary btn-sm'
                                     disabled={!tempItem.p_code || !tempItem.p_unit || (error?.message?.includes('available in'))}
                                     title={error?.message?.includes('available in') ? error.message : "Add to cart"}

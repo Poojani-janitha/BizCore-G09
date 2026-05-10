@@ -35,6 +35,13 @@ SaleAssociations();
 
 // ===== USER MODELS =====
 const User = require('./user/User');
+const Module = require('./user/Module');
+const UserModuleAccess = require('./user/UserModuleAccess');
+const UserToken = require('./user/UserToken');
+
+// ===== USER ASSOCIATIONS =====
+const setupUserAssociations = require('./user/associations');
+setupUserAssociations();
 
 // ===== HR MODELS =====
 const Employee = require('./hr/Employee');
@@ -84,6 +91,9 @@ module.exports = {
     CreditTranscation,
     SalesSummaryDaily,
     User,
+    Module,
+    UserModuleAccess,
+    UserToken,
     Employee,
     EmployeeLeave,
     EmployeeDocument,
