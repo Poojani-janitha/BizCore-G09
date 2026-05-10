@@ -95,13 +95,14 @@ const StockAdjustment = () => {
                                         <span className="badge bg-light text-dark border" style={{ fontSize: '10px' }}>{log.Adjustment_Type}</span>
                                     </td>
                                     <td className={log.Difference < 0 ? 'text-danger fw-bold' : 'text-success fw-bold'}>
-                                        {Math.abs(log.Difference)}
+                                        {Math.abs(log.Difference)} {log.Product?.Base_Unit || 'units'}
                                     </td>
                                     <td>
                                         <div title={`Before: ${log.System_Qty} → After: ${log.Physical_Qty}`}>
                                             <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#6c757d' }}>{parseFloat(log.System_Qty || 0).toFixed(2)}</span>
                                             <span className="mx-2" style={{ fontSize: '13px', fontWeight: 'bold', color: '#495057' }}>→</span>
                                             <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#0d6efd' }}>{parseFloat(log.Physical_Qty || 0).toFixed(2)}</span>
+                                            <span className="ms-2" style={{ fontSize: '12px', color: '#6c757d' }}>{log.Product?.Base_Unit || 'units'}</span>
                                         </div>
                                     </td>
                                     <td><span className="badge bg-success-subtle text-success">Approved</span></td>
