@@ -765,11 +765,11 @@ const Attendance = () => {
           {['#', 'Employee', 'Role', 'Status', 'Time In', 'Time Out', 'OT Hours', 'Tea Cost'].map(h => (
             <div key={h} style={{
               fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
-              color: '#1e40af',
-              background: 'rgba(59,130,246,0.12)',
+              color: '#0d9488',
+              background: '#f0fdfa',
               padding: '8px 10px',
               borderRadius: '8px',
-              border: '1px solid rgba(59,130,246,0.3)',
+              border: '1px solid #ccfbf1',
             }}>{h}</div>
           ))}
         </div>
@@ -820,7 +820,7 @@ const Attendance = () => {
               <div style={{
                 display: 'flex', gap: '6px',
                 padding: '8px 10px', borderRadius: '8px',
-                background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)',
+                background: '#f8fafc', border: '1px solid #e2e8f0',
               }}>
                 {['present', 'absent'].map(s => (
                   <button key={s} onClick={() => updateField(emp.id, 'status', s)} style={{
@@ -904,21 +904,21 @@ const Attendance = () => {
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '14px' }}>
         {submitted && (
           <span style={{
-            fontSize: '13px', fontWeight: 600, color: '#16a34a',
-            background: 'rgba(34,197,94,0.1)', padding: '8px 16px', borderRadius: '8px',
+            fontSize: '13px', fontWeight: 600, color: '#059669',
+            background: '#ecfdf5', padding: '8px 16px', borderRadius: '8px',
           }}>
             ✅ Attendance saved successfully!
           </span>
         )}
         <button onClick={handleSubmit} style={{
-          padding: '12px 32px', borderRadius: '10px', border: 'none',
-          background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
+          padding: '12px 32px', borderRadius: '12px', border: 'none',
+          background: 'linear-gradient(135deg, #0d9488, #0f766e)',
           color: '#fff', fontSize: '14px', fontWeight: 700,
-          cursor: 'pointer', boxShadow: '0 4px 12px rgba(59,130,246,0.3)',
+          cursor: 'pointer', boxShadow: '0 4px 12px rgba(13,148,136,0.3)',
           transition: 'transform 0.2s, box-shadow 0.2s',
         }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(59,130,246,0.4)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(59,130,246,0.3)'; }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(13,148,136,0.4)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.3)'; }}
         >
           Save Attendance
         </button>

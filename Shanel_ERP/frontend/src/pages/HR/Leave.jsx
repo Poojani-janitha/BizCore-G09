@@ -251,11 +251,11 @@ const Leave = () => {
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
-              color: '#1e40af',
-              background: 'rgba(59,130,246,0.12)',
+              color: '#0d9488',
+              background: '#f0fdfa',
               padding: '8px 10px',
               borderRadius: '8px',
-              border: '1px solid rgba(59,130,246,0.3)',
+              border: '1px solid #ccfbf1',
             }}>
               {h}
             </div>
@@ -294,7 +294,7 @@ const Leave = () => {
                 <div style={{ fontSize: '11px', color: '#475569' }}>
                   <div style={{ fontWeight: 600 }}>{emp.startDate}</div>
                   <div style={{ fontWeight: 400, color: '#94a3b8' }}>to {emp.endDate}</div>
-                  <div style={{ fontWeight: 800, color: '#3b82f6', marginTop: '2px' }}>{emp.totalDays} Day(s)</div>
+                  <div style={{ fontWeight: 800, color: '#0d9488', marginTop: '2px' }}>{emp.totalDays} Day(s)</div>
                 </div>
                 <div style={{ 
                   fontSize: '12px', 

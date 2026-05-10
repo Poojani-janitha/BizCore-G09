@@ -24,6 +24,7 @@ const Attendance = sequelize.define(
             defaultValue: 'Manual'
         },
         Notes: { type: DataTypes.TEXT, allowNull: true },
+        Cards_Produced: { type: DataTypes.INTEGER, defaultValue: 0 },
         Created_By: { type: DataTypes.INTEGER, allowNull: true }
     },
     {

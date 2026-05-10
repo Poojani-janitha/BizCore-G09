@@ -19,6 +19,9 @@ const Header = () => {
         if (path === '/hr') return 'Human Resources';
         if (path.includes('/hr/employees')) return 'Employees';
         if (path.includes('/hr/attendance')) return 'Attendance';
+        if (path.includes('/hr/payroll')) return 'Payroll';
+        if (path.includes('/hr/reports')) return 'Reports';
+        if (path.includes('/hr/leave')) return 'Leaves';
         if (path === '/finance') return 'Finance & Accounting';
         if (path.includes('/finance/make-payment')) return 'Expense Management';
         if (path.includes('/finance/receive-payment')) return 'Receive Payment';

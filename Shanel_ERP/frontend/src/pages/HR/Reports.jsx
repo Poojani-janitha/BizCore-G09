@@ -415,7 +415,7 @@ const Reports = () => {
       <div style={{ marginBottom: '18px' }}>
         <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 800, letterSpacing: '-0.5px' }}>
           <span style={{
-            background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
+            background: 'linear-gradient(135deg, #0d9488, #0f172a)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>
@@ -442,11 +442,11 @@ const Reports = () => {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
             {[
-              { id: 'employees', label: 'Employee Details', color: '#3b82f6', bg: 'rgba(59,130,246,0.10)' },
-              { id: 'daily', label: 'Daily Attendance', color: '#22c55e', bg: 'rgba(34,197,94,0.10)' },
-              { id: 'monthly', label: 'Monthly Attendance', color: '#1d4ed8', bg: 'rgba(29,78,216,0.10)' },
-              { id: 'leave', label: 'Leave Report', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-              { id: 'payments', label: 'Monthly Payments', color: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
+              { id: 'employees', label: 'Employee Details', color: '#0d9488', bg: '#f0fdfa' },
+              { id: 'daily', label: 'Daily Attendance', color: '#059669', bg: '#ecfdf5' },
+              { id: 'monthly', label: 'Monthly Attendance', color: '#0d9488', bg: '#f0fdfa' },
+              { id: 'leave', label: 'Leave Report', color: '#ea580c', bg: '#fff7ed' },
+              { id: 'payments', label: 'Monthly Payments', color: '#8b5cf6', bg: '#f5f3ff' },
             ].map(r => (
               <button
                 key={r.id}
@@ -540,10 +540,10 @@ const Reports = () => {
               onClick={() => savePdf('employees')}
               style={{
                 padding: '8px 14px',
-                borderRadius: '10px',
-                border: '1px solid rgba(59,130,246,0.25)',
-                background: 'rgba(59,130,246,0.10)',
-                color: '#1d4ed8',
+                borderRadius: '12px',
+                border: '1px solid #ccfbf1',
+                background: '#f0fdfa',
+                color: '#0d9488',
                 fontWeight: 800,
                 fontSize: '14px',
                 cursor: 'pointer',
@@ -584,11 +584,11 @@ const Reports = () => {
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
-              color: '#1e40af',
-              background: 'rgba(59,130,246,0.12)',
+              color: '#0d9488',
+              background: '#f0fdfa',
               padding: '8px 10px',
               borderRadius: '8px',
-              border: '1px solid rgba(59,130,246,0.3)',
+              border: '1px solid #ccfbf1',
             }}>
               {h}
             </div>
@@ -732,11 +732,11 @@ const Reports = () => {
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
-              color: '#1e40af',
-              background: 'rgba(59,130,246,0.12)',
+              color: '#0d9488',
+              background: '#f0fdfa',
               padding: '8px 10px',
               borderRadius: '8px',
-              border: '1px solid rgba(59,130,246,0.3)',
+              border: '1px solid #ccfbf1',
             }}>
               {h}
             </div>

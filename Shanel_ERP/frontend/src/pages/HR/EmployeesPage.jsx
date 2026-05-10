@@ -397,9 +397,21 @@ const EmployeesPage = () => {
           }}
         />
         <button
-          className="btn btn-success btn-sm"
           onClick={() => setShowAddForm(!showAddForm)}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '6px',
+            background: '#0d9488',
+            color: '#fff',
+            border: 'none',
+            padding: '8px 20px',
+            borderRadius: '10px',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(13,148,136,0.2)'
+          }}
         >
           ➕ Add Employee
         </button>

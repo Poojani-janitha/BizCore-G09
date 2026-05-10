@@ -62,6 +62,7 @@ const upsertAttendance = async (req, res) => {
             Overtime_Hours,
             Marked_By,
             Notes,
+            Cards_Produced,
             Created_By
         } = req.body;
 
@@ -96,6 +97,7 @@ const upsertAttendance = async (req, res) => {
             Overtime_Hours: Overtime_Hours ?? 0,
             Marked_By: Marked_By || 'Manual',
             Notes: Notes || null,
+            Cards_Produced: Cards_Produced ?? 0,
             Created_By: Created_By || null
         };
 
@@ -171,6 +173,7 @@ const bulkAttendance = async (req, res) => {
                 Overtime_Hours: rec.Overtime_Hours ?? 0,
                 Marked_By: rec.Marked_By || 'Manual',
                 Notes: rec.Notes || null,
+                Cards_Produced: rec.Cards_Produced ?? 0,
                 Created_By: rec.Created_By || null
             };
             if (ex) await ex.update(vals);
