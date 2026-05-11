@@ -6,7 +6,7 @@ exports.getProductionData = async (req, res) => {
     try {
         const wipData = await Production.findAll({
             where: { Status: ['In_Progress', 'Quality_Check', 'Approved'] },
-            include: [{ model: Product, attributes: ['P_Name', 'Base_Unit'] }],
+            include: [{ model: Product, attributes: ['P_Name', 'P_Name_Sinhala', 'Base_Unit'] }],
             order: [['Created_At', 'DESC']]
         });
 
@@ -38,6 +38,7 @@ exports.getProductionData = async (req, res) => {
                 P_ID: item.P_ID,
                 Batch_No: item.Batch_No,
                 P_Name: item.Product ? item.Product.P_Name : 'Unknown',
+                P_Name_Sinhala: item.Product ? item.Product.P_Name_Sinhala : '',
                 Base_Unit: item.Product ? item.Product.Base_Unit : '',
                 Total_Qty_Produced: item.Total_Qty_Produced,
                 Production_Date: item.Production_Date,

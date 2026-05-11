@@ -92,6 +92,7 @@ const getDashboardStats = async (req, res) => {
         const stockLevelData = await Product.findAll({
             attributes: [
                 ['P_Name', 'name'], 
+                ['P_Name_Sinhala', 'nameSinhala'],
                 ['Min_Stock', 'min'],
                 ['P_ID', 'productId'],
                 [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('inventories.Qty')), 0), 'current']
@@ -118,7 +119,7 @@ const getDashboardStats = async (req, res) => {
         // --- 2. LOW STOCK ALERTS ---
         // Logic: Find products where Total Inventory <= Min_Stock
         const products = await Product.findAll({
-            attributes: ['P_Name', 'Min_Stock', 'P_Type', 'Base_Unit'],
+            attributes: ['P_Name', 'P_Name_Sinhala', 'Min_Stock', 'P_Type', 'Base_Unit'],
             include: [
                 { model: Inventory, as: 'inventories', attributes: ['Qty'] },
                 { model: Supplier, as: 'supplier', attributes: ['S_Name', 'Phone_No', 'Email'], required: false }
@@ -131,6 +132,7 @@ const getDashboardStats = async (req, res) => {
             if (total <= parseFloat(p.Min_Stock) && p.Min_Stock > 0) {
                 alerts.push({
                     name: p.P_Name,
+                    nameSinhala: p.P_Name_Sinhala,
                     type: p.P_Type,
                     current: total,
                     min: p.Min_Stock,
@@ -143,10 +145,15 @@ const getDashboardStats = async (req, res) => {
         });
 
         // --- 3. DISTRIBUTION BY TYPE ---
-        const distribution = await Product.findAll({
+        const distributionRows = await Product.findAll({
             attributes: [['P_Type', 'name'], [sequelize.fn('COUNT', sequelize.col('P_ID')), 'value']],
-            group: ['P_Type']
+            group: ['P_Type'],
+            raw: true
         });
+        const distribution = distributionRows.map(row => ({
+            name: row.name || 'Unknown',
+            value: Number(row.value) || 0
+        })).filter(row => row.value > 0);
 
         // --- 4. RECENT TRANSFERS ---
         const transfers = await StockTransfer.findAll({
@@ -154,7 +161,7 @@ const getDashboardStats = async (req, res) => {
             include: [{
                 model: Product,
                 as: 'product',
-                attributes: ['P_Name']
+                attributes: ['P_Name', 'P_Name_Sinhala']
             }],
             order: [['Transfer_Date', 'DESC']],
             limit: 5
@@ -221,6 +228,7 @@ const getAllStockLevels = async (req, res) => {
             attributes: [
                 ['P_ID', 'productId'],
                 ['P_Name', 'name'], 
+                ['P_Name_Sinhala', 'nameSinhala'],
                 ['P_Code', 'code'],
                 ['P_Type', 'type'],
                 ['Min_Stock', 'minStock'],

@@ -6,7 +6,7 @@ exports.getCurrentStockReport = async (req, res) => {
         // Complex query to get stock split by Production and Shop
         const [results] = await sequelize.query(`
             SELECT 
-                p.P_ID, p.P_Code, p.P_Name, p.Base_Unit,
+                p.P_ID, p.P_Code, p.P_Name, p.P_Name_Sinhala, p.Base_Unit,
                 COALESCE(SUM(CASE WHEN i.Location = 'Production' THEN i.Qty ELSE 0 END), 0) as productionStock,
                 COALESCE(SUM(CASE WHEN i.Location = 'Shop' THEN i.Qty ELSE 0 END), 0) as salesStock,
                 COALESCE(SUM(i.Qty), 0) as Total_Stock
@@ -29,6 +29,7 @@ exports.getExpiryReport = async (req, res) => {
             SELECT 
                 p.P_Code, 
                 p.P_Name, 
+                p.P_Name_Sinhala,
                 p.Base_Unit,
                 pr.Batch_No, 
                 pr.Total_Qty_Produced as Quantity, 
@@ -53,6 +54,7 @@ exports.getProductionReport = async (req, res) => {
             SELECT 
                 p.P_Code, 
                 p.P_Name, 
+                p.P_Name_Sinhala,
                 p.Base_Unit,
                 pr.Batch_No, 
                 pr.Total_Qty_Produced as Actual_Qty,
@@ -95,7 +97,7 @@ exports.getTransferReport = async (req, res) => {
     try {
         const [results] = await sequelize.query(`
             SELECT 
-                st.ST_ID, p.P_Name, p.Base_Unit, st.From_Location, st.To_Location, 
+                st.ST_ID, p.P_Name, p.P_Name_Sinhala, p.Base_Unit, st.From_Location, st.To_Location, 
                 st.Qty, st.Transfer_Date, st.Status
             FROM STOCK_TRANSFER st
             JOIN PRODUCT p ON st.P_ID = p.P_ID

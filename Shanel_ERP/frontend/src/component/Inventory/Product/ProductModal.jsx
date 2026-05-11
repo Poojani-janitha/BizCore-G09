@@ -9,6 +9,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
     const initialState = {
         P_Code: '',
         P_Name: '',
+        P_Name_Sinhala: '',
         P_Type: typeFilter, 
         Base_Unit: 'Packet',
         Cost_Price: 0,
@@ -81,6 +82,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                     id: editData.id,
                     P_Code: editData.code || '',
                     P_Name: editData.name || '',
+                    P_Name_Sinhala: editData.nameSinhala || '',
                     P_Type: editData.type, // CRITICAL FIX: Use editData.type only, never fallback to typeFilter
                     Base_Unit: editData.baseUnit || 'Packet',
                     Cost_Price: editData.costPrice ?? 0,
@@ -247,6 +249,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
             
             formDataToSend.append('code', formData.P_Code || '');
             formDataToSend.append('name', formData.P_Name);
+            formDataToSend.append('nameSinhala', formData.P_Name_Sinhala || '');
             formDataToSend.append('type', formData.P_Type);
             formDataToSend.append('baseUnit', baseUnit);
             formDataToSend.append('costPrice', parseFloat(formData.Cost_Price) || 0);
@@ -364,6 +367,13 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                                     <label className="form-label mb-1 small fw-semibold text-muted">Product Name * <span className="text-danger">{errors.P_Name && errors.P_Name}</span></label>
                                     <input type="text" name="P_Name" className={`form-control form-control-sm bg-light border-0 py-2 shadow-none ${errors.P_Name ? 'border border-danger' : ''}`}
                                            placeholder="e.g. Premium Soap Bar" required value={formData.P_Name} onChange={handleChange} />
+                                </div>
+
+                                {/* Product Name Sinhala */}
+                                <div className="col-12 mb-2">
+                                    <label className="form-label mb-1 small fw-semibold text-muted">Product Name in Sinhala <span className="text-muted small">(Optional)</span></label>
+                                    <input type="text" name="P_Name_Sinhala" className="form-control form-control-sm bg-light border-0 py-2 shadow-none"
+                                           placeholder="උදා: රෙදි සෝදන සබන්" value={formData.P_Name_Sinhala} onChange={handleChange} />
                                 </div>
 
                                 {/* Product Type & Base Unit */}

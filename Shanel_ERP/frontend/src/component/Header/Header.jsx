@@ -13,26 +13,31 @@ const Header = () => {
 
     const getPageTitle = () => {
         const path = location.pathname;
-        if (path === '/home') return 'Home';
-        if (path === '/inventory') return 'Inventory Dashboard';
-        if (path.includes('/inventory/products')) return 'Products Management';
-        if (path.includes('/inventory/raw-materials')) return 'Raw Materials';
-        if (path.includes('/inventory/production-stock')) return 'Production Stock';
-        if (path.includes('/inventory/salesStock')) return 'Sales Stock';
-        if (path.includes('/inventory/stock-transfers')) return 'Stock Transfer';
-        if (path.includes('/inventory/finished-goods')) return 'Finished Goods';
-        if (path === '/POS') return 'Point of Sale';
-        if (path === '/hr') return 'Human Resources';
-        if (path.includes('/hr/employees')) return 'Employees';
-        if (path.includes('/hr/attendance')) return 'Attendance';
-        if (path === '/finance') return 'Finance & Accounting';
-        if (path.includes('/finance/make-payment')) return 'Expense Management';
-        if (path.includes('/finance/receive-payment')) return 'Receive Payment';
-        if (path.includes('/finance/general-ledger')) return 'General Ledger';
-        if (path.includes('/finance/payments')) return 'Payments';
-        if (path.includes('/finance/reports')) return 'Finance Reports';
-        if (path === '/logout') return 'Logout';
-        return 'Dashboard';
+        if (path === '/home') return t('header.home', 'Home');
+        if (path === '/inventory') return t('inventory.dashboard.title', 'Inventory Dashboard');
+        if (path.includes('/inventory/company-items')) return t('inventory.company_items', 'Company Items');
+        if (path.includes('/inventory/other-items')) return t('inventory.other_items', 'Other Items');
+        if (path.includes('/inventory/products')) return t('inventory.product_mgmt', 'Products Management');
+        if (path.includes('/inventory/raw-materials')) return t('inventory.raw_materials', 'Raw Materials');
+        if (path.includes('/inventory/production-stock')) return t('inventory.production_stock', 'Production Stock');
+        if (path.includes('/inventory/salesStock')) return t('inventory.sales_stock', 'Sales Stock');
+        if (path.includes('/inventory/stock-transfers')) return t('inventory.stock_transfer', 'Stock Transfer');
+        if (path.includes('/inventory/stock-adjustments')) return t('inventory.stock_adjustments', 'Stock Adjustments');
+        if (path.includes('/inventory/returns')) return t('inventory.returns', 'Returns Management');
+        if (path.includes('/inventory/alerts')) return t('inventory.alerts', 'Alerts & Notifications');
+        if (path.includes('/inventory/reports')) return t('inventory.reports', 'Inventory Reports');
+        if (path === '/POS') return t('header.pos', 'Point of Sale');
+        if (path === '/hr') return t('header.hr', 'Human Resources');
+        if (path.includes('/hr/employees')) return t('header.employees', 'Employees');
+        if (path.includes('/hr/attendance')) return t('header.attendance', 'Attendance');
+        if (path === '/finance') return t('header.finance', 'Finance & Accounting');
+        if (path.includes('/finance/make-payment')) return t('header.expense_mgmt', 'Expense Management');
+        if (path.includes('/finance/receive-payment')) return t('header.receive_payment', 'Receive Payment');
+        if (path.includes('/finance/general-ledger')) return t('header.general_ledger', 'General Ledger');
+        if (path.includes('/finance/payments')) return t('header.payments', 'Payments');
+        if (path.includes('/finance/reports')) return t('header.finance_reports', 'Finance Reports');
+        if (path === '/logout') return t('header.logout', 'Logout');
+        return t('header.dashboard', 'Dashboard');
     };
 
     return (

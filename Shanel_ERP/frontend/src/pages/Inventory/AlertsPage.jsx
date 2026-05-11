@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { AlertTriangle, Bell, AlertCircle, TrendingDown, Phone, ExternalLink } from "react-feather";
+import { useTranslation } from 'react-i18next';
 
 const formatStock = (value) => {
     const num = parseFloat(value) || 0;
@@ -12,6 +13,8 @@ const AlertsPage = () => {
   const [expiryAlerts, setExpiryAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
+  const { t, i18n } = useTranslation();
+  const isSinhala = i18n.language?.startsWith('si');
 
   useEffect(() => {
     fetchAlerts();
@@ -93,46 +96,42 @@ const AlertsPage = () => {
 
   return (
     <div className="p-4 bg-light min-vh-100">
-      {/* Header */}
-      <div className="mb-4">
-        <h5 className="fw-bold text-dark mb-1">Alerts & Notifications</h5>
-        <p className="text-muted small mb-0">Monitor low stock and expiry alerts</p>
-      </div>
+
 
       {/* Metric Cards */}
       <div className="row g-3 mb-4">
         <div className="col-lg-3 col-md-6">
           <MetricCard
-            title="Total Alerts"
+            title={t('inventory.pages.alerts.metric_total')}
             value={totalAlerts}
-            subtitle="All alerts"
+            subtitle={t('inventory.pages.alerts.metric_total_sub')}
             icon={<Bell size={20} className="text-primary" />}
             borderColor="primary"
           />
         </div>
         <div className="col-lg-3 col-md-6">
           <MetricCard
-            title="Active Alerts"
+            title={t('inventory.pages.alerts.metric_active')}
             value={activeAlerts}
-            subtitle="Needs attention"
+            subtitle={t('inventory.pages.alerts.metric_active_sub')}
             icon={<AlertTriangle size={20} className="text-warning" />}
             borderColor="warning"
           />
         </div>
         <div className="col-lg-3 col-md-6">
           <MetricCard
-            title="Critical Alerts"
+            title={t('inventory.pages.alerts.metric_critical')}
             value={criticalAlerts.length}
-            subtitle="Urgent"
+            subtitle={t('inventory.pages.alerts.metric_critical_sub')}
             icon={<AlertCircle size={20} className="text-danger" />}
             borderColor="danger"
           />
         </div>
         <div className="col-lg-3 col-md-6">
           <MetricCard
-            title="Low Stock Items"
+            title={t('inventory.pages.alerts.metric_low')}
             value={lowStockAlerts.length}
-            subtitle="Items"
+            subtitle={t('inventory.pages.alerts.metric_low_sub')}
             icon={<TrendingDown size={20} className="text-info" />}
             borderColor="info"
           />
@@ -142,8 +141,8 @@ const AlertsPage = () => {
       {/* Alert Management Section */}
       <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
         <div className="card-body p-4">
-          <h6 className="fw-bold text-dark mb-2">Alert Management</h6>
-          <p className="text-muted small mb-3">Review and manage inventory alerts</p>
+          <h6 className="fw-bold text-dark mb-2">{t('inventory.pages.alerts.mgmt_title')}</h6>
+          <p className="text-muted small mb-3">{t('inventory.pages.alerts.mgmt_subtitle')}</p>
 
           {/* Tabs */}
           <div className="d-flex gap-0 mb-4 border-bottom" style={{ overflow: 'auto' }}>
@@ -155,7 +154,7 @@ const AlertsPage = () => {
               onClick={() => setActiveTab("all")}
               style={{ borderBottom: activeTab === "all" ? "3px solid #0d6efd" : "none" }}
             >
-              All Alerts ({totalAlerts})
+              {t('inventory.pages.alerts.tab_all')} ({totalAlerts})
             </button>
             <button
               className={`btn btn-sm border-0 fw-semibold ${activeTab === "low"
@@ -165,7 +164,7 @@ const AlertsPage = () => {
               onClick={() => setActiveTab("low")}
               style={{ borderBottom: activeTab === "low" ? "3px solid #0d6efd" : "none" }}
             >
-              Low Stock ({lowStockAlerts.length})
+              {t('inventory.pages.alerts.tab_low')} ({lowStockAlerts.length})
             </button>
             <button
               className={`btn btn-sm border-0 fw-semibold ${activeTab === "expiry"
@@ -175,7 +174,7 @@ const AlertsPage = () => {
               onClick={() => setActiveTab("expiry")}
               style={{ borderBottom: activeTab === "expiry" ? "3px solid #0d6efd" : "none" }}
             >
-              Expiry Soon ({expiryAlerts.length})
+              {t('inventory.pages.alerts.tab_expiry')} ({expiryAlerts.length})
             </button>
           </div>
 
@@ -193,24 +192,24 @@ const AlertsPage = () => {
                   <tr style={{ background: '#f8fafc' }}>
                     {activeTab === "expiry" ? (
                       <>
-                        <th className="fw-semibold text-dark ps-3">Batch ID</th>
-                        <th className="fw-semibold text-dark">Product</th>
-                        <th className="fw-semibold text-dark">Production Date</th>
-                        <th className="fw-semibold text-dark">Expiry Date</th>
-                        <th className="fw-semibold text-dark text-end">Days to Expiry</th>
-                        <th className="fw-semibold text-dark text-end">Qty</th>
-                        <th className="fw-semibold text-dark">Status</th>
+                        <th className="fw-semibold text-dark ps-3">{t('inventory.pages.alerts.col_batch')}</th>
+                        <th className="fw-semibold text-dark">{t('inventory.pages.alerts.col_product')}</th>
+                        <th className="fw-semibold text-dark">{t('inventory.pages.alerts.col_prod_date')}</th>
+                        <th className="fw-semibold text-dark">{t('inventory.pages.alerts.col_exp_date')}</th>
+                        <th className="fw-semibold text-dark text-end">{t('inventory.pages.alerts.col_days')}</th>
+                        <th className="fw-semibold text-dark text-end">{t('inventory.pages.alerts.col_qty')}</th>
+                        <th className="fw-semibold text-dark">{t('inventory.pages.alerts.col_status')}</th>
                       </>
                     ) : (
                       <>
-                        <th className="fw-semibold text-dark ps-3">Alert Type</th>
-                        <th className="fw-semibold text-dark">Product</th>
-                        <th className="fw-semibold text-dark">Location</th>
-                        <th className="fw-semibold text-dark text-end">Current Stock</th>
-                        <th className="fw-semibold text-dark text-end">Min Stock</th>
-                        <th className="fw-semibold text-dark">Shortage</th>
-                        <th className="fw-semibold text-dark">Status</th>
-                        <th className="fw-semibold text-dark">Contact</th>
+                        <th className="fw-semibold text-dark ps-3">{t('inventory.pages.alerts.col_alert_type')}</th>
+                        <th className="fw-semibold text-dark">{t('inventory.pages.alerts.col_product')}</th>
+                        <th className="fw-semibold text-dark">{t('inventory.pages.alerts.col_location')}</th>
+                        <th className="fw-semibold text-dark text-end">{t('inventory.pages.alerts.col_current')}</th>
+                        <th className="fw-semibold text-dark text-end">{t('inventory.pages.alerts.col_min')}</th>
+                        <th className="fw-semibold text-dark">{t('inventory.pages.alerts.col_shortage')}</th>
+                        <th className="fw-semibold text-dark">{t('inventory.pages.alerts.col_status')}</th>
+                        <th className="fw-semibold text-dark">{t('inventory.pages.alerts.col_contact')}</th>
                       </>
                     )}
                   </tr>
@@ -234,14 +233,14 @@ const AlertsPage = () => {
                           <td className="ps-3">
                             <span className="text-primary fw-semibold">{alert.Batch_No || 'N/A'}</span>
                           </td>
-                          <td className="fw-semibold text-dark">{alert.P_Name || 'N/A'}</td>
+                          <td className="fw-semibold text-dark">{(isSinhala && alert.P_Name_Sinhala) ? alert.P_Name_Sinhala : (alert.P_Name || 'N/A')}</td>
                           <td className="text-muted">{formattedDate(alert.Production_Date)}</td>
                           <td className="text-muted">{formattedDate(alert.Exp_Date)}</td>
                           <td className="text-end fw-semibold text-danger">{daysToExpiry} days</td>
                           <td className="text-end">{formatStock(alert.Total_Qty_Produced || 0)} {alert.Base_Unit}</td>
                           <td>
                             <span className={`badge ${statusBadge}`}>
-                              {daysToExpiry <= 7 ? "🔴 Urgent" : daysToExpiry <= 30 ? "🟠 Warning" : "🔵 Soon"}
+                              {daysToExpiry <= 7 ? `🔴 ${t('inventory.pages.alerts.badge_urgent')}` : daysToExpiry <= 30 ? `🟠 ${t('inventory.pages.alerts.badge_warning')}` : `🔵 ${t('inventory.pages.alerts.badge_soon')}`}
                             </span>
                           </td>
                         </tr>
@@ -254,14 +253,14 @@ const AlertsPage = () => {
                         <tr key={index} className="border-bottom">
                           <td className="ps-3">
                             {alertType === "Low Stock" ? (
-                              <span className="badge bg-warning text-dark fw-bold">Low stock</span>
+                              <span className="badge bg-warning text-dark fw-bold">{t('inventory.pages.alerts.badge_low')}</span>
                             ) : alertType === "Out of Stock" ? (
-                              <span className="badge bg-danger text-white fw-bold">Out of stock</span>
+                              <span className="badge bg-danger text-white fw-bold">{t('inventory.pages.alerts.badge_out')}</span>
                             ) : (
-                              <span className="badge bg-secondary text-white fw-bold">Active</span>
+                              <span className="badge bg-secondary text-white fw-bold">{t('inventory.pages.alerts.badge_active')}</span>
                             )}
                           </td>
-                          <td className="fw-semibold text-dark">{alert.name}</td>
+                          <td className="fw-semibold text-dark">{(isSinhala && alert.nameSinhala) ? alert.nameSinhala : alert.name}</td>
                           <td className="text-muted">{alert.type || 'N/A'}</td>
                           <td className="text-end fw-semibold text-danger">{formatStock(alert.current)} {alert.baseUnit}</td>
                           <td className="text-end">{formatStock(alert.min)} {alert.baseUnit}</td>
@@ -270,7 +269,7 @@ const AlertsPage = () => {
                           </td>
                           <td>
                             <small className="text-capitalize text-muted">
-                              {alertType === "Low Stock" ? "Low" : alertType}
+                              {alertType === "Low Stock" ? t('inventory.pages.alerts.status_low') : alertType}
                             </small>
                           </td>
                           <td>
@@ -282,7 +281,7 @@ const AlertsPage = () => {
                                 {alert.supplierPhone && <small className="text-muted" style={{ marginLeft: '16px', fontSize: '11px' }}>{alert.supplierPhone}</small>}
                               </a>
                             ) : (
-                              <small className="text-muted">Not specified</small>
+                              <small className="text-muted">{t('inventory.pages.alerts.no_contact')}</small>
                             )}
                           </td>
                         </tr>
@@ -295,8 +294,8 @@ const AlertsPage = () => {
           ) : (
             <div className="text-center py-5">
               <AlertCircle size={48} className="text-success mb-2" />
-              <h6 className="fw-bold text-dark">All Clear!</h6>
-              <p className="text-muted mb-0">No alerts in this category</p>
+              <h6 className="fw-bold text-dark">{t('inventory.pages.alerts.all_clear')}</h6>
+              <p className="text-muted mb-0">{t('inventory.pages.alerts.no_alerts_cat')}</p>
             </div>
           )}
         </div>
@@ -306,3 +305,4 @@ const AlertsPage = () => {
 };
 
 export default AlertsPage;
+
