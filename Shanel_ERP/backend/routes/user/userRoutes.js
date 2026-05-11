@@ -3,14 +3,14 @@ const {
     loginUser, registerUser, refreshToken, logoutUser, 
     getAllUsers, searchUser, getAllModels, updateUser, deleteUser 
 } = require('../../controllers/user/userController');
-const { requireModule } = require('../../middleware/authMiddleware');
+const { requireModule, verifyAccessToken } = require('../../middleware/authMiddleware');
 
 const router = express.Router();
 
 // Authentication
 router.post('/login', loginUser);
 router.post('/refresh', refreshToken);
-router.post('/logout', logoutUser);
+router.post('/logout', verifyAccessToken, logoutUser);
 
 // User Management
 router.post('/register', requireModule('user_management'), registerUser);

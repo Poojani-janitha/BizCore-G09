@@ -21,7 +21,10 @@ const LoginForm = () => {
 
             if (data.success) {
                 localStorage.setItem('token', data.access_token);
+                localStorage.setItem('refresh_token', data.refresh_token);
                 localStorage.setItem('modules', JSON.stringify(data.modules));
+                localStorage.setItem('userId', data.user_id);
+                localStorage.setItem('fullName', data.full_name || '');
                 alert('Login successful!');
                 window.location.href = '/home'; // Force reload to refresh sidebar/header state
             } else {

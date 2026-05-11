@@ -1,4 +1,7 @@
 const { Sequelize } = require('sequelize');
+const path = require('path');
+
+require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
 
 const dbName = process.env.DB_NAME || 'shanel_erp';
 const dbUser = process.env.DB_USER || 'root';
@@ -21,26 +24,16 @@ const sequelize = new Sequelize(dbName, dbUser, dbPass, {
         supportBigNumbers: true,
         bigNumberStrings: true
     },
-  dialectOptions: {
-            charset: 'utf8mb4'
-        },
-  define: {
-            charset: 'utf8mb4',
-            collate: 'utf8mb4_unicode_ci'
-        },
-  pool: {
+    define: {
+        charset: 'utf8mb4',
+        collate: 'utf8mb4_unicode_ci'
+    },
+    pool: {
         max: Number(process.env.DB_POOL_MAX || 10),
         min: 0,
         acquire: 30000,
         idle: 10000
     }
 });
-
-sequelize
-    .authenticate()
-    .then(() =>
-        console.log(`✅ Database connected (${dbHost}:${dbPort}/${dbName})`)
-    )
-    .catch((err) => console.error('❌ Unable to connect to the database:', err.message));
 
 module.exports = sequelize;

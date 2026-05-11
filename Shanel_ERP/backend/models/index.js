@@ -6,7 +6,7 @@ const StockTransfer = require('./inventory/StockTransfer');
 const StockAdjustment = require('./inventory/StockAdjustment');
 const UnitConversion = require('./inventory/UnitConversion');
 const ProductReturn = require('./inventory/ProductReturn');
-const Supplier = require('./inventory/Supplier');
+const Supplier = require('./supplier/Supplier');
 
 // ===== BANK MODELS =====
 const Bank = require('./Bank/Bank');
@@ -19,8 +19,7 @@ const InventoryAssociations = require('./inventory/InventoryAssosiation');
 InventoryAssociations();
 
 // ===== BANK ASSOCIATIONS =====
-const BankAssociations = require('./Bank/associations');
-BankAssociations;
+require('./Bank/associations');
 
 
 //===== SALES MODELS =====
@@ -59,8 +58,6 @@ const AdvanceRepayment = require('./hr/AdvanceRepayment');
 // ===== CUSTOMER MODELS =====
 const Customer = require('./customer/customer');
 
-// ===== SUPPLIER MODELS =====
-const Supplier = require('./supplier/Supplier');
 const SupplierTransaction = require('./supplier/SupplierTransaction');
 
 /// ===== CUSTOMER ASSOCIATIONS =====
@@ -112,7 +109,6 @@ module.exports = {
     JournalEntryLine,
     Expense,
     Income,
-    Supplier,
     SupplierTransaction,
     Bank,
     Branch
