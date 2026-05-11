@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {searchProducts,allUnits,getBaseUnitQty,generateInvoiceNo, postSalesData,getProductQuntity,getAllSales} = require('../../controllers/sales/SalesController')
+const {searchProducts,allUnits,getBaseUnitQty,generateInvoiceNo, postSalesData,getProductQuntity,getAllSales, updateBillPrintStatus} = require('../../controllers/sales/SalesController')
 
  router.get('/search',searchProducts);
  router.get('/units', allUnits);
@@ -9,5 +9,6 @@ const {searchProducts,allUnits,getBaseUnitQty,generateInvoiceNo, postSalesData,g
  router.post('/', postSalesData);
  router.get('/product-quantity/:productId', getProductQuntity);
  router.get('/all', getAllSales);
+ router.put('/update-print-status/:invoiceNo', updateBillPrintStatus);
 
  module.exports = router;

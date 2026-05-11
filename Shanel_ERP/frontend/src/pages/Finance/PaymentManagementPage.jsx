@@ -1,207 +1,279 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, AreaChart, Area
+} from 'recharts';
+import { 
+  PlusCircle, 
+  ArrowDownCircle, 
+  ArrowUpCircle, 
+  Filter, 
+  Download, 
+  TrendingUp, 
+  DollarSign, 
+  Briefcase,
+  Layers,
+  ChevronRight,
+  Activity,
+  AlertCircle
+} from 'react-feather';
 import SummaryCard from '../../component/Finance/SummaryCard';
-import ActionButton from '../../component/Finance/ActionButton';
 import TransactionTable from '../../component/Finance/TransactionTable';
+import {
+  filterTransactionsByTab,
+  getPaymentManagementData,
+  getPaymentManagementError
+} from '../../services/finance/paymentService';
+
+const DEFAULT_SUMMARY_DATA = {
+  received: { amount: 0, count: 0, percentage: 0 },
+  paid: { amount: 0, count: 0, percentage: 0 },
+  net: { amount: 0, percentage: 0 }
+};
+
+const COLORS = ['#0d9488', '#ea580c', '#3b82f6', '#8b5cf6', '#ec4899'];
 
 const PaymentManagementPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [summaryData, setSummaryData] = useState(DEFAULT_SUMMARY_DATA);
+  const [cashFlow, setCashFlow] = useState([]);
+  const [distribution, setDistribution] = useState({ income: [], expense: [] });
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Sample data - replace with API calls
-  const recentActivity = [
-    {
-      id: 1,
-      type: 'in',
-      date: '03/05/24',
-      party: 'ABC Trading',
-      description: 'Payment received',
-      amount: 5000,
-      method: 'Bank Transfer'
-    },
-    {
-      id: 2,
-      type: 'out',
-      date: '03/04/24',
-      party: 'Lanka Supplies',
-      description: 'Raw materials',
-      amount: -43000,
-      method: 'Bank Transfer'
-    },
-    {
-      id: 3,
-      type: 'in',
-      date: '03/04/24',
-      party: 'XYZ Traders',
-      description: 'Payment received',
-      amount: 15000,
-      method: 'Cash'
-    },
-    {
-      id: 4,
-      type: 'out',
-      date: '03/03/24',
-      party: 'ABC Suppliers',
-      description: 'Office supplies',
-      amount: -25000,
-      method: 'Cheque #12345'
-    },
-    {
-      id: 5,
-      type: 'in',
-      date: '03/03/24',
-      party: 'Global Mart',
-      description: 'Payment received',
-      amount: 12500,
-      method: 'Bank Transfer'
-    },
-  ];
+  useEffect(() => {
+    fetchFinanceData();
+  }, []);
 
-  const summaryData = {
-    received: {
-      amount: 653000,
-      count: 45,
-      percentage: 15,
-      icon: '⬇️',
-      bgColor: '#F0FDF4',
-      borderColor: '#dcfce7',
-      textColor: '#00A63E'
-    },
-    paid: {
-      amount: 543000,
-      count: 23,
-      percentage: -5,
-      icon: '⬆️',
-      bgColor: '#FEF2F2',
-      borderColor: '#ffe2e2',
-      textColor: '#E7000B'
-    },
-    netCash: {
-      amount: 110000,
-      percentage: 25,
-      icon: '$',
-      bgColor: '#F0FDFA',
-      borderColor: '#ccf7f5',
-      textColor: '#009689'
+  const fetchFinanceData = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await getPaymentManagementData(500);
+      setSummaryData(data.summaryData);
+      setCashFlow(data.cashFlow);
+      setDistribution(data.distribution);
+      setTransactions(data.transactions);
+    } catch (err) {
+      setError(getPaymentManagementError(err));
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="w-full h-[1101px] relative bg-white leading-normal tracking-normal text-left text-xl text-white font-Inter overflow-auto">
-      <main className="absolute top-0 left-0 bg-[#f5f7f9] w-full flex items-start justify-end h-full">
-        <section className="h-full w-full flex flex-col items-start pt-0 pb-6 pl-5 pr-0 gap-6">
-          
-          {/* Page Header */}
-          <div className="flex items-start pt-0 pb-0 pl-6 pr-6 max-w-full w-full">
-            <div className="h-auto flex flex-col items-start gap-6 max-w-full w-full">
-              
-              {/* Title Section */}
-              <div className="w-full flex flex-col items-start gap-1 shrink-0">
-                <h1 className="text-[32px] leading-9 font-semibold text-[#101828]">
-                  Payment Management
-                </h1>
-                <div className="text-base text-[#4a5565] leading-6">
-                  Track and manage all incoming and outgoing payments
-                </div>
+  const filteredTransactions = useMemo(() => {
+    return filterTransactionsByTab(transactions, activeTab);
+  }, [transactions, activeTab]);
+
+  const cardStyle = {
+    borderRadius: '20px',
+    border: '1px solid #e2e8f0',
+    backgroundColor: '#ffffff',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    padding: '24px'
+  };
+
+  const renderOverview = () => (
+    <div className="d-flex flex-column gap-4 animate-fadeIn">
+      {/* Summary Cards */}
+      <div className="row g-4">
+        <div className="col-md-4">
+          <SummaryCard
+            title="Total Received"
+            amount={summaryData.received.amount}
+            count="Income & Credits"
+            percentage={summaryData.received.percentage}
+            icon={<ArrowDownCircle color="#059669" />}
+            bgColor="#ecfdf5"
+          />
+        </div>
+        <div className="col-md-4">
+          <SummaryCard
+            title="Total Paid Out"
+            amount={summaryData.paid.amount}
+            count="Expenses & Payables"
+            percentage={summaryData.paid.percentage}
+            icon={<ArrowUpCircle color="#dc2626" />}
+            bgColor="#fef2f2"
+          />
+        </div>
+        <div className="col-md-4">
+          <SummaryCard
+            title="Net Cash Flow"
+            amount={summaryData.net.amount}
+            count="Net Performance"
+            percentage={summaryData.net.percentage}
+            icon={<TrendingUp color="#3b82f6" />}
+            bgColor="#eff6ff"
+            isNet={true}
+          />
+        </div>
+      </div>
+
+      {/* Charts Section */}
+      <div className="row g-4">
+        {/* Cash Flow Chart */}
+        <div className="col-lg-8">
+          <div style={cardStyle}>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h6 className="fw-bold mb-0 d-flex align-items-center gap-2" style={{ color: '#1e293b' }}>
+                <Activity size={18} color="#0d9488" />
+                Cash Flow Trend (Last 6 Months)
+              </h6>
+              <div className="d-flex gap-2">
+                <span className="badge" style={{ backgroundColor: '#ecfdf5', color: '#059669', fontSize: '10px' }}>INCOME</span>
+                <span className="badge" style={{ backgroundColor: '#fef2f2', color: '#dc2626', fontSize: '10px' }}>EXPENSE</span>
               </div>
-
-              {/* Tabs */}
-              <div className="h-[53.6px] shadow-[0px_1px_3px_rgba(0,_0,_0,_0.1),_0px_1px_2px_-1px_rgba(0,_0,_0,_0.1)] rounded-[14px] bg-white border-[#e5e7eb] border-solid border-[0.8px] flex items-start pt-[3px] pb-[3px] pl-1 pr-1 shrink-0 text-center text-base w-fit">
-                <button
-                  onClick={() => setActiveTab('overview')}
-                  className={`shadow-[0px_1px_3px_rgba(0,_0,_0,_0.1),_0px_1px_2px_-1px_rgba(0,_0,_0,_0.1)] rounded-[10px] flex items-start pt-[7.8px] pb-[12.2px] pl-[22px] pr-[21px] cursor-pointer transition-all ${
-                    activeTab === 'overview'
-                      ? 'bg-gradient-to-r from-[#009689] to-[#00786f] text-white'
-                      : 'bg-white text-[#4a5565] hover:text-[#101828]'
-                  }`}
-                >
-                  <div className="h-6 w-auto leading-6 font-medium">
-                    Overview
-                  </div>
-                </button>
-                <button
-                  onClick={() => setActiveTab('received')}
-                  className={`rounded-[10px] flex items-start pt-[7.8px] pb-[12.2px] pl-[21px] pr-5 cursor-pointer transition-all ${
-                    activeTab === 'received'
-                      ? 'bg-gradient-to-r from-[#009689] to-[#00786f] text-white'
-                      : 'text-[#4a5565] hover:text-[#101828]'
-                  }`}
-                >
-                  <div className="h-6 leading-6 font-medium">
-                    Received
-                  </div>
-                </button>
-                <button
-                  onClick={() => setActiveTab('paid')}
-                  className={`rounded-[10px] flex items-start pt-[7.8px] pb-[12.2px] pl-[22px] pr-[22px] cursor-pointer transition-all ${
-                    activeTab === 'paid'
-                      ? 'bg-gradient-to-r from-[#009689] to-[#00786f] text-white'
-                      : 'text-[#4a5565] hover:text-[#101828]'
-                  }`}
-                >
-                  <div className="h-6 leading-6 font-medium">
-                    Paid Out
-                  </div>
-                </button>
-              </div>
-
-              {/* Summary Cards */}
-              <section className="flex items-start gap-6 max-w-full shrink-0 w-full flex-wrap">
-                <SummaryCard
-                  title="RECEIVED (From Customers)"
-                  amount={summaryData.received.amount}
-                  count={`${summaryData.received.count} receipts this month`}
-                  percentage={summaryData.received.percentage}
-                  icon="📥"
-                  bgColor="#F0FDF4"
-                  textColor="#00a63e"
-                />
-                <SummaryCard
-                  title="PAID OUT (To Suppliers)"
-                  amount={summaryData.paid.amount}
-                  count={`${summaryData.paid.count} payments this month`}
-                  percentage={summaryData.paid.percentage}
-                  icon="📤"
-                  bgColor="#FEF2F2"
-                  textColor="#e7000b"
-                />
-                <SummaryCard
-                  title="NET CASH FLOW"
-                  amount={summaryData.netCash.amount}
-                  count="Difference (IN - OUT)"
-                  percentage={summaryData.netCash.percentage}
-                  icon="$"
-                  bgColor="#F0FDFA"
-                  textColor="#009689"
-                />
-              </section>
-
-              {/* Action Buttons */}
-              <div className="flex items-start gap-4 max-w-full shrink-0 w-full flex-wrap">
-                <ActionButton
-                  title="RECEIVE PAYMENT"
-                  subtitle="From customers"
-                  icon="📥"
-                  onClick={() => navigate('/finance/receive-payment')}
-                  gradient="linear-gradient(135deg, #00c950, #00a63e)"
-                />
-                <ActionButton
-                  title="MAKE PAYMENT"
-                  subtitle="To suppliers"
-                  icon="📤"
-                  onClick={() => navigate('/finance/make-payment')}
-                  gradient="linear-gradient(135deg, #fb2c36, #e7000b)"
-                />
-              </div>
-
-              {/* Recent Activity Table */}
-              <TransactionTable transactions={recentActivity} />
-
+            </div>
+            <div style={{ height: '320px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={cashFlow}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11}} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11}} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                    cursor={{fill: '#f8fafc'}}
+                  />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '11px' }} />
+                  <Bar dataKey="income" name="Income" fill="#0d9488" radius={[4, 4, 0, 0]} barSize={20} />
+                  <Bar dataKey="expense" name="Expense" fill="#dc2626" radius={[4, 4, 0, 0]} barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
+        </div>
 
-        </section>
-      </main>
+        {/* Distribution Chart */}
+        <div className="col-lg-4">
+          <div style={cardStyle}>
+            <h6 className="fw-bold mb-4 d-flex align-items-center gap-2" style={{ color: '#1e293b' }}>
+              <Layers size={18} color="#ea580c" />
+              Expense Distribution
+            </h6>
+            <div style={{ height: '320px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={distribution.expense.length > 0 ? distribution.expense : [{name: 'No Data', value: 1}]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={70}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {distribution.expense.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                    {distribution.expense.length === 0 && <Cell fill="#f1f5f9" />}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                  />
+                  <Legend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '20px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <TransactionTable 
+        transactions={transactions.slice(0, 10)} 
+        title="Recent Transactions"
+        subtitle="Last 10 financial movements across all accounts"
+      />
+    </div>
+  );
+
+  return (
+    <div style={{ width: '100%', minHeight: '100%', backgroundColor: '#f8fafc', padding: '24px' }}>
+      <div className="container-fluid p-0">
+        
+        {/* Header Section */}
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+          <div>
+            <h3 className="fw-bold mb-1" style={{ color: '#0f172a', letterSpacing: '-0.02em', fontWeight: 900 }}>Finance Overview</h3>
+            <p className="text-muted small mb-0">Real-time health of your business finances and payment tracking</p>
+          </div>
+          <div className="d-flex gap-2">
+            <button 
+              onClick={() => navigate('/finance/receive-payment')}
+              className="btn d-flex align-items-center gap-2 px-4 shadow-sm fw-bold"
+              style={{ backgroundColor: '#0d9488', color: '#fff', borderRadius: '12px', height: '42px', fontSize: '14px', border: 'none', transition: 'all 0.2s' }}>
+              <PlusCircle size={16} /> Receive Payment
+            </button>
+            <button 
+              onClick={() => navigate('/finance/make-payment')}
+              className="btn d-flex align-items-center gap-2 px-4 shadow-sm fw-bold"
+              style={{ backgroundColor: '#ea580c', color: '#fff', borderRadius: '12px', height: '42px', fontSize: '14px', border: 'none', transition: 'all 0.2s' }}>
+              <DollarSign size={16} /> Make Payment
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Selection */}
+        <div className="d-flex p-1 bg-white mb-4 shadow-sm border" style={{ borderRadius: '14px', width: 'fit-content' }}>
+          {[
+            { id: 'overview', label: 'Overview', icon: <Briefcase size={14} /> },
+            { id: 'received', label: 'Payments In', icon: <ArrowDownCircle size={14} /> },
+            { id: 'paid', label: 'Payments Out', icon: <ArrowUpCircle size={14} /> }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`btn btn-sm px-4 py-2 d-flex align-items-center gap-2 transition-all ${activeTab === tab.id ? 'bg-dark text-white fw-bold shadow-sm' : 'text-muted border-0'}`}
+              style={{ borderRadius: '10px', fontSize: '13px', border: 'none' }}>
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {error && (
+          <div className="alert alert-danger d-flex align-items-center gap-2 mb-4" style={{ borderRadius: '12px', fontSize: '14px' }}>
+            <AlertCircle size={16} /> {error}
+          </div>
+        )}
+
+        {/* Content Area */}
+        {loading ? (
+          <div className="d-flex flex-column align-items-center justify-content-center py-5 bg-white border shadow-sm" style={{ borderRadius: '24px' }}>
+            <div className="spinner-border text-primary mb-3" style={{ width: '2rem', height: '2rem' }}></div>
+            <p className="text-muted fw-bold">Synchronizing Financial Intelligence...</p>
+          </div>
+        ) : (
+          <div className="d-flex flex-column gap-4">
+            {activeTab === 'overview' ? renderOverview() : (
+              <div className="animate-fadeIn">
+                 <TransactionTable 
+                    transactions={filteredTransactions} 
+                    title={activeTab === 'received' ? "Payments Received" : "Payments Disbursed"}
+                    subtitle={`Full history of ${activeTab} transactions`}
+                 />
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+
+      <style>{`
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .btn:active {
+          transform: scale(0.96);
+        }
+      `}</style>
     </div>
   );
 };

@@ -43,7 +43,7 @@ JournalEntry.init({
         allowNull: false
     },
     Status: {
-        type: Sequelize.ENUM('Draft', 'Posted', 'Cancelled'),
+        type: Sequelize.ENUM('Draft', 'Posted', 'Cancelled', 'Revised'),
         defaultValue: 'Draft'
     },
     Posted_By: {

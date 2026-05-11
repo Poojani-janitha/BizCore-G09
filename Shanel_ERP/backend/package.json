@@ -12,6 +12,9 @@
     "start": "node scripts/ensure-deps.js && nodemon server.js",
     "dev": "node scripts/ensure-deps.js && nodemon server.js"
   },
+  "overrides": {
+    "uuid": "14.0.0"
+  },
   "dependencies": {
     "axios": "^1.13.4",
     "bcrypt": "^6.0.0",
@@ -21,10 +24,13 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
-    "mysql2": "^3.17.1",
+    "mysql2": "^3.22.3",
     "nodemon": "^3.1.11",
     "sequelize": "^6.37.8",
     "stripe": "^20.3.1",
     "validator": "^13.15.26"
+  },
+  "devDependencies": {
+    "sequelize-cli": "^6.6.5"
   }
 }

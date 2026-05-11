@@ -1,9 +1,15 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Bell, ChevronDown } from 'react-feather';
+import { Search, Bell, ChevronDown, Globe } from 'react-feather';
+import { useTranslation } from 'react-i18next';
 
 const Header = () => {
     const location = useLocation();
+    const { t, i18n } = useTranslation();
+
+    const changeLanguage = (lng) => {
+        i18n.changeLanguage(lng);
+    };
 
     const getPageTitle = () => {
         const path = location.pathname;
@@ -32,12 +38,12 @@ const Header = () => {
     return (
         <header className="d-flex align-items-center px-4 py-2 bg-white border-bottom shadow-sm w-100" style={{ height: '70px' }}>
 
-            {/* Left: Dynamic Page Name - Fixed Width so center stays center */}
+            {/* Left: Dynamic Page Name */}
             <div style={{ width: '250px' }}>
                 <h4 className="mb-0 fw-bold" style={{ color: '#1e293b', fontSize: '1.25rem' }}>{getPageTitle()}</h4>
             </div>
 
-            {/* Center: Search Bar - Locked in Position */}
+            {/* Center: Search Bar */}
             <div className="flex-grow-1 d-flex justify-content-center">
                 <div className="input-group bg-light rounded-3 px-2 border" style={{ maxWidth: '400px' }}>
                     <span className="input-group-text bg-transparent border-0 text-muted">
@@ -46,20 +52,39 @@ const Header = () => {
                     <input
                         type="text"
                         className="form-control bg-transparent border-0 shadow-none py-2"
-                        placeholder="Search anything..."
+                        placeholder={t('header.search')}
                         style={{ fontSize: '14px' }}
                     />
                 </div>
             </div>
 
-            {/* Right: Notifications & Profile - Fixed Width */}
-            <div className="d-flex align-items-center justify-content-end gap-3" style={{ width: '250px' }}>
-                <div className="position-relative p-2 rounded-circle cursor-pointer text-muted">
+            {/* Right: Language Toggle, Notifications & Profile */}
+            <div className="d-flex align-items-center justify-content-end gap-3" style={{ width: '350px' }}>
+                
+                {/* Language Toggle */}
+                <div className="d-flex bg-light rounded-pill p-1 border shadow-sm">
+                    <button 
+                        onClick={() => changeLanguage('en')}
+                        className={`btn btn-sm rounded-pill px-3 py-1 border-0 fw-bold transition-all ${i18n.language.startsWith('en') ? 'bg-primary text-white shadow-sm' : 'text-muted'}`}
+                        style={{ fontSize: '11px' }}
+                    >
+                        EN
+                    </button>
+                    <button 
+                        onClick={() => changeLanguage('si')}
+                        className={`btn btn-sm rounded-pill px-3 py-1 border-0 fw-bold transition-all ${i18n.language.startsWith('si') ? 'bg-primary text-white shadow-sm' : 'text-muted'}`}
+                        style={{ fontSize: '11px' }}
+                    >
+                        සිං
+                    </button>
+                </div>
+
+                <div className="position-relative p-2 rounded-circle cursor-pointer text-muted hover-bg-light">
                     <Bell size={20} />
                     <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style={{ marginTop: '8px', marginLeft: '-8px' }}></span>
                 </div>
 
-                <div className="border-start mx-2" style={{ height: '30px' }}></div>
+                <div className="border-start mx-1" style={{ height: '30px' }}></div>
 
                 <div className="d-flex align-items-center gap-2 cursor-pointer">
                     <div className="text-end d-none d-sm-block">

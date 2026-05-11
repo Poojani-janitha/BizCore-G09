@@ -1,22 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { EMP_KEY, generateEmployees } from '../../storeContext/employeesData';
-import { getAttendanceForDate, getLastSavedAttendanceDate, loadAttendanceStore } from '../../storeContext/attendanceData';
+import axios from 'axios';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const Reports = () => {
   const today = new Date().toISOString().split('T')[0];
-  const lastSavedDate = getLastSavedAttendanceDate() || today;
   const [activeReport, setActiveReport] = useState(null); // 'employees' | 'daily' | 'monthly' | 'leave' | 'payments'
-  const [dailyDate, setDailyDate] = useState(lastSavedDate);
+  const [dailyDate, setDailyDate] = useState(today);
   const [month, setMonth] = useState(today.slice(0, 7)); // YYYY-MM
-  const [leaveDate, setLeaveDate] = useState(lastSavedDate);
+  const [leaveDate, setLeaveDate] = useState(today);
   const [paymentMonth, setPaymentMonth] = useState(today.slice(0, 7)); // YYYY-MM
   const [employeeSearch, setEmployeeSearch] = useState('');
   const [dailySearch, setDailySearch] = useState('');
-  const [refreshTick, setRefreshTick] = useState(0);
-
-  const PAYROLL_KEY = 'shanel_payroll_v1';
 
   const savePdf = (reportId) => {
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -209,14 +204,156 @@ const Reports = () => {
     }, 100);
   };
 
-  const employees = useMemo(() => {
-    try {
-      const storedEmployees = localStorage.getItem(EMP_KEY);
-      return storedEmployees ? JSON.parse(storedEmployees) : generateEmployees();
-    } catch {
-      return generateEmployees();
-    }
-  }, [refreshTick]);
+  const [employees, setEmployees] = useState([]);
+  const [dailyData, setDailyData] = useState({ rows: [], summary: { present: 0, leave: 0, absent: 0, totalOtHours: 0, totalTeaCost: 0 } });
+  const [monthlyData, setMonthlyData] = useState({ daysInMonth: 0, hasWholeMonth: false, rows: [], summary: { present: 0, leave: 0, absent: 0, totalOtHours: 0, totalTeaCost: 0, bonusEligible: 0 } });
+  const [leaveReportData, setLeaveReportData] = useState({ rows: [] });
+  const [paymentReportData, setPaymentReportData] = useState({ rows: [], totals: { gross: 0, deductions: 0, net: 0 } });
+  const [loading, setLoading] = useState(false);
+
+  const API_BASE = 'http://localhost:5000/api/hr';
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        if (activeReport === 'employees') {
+          const res = await axios.get(`${API_BASE}/employees`);
+          const emps = Array.isArray(res.data.data) ? res.data.data.map(e => ({
+            id: e.Employee_ID,
+            name: e.Full_Name,
+            role: e.Role,
+            email: e.Email,
+            phone: e.Contact_Phone_1
+          })) : [];
+          setEmployees(emps);
+        } else if (activeReport === 'daily') {
+          const [empRes, attRes] = await Promise.all([
+            axios.get(`${API_BASE}/employees`),
+            axios.get(`${API_BASE}/attendance`, { params: { from: dailyDate, to: dailyDate } })
+          ]);
+          const emps = Array.isArray(empRes.data.data) ? empRes.data.data : [];
+          const attRecords = Array.isArray(attRes.data.data) ? attRes.data.data : [];
+          const attMap = Object.fromEntries(attRecords.map(r => [r.Employee_ID, r]));
+          
+          const rows = emps.map(e => {
+            const rec = attMap[e.Employee_ID] || {};
+            return {
+              id: e.Employee_ID,
+              name: e.Full_Name,
+              role: e.Role,
+              status: rec.Status || 'absent',
+              timeIn: rec.Time_In || '',
+              timeOut: rec.Time_Out || '',
+              otHours: Number(rec.OT_Hours || 0),
+              teaCost: Number(rec.Tea_Cost_LKR || 0)
+            };
+          });
+
+          const summary = rows.reduce((acc, r) => {
+            acc[r.status] = (acc[r.status] || 0) + 1;
+            acc.totalOtHours += r.otHours;
+            acc.totalTeaCost += r.teaCost;
+            return acc;
+          }, { present: 0, leave: 0, absent: 0, totalOtHours: 0, totalTeaCost: 0 });
+
+          setDailyData({ rows, summary });
+        } else if (activeReport === 'monthly') {
+          const [yearStr, monthStr] = month.split('-');
+          const year = Number(yearStr);
+          const monthNum = Number(monthStr);
+          if (!year || !monthNum) return;
+          const daysInMonth = new Date(year, monthNum, 0).getDate();
+          
+          const from = `${month}-01`;
+          const to = `${month}-${String(daysInMonth).padStart(2, '0')}`;
+          
+          const [empRes, attRes] = await Promise.all([
+            axios.get(`${API_BASE}/employees`),
+            axios.get(`${API_BASE}/attendance`, { params: { from, to } })
+          ]);
+          
+          const emps = Array.isArray(empRes.data.data) ? empRes.data.data : [];
+          const attRecords = Array.isArray(attRes.data.data) ? attRes.data.data : [];
+          
+          const perEmp = emps.map(e => ({
+            id: e.Employee_ID,
+            name: e.Full_Name,
+            role: e.Role,
+            presentDays: 0, leaveDays: 0, absentDays: daysInMonth,
+            otHours: 0, teaCost: 0
+          }));
+          const perEmpMap = Object.fromEntries(perEmp.map(r => [r.id, r]));
+          const summary = { present: 0, leave: 0, absent: 0, totalOtHours: 0, totalTeaCost: 0, bonusEligible: 0 };
+          
+          attRecords.forEach(rec => {
+            const row = perEmpMap[rec.Employee_ID];
+            if (!row) return;
+            const status = rec.Status || 'absent';
+            if (status === 'present') { row.presentDays += 1; row.absentDays -= 1; summary.present++; }
+            else if (status === 'leave') { row.leaveDays += 1; row.absentDays -= 1; summary.leave++; }
+            else { summary.absent++; }
+            
+            row.otHours += Number(rec.OT_Hours || 0);
+            row.teaCost += Number(rec.Tea_Cost_LKR || 0);
+            summary.totalOtHours += Number(rec.OT_Hours || 0);
+            summary.totalTeaCost += Number(rec.Tea_Cost_LKR || 0);
+          });
+          
+          summary.bonusEligible = perEmp.filter(r => r.presentDays >= 25).length;
+          setMonthlyData({ daysInMonth, hasWholeMonth: true, rows: perEmp, summary });
+        } else if (activeReport === 'leave') {
+          const [empRes, leaveRes] = await Promise.all([
+            axios.get(`${API_BASE}/employees`),
+            axios.get(`${API_BASE}/leaves`, { params: { from: leaveDate, to: leaveDate } })
+          ]);
+          const emps = Array.isArray(empRes.data.data) ? empRes.data.data : [];
+          const empMap = Object.fromEntries(emps.map(e => [e.Employee_ID, e]));
+          const leaves = Array.isArray(leaveRes.data.data) ? leaveRes.data.data : [];
+          
+          const rows = leaves.map(l => {
+            const e = empMap[l.Employee_ID] || {};
+            return {
+              id: l.Employee_ID,
+              name: e.Full_Name || 'Unknown',
+              role: e.Role || '',
+              email: e.Email || '',
+              phone: e.Contact_Phone_1 || '',
+              reason: l.Reason || ''
+            };
+          });
+          setLeaveReportData({ rows });
+        } else if (activeReport === 'payments') {
+          const [yearStr, monthStr] = paymentMonth.split('-');
+          const payRes = await axios.get(`${API_BASE}/payroll`, { params: { month: monthStr, year: yearStr }});
+          const dbPayrolls = Array.isArray(payRes.data.data) ? payRes.data.data : [];
+          
+          const rows = dbPayrolls.map(r => ({
+            id: r.Employee_ID,
+            employeeCode: `EMP-${String(r.Employee_ID).padStart(3, '0')}`,
+            employeeName: r.Employee?.Full_Name || 'Unknown',
+            employeeRole: r.Employee?.Role || '',
+            grossSalary: Number(r.Gross_Salary || 0),
+            totalDeductions: Number(r.Total_Deductions || 0),
+            netSalary: Number(r.Net_Salary || 0),
+            status: r.Payment_Status || 'Pending'
+          }));
+          const totals = rows.reduce((acc, r) => {
+            acc.gross += r.grossSalary;
+            acc.deductions += r.totalDeductions;
+            acc.net += r.netSalary;
+            return acc;
+          }, { gross: 0, deductions: 0, net: 0 });
+          setPaymentReportData({ rows, totals });
+        }
+      } catch (err) {
+        console.error('Failed to load report data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (activeReport) fetchData();
+  }, [activeReport, dailyDate, month, leaveDate, paymentMonth]);
 
   const employeeDetails = useMemo(() => {
     if (!employeeSearch.trim()) return employees;
@@ -230,44 +367,10 @@ const Reports = () => {
     );
   }, [employees, employeeSearch]);
 
-  const getWorkHours = (timeIn, timeOut) => {
-    if (!timeIn || !timeOut) return 0;
-    const [inH, inM] = timeIn.split(':').map(Number);
-    const [outH, outM] = timeOut.split(':').map(Number);
-    return ((outH * 60 + outM) - (inH * 60 + inM)) / 60;
-  };
-
   const daily = useMemo(() => {
-    const dayAttendance = getAttendanceForDate(dailyDate);
-
-    const rows = employees.map(e => {
-      const rec = dayAttendance?.[e.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 };
-      const workedHours = getWorkHours(rec.timeIn, rec.timeOut);
-      const roleText = String(e.role || '').toLowerCase();
-      const isProductionOrStaffRole = roleText.includes('production') || roleText.includes('staff');
-      const teaCost = rec.status === 'present' && isProductionOrStaffRole && rec.timeIn && rec.timeOut && workedHours >= 4 ? 60 : 0;
-      return {
-        ...e,
-        status: rec.status || 'absent',
-        timeIn: rec.timeIn || '',
-        timeOut: rec.timeOut || '',
-        otHours: Number(rec.otHours || 0),
-        workedHours,
-        teaCost,
-        reason: rec.reason || '',
-      };
-    });
-
-    const summary = rows.reduce((acc, r) => {
-      acc[r.status] = (acc[r.status] || 0) + 1;
-      acc.totalOtHours += r.otHours;
-      acc.totalTeaCost += r.teaCost;
-      return acc;
-    }, { present: 0, leave: 0, absent: 0, totalOtHours: 0, totalTeaCost: 0 });
-
     const filtered = !dailySearch.trim()
-      ? rows
-      : rows.filter(r => {
+      ? dailyData.rows
+      : dailyData.rows.filter(r => {
         const q = dailySearch.toLowerCase();
         return (
           String(r.name || '').toLowerCase().includes(q) ||
@@ -275,132 +378,12 @@ const Reports = () => {
           String(r.status || '').toLowerCase().includes(q)
         );
       });
+    return { rows: filtered, summary: dailyData.summary };
+  }, [dailyData, dailySearch]);
 
-    return { rows: filtered, summary };
-  }, [dailyDate, employees, dailySearch]);
-
-  const leaveReport = useMemo(() => {
-    const dayAttendance = getAttendanceForDate(leaveDate);
-    const rows = employees
-      .filter(e => dayAttendance?.[e.id]?.status === 'leave')
-      .map(e => ({
-        id: e.id,
-        name: e.name,
-        role: e.role,
-        email: e.email,
-        phone: e.phone,
-        reason: dayAttendance?.[e.id]?.reason || '',
-      }));
-    return { rows };
-  }, [employees, leaveDate]);
-
-  const paymentReport = useMemo(() => {
-    let payrollRecords = [];
-    try {
-      const stored = localStorage.getItem(PAYROLL_KEY);
-      payrollRecords = stored ? JSON.parse(stored) : [];
-    } catch {
-      payrollRecords = [];
-    }
-
-    const rows = payrollRecords.map(r => ({
-      id: String(r.id),
-      employeeCode: r.employeeCode,
-      employeeName: r.employeeName,
-      employeeRole: r.employeeRole,
-      grossSalary: Number(r.grossSalary || 0),
-      totalDeductions: Number(r.totalDeductions || 0),
-      netSalary: Number(r.netSalary || 0),
-      status: r.status || 'Pending',
-    }));
-
-    const totals = rows.reduce((acc, r) => {
-      acc.gross += r.grossSalary;
-      acc.deductions += r.totalDeductions;
-      acc.net += r.netSalary;
-      return acc;
-    }, { gross: 0, deductions: 0, net: 0 });
-
-    return { rows, totals, month: paymentMonth };
-  }, [paymentMonth, refreshTick]);
-
-  const monthly = useMemo(() => {
-    const store = loadAttendanceStore();
-    const [yearStr, monthStr] = month.split('-');
-    const year = Number(yearStr);
-    const monthNum = Number(monthStr); // 1-12
-    if (!year || !monthNum) return { daysInMonth: 0, hasWholeMonth: false, rows: [], summary: { present: 0, leave: 0, absent: 0, totalOtHours: 0, totalTeaCost: 0, bonusEligible: 0 } };
-
-    const daysInMonth = new Date(year, monthNum, 0).getDate();
-    const dates = Array.from({ length: daysInMonth }, (_, idx) => `${month}-${String(idx + 1).padStart(2, '0')}`);
-    const hasWholeMonth = dates.every(d => store[d]);
-
-    const perEmp = employees.map(e => ({
-      id: e.id,
-      name: e.name,
-      role: e.role,
-      presentDays: 0,
-      leaveDays: 0,
-      absentDays: 0,
-      otHours: 0,
-      teaCost: 0,
-    }));
-    const perEmpMap = Object.fromEntries(perEmp.map(r => [r.id, r]));
-
-    const summary = { present: 0, leave: 0, absent: 0, totalOtHours: 0, totalTeaCost: 0, bonusEligible: 0 };
-
-    dates.forEach(d => {
-      const day = store[d] || {};
-      employees.forEach(e => {
-        const rec = day?.[e.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 };
-        const status = rec.status || 'absent';
-        const row = perEmpMap[e.id];
-        if (!row) return;
-
-        if (status === 'present') row.presentDays += 1;
-        else if (status === 'leave') row.leaveDays += 1;
-        else row.absentDays += 1;
-
-        row.otHours += Number(rec.otHours || 0);
-
-        const workedHours = getWorkHours(rec.timeIn, rec.timeOut);
-        const roleText = String(e.role || '').toLowerCase();
-        const isProductionOrStaffRole = roleText.includes('production') || roleText.includes('staff');
-        row.teaCost += (status === 'present' && isProductionOrStaffRole && rec.timeIn && rec.timeOut && workedHours >= 4) ? 60 : 0;
-
-        summary[status] = (summary[status] || 0) + 1;
-        summary.totalOtHours += Number(rec.otHours || 0);
-        summary.totalTeaCost += (status === 'present' && isProductionOrStaffRole && rec.timeIn && rec.timeOut && workedHours >= 4) ? 60 : 0;
-      });
-    });
-
-    if (hasWholeMonth) {
-      summary.bonusEligible = perEmp.filter(r => r.presentDays > 25).length;
-    }
-
-    return { daysInMonth, hasWholeMonth, rows: perEmp, summary };
-  }, [employees, month]);
-
-  useEffect(() => {
-    const refresh = () => setRefreshTick(t => t + 1);
-    const syncLastSavedDate = () => {
-      const savedDate = getLastSavedAttendanceDate();
-      if (savedDate) {
-        setDailyDate(savedDate);
-        setLeaveDate(savedDate);
-      }
-    };
-    window.addEventListener('attendance-updated', refresh);
-    window.addEventListener('attendance-saved', syncLastSavedDate);
-    window.addEventListener('employees-updated', refresh);
-    window.addEventListener('storage', refresh);
-    return () => {
-      window.removeEventListener('attendance-updated', refresh);
-      window.removeEventListener('attendance-saved', syncLastSavedDate);
-      window.removeEventListener('employees-updated', refresh);
-      window.removeEventListener('storage', refresh);
-    };
-  }, []);
+  const monthly = monthlyData;
+  const leaveReport = leaveReportData;
+  const paymentReport = paymentReportData;
 
   const Stat = ({ title, value, subtitle, color }) => (
     <div style={{

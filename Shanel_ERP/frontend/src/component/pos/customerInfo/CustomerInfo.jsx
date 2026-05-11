@@ -1,11 +1,13 @@
 import React, { useEffect } from 'react'
 import { useState } from 'react'
 import axios from 'axios';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Package } from 'lucide-react';
 import CustomerForm from './CustomerForm';
+import { useTranslation } from 'react-i18next';
 
-const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
+const CustomerInfo = ({ customerData, setCustomerData ,invoiceNo,WALKIN_CUSTOMER}) => {
 
+  const { t } = useTranslation();
   const date = new Date();
   const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD format
   const[displayForm,setDisplayForm] = useState(false);
@@ -42,21 +44,20 @@ const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
   // }, [customerID])
 
 
-  // Create a walk-in customer object
-  const WALKIN_CUSTOMER = {
-    c_id: 9,
-    customer_code: 'WALKIN',
-    c_name: 'Walk-in Customer',
-    phone1: 'N/A',
-    customer_type: 'Retail',
-    price_level: 'Retail',
-    credit_allowed: false,
-    credit_status: 'NOT_ALLOWED'
-  };
+
 
   const[result,setResult]= useState([]);//for search results dropdown
-  const[query,setQuery]= useState('Walk-in Customer'); //default to walk-in customer, also used to control the input field
+  const[query,setQuery]= useState(t('customer.walk_in')); //default to walk-in customer, also used to control the input field
   const[selectedCustomer,setSelected]= useState(WALKIN_CUSTOMER);//selected customer object
+
+  // Sync internal state with external customerData (for resets)
+  useEffect(() => {
+    if (customerData && customerData.customer_code === 'WALKIN') {
+      setQuery(t('customer.walk_in'));
+      setSelected(WALKIN_CUSTOMER);
+    }
+  }, [customerData, WALKIN_CUSTOMER, t]);
+
 
   // Set Walk-in Customer as default when component mounts
  useEffect(() => {
@@ -82,7 +83,7 @@ const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
       if (query.trim() === '') {
         setSelected(WALKIN_CUSTOMER);
         setCustomerData(WALKIN_CUSTOMER);
-        setQuery('Walk-in Customer');
+        setQuery(t('customer.walk_in'));
       }
       setResult([]); // Close dropdown
     }, 200);
@@ -90,7 +91,7 @@ const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
 
     // Handle onFocus event to clear the input field for new search
     const handleOnFocus = () => {
-        if (query === 'Walk-in Customer') {
+        if (query === t('customer.walk_in')) {
             setQuery('');
         }
     };
@@ -132,10 +133,11 @@ const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
   return (
     <div className="container-fluid p-0">
       <div className='row g-3 align-items-end'> {/* align-items-end keeps all inputs level */}
+         
 
         {/* Customer Input Group */}
         <div className='col-12 col-md-auto'>
-          <label className='form-label small text-muted mb-1'>Customer</label>
+          <label className='form-label small text-muted mb-1'>{t('customer.label')}</label>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
             <div className='input-group input-group-sm' style={{ maxWidth: '400px', position: 'relative' }}>
               <div style={{ position: 'relative', width: '100%' }}>
@@ -144,7 +146,7 @@ const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
                   type="text"
                   className='form-control'
                   value={query } 
-                  placeholder='Search customer...'
+                  placeholder={t('customer.search_placeholder')}
                   style={{ paddingLeft: '28px' }}
                   onChange={(e) => handleInputChange(e.target.value)}
                   onBlur={handleOnBlur}
@@ -186,7 +188,7 @@ const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
             {/* Add Customer Button */}
             <button
               onClick={toggleCustomerForm}
-              title="Add new customer"
+              title={t('customer.add_title')}
               style={{
                 padding: '8px 12px',
                 backgroundColor: '#28a745',
@@ -213,7 +215,7 @@ const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
               }}
             >
               <Plus size={18} style={{ marginRight: '6px' }} />
-              Add
+              {t('customer.add_new')}
             </button>
           </div>
           {displayForm && <CustomerForm onClose={() => setDisplayForm(false)} />}
@@ -246,23 +248,23 @@ const CustomerInfo = ({ setCustomerData ,invoiceNo}) => {
 
         {/* Invoice Details pushed to the right */}
         <div className='col-auto ms-auto'>
-          <label className='form-label small text-muted mb-1'>Invoice Date</label>
+          <label className='form-label small text-muted mb-1'>{t('customer.invoice_date')}</label>
           <input type="text" className='form-control form-control-sm bg-light' value={formattedDate} readOnly style={{ width: '130px' }} />
         </div>
 
         <div className='col-auto'>
-          <label className='form-label small text-muted mb-1'>Invoice No</label>
+          <label className='form-label small text-muted mb-1'>{t('customer.invoice_no')}</label>
           <input type="text" className='form-control form-control-sm bg-light' value={invoiceNo || 'INV-PENDING'} readOnly style={{ width: '130px' }} />
         </div>
 
         <div className='col-auto'>
-          <label className='form-label small text-muted mb-1'>Terminal</label>
+          <label className='form-label small text-muted mb-1'>{t('customer.terminal')}</label>
           <input type="text" className='form-control form-control-sm text-center bg-light' value="T-01" readOnly style={{ width: '70px' }} />
         </div>
 
       </div>
     </div>
-  )
+  );
 }
 
-export default CustomerInfo
+export default CustomerInfo;
