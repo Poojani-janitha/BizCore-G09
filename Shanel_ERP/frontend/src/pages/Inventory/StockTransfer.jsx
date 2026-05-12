@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Plus, RefreshCcw, CheckCircle, AlertCircle, XCircle, Edit2 } from 'react-feather';
+import { Plus, RefreshCcw, CheckCircle, AlertCircle, XCircle, Edit2, ChevronDown } from 'react-feather';
 import NewTransferModal from '../../component/Inventory/Transfer/NewTransferModal';
+import { useTranslation } from 'react-i18next';
 
 const StockTransfer = () => {
     const [data, setData] = useState({ transfers: [], metrics: { totalTransfers: 0, pending: 0, completedToday: 0, totalItems: 0 } });
@@ -10,6 +11,9 @@ const StockTransfer = () => {
     const [error, setError] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [editTransfer, setEditTransfer] = useState(null);
+    const [showStockTable, setShowStockTable] = useState(false);
+    const { t, i18n } = useTranslation();
+    const isSinhala = i18n.language?.startsWith('si');
 
     const fetchData = () => {
         axios.get('http://localhost:5000/api/inventory/transfers/history')
@@ -110,38 +114,50 @@ const StockTransfer = () => {
 
     return (
         <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
-            <div className="d-flex justify-content-between align-items-center mb-3">
-                <h6 className='fw-bold text-dark mb-0'>Stock Transfer</h6>
+            <div className="d-flex justify-content-end align-items-center mb-3">
                 <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm" onClick={() => setShowModal(true)}>
-                    <Plus size={14}/> New Transfer
+                    <Plus size={14}/> {t('inventory.pages.stock_transfer.btn_new')}
                 </button>
             </div>
 
             {/* Metrics Row */}
             <div className="row g-3 mb-4">
-                <MetricBox title="Total Transfers" value={data.metrics?.totalTransfers || 0} borderColor="border-primary" label="All time transfers" />
-                <MetricBox title="Pending Approval" value={data.metrics?.pending || 0} borderColor="border-danger" label="Awaiting approval" />
-                <MetricBox title="Completed Today" value={data.metrics?.completedToday || 0} borderColor="border-success" label="Done today" />
-                <MetricBox title="Items Transferred" value={data.metrics?.totalItems || 0} borderColor="border-warning" label="Total units moved" />
+                <MetricBox title={t('inventory.pages.stock_transfer.metric_total')} value={data.metrics?.totalTransfers || 0} borderColor="border-primary" label={t('inventory.pages.stock_transfer.metric_total_label')} />
+                <MetricBox title={t('inventory.pages.stock_transfer.metric_pending')} value={data.metrics?.pending || 0} borderColor="border-danger" label={t('inventory.pages.stock_transfer.metric_pending_label')} />
+                <MetricBox title={t('inventory.pages.stock_transfer.metric_completed')} value={data.metrics?.completedToday || 0} borderColor="border-success" label={t('inventory.pages.stock_transfer.metric_completed_label')} />
+                <MetricBox title={t('inventory.pages.stock_transfer.metric_items')} value={data.metrics?.totalItems || 0} borderColor="border-warning" label={t('inventory.pages.stock_transfer.metric_items_label')} />
             </div>
 
             {/* Inventory Breakdown by Location */}
             <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-                <h5 className="fw-bold mb-0 text-dark">Current Stock by Location</h5>
+                <div className="d-flex align-items-center gap-2">
+                    <h5 className="fw-bold mb-0 text-dark">{t('inventory.pages.stock_transfer.current_stock')}</h5>
+                    <button 
+                        className="btn btn-sm btn-outline-secondary rounded-circle p-1" 
+                        onClick={() => setShowStockTable(!showStockTable)}
+                        title={showStockTable ? "Hide" : "Show"}
+                    >
+                        <ChevronDown 
+                            size={18} 
+                            style={{ transform: showStockTable ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.3s' }}
+                        />
+                    </button>
+                </div>
                 <button className="btn btn-sm btn-outline-secondary rounded-3" onClick={fetchInventory}>
-                    <RefreshCcw size={14} className="me-1" style={{display: 'inline'}} /> Refresh
+                    <RefreshCcw size={14} className="me-1" style={{display: 'inline'}} /> {t('inventory.pages.stock_transfer.btn_refresh')}
                 </button>
             </div>
-            {inventory && inventory.length > 0 ? (
+            {showStockTable && inventory && inventory.length > 0 ? (
                 <div className="card border-0 shadow-sm rounded-3 overflow-hidden mb-4">
                 <div className="table-responsive mb-4">
                     <table className="table table-sm table-hover mb-0">
                         <thead>
                             <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
-                                <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>PRODUCT</th>
-                                <th className='text-uppercase py-3 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>PRODUCTION</th>
-                                <th className='text-uppercase py-3 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>SHOP</th>
-                                <th className='text-uppercase py-3 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>TOTAL</th>
+                                <th className='text-uppercase py-3 ps-4 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{t('inventory.pages.stock_transfer.col_id')}</th>
+                                <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{t('inventory.pages.stock_transfer.col_product')}</th>
+                                <th className='text-uppercase py-3 ' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{t('inventory.pages.stock_transfer.col_production')}</th>
+                                <th className='text-uppercase py-3 ' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{t('inventory.pages.stock_transfer.col_shop')}</th>
+                                <th className='text-uppercase py-3 ' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{t('inventory.pages.stock_transfer.col_total')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -149,18 +165,20 @@ const StockTransfer = () => {
                                 const shop = parseFloat(item.locationInventory?.Shop || 0);
                                 const production = parseFloat(item.locationInventory?.Production || 0);
                                 const total = shop + production;
+                                const baseUnit = item.baseUnit || 'units';
                                 
                                 return (
                                     <tr key={item.id}>
-                                        <td className="fw-semibold" style={{fontSize: '13px'}}>{item.name}</td>
-                                        <td className="text-center" style={{fontSize: '13px'}}>
-                                            {production.toFixed(2)}
+                                        <td className="fw-semibold text-center" style={{fontSize: '13px'}}>{item.id}</td>
+                                        <td className="fw-semibold" style={{fontSize: '13px'}}>{(isSinhala && item.nameSinhala) ? item.nameSinhala : item.name}</td>
+                                        <td style={{fontSize: '13px'}}>
+                                            {production.toFixed(2)} {baseUnit}
                                         </td>
-                                        <td className="text-center" style={{fontSize: '13px'}}>
-                                            {shop.toFixed(2)}
+                                        <td style={{fontSize: '13px'}}>
+                                            {shop.toFixed(2)} {baseUnit}
                                         </td>
-                                        <td className="text-center fw-bold" style={{fontSize: '13px'}}>
-                                            {total.toFixed(2)}
+                                        <td className=" fw-bold" style={{fontSize: '13px'}}>
+                                            {total.toFixed(2)} {baseUnit}
                                         </td>
                                     </tr>
                                 );
@@ -169,22 +187,22 @@ const StockTransfer = () => {
                     </table>
                 </div>
                 </div>
-            ) : (
-                <div className="alert alert-warning mb-4" role="alert">
-                    <small>No inventory data loaded. Click "Refresh" to load data or check backend connection.</small>
+            ) : showStockTable ? null : (
+                <div className="card border-0 shadow-sm rounded-3 p-4 mb-4 text-center">
+                    <p className="text-muted mb-0">{t('inventory.pages.stock_transfer.click_to_view')}</p>
                 </div>
             )}
 
-            <h6 className="fw-bold mb-3 text-muted small text-uppercase">Transfer History</h6>
+            <h6 className="fw-bold mb-3 text-muted small text-uppercase">{t('inventory.pages.stock_transfer.transfer_history')}</h6>
 
             {/* Transfer Cards */}
             {data.transfers && data.transfers.length > 0 ? (
                 data.transfers.map((transfer) => (
-                    <TransferCard key={transfer.ST_ID} transfer={transfer} inventory={inventory} onEdit={handleEditTransfer} />
+                    <TransferCard key={transfer.ST_ID} transfer={transfer} inventory={inventory} onEdit={handleEditTransfer} isSinhala={isSinhala} />
                 ))
             ) : (
                 <div className="alert alert-info" role="alert">
-                    No transfers found yet. Start by creating a new transfer.
+                    {t('inventory.pages.stock_transfer.no_transfers')}
                 </div>
             )}
             <NewTransferModal 
@@ -212,12 +230,14 @@ const MetricBox = ({ title, value, borderColor, label }) => (
     </div>
 );
 
-const TransferCard = ({ transfer, inventory, onEdit }) => {
+const TransferCard = ({ transfer, inventory, onEdit, isSinhala }) => {
+    const { t } = useTranslation();
     if (!transfer) return null;
     
-    // Find product name from inventory
+    // Find product name and base unit from inventory
     const product = inventory?.find(p => p.id === transfer.P_ID);
-    const productName = product?.name || 'Unknown Product';
+    const productName = product ? ((isSinhala && product.nameSinhala) ? product.nameSinhala : product.name) : 'Unknown Product';
+    const baseUnit = product?.baseUnit || 'units';
     
     return (
     <div className="card border-0 shadow-sm rounded-4 p-4 mb-3 position-relative">
@@ -249,14 +269,14 @@ const TransferCard = ({ transfer, inventory, onEdit }) => {
                 </div>
 
                 <div className="bg-light rounded-3 p-3 mt-3">
-                    <span className="fw-bold d-block mb-2" style={{ fontSize: '15px' }}>Items Transferred:</span>
-                    <span className="text-muted d-block" style={{ fontSize: '14px' }}><strong>{productName}</strong> (ID: {transfer.P_ID || 'N/A'}) • Qty: {transfer.Qty ? parseInt(transfer.Qty) : 'N/A'} units</span>
+                    <span className="text-muted d-block" style={{ fontSize: '14px' }}>Items Transferred:</span>
+                    <span className="text-muted d-block" style={{ fontSize: '14px' }}><strong>{productName}</strong> (ID: {transfer.P_ID || 'N/A'}) • Qty: {transfer.Qty ? parseInt(transfer.Qty) : 'N/A'} {baseUnit}</span>
                     {transfer.Reason && <span className="text-muted d-block mt-1" style={{ fontSize: '13px' }}>Reason: <em>{transfer.Reason}</em></span>}
                 </div>
 
                 <div className="d-flex justify-content-between mt-3 border-top pt-3">
-                    <span className="text-muted" style={{ fontSize: '14px' }}>Transferred by: <b>{transfer.Transferred_By || 'N/A'}</b></span>
-                    <span className="text-muted" style={{ fontSize: '14px' }}>Received by: <b>{transfer.Received_By || '-'}</b></span>
+                    <span className="text-muted" style={{ fontSize: '14px' }}>{t('inventory.pages.stock_transfer.transferred_by')} <b>{transfer.Transferred_By || 'N/A'}</b></span>
+                    <span className="text-muted" style={{ fontSize: '14px' }}>{t('inventory.pages.stock_transfer.received_by')} <b>{transfer.Received_By || '-'}</b></span>
                 </div>
             </div>
         </div>

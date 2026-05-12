@@ -1,13 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCcw, CheckCircle, Clock, ArrowRight, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const StockTransfers = ({ transfers = [] }) => {
   const navigate = useNavigate();
-  
-  // const handleViewAll = () => {
-  //   navigate('/inventory/stock-transfers');
-  // };
+  const { t } = useTranslation();
 
   const getStatusColor = (status) => {
     switch(status?.toLowerCase()) {
@@ -37,17 +35,19 @@ const StockTransfers = ({ transfers = [] }) => {
         <div className="d-flex justify-content-between align-items-start">
           <div>
             <h6 className="mb-1 fw-bold text-dark d-flex align-items-center gap-2">
-              <RefreshCcw size={16} className="text-primary" /> Recent Transfers
+              <RefreshCcw size={16} className="text-primary" /> {t('inventory.dashboard.transfers_widget.title')}
             </h6>
             <p className="text-muted mb-0 small">
-              {transfers.length} {transfers.length === 1 ? 'transfer' : 'transfers'} recently
+              {transfers.length} {transfers.length === 1
+                ? t('inventory.dashboard.transfers_widget.recently_singular')
+                : t('inventory.dashboard.transfers_widget.recently_plural')}
             </p>
           </div>
           <button 
             className="btn btn-sm btn-outline-primary fw-bold"
             onClick={() => navigate('/inventory/stock-transfers')}
           >
-            View All
+            {t('inventory.dashboard.transfers_widget.view_all')}
           </button>
         </div>
       </div>
@@ -76,7 +76,7 @@ const StockTransfers = ({ transfers = [] }) => {
                       <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{transfer.To_Location || 'Unknown'}</span>
                     </div>
                     <small className="text-muted d-block">
-                      {transfer.Qty || 0} units • {formatDate(transfer.Transfer_Date)}
+                      {transfer.Qty || 0} {t('inventory.dashboard.transfers_widget.units')} • {formatDate(transfer.Transfer_Date)}
                     </small>
                   </div>
                   <div className="d-flex flex-column align-items-end gap-1" style={{ flexShrink: 0 }}>
@@ -96,8 +96,8 @@ const StockTransfers = ({ transfers = [] }) => {
         ) : (
           <div className="text-center py-5 text-muted">
             <RefreshCcw size={32} className="mb-2 opacity-50" />
-            <p className="small mb-0">No recent transfers</p>
-            <small className="text-muted">Transfers will appear here</small>
+            <p className="small mb-0">{t('inventory.dashboard.transfers_widget.no_transfers')}</p>
+            <small className="text-muted">{t('inventory.dashboard.transfers_widget.transfers_appear')}</small>
           </div>
         )}
       </div>
@@ -107,7 +107,7 @@ const StockTransfers = ({ transfers = [] }) => {
           <button 
             className="btn btn-sm btn-outline-primary w-100"
             onClick={() => navigate('/inventory/stock-transfers')}>
-              View All Transfers 
+              {t('inventory.dashboard.transfers_widget.view_all_transfers')}
           </button>
         </div>
       )}

@@ -104,6 +104,15 @@ const Product = sequelize.define(
             type: DataTypes.INTEGER, 
             allowNull: true },
 
+        S_ID: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: {
+                model: 'supplier',
+                key: 'S_ID'
+            }
+        },
+
         Is_Ishara_Product: { 
             type: DataTypes.BOOLEAN, 
             defaultValue: false,
