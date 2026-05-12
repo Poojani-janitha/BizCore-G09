@@ -328,7 +328,7 @@ const postSalesData = async (req, res) => {
 
             Price_Level: resolvedPriceLevel,
             Subtotal: parseFloat(invoiceDetails.subTotal || 0),
-            Discount_Percentage: 0,
+            Discount_Percentage: parseFloat(invoiceDetails.discountPercentage || 0),
             Discount_Amount: parseFloat(invoiceDetails.discountAmount || 0),
             Tax_Rate: 0,
             Tax_Amount: parseFloat(invoiceDetails.taxTotal || 0),
@@ -429,6 +429,11 @@ const postSalesData = async (req, res) => {
             const unitConversion = parseFloat(unit?.Unit_Conversion ?? item.conversionFactor ?? 1);
             const baseUnitQty = qty * unitConversion;
 
+            // Calculate line discount amount from quantity, price, and discount percentage
+            const unitPrice = parseFloat(item.unit_price || 0);
+            const discountPercentage = parseFloat(item.discount || 0);
+            const lineDiscountAmount = (qty * unitPrice) * (discountPercentage / 100);
+
             // Prepare SaleItem record
             const saleItem = {
                 Sale_ID: sale.Sale_Id,
@@ -436,10 +441,10 @@ const postSalesData = async (req, res) => {
                 U_ID: unit?.U_ID ?? 1,
                 Quantity: qty,
                 Base_Unit_Qty: baseUnitQty,
-                Unit_Price: parseFloat(item.unit_price || 0),
+                Unit_Price: unitPrice,
                 Price_Level_Used: resolvedPriceLevel,
-                Line_Discount_Percentage: parseFloat(item.discount || 0),
-                Line_Discount_Amount: parseFloat(item.discountAmount || 0),
+                Line_Discount_Percentage: discountPercentage,
+                Line_Discount_Amount: lineDiscountAmount,
                 Line_Subtotal: parseFloat(item.subTotal || 0),
                 Line_Tax_Rate: parseFloat(item.tax || 0),
                 Line_Tax_Amount: parseFloat(item.taxAmount || 0),

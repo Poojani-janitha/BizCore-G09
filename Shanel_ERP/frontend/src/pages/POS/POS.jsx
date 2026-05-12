@@ -16,7 +16,7 @@ import { Trash2, PauseCircle, Package } from 'lucide-react';
 
 // Create a walk-in customer object
 const WALKIN_CUSTOMER = {
-  c_id: 4,
+  c_id: 20,
   customer_code: 'WALKIN',
   c_name: 'Walk-in Customer',
   phone1: 'N/A',
@@ -219,6 +219,8 @@ const POS = () => {
         setAction({});
         return;
       }
+
+    
 
       try {
         const response = await axios.post(`http://localhost:5000/api/sales/`, {
@@ -637,6 +639,7 @@ const POS = () => {
           setLocation={setLocation}
           location={location}
           setError={setError}
+          setSuccessMessage={setSuccessMessage}
           WALKIN_CUSTOMER={WALKIN_CUSTOMER}
         />
 

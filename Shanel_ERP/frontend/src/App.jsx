@@ -35,6 +35,15 @@ import ReportsPage from './pages/Finance/ReportsPage.jsx';
 import LoginForm from './pages/User/LoginForm.jsx';
 import UserDashboard from './pages/User/userDashboard.jsx';
 import Logout from './pages/User/Logout.jsx';
+import SalesDashboard from './pages/Sales/SalesDashboard.jsx';
+import SalesHistory from './pages/Sales/SalesHistory.jsx';
+import DueSales from './pages/Sales/DueSales.jsx';
+import SalesReport from './pages/Sales/SalesReport.jsx';
+import SalesPerformancePage from './pages/Sales/SalesPerformancePage.jsx';
+import CompanyItemsReportPage from './pages/Sales/CompanyItemsReportPage.jsx';
+import OtherItemsReportPage from './pages/Sales/OtherItemsReportPage.jsx';
+import LocationWiseReportPage from './pages/Sales/LocationWiseReportPage.jsx';
+import PaymentCollectionPage from './pages/Sales/PaymentCollectionPage.jsx';
 import AdminHome from './pages/Home/AdminHome.jsx';
 import ManagerHome from './pages/Home/ManagerHome.jsx';
 import CashierHome from './pages/Home/CashierHome.jsx';
@@ -116,6 +125,36 @@ const App = () => {
             {/* User Management — Admin only */}
             <Route path="/user-management" element={<ProtectedRoute allowedRoles={['Admin']}><UserDashboard /></ProtectedRoute>} />
 
+            <Route path="/hr/employees" element={<EmployeesPage />} />
+            <Route path="/hr/attendance" element={<Attendance />} />
+            <Route path="/hr/payroll" element={<Payroll />} />
+            <Route path="/hr/leave" element={<Leave />} />
+            <Route path="/hr/reports" element={<Reports />} />
+            <Route path="/POS" element={<POS />} />
+            <Route path="/hr" element={<Hrdashboardpage />} />
+            
+            <Route path="/finance" element={<PaymentManagementPage />} />
+            <Route path="/finance/receive-payment" element={<ReceivePaymentPage />} />
+            <Route path="/finance/make-payment" element={<MakePaymentPage />} />
+            <Route path="/finance/general-ledger" element={<GeneralLedgerPage />} />
+            <Route path="/finance/chart-of-accounts" element={<ChartOfAccountsPage />} />
+            <Route path="/finance/ledger/:accountCode" element={<AccountLedgerPage />} />
+            <Route path="/finance/create-account" element={<CreateAccountPage />} />
+            <Route path="/finance/reports" element={<ReportsPage />} />
+            <Route path="/finance/edit-transactions" element={<EditTransactionsPage />} />
+            
+            <Route path="/sales" element={<SalesDashboard />} />
+            <Route path="/sales/history" element={<SalesHistory />} />
+            <Route path="/sales/due" element={<DueSales />} />
+            <Route path="/sales/reports" element={<SalesReport />} />
+            <Route path="/sales/performance" element={<SalesPerformancePage />} />
+            <Route path="/sales/collection" element={<PaymentCollectionPage />} />
+            <Route path="/sales/reports/company" element={<CompanyItemsReportPage />} />
+            <Route path="/sales/reports/other" element={<OtherItemsReportPage />} />
+            <Route path="/sales/reports/location" element={<LocationWiseReportPage />} />
+            
+            <Route path="/user-management" element={<UserDashboard />} />
+            
             <Route path="/logout" element={<Logout />} />
             <Route path="/" element={<Navigate to={isAuthenticated ? '/home' : '/login'} />} />
           </Routes>

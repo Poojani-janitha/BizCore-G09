@@ -170,7 +170,7 @@ module.exports = {
     await queryInterface.dropTable('USER_TOKEN');
     await queryInterface.dropTable('USER_MODULE_ACCESS');
     await queryInterface.dropTable('MODULE');
-    
+
     // Note: We don't restore Phone/Employee_ID in down as they were existing data we're moving away from, 
     // but in a real scenario you might want to.
   }

@@ -1,8 +1,10 @@
 import axios from 'axios';
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const CustomerForm = ({ onClose }) => {
+    const { t } = useTranslation();
     const [customerInfo, setCustomerInfo] = useState({
         customer_name: '',
         contact_person: '',
@@ -29,6 +31,17 @@ const CustomerForm = ({ onClose }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState('');
+
+    // Auto-dismiss alerts after 5 seconds (same as POS)
+    useEffect(() => {
+        if (successMessage || error) {
+            const timer = setTimeout(() => {
+                setSuccessMessage('');
+                setError(null);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [successMessage, error]);
 
     const resetForm = () => {
         setCustomerInfo({
@@ -149,7 +162,7 @@ const CustomerForm = ({ onClose }) => {
                     backgroundColor: '#f8f9fa'
                 }}>
                     <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#1a1a2e' }}>
-                        Add New Customer
+                        {t('customerForm.title')}
                     </h4>
                     <button
                         onClick={() => onClose && onClose()}
@@ -170,38 +183,60 @@ const CustomerForm = ({ onClose }) => {
 
                 {/* Content */}
                 <div style={{ padding: '24px' }}>
-                    {error && <div style={{
-                        padding: '12px 16px',
-                        backgroundColor: '#f8d7da',
-                        color: '#721c24',
-                        borderRadius: '6px',
-                        marginBottom: '16px',
-                        fontSize: '14px',
-                        border: '1px solid #f5c6cb'
-                    }}>{error}</div>}
+                    {error && (
+                        <div style={{
+                            padding: '15px 45px 15px 20px',
+                            backgroundColor: '#c62828',
+                            color: '#fff',
+                            borderRadius: '8px',
+                            marginBottom: '16px',
+                            fontSize: '14px',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px'
+                        }}>
+                            {/* <span style={{ fontSize: '20px' }}>⚠️</span> */}
+                            <div>
+                                <strong style={{ fontSize: '15px' }}>Attention</strong>
+                                <div style={{ fontSize: '14px', marginTop: '2px' }}>{error}</div>
+                            </div>
+                        </div>
+                    )}
 
-                    {successMessage && <div style={{
-                        padding: '12px 16px',
-                        backgroundColor: '#d4edda',
-                        color: '#155724',
-                        borderRadius: '6px',
-                        marginBottom: '16px',
-                        fontSize: '14px',
-                        border: '1px solid #c3e6cb'
-                    }}>{successMessage}</div>}
+                    {successMessage && (
+                        <div style={{
+                            padding: '15px 45px 15px 20px',
+                            backgroundColor: '#2e7d32',
+                            color: '#fff',
+                            borderRadius: '8px',
+                            marginBottom: '16px',
+                            fontSize: '14px',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px'
+                        }}>
+                            {/* <span style={{ fontSize: '20px' }}>✓</span> */}
+                            <div>
+                                <strong style={{ fontSize: '15px' }}>Success!</strong>
+                                <div style={{ fontSize: '14px', marginTop: '2px' }}>{successMessage}</div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Basic Info Section */}
                     <div style={{ marginBottom: '24px' }}>
                         <h6 style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: '600', color: '#495057', textTransform: 'uppercase' }}>
-                            Basic Information
+                            {t('customerForm.basicInfo')}
                         </h6>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                             <div>
-                                <label style={labelStyle}>Customer Name *</label>
+                                <label style={labelStyle}>{t('customerForm.customerName')} *</label>
                                 <input
                                     type="text"
                                     style={inputStyle}
-                                    placeholder="Full Name"
+                                    placeholder={t('customerForm.customerNamePlaceholder')}
                                     value={customerInfo.customer_name}
                                     onChange={(e) => setCustomerInfo({...customerInfo, customer_name: e.target.value})}
                                     onFocus={(e) => e.target.style.borderColor = '#007bff'}
@@ -209,11 +244,11 @@ const CustomerForm = ({ onClose }) => {
                                 />
                             </div>
                             <div>
-                                <label style={labelStyle}>Phone 1 *</label>
+                                <label style={labelStyle}>{t('customerForm.phone1')} *</label>
                                 <input
                                     type="text"
                                     style={inputStyle}
-                                    placeholder="Phone Number"
+                                    placeholder={t('customerForm.phone1Placeholder')}
                                     value={customerInfo.customer_phone1}
                                     onChange={(e) => setCustomerInfo({...customerInfo, customer_phone1: e.target.value})}
                                     onFocus={(e) => e.target.style.borderColor = '#007bff'}
@@ -223,11 +258,11 @@ const CustomerForm = ({ onClose }) => {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                             <div>
-                                <label style={labelStyle}>Contact Person</label>
+                                <label style={labelStyle}>{t('customerForm.contactPerson')}</label>
                                 <input
                                     type="text"
                                     style={inputStyle}
-                                    placeholder="Contact Person"
+                                    placeholder={t('customerForm.contactPersonPlaceholder')}
                                     value={customerInfo.contact_person}
                                     onChange={(e) => setCustomerInfo({...customerInfo, contact_person: e.target.value})}
                                     onFocus={(e) => e.target.style.borderColor = '#007bff'}
@@ -235,11 +270,11 @@ const CustomerForm = ({ onClose }) => {
                                 />
                             </div>
                             <div>
-                                <label style={labelStyle}>Phone 2</label>
+                                <label style={labelStyle}>{t('customerForm.phone2')}</label>
                                 <input
                                     type="text"
                                     style={inputStyle}
-                                    placeholder="Alternative Phone"
+                                    placeholder={t('customerForm.phone2Placeholder')}
                                     value={customerInfo.customer_phone2}
                                     onChange={(e) => setCustomerInfo({...customerInfo, customer_phone2: e.target.value})}
                                     onFocus={(e) => e.target.style.borderColor = '#007bff'}
@@ -252,15 +287,15 @@ const CustomerForm = ({ onClose }) => {
                     {/* Contact Info Section */}
                     <div style={{ marginBottom: '24px' }}>
                         <h6 style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: '600', color: '#495057', textTransform: 'uppercase' }}>
-                            Contact Information
+                            {t('customerForm.contactInfo')}
                         </h6>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                             <div>
-                                <label style={labelStyle}>Email</label>
+                                <label style={labelStyle}>{t('customerForm.email')}</label>
                                 <input
                                     type="email"
                                     style={inputStyle}
-                                    placeholder="Email Address"
+                                    placeholder={t('customerForm.emailPlaceholder')}
                                     value={customerInfo.customer_email}
                                     onChange={(e) => setCustomerInfo({...customerInfo, customer_email: e.target.value})}
                                     onFocus={(e) => e.target.style.borderColor = '#007bff'}
@@ -268,11 +303,11 @@ const CustomerForm = ({ onClose }) => {
                                 />
                             </div>
                             <div>
-                                <label style={labelStyle}>City</label>
+                                <label style={labelStyle}>{t('customerForm.city')}</label>
                                 <input
                                     type="text"
                                     style={inputStyle}
-                                    placeholder="City"
+                                    placeholder={t('customerForm.cityPlaceholder')}
                                     value={customerInfo.customer_city}
                                     onChange={(e) => setCustomerInfo({...customerInfo, customer_city: e.target.value})}
                                     onFocus={(e) => e.target.style.borderColor = '#007bff'}
@@ -281,10 +316,10 @@ const CustomerForm = ({ onClose }) => {
                             </div>
                         </div>
                         <div>
-                            <label style={labelStyle}>Address</label>
+                            <label style={labelStyle}>{t('customerForm.address')}</label>
                             <textarea
                                 style={{...inputStyle, minHeight: '80px', resize: 'vertical'}}
-                                placeholder="Full Address"
+                                placeholder={t('customerForm.addressPlaceholder')}
                                 value={customerInfo.customer_address}
                                 onChange={(e) => setCustomerInfo({...customerInfo, customer_address: e.target.value})}
                                 onFocus={(e) => e.target.style.borderColor = '#007bff'}
@@ -296,11 +331,11 @@ const CustomerForm = ({ onClose }) => {
                     {/* Business Info Section */}
                     <div style={{ marginBottom: '24px' }}>
                         <h6 style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: '600', color: '#495057', textTransform: 'uppercase' }}>
-                            Business Information
+                            {t('customerForm.businessInfo')}
                         </h6>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                             <div>
-                                <label style={labelStyle}>Customer Type</label>
+                                <label style={labelStyle}>{t('customerForm.customerType')}</label>
                                 <select
                                     style={inputStyle}
                                     value={customerInfo.customer_type}
@@ -313,7 +348,7 @@ const CustomerForm = ({ onClose }) => {
                                 </select>
                             </div>
                             <div>
-                                <label style={labelStyle}>Price Level</label>
+                                <label style={labelStyle}>{t('customerForm.priceLevel')}</label>
                                 <select
                                     style={inputStyle}
                                     value={customerInfo.price_level}
@@ -331,11 +366,11 @@ const CustomerForm = ({ onClose }) => {
                     {/* Payment Info Section */}
                     <div style={{ marginBottom: '24px' }}>
                         <h6 style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: '600', color: '#495057', textTransform: 'uppercase' }}>
-                            Payment Settings
+                            {t('customerForm.paymentSettings')}
                         </h6>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                             <div>
-                                <label style={labelStyle}>Preferred Payment</label>
+                                <label style={labelStyle}>{t('customerForm.preferredPayment')}</label>
                                 <select
                                     style={inputStyle}
                                     value={customerInfo.preferred_payment_method}
@@ -350,7 +385,7 @@ const CustomerForm = ({ onClose }) => {
                                 </select>
                             </div>
                             <div>
-                                <label style={labelStyle}>Status</label>
+                                <label style={labelStyle}>{t('customerForm.status')}</label>
                                 <select
                                     style={inputStyle}
                                     value={customerInfo.status}
@@ -368,10 +403,10 @@ const CustomerForm = ({ onClose }) => {
 
                     {/* Notes */}
                     <div>
-                        <label style={labelStyle}>Notes</label>
+                        <label style={labelStyle}>{t('customerForm.notes')}</label>
                         <textarea
                             style={{...inputStyle, minHeight: '80px', resize: 'vertical'}}
-                            placeholder="Additional Notes"
+                            placeholder={t('customerForm.notesPlaceholder')}
                             value={customerInfo.notes}
                             onChange={(e) => setCustomerInfo({...customerInfo, notes: e.target.value})}
                             onFocus={(e) => e.target.style.borderColor = '#007bff'}
@@ -409,7 +444,7 @@ const CustomerForm = ({ onClose }) => {
                             e.target.backgroundColor = '#fff';
                         }}
                     >
-                        Cancel
+                        {t('customerForm.cancel')}
                     </button>
                     <button
                         onClick={saveCustomerData}
@@ -433,7 +468,7 @@ const CustomerForm = ({ onClose }) => {
                             if (!loading) e.target.backgroundColor = '#007bff';
                         }}
                     >
-                        {loading ? 'Saving...' : 'Save Customer'}
+                        {loading ? t('customerForm.saving') : t('customerForm.save')}
                     </button>
                 </div>
             </div>
