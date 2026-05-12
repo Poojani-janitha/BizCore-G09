@@ -5,31 +5,61 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { Op } = require('sequelize');
 
+const getJwtSecret = () => {
+    if (!process.env.JWT_SECRET) {
+        throw new Error("JWT_SECRET is not configured. Add it to backend/.env as described in AUTH_SETUP.md.");
+    }
+    return process.env.JWT_SECRET;
+};
+
+const getRefreshTokenSecret = () => {
+    if (!process.env.REFRESH_TOKEN_SECRET) {
+        throw new Error("REFRESH_TOKEN_SECRET is not configured. Add it to backend/.env as described in AUTH_SETUP.md.");
+    }
+    return process.env.REFRESH_TOKEN_SECRET;
+};
+
+const createRefreshToken = () => crypto
+    .createHmac('sha256', getRefreshTokenSecret())
+    .update(crypto.randomBytes(64))
+    .digest('hex');
+
+const signAccessToken = (user, modules) => jwt.sign(
+    {
+        sub: user.User_ID,
+        username: user.Username,
+        user_type: user.User_Type,
+        modules
+    },
+    getJwtSecret(),
+    { expiresIn: '1h' }
+);
+
 /**
  * Login User
  */
 const loginUser = async (req, res) => {
-    console.log(">>> [DEBUG] loginUser started");
     const t = await sequelize.transaction();
     try {
         const { username, password } = req.body;
-        console.log(`>>> [DEBUG] Attempting login for: ${username}`);
+
+        if (!username || !password) {
+            await t.rollback();
+            return res.status(400).json({ success: false, error: "Username and password are required" });
+        }
 
         if (!User) {
-            console.error(">>> [DEBUG] ERROR: User model is undefined!");
             throw new Error("User model not loaded");
         }
 
         const user = await User.findOne({ where: { Username: username } });
         
         if (!user) {
-            console.log(">>> [DEBUG] User not found in DB");
             await t.rollback();
             return res.status(401).json({ success: false, error: "Invalid username or password" });
         }
 
         if (user.Status !== 'Active') {
-            console.log(`>>> [DEBUG] Login blocked. User status: ${user.Status}`);
             await t.rollback();
             return res.status(403).json({ success: false, error: "Account is inactive or suspended" });
         }
@@ -42,7 +72,6 @@ const loginUser = async (req, res) => {
         const isPasswordValid = await bcrypt.compare(password, user.Password_Hash);
         
         if (!isPasswordValid) {
-            console.log(">>> [DEBUG] Password invalid");
             const attempts = (user.Failed_Login_Attempts || 0) + 1;
             await user.update({ 
                 Failed_Login_Attempts: attempts,
@@ -52,8 +81,6 @@ const loginUser = async (req, res) => {
             return res.status(401).json({ success: false, error: "Invalid username or password" });
         }
 
-        console.log(">>> [DEBUG] Password valid. Checking module access...");
-        
         await user.update({ Failed_Login_Attempts: 0, Last_Login: new Date() }, { transaction: t });
 
         const permissions = await UserModuleAccess.findAll({
@@ -66,22 +93,14 @@ const loginUser = async (req, res) => {
             }]
         });
         
-        console.log(`>>> [DEBUG] Found ${permissions.length} permission entries`);
         const moduleKeys = permissions.map(p => p.Module ? p.Module.Module_Key : null).filter(Boolean);
-        console.log(`>>> [DEBUG] Permitted modules: ${moduleKeys.join(', ')}`);
 
-        console.log(">>> [DEBUG] Generating tokens...");
-        const accessToken = jwt.sign(
-            { sub: user.User_ID, username: user.Username, user_type: user.User_Type, modules: moduleKeys },
-            process.env.JWT_SECRET || 'supersecretkey123!@#', 
-            { expiresIn: '1h' }
-        );
+        const accessToken = signAccessToken(user, moduleKeys);
 
-        const rawRefreshToken = crypto.randomBytes(64).toString('hex');
-        const hashedRefreshToken = await bcrypt.hash(rawRefreshToken, 10);
+        const refreshToken = createRefreshToken();
+        const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
 
         if (!UserToken) {
-            console.error(">>> [DEBUG] ERROR: UserToken model is undefined!");
             throw new Error("UserToken model not loaded");
         }
 
@@ -94,18 +113,19 @@ const loginUser = async (req, res) => {
         }, { transaction: t });
 
         await t.commit();
-        console.log(">>> [DEBUG] Login SUCCESSFUL");
         return res.status(200).json({
             success: true,
             access_token: accessToken,
-            refresh_token: rawRefreshToken,
+            refresh_token: refreshToken,
             modules: moduleKeys,
+            user_id: user.User_ID,
+            username: user.Username,
+            user_type: user.User_Type,
             full_name: user.Full_Name
         });
     } catch (error) {
         if (t) await t.rollback();
-        console.error(">>> [DEBUG] CRITICAL ERROR IN LOGIN:", error.message);
-        console.error(error.stack);
+        console.error("LOGIN ERROR:", error);
         return res.status(500).json({ success: false, error: error.message });
     }
 };
@@ -296,10 +316,7 @@ const refreshToken = async (req, res) => {
         });
         const moduleKeys = permissions.map(p => p.Module.Module_Key);
 
-        const newAccessToken = jwt.sign(
-            { sub: user.User_ID, username: user.Username, user_type: user.User_Type, modules: moduleKeys },
-            process.env.JWT_SECRET || 'supersecretkey123!@#', { expiresIn: '1h' }
-        );
+        const newAccessToken = signAccessToken(user, moduleKeys);
 
         return res.status(200).json({ success: true, access_token: newAccessToken, modules: moduleKeys });
     } catch (error) {

@@ -10,7 +10,7 @@ const getSalesStockOverwiew = async (req, res) => {
             include: [
                 {
                     model: Product,
-                    attributes: ['P_ID', 'P_Code', 'P_Name', 'P_Type', 'Wholesale_Price', 'Min_Stock'],
+                    attributes: ['P_ID', 'P_Code', 'P_Name', 'P_Name_Sinhala', 'P_Type', 'Wholesale_Price', 'Min_Stock'],
                     where: { P_Type: { [Op.in]: ['Company', 'Other'] } },  // Only finished goods (Company + Non-Company), exclude Raw
                     required: true
                 },
@@ -57,6 +57,7 @@ const getSalesStockOverwiew = async (req, res) => {
             return {
                 code: item['Product.P_Code'],
                 name: item['Product.P_Name'],
+                nameSinhala: item['Product.P_Name_Sinhala'],
                 type: item['Product.P_Type'],
                 batchNo: batchNo,
                 totalqty: qty,
@@ -89,6 +90,7 @@ const getRecentStockIn = async (req, res) => {
             SELECT 
                 sm.SM_ID,
                 p.P_Name,
+                p.P_Name_Sinhala,
                 p.P_Type,
                 sm.Qty_In as quantity,
                 sm.Movement_Type,
@@ -113,6 +115,7 @@ const getRecentStockIn = async (req, res) => {
         const formattedData = stockInData.map(item => ({
             id: item.SM_ID,
             productName: item.P_Name,
+            productNameSinhala: item.P_Name_Sinhala,
             productType: item.P_Type,
             quantity: parseFloat(item.quantity || 0),
             source: item.source,
@@ -132,6 +135,7 @@ const getRecentStockOut = async (req, res) => {
             SELECT 
                 sm.SM_ID,
                 p.P_Name,
+                p.P_Name_Sinhala,
                 p.P_Type,
                 sm.Qty_Out as quantity,
                 sm.Movement_Type,
@@ -157,6 +161,7 @@ const getRecentStockOut = async (req, res) => {
         const formattedData = stockOutData.map(item => ({
             id: item.SM_ID,
             productName: item.P_Name,
+            productNameSinhala: item.P_Name_Sinhala,
             productType: item.P_Type,
             quantity: parseFloat(item.quantity || 0),
             destination: item.destination,

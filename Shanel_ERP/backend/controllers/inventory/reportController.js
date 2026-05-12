@@ -6,13 +6,13 @@ exports.getCurrentStockReport = async (req, res) => {
         // Complex query to get stock split by Production and Shop
         const [results] = await sequelize.query(`
             SELECT 
-                p.P_ID, p.P_Code, p.P_Name,
+                p.P_ID, p.P_Code, p.P_Name, p.P_Name_Sinhala, p.Base_Unit,
                 COALESCE(SUM(CASE WHEN i.Location = 'Production' THEN i.Qty ELSE 0 END), 0) as productionStock,
                 COALESCE(SUM(CASE WHEN i.Location = 'Shop' THEN i.Qty ELSE 0 END), 0) as salesStock,
                 COALESCE(SUM(i.Qty), 0) as Total_Stock
             FROM PRODUCT p
             LEFT JOIN INVENTORY i ON p.P_ID = i.P_ID
-            GROUP BY p.P_ID
+            GROUP BY p.P_ID, p.Base_Unit
         `, { raw: true });
 
         res.json({ success: true, data: results || [] });
@@ -29,6 +29,8 @@ exports.getExpiryReport = async (req, res) => {
             SELECT 
                 p.P_Code, 
                 p.P_Name, 
+                p.P_Name_Sinhala,
+                p.Base_Unit,
                 pr.Batch_No, 
                 pr.Total_Qty_Produced as Quantity, 
                 pr.Exp_Date,
@@ -52,10 +54,12 @@ exports.getProductionReport = async (req, res) => {
             SELECT 
                 p.P_Code, 
                 p.P_Name, 
+                p.P_Name_Sinhala,
+                p.Base_Unit,
                 pr.Batch_No, 
                 pr.Total_Qty_Produced as Actual_Qty,
                 pr.Production_Date,
-                pr.Cost_Per_Unit,
+                p.Cost_Price as Cost_Per_Unit,
                 pr.Status
             FROM PRODUCTION pr
             JOIN PRODUCT p ON pr.P_ID = p.P_ID
@@ -93,7 +97,7 @@ exports.getTransferReport = async (req, res) => {
     try {
         const [results] = await sequelize.query(`
             SELECT 
-                st.ST_ID, p.P_Name, st.From_Location, st.To_Location, 
+                st.ST_ID, p.P_Name, p.P_Name_Sinhala, p.Base_Unit, st.From_Location, st.To_Location, 
                 st.Qty, st.Transfer_Date, st.Status
             FROM STOCK_TRANSFER st
             JOIN PRODUCT p ON st.P_ID = p.P_ID
