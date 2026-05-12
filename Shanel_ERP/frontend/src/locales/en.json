@@ -347,5 +347,135 @@
         "no_alerts_cat": "No alerts in this category"
       }
     }
+  },
+  "home": {
+    "greeting_morning": "Good morning",
+    "greeting_afternoon": "Good afternoon",
+    "greeting_evening": "Good evening",
+    "role": "Role",
+    "admin": "Admin",
+    "kpi": {
+      "company_products": "Total Company Products",
+      "company_products_subtitle": "Items in catalog",
+      "other_products": "Total Other Products",
+      "other_products_subtitle": "Other products",
+      "stock_alerts": "Stock Alerts",
+      "stock_alerts_subtitle": "Needs attention",
+      "monthly_income": "Monthly Income",
+      "net_cash_flow": "Net Cash Flow",
+      "all_employees": "All Employees",
+      "all_employees_subtitle": "Total staff",
+      "present_today": "Present Today",
+      "present_today_subtitle": "Present staff",
+      "pending_payments": "Pending Payments",
+      "pending_payments_subtitle": "Unpaid invoices (7d)"
+    },
+    "quick_access": "⚡ Quick Access",
+    "modules": {
+      "pos": "POS",
+      "inventory": "Inventory",
+      "production": "Production",
+      "sales": "Sales",
+      "finance": "Finance",
+      "reports": "Reports",
+      "hr": "HR",
+      "alerts": "Alerts",
+      "users": "Users"
+    },
+    "charts": {
+      "cash_flow_title": "Cash Flow — Last 6 Months",
+      "cash_flow_subtitle": "Income vs Expenses",
+      "income": "Income",
+      "expense": "Expense",
+      "inventory_distribution": "Inventory Distribution",
+      "distribution_subtitle": "By product type"
+    },
+    "sections": {
+      "stock_alerts": "⚠️ Stock Alerts",
+      "view_all": "View All",
+      "no_alerts": "✅ No active alerts",
+      "low_stock": "Low Stock",
+      "out_of_stock": "Out of Stock",
+      "recent_transfers": "🔄 Recent Transfers",
+      "no_transfers": "No recent transfers",
+      "from_to": " → ",
+      "units": "units",
+      "recent_sales": "💰 Recent Sales",
+      "days_7": "7 days",
+      "no_sales": "No recent sales",
+      "unpaid_invoices": "Unpaid invoices"
+    }
+  },
+  "cashier": {
+    "greeting_morning": "Good morning",
+    "greeting_afternoon": "Good afternoon",
+    "greeting_evening": "Good evening",
+    "role": "Role",
+    "cashier": "🛒 Cashier",
+    "current_time": "Current Time",
+    "cta_open_pos": "Open Point of Sale",
+    "cta_start_transactions": "Start processing customer transactions",
+    "cta_new_sale": "New Sale",
+    "kpi": {
+      "invoices_7d": "Invoices (7 Days)",
+      "invoices_7d_subtitle": "Total invoices this week",
+      "revenue_7d": "Revenue (7 Days)",
+      "revenue_7d_subtitle": "Total collected this week",
+      "pending_payments": "Pending Payments",
+      "pending_payments_subtitle": "Unpaid invoices"
+    },
+    "sections": {
+      "recent_sales": "Recent Sales — Last 7 Days",
+      "no_sales": "No sales in the past 7 days",
+      "table": {
+        "invoice_no": "Invoice No",
+        "customer": "Customer",
+        "date": "Date",
+        "amount": "Amount",
+        "status": "Status"
+      }
+    }
+  },
+  "manager": {
+    "greeting_morning": "Good morning",
+    "greeting_afternoon": "Good afternoon",
+    "greeting_evening": "Good evening",
+    "role": "Role",
+    "manager": "📋 Manager",
+    "kpi": {
+      "company_products": "Company Products",
+      "company_products_subtitle": "Items in catalog",
+      "other_products": "Other Products",
+      "other_products_subtitle": "Other items",
+      "stock_alerts": "Stock Alerts",
+      "stock_alerts_subtitle": "Need attention",
+      "all_employees": "All Employees",
+      "all_employees_subtitle": "Total staff"
+    },
+    "charts": {
+      "stock_levels": "Stock Levels — Top 5 Products",
+      "stock_levels_subtitle": "Current vs minimum stock threshold",
+      "current": "Current",
+      "min_required": "Min Required",
+      "inventory_distribution": "Inventory Distribution",
+      "distribution_subtitle": "By product type"
+    },
+    "sections": {
+      "stock_alerts": "⚠️ Stock Alerts",
+      "no_alerts": "✅ No active stock alerts",
+      "alert_details": "{{type}} · Qty: {{current}} / Min: {{min}}",
+      "out_of_stock": "Out of Stock",
+      "low_stock": "Low Stock",
+      "recent_transfers": "🔄 Recent Stock Transfers",
+      "no_transfers": "No recent transfers",
+      "view_all": "View All",
+      "transfer_route": " → ",
+      "transfer_units": "units",
+      "quick_access": "⚡ Quick Access",
+      "inventory": "Inventory",
+      "production": "Production",
+      "hr": "HR",
+      "reports": "Reports"
+    }
   }
 }

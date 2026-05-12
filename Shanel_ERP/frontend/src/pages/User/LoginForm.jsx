@@ -26,7 +26,6 @@ const LoginForm = () => {
                 localStorage.setItem('userId', data.user_id);
                 localStorage.setItem('fullName', data.full_name || '');
                 localStorage.setItem('user_type', data.user_type || '');
-                alert('Login successful!');
                 window.location.href = '/home'; // Force reload to refresh sidebar/header state
             } else {
                 alert(data.error || 'Login failed');
