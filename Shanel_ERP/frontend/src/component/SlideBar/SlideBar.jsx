@@ -4,7 +4,7 @@ import {
     Home, ShoppingCart, Package, DollarSign, Users,
     ChevronRight, ChevronDown, Box, Archive, Menu,
     LogOut, Truck, Settings, FileText, RefreshCw,
-    Sliders, CornerUpLeft, BarChart2, Bell, PieChart, Shield
+    Sliders, CornerUpLeft, BarChart2, Bell, PieChart, Shield, AlertCircle
 } from 'react-feather';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -37,6 +37,22 @@ const SlideBar = () => {
             ]
         },
         { label: 'POS', icon: <ShoppingCart size={18} />, to: '/POS', moduleKey: 'pos' },
+        {
+            label: 'Sales',
+            icon: <BarChart2 size={18} />,
+            to: '/sales',
+            moduleKey: 'sales',
+            subItems: [
+                { label: 'Dashboard', to: '/sales', icon: <PieChart size={14} /> },
+                { label: 'Performance', to: '/sales/performance', icon: <BarChart2 size={14} /> },
+                { label: 'History', to: '/sales/history', icon: <FileText size={14} /> },
+                { label: 'Payment Collection', to: '/sales/collection', icon: <AlertCircle size={14} /> },
+                { label: 'Company Items Report', to: '/sales/reports/company', icon: <FileText size={14} /> },
+                { label: 'Other Items Report', to: '/sales/reports/other', icon: <FileText size={14} /> },
+                { label: 'Location Report', to: '/sales/reports/location', icon: <BarChart2 size={14} /> },
+                { label: 'Reports', to: '/sales/reports', icon: <BarChart2 size={14} /> },
+            ]
+        },
         {
             label: 'HR',
             icon: <Users size={18} />,

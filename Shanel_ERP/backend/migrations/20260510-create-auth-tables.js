@@ -142,14 +142,14 @@ module.exports = {
 
     // 5. Seed MODULE table
     await queryInterface.bulkInsert('MODULE', [
-      { Module_Key: 'dashboard',       Module_Name: 'Dashboard',       Icon: 'dashboard',   Sort_Order: 1, Is_Active: true },
-      { Module_Key: 'pos',             Module_Name: 'Point of Sale',   Icon: 'pos',         Sort_Order: 2, Is_Active: true },
-      { Module_Key: 'inventory',       Module_Name: 'Inventory',       Icon: 'inventory',   Sort_Order: 3, Is_Active: true },
-      { Module_Key: 'production',      Module_Name: 'Production',      Icon: 'production',  Sort_Order: 4, Is_Active: true },
-      { Module_Key: 'sales',           Module_Name: 'Sales',           Icon: 'sales',       Sort_Order: 5, Is_Active: true },
-      { Module_Key: 'finance',         Module_Name: 'Finance',         Icon: 'finance',     Sort_Order: 6, Is_Active: true },
-      { Module_Key: 'reports',         Module_Name: 'Reports',         Icon: 'reports',     Sort_Order: 7, Is_Active: true },
-      { Module_Key: 'user_management', Module_Name: 'User Management', Icon: 'users',       Sort_Order: 8, Is_Active: true }
+      { Module_Key: 'dashboard', Module_Name: 'Dashboard', Icon: 'dashboard', Sort_Order: 1, Is_Active: true },
+      { Module_Key: 'pos', Module_Name: 'Point of Sale', Icon: 'pos', Sort_Order: 2, Is_Active: true },
+      { Module_Key: 'inventory', Module_Name: 'Inventory', Icon: 'inventory', Sort_Order: 3, Is_Active: true },
+      { Module_Key: 'production', Module_Name: 'Production', Icon: 'production', Sort_Order: 4, Is_Active: true },
+      { Module_Key: 'sales', Module_Name: 'Sales', Icon: 'sales', Sort_Order: 5, Is_Active: true },
+      { Module_Key: 'finance', Module_Name: 'Finance', Icon: 'finance', Sort_Order: 6, Is_Active: true },
+      { Module_Key: 'reports', Module_Name: 'Reports', Icon: 'reports', Sort_Order: 7, Is_Active: true },
+      { Module_Key: 'user_management', Module_Name: 'User Management', Icon: 'users', Sort_Order: 8, Is_Active: true }
     ]);
   },
 
@@ -157,7 +157,7 @@ module.exports = {
     await queryInterface.dropTable('USER_TOKEN');
     await queryInterface.dropTable('USER_MODULE_ACCESS');
     await queryInterface.dropTable('MODULE');
-    
+
     // Note: We don't restore Phone/Employee_ID in down as they were existing data we're moving away from, 
     // but in a real scenario you might want to.
   }

@@ -2,12 +2,12 @@ import React, { useEffect } from 'react'
 import { useState } from 'react'
 import axios from 'axios';
 import { Search, Plus, Package } from 'lucide-react';
-import CustomerForm from './CustomerForm';
 import { useTranslation } from 'react-i18next';
+import CustomerForm from './CustomerForm';
 
-const CustomerInfo = ({ customerData, setCustomerData ,invoiceNo,WALKIN_CUSTOMER}) => {
-
+const CustomerInfo = ({ customerData, setCustomerData, invoiceNo, WALKIN_CUSTOMER, setError, setSuccessMessage }) => {
   const { t } = useTranslation();
+
   const date = new Date();
   const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD format
   const[displayForm,setDisplayForm] = useState(false);
@@ -47,13 +47,13 @@ const CustomerInfo = ({ customerData, setCustomerData ,invoiceNo,WALKIN_CUSTOMER
 
 
   const[result,setResult]= useState([]);//for search results dropdown
-  const[query,setQuery]= useState(t('customer.walk_in')); //default to walk-in customer, also used to control the input field
+  const[query,setQuery]= useState('Walk-in Customer'); //default to walk-in customer, also used to control the input field
   const[selectedCustomer,setSelected]= useState(WALKIN_CUSTOMER);//selected customer object
 
   // Sync internal state with external customerData (for resets)
   useEffect(() => {
     if (customerData && customerData.customer_code === 'WALKIN') {
-      setQuery(t('customer.walk_in'));
+      setQuery('Walk-in Customer');
       setSelected(WALKIN_CUSTOMER);
     }
   }, [customerData, WALKIN_CUSTOMER, t]);
@@ -83,7 +83,7 @@ const CustomerInfo = ({ customerData, setCustomerData ,invoiceNo,WALKIN_CUSTOMER
       if (query.trim() === '') {
         setSelected(WALKIN_CUSTOMER);
         setCustomerData(WALKIN_CUSTOMER);
-        setQuery(t('customer.walk_in'));
+        setQuery('Walk-in Customer');
       }
       setResult([]); // Close dropdown
     }, 200);
@@ -91,7 +91,7 @@ const CustomerInfo = ({ customerData, setCustomerData ,invoiceNo,WALKIN_CUSTOMER
 
     // Handle onFocus event to clear the input field for new search
     const handleOnFocus = () => {
-        if (query === t('customer.walk_in')) {
+        if (query === 'Walk-in Customer') {
             setQuery('');
         }
     };
@@ -218,7 +218,7 @@ const CustomerInfo = ({ customerData, setCustomerData ,invoiceNo,WALKIN_CUSTOMER
               {t('customer.add_new')}
             </button>
           </div>
-          {displayForm && <CustomerForm onClose={() => setDisplayForm(false)} />}
+          {displayForm && <CustomerForm onClose={() => setDisplayForm(false)} setError={setError} setSuccessMessage={setSuccessMessage} />}
         </div>
 
         {/* Selected Customer Details */}
@@ -257,10 +257,10 @@ const CustomerInfo = ({ customerData, setCustomerData ,invoiceNo,WALKIN_CUSTOMER
           <input type="text" className='form-control form-control-sm bg-light' value={invoiceNo || 'INV-PENDING'} readOnly style={{ width: '130px' }} />
         </div>
 
-        <div className='col-auto'>
-          <label className='form-label small text-muted mb-1'>{t('customer.terminal')}</label>
+        {/* <div className='col-auto'>
+          <label className='form-label small text-muted mb-1'>Terminal</label>
           <input type="text" className='form-control form-control-sm text-center bg-light' value="T-01" readOnly style={{ width: '70px' }} />
-        </div>
+        </div> */}
 
       </div>
     </div>

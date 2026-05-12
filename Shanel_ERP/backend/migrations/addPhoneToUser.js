@@ -1,7 +1,8 @@
 // this migration is to add Phone column to User table
-'use strict'; 
+'use strict';
 
 module.exports = {
+
     //run when executing the migration
     up: async (queryInterface, Sequelize) => {
         await queryInterface.addColumn('USER', 'Phone', {
@@ -16,3 +17,5 @@ module.exports = {
         await queryInterface.removeColumn('USER', 'Phone');
     }
 };
+
+

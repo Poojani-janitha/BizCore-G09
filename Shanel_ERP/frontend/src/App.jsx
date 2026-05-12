@@ -35,6 +35,15 @@ import ReportsPage from './pages/Finance/ReportsPage.jsx';
 import LoginForm from './pages/User/LoginForm.jsx';
 import UserDashboard from './pages/User/userDashboard.jsx';
 import Logout from './pages/User/Logout.jsx';
+import SalesDashboard from './pages/Sales/SalesDashboard.jsx';
+import SalesHistory from './pages/Sales/SalesHistory.jsx';
+import DueSales from './pages/Sales/DueSales.jsx';
+import SalesReport from './pages/Sales/SalesReport.jsx';
+import SalesPerformancePage from './pages/Sales/SalesPerformancePage.jsx';
+import CompanyItemsReportPage from './pages/Sales/CompanyItemsReportPage.jsx';
+import OtherItemsReportPage from './pages/Sales/OtherItemsReportPage.jsx';
+import LocationWiseReportPage from './pages/Sales/LocationWiseReportPage.jsx';
+import PaymentCollectionPage from './pages/Sales/PaymentCollectionPage.jsx';
 import './App.css';
 import { useState } from 'react';
 
@@ -91,6 +100,16 @@ const App = () => {
             <Route path="/finance/create-account" element={<CreateAccountPage />} />
             <Route path="/finance/reports" element={<ReportsPage />} />
             <Route path="/finance/edit-transactions" element={<EditTransactionsPage />} />
+            
+            <Route path="/sales" element={<SalesDashboard />} />
+            <Route path="/sales/history" element={<SalesHistory />} />
+            <Route path="/sales/due" element={<DueSales />} />
+            <Route path="/sales/reports" element={<SalesReport />} />
+            <Route path="/sales/performance" element={<SalesPerformancePage />} />
+            <Route path="/sales/collection" element={<PaymentCollectionPage />} />
+            <Route path="/sales/reports/company" element={<CompanyItemsReportPage />} />
+            <Route path="/sales/reports/other" element={<OtherItemsReportPage />} />
+            <Route path="/sales/reports/location" element={<LocationWiseReportPage />} />
             
             <Route path="/user-management" element={<UserDashboard />} />
             
