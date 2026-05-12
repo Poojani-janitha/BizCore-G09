@@ -63,7 +63,7 @@ exports.getReturnLogs = async (req, res) => {
         const returns = await sequelize.query(
             `SELECT pr.RT_ID, pr.P_ID, pr.Return_Type, pr.Ref_ID, pr.Qty, pr.Reason, 
                     pr.Reason_Details, pr.Return_Date, pr.Refund_Amount, pr.Restock, pr.Status,
-                    p.P_Name, p.P_Code, p.Base_Unit,
+                    p.P_Name, p.P_Name_Sinhala, p.P_Code, p.Base_Unit,
                     s.Sale_ID, s.Invoice_No, s.Sale_Date, s.Total_Amount,
                     c.C_ID, c.C_Name, c.Phone1, c.Email
              FROM product_return pr
@@ -138,7 +138,7 @@ exports.getInvoiceDetails = async (req, res) => {
         const items = await sequelize.query(
             `SELECT si.Sale_Item_ID, si.Sale_ID, si.P_ID, si.U_ID, si.Quantity, 
                     si.Base_Unit_Qty, si.Unit_Price, si.Created_At,
-                    p.P_Name, p.Base_Unit, p.Retail_Price, p.Wholesale_Price,
+                    p.P_Name, p.P_Name_Sinhala, p.Base_Unit, p.Retail_Price, p.Wholesale_Price,
                     uc.Unit_Name, uc.Unit_Conversion
              FROM sale_item si
              JOIN product p ON si.P_ID = p.P_ID
@@ -159,6 +159,7 @@ exports.getInvoiceDetails = async (req, res) => {
             Sale_Item_Id: item.Sale_Item_ID,
             P_ID: item.P_ID,
             P_Name: item.P_Name,
+            P_Name_Sinhala: item.P_Name_Sinhala,
             Base_Unit: item.Base_Unit,
             Quantity_Sold: item.Quantity,
             Base_Unit_Qty_Sold: item.Base_Unit_Qty,

@@ -57,7 +57,7 @@ exports.createAdjustment = async (req, res) => {
 exports.getAdjustments = async (req, res) => {
     try {
         const logs = await StockAdjustment.findAll({
-            include: [{ model: Product, attributes: ['P_Name', 'P_Code']}],
+            include: [{ model: Product, attributes: ['P_Name', 'P_Name_Sinhala', 'P_Code']}],
             order: [['Adjustment_ID', 'DESC']]
         });
         res.json({ success: true, logs });

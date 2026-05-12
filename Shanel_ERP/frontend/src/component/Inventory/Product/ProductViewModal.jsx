@@ -65,6 +65,16 @@ const ProductViewModal = ({ show, onHide, product }) => {
                                 </div>
                             </div>
 
+                            {/* Product Name Sinhala */}
+                            {product.nameSinhala && (
+                                <div className="col-12">
+                                    <label className="form-label mb-1 small fw-semibold text-muted">Sinhala Product Name</label>
+                                    <div className="p-2 bg-light rounded-2" style={{ fontSize: '13px' }}>
+                                        <strong>{product.nameSinhala}</strong>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Base Unit */}
                             <div className="col-6">
                                 <label className="form-label mb-1 small fw-semibold text-muted">Base Unit</label>

@@ -120,7 +120,7 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
                         {selectedProduct && (
                             <div className="mt-2 p-2 bg-light rounded" style={{ fontSize: '13px' }}>
                                 <span className="text-muted">Total Available: </span>
-                                <span className="fw-bold text-success">{selectedProduct.stockCount || 0} units</span>
+                                <span className="fw-bold text-success">{selectedProduct.stockCount || 0} {selectedProduct.baseUnit || 'units'}</span>
                             </div>
                         )}
                     </Form.Group>
@@ -135,7 +135,7 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
                             {selectedProduct && formData.From_Location && (
                                 <div className="mt-2 p-2 bg-warning-subtle rounded" style={{ fontSize: '13px' }}>
                                     <span className="text-muted">Available in {formData.From_Location}: </span>
-                                    <span className="fw-bold text-danger">{getAvailableQuantity()} units</span>
+                                    <span className="fw-bold text-danger">{getAvailableQuantity()} {selectedProduct.baseUnit || 'units'}</span>
                                 </div>
                             )}
                         </Col>
@@ -149,7 +149,7 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
                         </Col>
                     </Row>
                     <Form.Group className="mb-3">
-                        <Form.Label className="small fw-bold">QUANTITY (Units)</Form.Label>
+                        <Form.Label className="small fw-bold">QUANTITY ({selectedProduct?.baseUnit || 'Units'})</Form.Label>
                         <Form.Control type="number" step="1" min="0" required value={formData.Qty ? parseInt(formData.Qty) : ''} onChange={e => setFormData({...formData, Qty: e.target.value})} />
                     </Form.Group>
                 </Modal.Body>

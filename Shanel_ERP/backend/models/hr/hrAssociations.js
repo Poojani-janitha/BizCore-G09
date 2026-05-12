@@ -11,8 +11,8 @@ const AdvanceRepayment = require('./AdvanceRepayment');
 
 module.exports = () => {
     // USER <-> EMPLOYEE (User.Employee_ID)
-    User.belongsTo(Employee, { foreignKey: 'Employee_ID', as: 'EmployeeProfile' });
-    Employee.hasOne(User, { foreignKey: 'Employee_ID', as: 'LinkedUser' });
+    // User.belongsTo(Employee, { foreignKey: 'Employee_ID', as: 'EmployeeProfile' });
+    // Employee.hasOne(User, { foreignKey: 'Employee_ID', as: 'LinkedUser' });
 
     Employee.belongsTo(User, { foreignKey: 'Created_By', as: 'Creator' });
     User.hasMany(Employee, { foreignKey: 'Created_By', as: 'CreatedEmployees' });
