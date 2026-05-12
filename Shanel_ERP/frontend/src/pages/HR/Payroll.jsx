@@ -41,7 +41,10 @@ const calculateSalary = (config, role, stats, cardsMade = 0) => {
   let productionEarnings = 0;
   let overtimeEarnings = 0;
   let attendanceBonus = 0;
-  const teaAllowance = stats.totalTeaCost || 0;
+  let teaAllowance = stats.totalTeaCost || 0;
+  if (String(role || '').toLowerCase() === 'cashier') {
+    teaAllowance = 0;
+  }
   const advanceDeduction = stats.advanceDeduction || 0;
   const epfDeduction = stats.epfDeduction || 0;
   const etfDeduction = stats.etfDeduction || 0;
@@ -111,7 +114,7 @@ export default function Payroll() {
   const getDailyTeaCost = (rec, role) => {
     if (rec.Status !== 'Present' || !rec.Check_In_Time || !rec.Check_Out_Time) return 0;
     const roleText = String(role || '').toLowerCase();
-    if (roleText.includes('cashier')) return 0;
+    if (roleText.includes('cashier') || roleText.includes('manager') || roleText.includes('admin')) return 0;
 
     const [inH, inM] = rec.Check_In_Time.split(':').map(Number);
     const [outH, outM] = rec.Check_Out_Time.split(':').map(Number);
@@ -164,6 +167,11 @@ export default function Payroll() {
         const stats = statsMap[empId] || { daysWorked: 0, totalOtHours: 0, totalTeaCost: 0, totalCards: 0 };
         
         const config = getSalaryConfig(role);
+        // Special case for Cashier OT rate if config doesn't have it (though it does)
+        if (String(role || '').toLowerCase() === 'cashier' && !config.otRate) {
+            config.otRate = 100;
+        }
+
         const salary = calculateSalary(config, role, { 
             ...stats, 
             epfDeduction: parseFloat(dbRec?.EPF_Employee_Deduction || 0),

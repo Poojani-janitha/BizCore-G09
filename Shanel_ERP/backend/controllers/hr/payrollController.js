@@ -274,11 +274,23 @@ const computePayrollDraft = async (req, res) => {
                 basic = rate * present;
             }
             teaAllowance = (parseFloat(ss.Tea_Allowance_Daily) || 0) * (att ? att.Present_Days || 0 : 0);
+            
+            // Rule: Cashiers get NO tea allowance
+            if (emp.Role && emp.Role.toLowerCase() === 'cashier') {
+                teaAllowance = 0;
+            }
+
             if (att && att.Attendance_Bonus_Eligible) {
                 attendanceBonus = parseFloat(ss.Attendance_Bonus_Amount) || parseFloat(att.Attendance_Bonus_Amount) || 0;
             }
             const otHours = att ? parseFloat(att.Total_Overtime_Hours) || 0 : 0;
-            const otRate = parseFloat(ss.OT_Rate_Per_Hour) || 0;
+            let otRate = parseFloat(ss.OT_Rate_Per_Hour) || 0;
+
+            // Special rule: Cashiers get Rs 100 per OT hour (after 5 PM)
+            if (emp.Role && emp.Role.toLowerCase() === 'cashier') {
+                otRate = 100;
+            }
+
             otEarnings = otHours * otRate;
         }
 

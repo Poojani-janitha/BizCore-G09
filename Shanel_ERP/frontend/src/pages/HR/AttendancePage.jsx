@@ -479,7 +479,7 @@ const Attendance = () => {
   };
 
   const calculateOtHours = (timeIn, timeOut, role) => {
-    if (role !== 'Cashier') return 0;
+    if (String(role || '').toLowerCase() !== 'cashier') return 0;
     if (!timeIn || !timeOut) return 0;
     const [outH, outM] = timeOut.split(':').map(Number);
     const outMinutes = outH * 60 + outM;
@@ -522,8 +522,8 @@ const Attendance = () => {
       }
     }
 
-    // OT only applies when Present, role is Cashier, and Time Out is after 4:00 PM.
-    if (next.status === 'present' && role === 'Cashier') {
+    // OT only applies when Present, role is Cashier, and Time Out is after 5:00 PM.
+    if (next.status === 'present' && String(role || '').toLowerCase() === 'cashier') {
       next.otHours = calculateOtHours(next.timeIn, next.timeOut, role);
     } else {
       next.otHours = 0;
@@ -779,7 +779,7 @@ const Attendance = () => {
           const rec = attendance[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 };
 
           const roleText = String(emp.role || '').toLowerCase();
-          const isExcludedFromTea = roleText.includes('cashier') || roleText.includes('manager');
+          const isExcludedFromTea = roleText.includes('cashier') || roleText.includes('manager') || roleText.includes('admin');
           const workedHours = getWorkHours(rec.timeIn, rec.timeOut);
           
           let teaCost = '—';
@@ -874,14 +874,14 @@ const Attendance = () => {
                 type="number"
                 min="0"
                 value={rec.otHours}
-                disabled={emp.role !== 'Cashier'}
+                disabled={String(emp.role || '').toLowerCase() !== 'cashier'}
                 onChange={e => updateField(emp.id, 'otHours', Number(e.target.value))}
                 placeholder="0"
                 style={{
                   padding: '5px 8px', borderRadius: '6px',
                   border: '1px solid #d1d5db', fontSize: '12px',
-                  background: emp.role !== 'Cashier' ? '#f1f5f9' : '#fff',
-                  color: emp.role !== 'Cashier' ? '#94a3b8' : '#1a1a2e',
+                  background: String(emp.role || '').toLowerCase() !== 'cashier' ? '#f1f5f9' : '#fff',
+                  color: String(emp.role || '').toLowerCase() !== 'cashier' ? '#94a3b8' : '#1a1a2e',
                   outline: 'none', width: '60px',
                 }}
               />

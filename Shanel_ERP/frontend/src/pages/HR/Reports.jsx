@@ -284,7 +284,7 @@ const Reports = () => {
             let status = (rec.Status || 'absent').toLowerCase();
             if (!rec.Status && leave) status = 'leave';
 
-            const isCashier = String(e.Role || '').toLowerCase() === 'cashier';
+            const isCashier = String(e.Role || '').toLowerCase().includes('cashier');
             const otHours = isCashier ? Number(rec.Overtime_Hours || 0) : 0;
 
             return {
@@ -330,7 +330,7 @@ const Reports = () => {
             const employeeAtt = attRecords.filter(r => String(r.Employee_ID) === String(e.Employee_ID));
             const employeeLeaves = leaves.filter(l => String(l.Employee_ID) === String(e.Employee_ID));
             
-            const isCashier = String(e.Role || '').toLowerCase() === 'cashier';
+            const isCashier = String(e.Role || '').toLowerCase().includes('cashier');
             let presentDays = 0, leaveDays = 0, absentDays = 0, otHours = 0;
             const attByDate = Object.fromEntries(employeeAtt.map(a => [normDate(a.Attendance_Date), a]));
             
@@ -452,7 +452,7 @@ const Reports = () => {
           const leaves = Array.isArray(leaveRes.data.data) ? leaveRes.data.data.filter(l => l.Status === 'Approved') : [];
           
           const rows = [];
-          const isCashier = String(selectedEmp.role || '').toLowerCase() === 'cashier';
+          const isCashier = String(selectedEmp.role || '').toLowerCase().includes('cashier');
           let present = 0, leave = 0, absent = 0, ot = 0;
           
           for (let d = 1; d <= daysInMonth; d++) {
