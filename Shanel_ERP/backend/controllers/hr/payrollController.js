@@ -274,11 +274,23 @@ const computePayrollDraft = async (req, res) => {
                 basic = rate * present;
             }
             teaAllowance = (parseFloat(ss.Tea_Allowance_Daily) || 0) * (att ? att.Present_Days || 0 : 0);
+            
+            // Rule: Cashiers get NO tea allowance
+            if (emp.Role && emp.Role.toLowerCase() === 'cashier') {
+                teaAllowance = 0;
+            }
+
             if (att && att.Attendance_Bonus_Eligible) {
                 attendanceBonus = parseFloat(ss.Attendance_Bonus_Amount) || parseFloat(att.Attendance_Bonus_Amount) || 0;
             }
             const otHours = att ? parseFloat(att.Total_Overtime_Hours) || 0 : 0;
-            const otRate = parseFloat(ss.OT_Rate_Per_Hour) || 0;
+            let otRate = parseFloat(ss.OT_Rate_Per_Hour) || 0;
+
+            // Special rule: Cashiers get Rs 100 per OT hour (after 5 PM)
+            if (emp.Role && emp.Role.toLowerCase() === 'cashier') {
+                otRate = 100;
+            }
+
             otEarnings = otHours * otRate;
         }
 
@@ -517,6 +529,73 @@ const recordAdvanceRepayment = async (req, res) => {
     }
 };
 
+const nodemailer = require('nodemailer');
+
+const mailPayrollToBank = async (req, res) => {
+    try {
+        const { recipientEmail, bankName, month, year, pdfBase64, notes } = req.body;
+
+        if (!recipientEmail || !pdfBase64) {
+            return res.status(400).json({
+                success: false,
+                message: 'Recipient email and PDF content are required'
+            });
+        }
+
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+            return res.status(500).json({
+                success: false,
+                message: 'Server configuration error: EMAIL_USER or EMAIL_PASS is missing in .env'
+            });
+        }
+
+        // Use the 'gmail' service shortcut for better reliability
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        const mailOptions = {
+            from: `"Shanel ERP - HR" <${process.env.EMAIL_USER}>`,
+            to: recipientEmail,
+            subject: `Monthly Paysheet - ${bankName} - ${month}/${year}`,
+            text: `Dear ${bankName} Team,\n\nPlease find attached the monthly paysheet for ${month}/${year}.\n\nNotes: ${notes || 'No additional notes.'}\n\nRegards,\nHR Management - Shanel ERP`,
+            attachments: [
+                {
+                    filename: `Paysheet_${month}_${year}.pdf`,
+                    content: pdfBase64.split('base64,')[1],
+                    encoding: 'base64'
+                }
+            ]
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Paysheet successfully mailed to the bank'
+        });
+    } catch (error) {
+        console.error('mailPayrollToBank error:', error);
+        let message = 'Failed to send email. Please check your SMTP configuration.';
+        
+        if (error.code === 'EAUTH') {
+            message = 'Authentication failed. Please ensure you have entered a valid Google App Password in the .env file.';
+        } else if (error.code === 'ESOCKET') {
+            message = 'Network error. Could not connect to the email server.';
+        }
+
+        return res.status(500).json({
+            success: false,
+            message,
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     getSalaryStructures,
     createSalaryStructure,
@@ -530,5 +609,6 @@ module.exports = {
     createAdvance,
     updateAdvance,
     getAdvanceRepayments,
-    recordAdvanceRepayment
+    recordAdvanceRepayment,
+    mailPayrollToBank
 };

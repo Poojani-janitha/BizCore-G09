@@ -11,6 +11,16 @@ const Leave = () => {
   const [attendances, setAttendances] = useState([]);
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  // Add Leave Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({
+    Employee_ID: '',
+    Leave_Type: 'Casual',
+    Start_Date: today,
+    End_Date: today,
+    Reason: ''
+  });
 
   const fetchData = async () => {
     try {
@@ -36,66 +46,66 @@ const Leave = () => {
   }, [date]);
 
   const leaveEmployees = React.useMemo(() => {
-    const filteredLeaves = attendances
-      .filter(a => String(a.Status).toLowerCase() === 'leave')
-      .map(a => {
-        const emp = employees.find(e => String(e.Employee_ID) === String(a.Employee_ID)) || {};
-        
-        const leaveRecord = leaves.find(l => 
-          String(l.Employee_ID) === String(a.Employee_ID) && 
-          new Date(l.Start_Date) <= new Date(date) && 
-          new Date(l.End_Date) >= new Date(date)
-        );
-
-        return {
-          id: a.Employee_ID,
-          attendanceId: a.Attendance_ID,
-          leaveId: leaveRecord?.Leave_ID,
-          leaveStatus: leaveRecord?.Status || null,
-          name: emp.Full_Name || 'Unknown',
-          role: emp.Role || '—',
-          email: emp.Email || '—',
-          phone: emp.Contact_Phone || '—',
-          leaveReason: leaveRecord?.Reason || a.Notes || '',
-        };
-      });
+    const list = leaves.map(l => {
+      const emp = employees.find(e => String(e.Employee_ID) === String(l.Employee_ID)) || {};
+      return {
+        id: l.Employee_ID,
+        leaveId: l.Leave_ID,
+        leaveStatus: l.Status,
+        name: emp.Full_Name || 'Unknown',
+        role: emp.Role || '—',
+        email: emp.Email || '—',
+        phone: emp.Contact_Phone || '—',
+        leaveReason: l.Reason || '',
+        leaveType: l.Leave_Type,
+        startDate: l.Start_Date,
+        endDate: l.End_Date,
+        totalDays: l.Total_Days,
+        appliedDate: l.Applied_Date,
+        department: emp.Department || '—'
+      };
+    });
       
-    if (!searchTerm.trim()) return filteredLeaves;
+    if (!searchTerm.trim()) return list;
     const q = searchTerm.toLowerCase();
-    return filteredLeaves.filter(e =>
+    return list.filter(e =>
       String(e.name || '').toLowerCase().includes(q) ||
       String(e.role || '').toLowerCase().includes(q) ||
       String(e.email || '').toLowerCase().includes(q) ||
       String(e.phone || '').toLowerCase().includes(q) ||
       String(e.leaveReason || '').toLowerCase().includes(q)
     );
-  }, [attendances, employees, leaves, searchTerm, date]);
+  }, [employees, leaves, searchTerm]);
 
-  const updateReason = (attendanceId, reason) => {
-    setAttendances(prev => prev.map(a => a.Attendance_ID === attendanceId ? { ...a, Notes: reason } : a));
-  };
-
-  const saveLeave = async (emp) => {
+  const handleAddLeave = async (e) => {
+    e.preventDefault();
     try {
-      // 1. Update Attendance Note
-      await axios.put(`${API_BASE}/attendance/${emp.attendanceId}`, { Notes: emp.leaveReason });
+      if (!formData.Employee_ID) return alert('Please select an employee');
+      
+      const start = new Date(formData.Start_Date);
+      const end = new Date(formData.End_Date);
+      const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
-      // 2. Create EmployeeLeave record
       const payload = {
-        Employee_ID: emp.id,
-        Leave_Type: 'Casual',
-        Start_Date: date,
-        End_Date: date,
-        Total_Days: 1,
-        Reason: emp.leaveReason || 'Manual Leave',
+        ...formData,
+        Total_Days: totalDays,
         Applied_Date: today
       };
+
       await axios.post(`${API_BASE}/leaves`, payload);
-      alert('Leave saved successfully!');
-      fetchData(); // Reload to get the new leave record
+      alert('Leave request submitted successfully!');
+      setShowModal(false);
+      setFormData({
+        Employee_ID: '',
+        Leave_Type: 'Casual',
+        Start_Date: today,
+        End_Date: today,
+        Reason: ''
+      });
+      fetchData();
     } catch (error) {
-      console.error('Error saving leave:', error);
-      alert('Failed to save leave');
+      console.error('Error adding leave:', error);
+      alert(error.response?.data?.message || 'Failed to submit leave request');
     }
   };
 
@@ -121,8 +131,8 @@ const Leave = () => {
     }}>
       <div style={{ marginBottom: '18px' }}>
         <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 800, letterSpacing: '-0.5px' }}>
-          <span style={{
-            background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
+          <span style={{ 
+            background: 'linear-gradient(135deg, #0d9488, #0f172a)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>
@@ -130,7 +140,7 @@ const Leave = () => {
           </span>
         </h1>
         <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-          View employees who are marked as leave for a selected date
+          Manage employee leave requests and approvals
         </p>
       </div>
 
@@ -179,8 +189,28 @@ const Leave = () => {
             padding: '6px 10px',
             borderRadius: '10px',
           }}>
-            Total on Leave: {leaveEmployees.length}
+            Total Results: {leaveEmployees.length}
           </div>
+
+          <button
+            onClick={() => setShowModal(true)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: 'none',
+              background: 'linear-gradient(135deg, #059669, #10b981)',
+              color: '#fff',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(16,185,129,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <span>+</span> Add Leave Request
+          </button>
 
           <input
             type="text"
@@ -208,24 +238,24 @@ const Leave = () => {
       }}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '60px 1fr 140px 220px 160px 1.2fr',
+          gridTemplateColumns: '60px 1.5fr 1fr 150px 1.8fr 1.5fr',
           background: '#f8fafc',
           borderBottom: '2px solid #e8e8e8',
           padding: '12px 20px',
           gap: '12px',
           alignItems: 'center',
         }}>
-          {['ID', 'Employee', 'Role', 'Email', 'Phone', 'Reason'].map(h => (
+          {['ID', 'Employee', 'Type', 'Period', 'Reason', 'Status / Action'].map(h => (
             <div key={h} style={{
               fontSize: '11px',
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
-              color: '#1e40af',
-              background: 'rgba(59,130,246,0.12)',
+              color: '#0d9488',
+              background: '#f0fdfa',
               padding: '8px 10px',
               borderRadius: '8px',
-              border: '1px solid rgba(59,130,246,0.3)',
+              border: '1px solid #ccfbf1',
             }}>
               {h}
             </div>
@@ -258,71 +288,53 @@ const Leave = () => {
                 <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700 }}>{emp.id}</div>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#1a1a2e' }}>{emp.name}</div>
-                  <div style={{ fontSize: '11px', color: '#b45309', fontWeight: 700 }}>LEAVE</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>{emp.email}</div>
                 </div>
-                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{emp.role || '—'}</div>
-                <div style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>{emp.email || '—'}</div>
-                <div style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>{emp.phone || '—'}</div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <input
-                    type="text"
-                    value={emp.leaveReason}
-                    onChange={(e) => updateReason(emp.attendanceId, e.target.value)}
-                    placeholder="Enter leave reason..."
-                    disabled={emp.leaveStatus && emp.leaveStatus !== 'Pending'}
-                    style={{
-                      padding: '8px 10px',
-                      borderRadius: '8px',
-                      border: '1px solid #d1d5db',
-                      fontSize: '12px',
-                      outline: 'none',
-                      width: '100%',
-                      background: (emp.leaveStatus && emp.leaveStatus !== 'Pending') ? '#f1f5f9' : '#fff',
-                      color: (emp.leaveStatus && emp.leaveStatus !== 'Pending') ? '#94a3b8' : '#1a1a2e',
-                    }}
-                  />
-                  {!emp.leaveId ? (
-                    <button 
-                      onClick={() => saveLeave(emp)}
-                      style={{
-                        padding: '6px 12px',
-                        background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      Save
-                    </button>
-                  ) : emp.leaveStatus === 'Pending' ? (
+                <div style={{ fontSize: '12px', color: '#475569', fontWeight: 700 }}>{emp.leaveType}</div>
+                <div style={{ fontSize: '11px', color: '#475569' }}>
+                  <div style={{ fontWeight: 600 }}>{emp.startDate}</div>
+                  <div style={{ fontWeight: 400, color: '#94a3b8' }}>to {emp.endDate}</div>
+                  <div style={{ fontWeight: 800, color: '#0d9488', marginTop: '2px' }}>{emp.totalDays} Day(s)</div>
+                </div>
+                <div style={{ 
+                  fontSize: '12px', 
+                  color: '#4b5563', 
+                  fontStyle: 'italic',
+                  paddingRight: '10px',
+                  lineHeight: '1.4'
+                }}>
+                  {emp.leaveReason || <span style={{ color: '#94a3b8' }}>No reason provided</span>}
+                </div>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
+                  {emp.leaveStatus === 'Pending' ? (
                     <>
                       <button 
                         onClick={() => updateLeaveStatus(emp.leaveId, 'approve')}
                         style={{
-                          padding: '6px 10px', background: '#22c55e', color: '#fff', border: 'none', 
-                          borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600
+                          padding: '5px 10px', background: '#10b981', color: '#fff', border: 'none', 
+                          borderRadius: '6px', cursor: 'pointer', fontSize: '10px', fontWeight: 800,
+                          boxShadow: '0 2px 4px rgba(16,185,129,0.2)', transition: 'all 0.2s'
                         }}
-                      >Approve</button>
+                      >APPROVE</button>
                       <button 
                         onClick={() => updateLeaveStatus(emp.leaveId, 'reject')}
                         style={{
-                          padding: '6px 10px', background: '#ef4444', color: '#fff', border: 'none', 
-                          borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600
+                          padding: '5px 10px', background: '#ef4444', color: '#fff', border: 'none', 
+                          borderRadius: '6px', cursor: 'pointer', fontSize: '10px', fontWeight: 800,
+                          boxShadow: '0 2px 4px rgba(239,68,68,0.2)', transition: 'all 0.2s'
                         }}
-                      >Reject</button>
+                      >REJECT</button>
                     </>
                   ) : (
-                    <span style={{
-                      padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700,
-                      background: emp.leaveStatus === 'Approved' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-                      color: emp.leaveStatus === 'Approved' ? '#16a34a' : '#dc2626'
+                    <div style={{
+                      padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: 800, textAlign: 'center',
+                      textTransform: 'uppercase', minWidth: '80px',
+                      background: emp.leaveStatus === 'Approved' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+                      color: emp.leaveStatus === 'Approved' ? '#059669' : '#dc2626',
+                      border: `1px solid ${emp.leaveStatus === 'Approved' ? '#10b981' : '#ef4444'}30`
                     }}>
                       {emp.leaveStatus}
-                    </span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -330,6 +342,94 @@ const Leave = () => {
           })
         )}
       </div>
+
+      {/* Add Leave Modal */}
+      {showModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            background: '#fff', padding: '32px', borderRadius: '16px', width: '100%', maxWidth: '450px',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
+          }}>
+            <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 800, color: '#1e3a5f' }}>Add Leave Request</h2>
+            <form onSubmit={handleAddLeave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#4b5563', marginBottom: '6px' }}>Employee</label>
+                <select 
+                  value={formData.Employee_ID}
+                  onChange={e => setFormData({ ...formData, Employee_ID: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none' }}
+                >
+                  <option value="">Select Employee</option>
+                  {employees.map(emp => (
+                    <option key={emp.Employee_ID} value={emp.Employee_ID}>{emp.Full_Name} ({emp.Employee_Code})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#4b5563', marginBottom: '6px' }}>Leave Type</label>
+                  <select 
+                    value={formData.Leave_Type}
+                    onChange={e => setFormData({ ...formData, Leave_Type: e.target.value })}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none' }}
+                  >
+                    <option value="Casual">Casual</option>
+                    <option value="Sick">Sick</option>
+                    <option value="Annual">Annual</option>
+                    <option value="Unpaid">Unpaid</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#4b5563', marginBottom: '6px' }}>Start Date</label>
+                  <input 
+                    type="date"
+                    value={formData.Start_Date}
+                    onChange={e => setFormData({ ...formData, Start_Date: e.target.value })}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#4b5563', marginBottom: '6px' }}>End Date</label>
+                <input 
+                  type="date"
+                  value={formData.End_Date}
+                  onChange={e => setFormData({ ...formData, End_Date: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#4b5563', marginBottom: '6px' }}>Reason</label>
+                <textarea 
+                  value={formData.Reason}
+                  onChange={e => setFormData({ ...formData, Reason: e.target.value })}
+                  placeholder="Why is this employee taking leave?"
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none', height: '80px', resize: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                <button 
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #d1d5db', background: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                >Cancel</button>
+                <button 
+                  type="submit"
+                  style={{ flex: 1, padding: '12px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                >Submit Request</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

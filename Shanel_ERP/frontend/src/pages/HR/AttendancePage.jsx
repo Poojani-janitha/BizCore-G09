@@ -401,13 +401,11 @@ const Attendance = () => {
   const mapStatusToUi = (status) => {
     const normalized = String(status || '').toLowerCase();
     if (normalized === 'present') return 'present';
-    if (normalized === 'leave') return 'leave';
     return 'absent';
   };
 
   const mapStatusToApi = (status) => {
     if (status === 'present') return 'Present';
-    if (status === 'leave') return 'Leave';
     return 'Absent';
   };
 
@@ -439,7 +437,7 @@ const Attendance = () => {
       setLoading(true);
       setError('');
       const [employeesRes, attendanceRes] = await Promise.all([
-        axios.get(`${API_BASE}/employees`),
+        axios.get(`${API_BASE}/employees`, { params: { status: 'Active' } }),
         axios.get(`${API_BASE}/attendance`, { params: { from: selectedDate, to: selectedDate } }),
       ]);
 
@@ -480,29 +478,21 @@ const Attendance = () => {
     return ((outH * 60 + outM) - (inH * 60 + inM)) / 60;
   };
 
-  const calculateOtHours = (timeIn, timeOut) => {
+  const calculateOtHours = (timeIn, timeOut, role) => {
+    if (String(role || '').toLowerCase() !== 'cashier') return 0;
     if (!timeIn || !timeOut) return 0;
     const [outH, outM] = timeOut.split(':').map(Number);
     const outMinutes = outH * 60 + outM;
-    const thresholdMinutes = 16 * 60; // 4:00 PM
+    const thresholdMinutes = 17 * 60; // 5:00 PM
     const overtimeMinutes = Math.max(0, outMinutes - thresholdMinutes);
     return Math.round((overtimeMinutes / 60) * 100) / 100;
   };
 
-  const applyAttendanceRules = (record) => {
+  const applyAttendanceRules = (record, role) => {
     const next = { ...record };
 
     // Default state at the beginning of the day is Absent.
     if (!next.status) next.status = 'absent';
-
-    // Manager override: Leave means "not working today".
-    // Keep times cleared and do not auto-switch to Present.
-    if (next.status === 'leave') {
-      next.timeIn = '';
-      next.timeOut = '';
-      next.otHours = 0;
-      return next;
-    }
 
     // If Time In is cleared, employee is Absent (reset the record for the day).
     if (!next.timeIn) {
@@ -524,19 +514,17 @@ const Attendance = () => {
       return next;
     }
 
-    // When Time Out is entered, decide Leave vs Present based on worked hours.
+    // When Time Out is entered, decide Present based on worked hours.
     if (next.timeIn && next.timeOut) {
       const workedHours = getWorkHours(next.timeIn, next.timeOut);
-      if (workedHours > 0 && workedHours < 4) {
-        next.status = 'leave';
-      } else if (workedHours >= 4) {
+      if (workedHours > 0) {
         next.status = 'present';
       }
     }
 
-    // OT only applies when Present and Time Out is after 4:00 PM.
-    if (next.status === 'present') {
-      next.otHours = calculateOtHours(next.timeIn, next.timeOut);
+    // OT only applies when Present, role is Cashier, and Time Out is after 5:00 PM.
+    if (next.status === 'present' && String(role || '').toLowerCase() === 'cashier') {
+      next.otHours = calculateOtHours(next.timeIn, next.timeOut, role);
     } else {
       next.otHours = 0;
     }
@@ -545,10 +533,11 @@ const Attendance = () => {
   };
 
   const updateField = (id, field, value) => {
+    const empRole = employees.find(e => e.id === String(id))?.role || '';
     setAttendance(prev => {
       const current = prev[id] || {};
       if (field !== 'status') {
-        const updatedRecord = applyAttendanceRules({ ...current, [field]: value });
+        const updatedRecord = applyAttendanceRules({ ...current, [field]: value }, empRole);
         return {
           ...prev,
           [id]: updatedRecord,
@@ -556,7 +545,7 @@ const Attendance = () => {
       }
 
       const nextStatus = value;
-      const next = applyAttendanceRules({ ...current, status: nextStatus });
+      const next = applyAttendanceRules({ ...current, status: nextStatus }, empRole);
       return { ...prev, [id]: next };
     });
   };
@@ -566,17 +555,17 @@ const Attendance = () => {
       const updated = { ...prev };
       employees.forEach(emp => {
         const existing = updated[emp.id] || {};
-        const nextTimeIn = (status === 'absent' || status === 'leave') ? '' : (existing.timeIn || '');
-        const nextTimeOut = (status === 'absent' || status === 'leave') ? '' : (existing.timeOut || '');
+        const nextTimeIn = (status === 'absent') ? '' : (existing.timeIn || '');
+        const nextTimeOut = (status === 'absent') ? '' : (existing.timeOut || '');
         updated[emp.id] = {
           ...existing,
           status,
           // ✅ FIX: When marking all absent, clear times; otherwise preserve user's entries
           timeIn: nextTimeIn,
           timeOut: nextTimeOut,
-          otHours: status === 'present' ? calculateOtHours(nextTimeIn, nextTimeOut) : 0,
+          otHours: status === 'present' ? calculateOtHours(nextTimeIn, nextTimeOut, emp.role) : 0,
         };
-        updated[emp.id] = applyAttendanceRules(updated[emp.id]);
+        updated[emp.id] = applyAttendanceRules(updated[emp.id], emp.role);
       });
       return updated;
     });
@@ -601,7 +590,7 @@ const Attendance = () => {
           Marked_By: 'Manual'
         };
       });
-
+      
       const response = await axios.post(`${API_BASE}/attendance/bulk`, { records });
       const results = Array.isArray(response?.data?.results) ? response.data.results : [];
       const failed = results.filter((r) => !r.ok);
@@ -655,7 +644,6 @@ const Attendance = () => {
 
   const summary = {
     present: employees.filter(e => attendance[e.id]?.status === 'present').length,
-    leave: employees.filter(e => attendance[e.id]?.status === 'leave').length,
     absent: employees.filter(e => attendance[e.id]?.status === 'absent').length,
   };
 
@@ -665,7 +653,6 @@ const Attendance = () => {
 
   const statusColors = {
     present: { bg: 'rgba(34,197,94,0.15)', border: '#22c55e', color: '#16a34a' },
-    leave: { bg: 'rgba(59,130,246,0.15)', border: '#3b82f6', color: '#2563eb' },
     absent: { bg: 'rgba(239,68,68,0.15)', border: '#ef4444', color: '#dc2626' },
   };
 
@@ -683,21 +670,37 @@ const Attendance = () => {
           margin: 0, fontSize: '26px', fontWeight: 800, letterSpacing: '-0.5px',
         }}>
           <span style={{
-            background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
+            background: 'linear-gradient(135deg, #0d9488, #0f172a)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           }}>Daily Attendance</span>
         </h1>
         <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-          Mark attendance for all employees · Work hours: 8:00 AM – 4:00 PM
+          Mark attendance for all employees · Work hours: 8:00 AM – 5:00 PM
         </p>
         {error && <p style={{ margin: '8px 0 0 0', color: '#b91c1c', fontSize: '13px' }}>{error}</p>}
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginBottom: '22px' }}>
-        <HrStatsCard title="Present Today" value={summary.present} subtitle="Fingerprint verified" icon="✅" color="green" />
-        <HrStatsCard title="On Leave" value={summary.leave} subtitle="Approved leaves" icon="📋" color="amber" />
-        <HrStatsCard title="Absent" value={summary.absent} subtitle="No show" icon="❌" color="red" />
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(2, 1fr)', 
+        gap: '20px', 
+        marginBottom: '28px' 
+      }}>
+        <HrStatsCard 
+          title="Present Today" 
+          value={summary.present} 
+          subtitle="Staff present on premises" 
+          icon="✅" 
+          color="green" 
+        />
+        <HrStatsCard 
+          title="Absent" 
+          value={summary.absent} 
+          subtitle="Employees not reported" 
+          icon="❌" 
+          color="red" 
+        />
       </div>
 
       {/* Controls */}
@@ -722,7 +725,7 @@ const Attendance = () => {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
           <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Mark All:</span>
-          {['present', 'leave', 'absent'].map(s => (
+          {['present', 'absent'].map(s => (
             <button key={s} onClick={() => markAll(s)} style={{
               padding: '6px 14px', borderRadius: '8px',
               background: statusColors[s].bg, color: statusColors[s].color,
@@ -762,11 +765,11 @@ const Attendance = () => {
           {['#', 'Employee', 'Role', 'Status', 'Time In', 'Time Out', 'OT Hours', 'Tea Cost'].map(h => (
             <div key={h} style={{
               fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
-              color: '#1e40af',
-              background: 'rgba(59,130,246,0.12)',
+              color: '#0d9488',
+              background: '#f0fdfa',
               padding: '8px 10px',
               borderRadius: '8px',
-              border: '1px solid rgba(59,130,246,0.3)',
+              border: '1px solid #ccfbf1',
             }}>{h}</div>
           ))}
         </div>
@@ -776,9 +779,15 @@ const Attendance = () => {
           const rec = attendance[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 };
 
           const roleText = String(emp.role || '').toLowerCase();
-          const isExcludedFromTea = roleText.includes('cashier') || roleText.includes('manager');
+          const isExcludedFromTea = roleText.includes('cashier') || roleText.includes('manager') || roleText.includes('admin');
           const workedHours = getWorkHours(rec.timeIn, rec.timeOut);
-          const teaCost = rec.status === 'present' && !isExcludedFromTea && rec.timeIn && rec.timeOut && workedHours >= 4 ? 'Rs 60' : '—';
+          
+          let teaCost = '—';
+          if (rec.status === 'present' && !isExcludedFromTea && rec.timeIn && rec.timeOut && workedHours >= 4) {
+            const [outH, outM] = rec.timeOut.split(':').map(Number);
+            const outMinutes = outH * 60 + outM;
+            teaCost = outMinutes > (17 * 60) ? 'Rs 450' : 'Rs 60';
+          }
 
           const rowBg = index % 2 === 0 ? '#fff' : '#fafbfc';
 
@@ -811,17 +820,20 @@ const Attendance = () => {
               <div style={{
                 display: 'flex', gap: '6px',
                 padding: '8px 10px', borderRadius: '8px',
-                background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)',
+                background: '#f8fafc', border: '1px solid #e2e8f0',
               }}>
-                {['present', 'leave', 'absent'].map(s => (
+                {['present', 'absent'].map(s => (
                   <button key={s} onClick={() => updateField(emp.id, 'status', s)} style={{
+                    flex: 1,
                     padding: '6px 12px', borderRadius: '6px', border: `2px solid ${statusColors[s].border}`,
                     fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                    background: rec.status === s ? statusColors[s].bg : `${statusColors[s].border}15`,
-                    color: rec.status === s ? statusColors[s].color : statusColors[s].border,
-                    boxShadow: rec.status === s ? `0 2px 4px ${statusColors[s].border}30` : 'none',
+                    background: rec.status === s ? statusColors[s].border : 'transparent',
+                    color: rec.status === s ? '#fff' : statusColors[s].border,
+                    boxShadow: rec.status === s ? `0 4px 12px ${statusColors[s].border}40` : 'none',
+                    transform: rec.status === s ? 'scale(1.02)' : 'scale(1)',
+                    transition: 'all 0.2s',
                   }}>
-                    {s === 'present' ? '✓' : s === 'leave' ? 'L' : 'A'}
+                    {s === 'present' ? '✓ Present' : '✘ Absent'}
                   </button>
                 ))}
               </div>
@@ -830,14 +842,13 @@ const Attendance = () => {
               <input
                 type="time"
                 value={rec.timeIn}
-                disabled={rec.status === 'leave'}
                 onChange={e => updateField(emp.id, 'timeIn', e.target.value)}
                 placeholder="--:--"
                 style={{
                   padding: '5px 8px', borderRadius: '6px',
                   border: '1px solid #d1d5db', fontSize: '12px',
-                  background: rec.status === 'leave' ? '#f1f5f9' : '#fff',
-                  color: rec.status === 'leave' ? '#94a3b8' : '#1a1a2e',
+                  background: '#fff',
+                  color: '#1a1a2e',
                   outline: 'none', width: '90px',
                 }}
               />
@@ -846,30 +857,31 @@ const Attendance = () => {
               <input
                 type="time"
                 value={rec.timeOut}
-                disabled={!rec.timeIn || rec.status === 'leave'}
+                disabled={!rec.timeIn}
                 onChange={e => updateField(emp.id, 'timeOut', e.target.value)}
                 placeholder="--:--"
                 style={{
                   padding: '5px 8px', borderRadius: '6px',
                   border: '1px solid #d1d5db', fontSize: '12px',
-                  background: (!rec.timeIn || rec.status === 'leave') ? '#f1f5f9' : '#fff',
-                  color: (!rec.timeIn || rec.status === 'leave') ? '#94a3b8' : '#1a1a2e',
+                  background: !rec.timeIn ? '#f1f5f9' : '#fff',
+                  color: !rec.timeIn ? '#94a3b8' : '#1a1a2e',
                   outline: 'none', width: '90px',
                 }}
               />
 
-              {/* OT Hours */}
+               {/* OT Hours */}
               <input
                 type="number"
                 min="0"
                 value={rec.otHours}
-                disabled
+                disabled={String(emp.role || '').toLowerCase() !== 'cashier'}
+                onChange={e => updateField(emp.id, 'otHours', Number(e.target.value))}
                 placeholder="0"
                 style={{
                   padding: '5px 8px', borderRadius: '6px',
                   border: '1px solid #d1d5db', fontSize: '12px',
-                  background: '#f1f5f9',
-                  color: rec.status !== 'present' ? '#94a3b8' : '#1a1a2e',
+                  background: String(emp.role || '').toLowerCase() !== 'cashier' ? '#f1f5f9' : '#fff',
+                  color: String(emp.role || '').toLowerCase() !== 'cashier' ? '#94a3b8' : '#1a1a2e',
                   outline: 'none', width: '60px',
                 }}
               />
@@ -877,10 +889,11 @@ const Attendance = () => {
               {/* ✅ Tea Cost — auto-applied for present employees */}
               <div style={{
                 fontSize: '12px', fontWeight: 700,
-                color: teaCost === 'Rs 60' ? '#16a34a' : '#94a3b8',
-                background: teaCost !== '—' ? 'rgba(34,197,94,0.1)' : 'transparent',
-                padding: teaCost !== '—' ? '4px 8px' : '0',
+                color: teaCost === 'Rs 450' ? '#f59e0b' : (teaCost === 'Rs 60' ? '#16a34a' : '#94a3b8'),
+                background: teaCost !== '—' ? (teaCost === 'Rs 450' ? 'rgba(245,158,11,0.1)' : 'rgba(34,197,94,0.1)') : 'transparent',
+                padding: teaCost !== '—' ? '4px 10px' : '0',
                 borderRadius: '6px',
+                border: teaCost !== '—' ? `1px solid ${teaCost === 'Rs 450' ? '#f59e0b30' : '#16a34a30'}` : 'none'
               }}>{teaCost}</div>
             </div>
           );
@@ -891,21 +904,21 @@ const Attendance = () => {
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '14px' }}>
         {submitted && (
           <span style={{
-            fontSize: '13px', fontWeight: 600, color: '#16a34a',
-            background: 'rgba(34,197,94,0.1)', padding: '8px 16px', borderRadius: '8px',
+            fontSize: '13px', fontWeight: 600, color: '#059669',
+            background: '#ecfdf5', padding: '8px 16px', borderRadius: '8px',
           }}>
             ✅ Attendance saved successfully!
           </span>
         )}
         <button onClick={handleSubmit} style={{
-          padding: '12px 32px', borderRadius: '10px', border: 'none',
-          background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
+          padding: '12px 32px', borderRadius: '12px', border: 'none',
+          background: 'linear-gradient(135deg, #0d9488, #0f766e)',
           color: '#fff', fontSize: '14px', fontWeight: 700,
-          cursor: 'pointer', boxShadow: '0 4px 12px rgba(59,130,246,0.3)',
+          cursor: 'pointer', boxShadow: '0 4px 12px rgba(13,148,136,0.3)',
           transition: 'transform 0.2s, box-shadow 0.2s',
         }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(59,130,246,0.4)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(59,130,246,0.3)'; }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(13,148,136,0.4)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.3)'; }}
         >
           Save Attendance
         </button>

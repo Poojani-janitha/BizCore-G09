@@ -60,6 +60,9 @@ const Header = () => {
         if (path === '/hr') return t('header.hr', 'Human Resources');
         if (path.includes('/hr/employees')) return t('header.employees', 'Employees');
         if (path.includes('/hr/attendance')) return t('header.attendance', 'Attendance');
+        if (path.includes('/hr/payroll')) return t('header.payroll', 'Payroll');
+        if (path.includes('/hr/reports')) return t('header.reports', 'Reports');
+        if (path.includes('/hr/leave')) return  t('header.leave', 'Leave');
         if (path === '/finance') return t('header.finance', 'Finance & Accounting');
         if (path.includes('/finance/make-payment')) return t('header.expense_mgmt', 'Expense Management');
         if (path.includes('/finance/receive-payment')) return t('header.receive_payment', 'Receive Payment');
