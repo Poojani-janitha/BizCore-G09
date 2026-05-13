@@ -310,7 +310,7 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
                                                     <Badge bg="secondary" className="small">{item.Base_Unit}</Badge>
                                                 </td>
                                                 <td className="text-end">
-                                                    <small className="fw-bold">{parseFloat(item.Base_Unit_Qty_Sold).toFixed(2)}</small>
+                                                    <small className="fw-bold">{parseFloat(item.Base_Unit_Qty_Sold)} {item.Base_Unit}</small>
                                                 </td>
                                                 <td>
                                                     <Form.Control 

@@ -145,7 +145,7 @@ const ProductTable = ({ products, isLoading, onDelete, onEdit, onPrint, onView, 
                         ))
                     ) : (
                         <tr>
-                            <td colSpan="11" className="text-center py-4 text-muted">{t('inventory.table.no_products')}</td>
+                            <td colSpan="12" className="text-center py-4 text-muted">{t('inventory.table.no_products')}</td>
                         </tr>
                     )}
                 </tbody>
