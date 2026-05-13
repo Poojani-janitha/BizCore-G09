@@ -327,6 +327,7 @@ const postSalesData = async (req, res) => {
         const sale = await Sale.create({
             Invoice_No: invoiceDetails.invoiceNo,
             C_ID: customerReq.c_id,
+            Cashier_ID: createdBy,
             Sale_Date: saleDate,
             Sale_Time: saleTime,
             Location: location || invoiceDetails?.location || 'Shop',
