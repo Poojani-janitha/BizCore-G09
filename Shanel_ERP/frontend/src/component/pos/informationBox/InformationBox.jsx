@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useTranslation } from 'react-i18next'
 
-const InformationBox = ({ customerData, selectedProduct, location, setLocation, setError, cartItems }) => {
+const InformationBox = ({ customerData, selectedProduct, location, setLocation, setError, cartItems , information, setInformation}) => {
     const { t } = useTranslation();
     const [availableStock, setAvailableStock] = useState(null);
 
@@ -19,6 +19,12 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation, 
                 const totalQty = toNumber(res.data.totalQty);
 
                 setAvailableStock({ shop: shopQty, production: productionQty, total: totalQty });
+                setInformation(availableStock => ({
+                    ...availableStock,
+                    shop: shopQty,
+                    production: productionQty,
+                    total: totalQty
+                }));
             }
         }
         catch (error) {

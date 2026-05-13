@@ -28,7 +28,7 @@
     "phone1": "Phone 1",
     "phone1Placeholder": "Phone Number",
     "contactPerson": "Contact Person",
-    "contactPersonPlaceholder": "Contact Person",
+    "contactPersonPlaceholder": "Phone Number",
     "phone2": "Phone 2",
     "phone2Placeholder": "Alternative Phone",
     "email": "Email",
@@ -117,6 +117,7 @@
     "print": "PRINT (F10)",
     "hold": "HOLD (F9)",
     "clear": "CLEAR (ESC)"
+  },
   "inventory": {
     "product_mgmt": "Products Management",
     "raw_materials": "Raw Materials",

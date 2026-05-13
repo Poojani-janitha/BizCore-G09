@@ -125,7 +125,7 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
 
                     <div className="mb-3">
                         <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.cashTendered')}</label>
-                        <input type="number" className="form-control form-control-sm fw-bold border-success shadow-sm"
+                        <input min='0' type="number" className="form-control form-control-sm fw-bold border-success shadow-sm"
                             style={{ background: '#f0fff4', fontSize: '1rem' }}
                             value={payments.cashTendered} onChange={(e) => setPayments({ ...payments, cashTendered: e.target.value })}
                             placeholder="0.00" />
@@ -134,7 +134,7 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
                     <div className="row g-2 mb-2">
                         <div className="col-6">
                             <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.applied')}</label>
-                            <input type="number" className="form-control form-control-sm fw-bold border-warning shadow-sm"
+                            <input min='0' type="number" className="form-control form-control-sm fw-bold border-warning shadow-sm"
                                 style={{ background: '#fffbeb', fontSize: '0.9rem' }}
                                 value={payments.applied} onChange={(e) => setPayments({ ...payments, applied: e.target.value })} />
                             <span style={{ fontSize: '0.65rem', color: '#666', fontStyle: 'italic', display: 'block', marginTop: '2px', lineHeight: '1' }}>
@@ -160,13 +160,13 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
                     <div className="row g-2 mb-3">
                         <div className="col-6">
                             <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.cheque')}</label>
-                            <input type="number" className="form-control form-control-sm fw-bold border-primary shadow-sm"
+                            <input min='0' type="number" className="form-control form-control-sm fw-bold border-primary shadow-sm"
                                 style={{ background: '#eff6ff' }}
                                 value={payments.cheque} onChange={(e) => setPayments({ ...payments, cheque: e.target.value })} />
                         </div>
                         <div className="col-6">
                             <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.bankTransfer')}</label>
-                            <input type="number" className="form-control form-control-sm fw-bold border-info shadow-sm"
+                            <input min='0' type="number" className="form-control form-control-sm fw-bold border-info shadow-sm"
                                 style={{ background: '#ecfeff' }}
                                 value={payments.bankTrf} onChange={(e) => setPayments({ ...payments, bankTrf: e.target.value })} />
                         </div>

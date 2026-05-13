@@ -28,7 +28,7 @@
     "phone1": "දුරකතන 1",
     "phone1Placeholder": "දුරකතන අංකය",
     "contactPerson": "ඇමතිය යුතු පුද්ගලයා",
-    "contactPersonPlaceholder": "සම්පූර්ණ නම",
+    "contactPersonPlaceholder": "දුරකතන අංකය",
     "phone2": "දුරකතන 2",
     "phone2Placeholder": "විකල්ප දුරකතන",
     "email": "විද්‍යුත් ලිපිනය",
@@ -101,13 +101,17 @@
     "itemDiscounts": "අයිතම වට්ටම්",
     "taxTotal": "ටැක්ස් එකතුව",
     "freeValue": "නිදහස් අගය",
-    "netTotal": "ශුද්ධ එකතුව"  },
+    "netTotal": "ශුද්ධ එකතුව"  
+  },
+
   "actionButtons": {
     "title": "ක්‍රියා කේන්ද්‍රය",
     "save": "සුරකිම (F12)",
     "print": "මුද්‍රණය (F10)",
     "hold": "තබා ගන්න (F9)",
-    "clear": "මකා දමන්න (ESC)"  }
+    "clear": "මකා දමන්න (ESC)" 
+   },
+
   "inventory": {
     "product_mgmt": "නිෂ්පාදන කළමනාකරණය",
     "raw_materials": "අමුද්‍රව්‍ය",

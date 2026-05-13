@@ -157,7 +157,7 @@ const UserDashboard = () => {
         if (!window.confirm("Are you sure you want to delete this user?")) return;
         try {
             const response = await fetch(`${API_BASE}/delete`, {
-                method: 'POST',
+                method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`

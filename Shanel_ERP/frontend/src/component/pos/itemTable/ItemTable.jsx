@@ -20,7 +20,7 @@ const EMPTY_ITEM = {
 
 const toNumber = (value) => parseFloat(value) || 0;
 
-const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, location, selectedProduct, setSelectedProduct, error, setError }) => {
+const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, location, selectedProduct, setSelectedProduct, error, setError,  setInformation }) => {
     const { t } = useTranslation();
     const inputRowBg = '#f8faf9';
     const [query, setQuery] = useState('');
@@ -49,6 +49,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                     if (!tempItem.p_unit && units.length > 0) {
                         const baseUnit = units.find(u => (typeof u === 'object' && (u.Is_Base_Unit || u.Unit_Conversion == 1))) || units[0];
                         const unitName = typeof baseUnit === 'string' ? baseUnit : baseUnit.Unit_Name;
+                        setTempItem(prev => ({ ...prev, base_unit_name: unitName }));
                         handleUnitChange(unitName);
                     }
                 }
@@ -92,6 +93,8 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         setQuery(value);
         if (!value.trim()) {
             setSearchResults([]);
+            // Reset inputs when search is cleared
+            setTempItem((prev) => ({ ...prev, discount: 0, quntity: 0, tax: 0, free: 0 }));
             return;
         }
 
@@ -173,7 +176,6 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
             return;
         }
 
-
         // Check if there is any error related to quantity
         if (error?.field === 'quantity' || (error?.message && error.message.includes('available'))) {
             console.warn('Cannot add item: quantity error exists');
@@ -193,6 +195,28 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
             return;
         }
 
+        // NEW: Check total stock consumption across all units of this product in BASE UNIT
+        const newItemQtyInBaseUnit = toNumber(tempItem.quntity) * (tempItem.conversionFactor || 1);
+        
+        // Calculate total quantity already in cart for this product (in base unit)
+        const totalInCartBaseUnit = cartItems
+            .filter(item => item.p_id === tempItem.p_id)
+            .reduce((sum, item) => {
+                const itemQtyInBase = toNumber(item.quntity) * (item.conversionFactor || 1);
+                return sum + itemQtyInBase;
+            }, 0);
+
+        // Total would be if we add this item
+        const totalAfterAdd = totalInCartBaseUnit + newItemQtyInBaseUnit;
+
+        // Check against available quantity
+        if (availableQuantity !== null && totalAfterAdd > availableQuantity) {
+            setError({
+                field: 'general',
+                message: `Only ${availableQuantity} ${tempItem.base_unit_name} available in stock, ${tempItem.quntity} ${tempItem.p_unit} needs ${newItemQtyInBaseUnit} ${tempItem.base_unit_name}`
+            });
+            return;
+        }
 
         const newItem = {
             ...hydrateComputedFields(tempItem),
@@ -204,10 +228,12 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         setQuery('');
         setAvailableQuantity(null);
         setError(null);
+        setSelectedProduct(null); // Clear currently selected product so InformationBox resets
+        setInformation({}); // Clear information state passed to InformationBox
     };
 
     // Function to update a specific field of an item in the cart based on user input. When the user changes a value (like quantity, price, discount, etc.) for an item in the cart, this function updates that field and recalculates the subtotal, tax amount, and total for that item to ensure that the cart reflects the most current and accurate information.
-    const updateCartItem = (index, field, value) => {
+     const updateCartItem = (index, field, value) => {
         const updatedCart = [...cartItems];
         const item = updatedCart[index];
 
@@ -325,30 +351,30 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
     //set error when user input quntity more than available quntity in stock and also when user change the product selection reset the error
     const handleQtyChange = (qty) => {
         const numQty = toNumber(qty);
-        setTempItem((prev) => ({ ...prev, quntity: numQty }));
 
-        const conversionFactor = tempItem.conversionFactor || 1;
-        const convertedQty = numQty * conversionFactor; // Convert to base unit quantity for comparison
+        setTempItem((prev) => {
+            const conversionFactor = prev.conversionFactor || 1;
+            const convertedQty = numQty * conversionFactor; // Convert to base unit quantity for comparison
 
-        console.log('Qty Change Details:', {
-            inputQty: qty,
-            numQty,
-            conversionFactor,
-            convertedQty,
-            availableQuantity,
-            hasError: availableQuantity !== null && convertedQty > availableQuantity
-        });
+            console.log('Qty Change Details:', {
+                inputQty: qty,
+                numQty,
+                conversionFactor,
+                convertedQty,
+                availableQuantity,
+                hasError: availableQuantity !== null && convertedQty > availableQuantity
+            });
 
-        if (availableQuantity !== null && convertedQty > availableQuantity) {
-            setError({ field: 'general', message: `Only ${availableQuantity} units available in ${location} stock` });
-            // Reset quantity to 0 to block the 'Add' button permanently until a valid qty is entered
-            setTempItem((prev) => ({ ...prev, quntity: 0 }));
-        }
-        else {
-            if (error?.message?.includes('available in')) {
-                setError({ field: null, message: null });
+            if (availableQuantity !== null && convertedQty > availableQuantity) {
+                setError({ field: 'general', message: `Only ${availableQuantity} units available in ${location} stock` });
+                return { ...prev, quntity: 0 };
+            } else {
+                if (error?.message?.includes('available')) {
+                    setError({ field: null, message: null });
+                }
+                return { ...prev, quntity: numQty };
             }
-        }
+        });
 
     };
 
@@ -532,8 +558,8 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                                 <button
                                     onClick={addItem}
                                     className='btn btn-primary btn-sm'
-                                    disabled={!tempItem.p_code || !tempItem.p_unit || (error?.message?.includes('available in'))}
-                                    title={error?.message?.includes('available in') ? error.message : "Add to cart"}
+                                    disabled={!tempItem.p_code || !tempItem.p_unit || (error?.field === 'general' && error?.message?.toLowerCase().includes('available'))}
+                                    title={error?.message || "Add to cart"}
                                 >
                                     <Plus size={16} />
                                 </button>
