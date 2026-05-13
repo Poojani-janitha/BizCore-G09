@@ -23,7 +23,11 @@ const Reports = () => {
 
   const normDate = (d) => d ? String(d).split('T')[0] : '';
 
-  const savePdf = (reportId) => {
+  /**
+ * PDF Generator: Uses jsPDF and autoTable to create structured reports.
+ * Handles specialized table layouts for Employee Details, Attendance (Daily/Monthly), Leaves, and Payments.
+ */
+const savePdf = (reportId) => {
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
     const marginX = 40;
@@ -175,7 +179,11 @@ const Reports = () => {
     doc.save(`${fileSafe(title)}.pdf`);
   };
 
-  const printSection = (sectionId, title, mode = 'print') => {
+  /**
+ * Print Helper: Creates a hidden iframe to render a specific report section for printing.
+ * Injects custom CSS for print-friendly styling.
+ */
+const printSection = (sectionId, title, mode = 'print') => {
     const el = document.getElementById(sectionId);
     if (!el) return;
 
@@ -248,7 +256,13 @@ const Reports = () => {
 
   const API_BASE = 'http://localhost:5000/api/hr';
 
-  useEffect(() => {
+  /**
+ * MAIN DATA FETCHER (Reports):
+ * Orchestrates API calls based on the active report type.
+ * Aggregates raw Attendance and Leave data to compute statuses (Present/Absent/Leave) for the UI.
+ * Implements specialized logic for 'Monthly' and 'Individual' tracking.
+ */
+useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);

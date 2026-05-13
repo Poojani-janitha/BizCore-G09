@@ -22,7 +22,10 @@ const Leave = () => {
     Reason: ''
   });
 
-  const fetchData = async () => {
+  /**
+ * Data Fetcher: Loads Employees, Attendance, and Leave records for the selected date.
+ */
+const fetchData = async () => {
     try {
       setLoading(true);
       const [empRes, attRes, leaveRes] = await Promise.all([
@@ -77,7 +80,10 @@ const Leave = () => {
     );
   }, [employees, leaves, searchTerm]);
 
-  const handleAddLeave = async (e) => {
+  /**
+ * Submission Handler: Calculates total leave days and sends the new request to the backend.
+ */
+const handleAddLeave = async (e) => {
     e.preventDefault();
     try {
       if (!formData.Employee_ID) return alert('Please select an employee');
@@ -109,7 +115,10 @@ const Leave = () => {
     }
   };
 
-  const updateLeaveStatus = async (leaveId, action) => {
+  /**
+ * Status Updater: Approves or rejects a leave request via the backend API.
+ */
+const updateLeaveStatus = async (leaveId, action) => {
     try {
       const endpoint = action === 'approve' ? 'approve' : 'reject';
       const payload = action === 'reject' ? { Rejection_Reason: 'Rejected by HR' } : {};

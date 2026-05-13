@@ -1,90 +1,13 @@
-// import React, { useState, useEffect, useRef } from 'react';
-// import { useNavigate } from 'react-router-dom';
-// import { generateEmployees, EMP_KEY } from '../../storeContext/employeesData';
-
-// const EmployeesPage = () => {
-//   const navigate = useNavigate();
-//   const [employees, setEmployees] = useState([]);
-//   const dragItem = useRef();
-//   const dragOverItem = useRef();
-
-//   useEffect(() => {
-//     const stored = localStorage.getItem(EMP_KEY);
-//     if (stored) {
-//       try { setEmployees(JSON.parse(stored)); } catch { setEmployees(generateEmployees()); }
-//     } else {
-//       const gen = generateEmployees();
-//       setEmployees(gen);
-//       localStorage.setItem(EMP_KEY, JSON.stringify(gen));
-//     }
-//     // no selected panel in this layout
-//   }, []);
-
-//   return (
-//     <div style={{
-//       minHeight: '100vh',
-//       background: '#f5f6fa',
-//       padding: '28px 32px',
-//       fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
-//     }}>
-//       <div style={{ marginBottom: '18px' }}>
-//         <h1 style={{
-//           margin: 0,
-//           fontSize: '22px',
-//           fontWeight: 700,
-//           color: '#1a1a2e'
-//         }}>
-//           <span style={{
-//             background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
-//             WebkitBackgroundClip: 'text',
-//             WebkitTextFillColor: 'transparent',
-//           }}>Employees</span>
-//         </h1>
-//       </div>
-
-//       <div className="mb-2 text-muted">Tip: drag cards to rearrange employee order.</div>
-//       <div className="row g-3">
-//         {employees.map((emp, index) => (
-//           <div className="col-sm-6 col-md-4" key={emp.id}
-//             onDragEnter={() => (dragOverItem.current = index)}>
-//             <div
-//               className="card"
-//               draggable
-//               onDragStart={(e) => { dragItem.current = index; e.dataTransfer.effectAllowed = 'move'; }}
-//               onDragOver={(e) => e.preventDefault()}
-//               onDragEnd={() => {
-//                 const _employees = [...employees];
-//                 const draggedItemContent = _employees.splice(dragItem.current, 1)[0];
-//                 _employees.splice(dragOverItem.current, 0, draggedItemContent);
-//                 dragItem.current = null;
-//                 dragOverItem.current = null;
-//                 setEmployees(_employees);
-//                 try { localStorage.setItem(EMP_KEY, JSON.stringify(_employees)); } catch {}
-//               }}
-//               style={{ cursor: 'grab' }}
-//               onClick={() => navigate(`/hr/employees/${emp.id}`)}
-//             >
-//               <div className="card-body">
-//                 <h5 className="card-title mb-1">{emp.name}</h5>
-//                 <p className="mb-0"><small className="text-muted">{emp.role}</small></p>
-//                 <p className="mb-0"><small className="text-muted">{emp.email}</small></p>
-//               </div>
-//             </div>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default EmployeesPage;
-
 
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:5000/api/hr';
 
+/**
+ * Mapper: Converts a backend Employee record to a frontend-friendly object.
+ * Normalizes status and adds a 'raw' reference for deep access.
+ */
 const mapEmployeeFromApi = (emp) => ({
   id: String(emp.Employee_ID),
   name: emp.Full_Name || '',
@@ -129,6 +52,10 @@ const EmployeesPage = () => {
     window.dispatchEvent(new Event('employees-updated'));
   };
 
+  /**
+ * Data Fetcher: Loads the full list of employees from the backend.
+ * Filters for 'Active' by default but can be extended.
+ */
   const fetchEmployees = async () => {
     try {
       setIsLoading(true);
@@ -146,6 +73,9 @@ const EmployeesPage = () => {
     }
   };
 
+  /**
+ * Photo Handler: Manages local preview and state updates for employee profile images.
+ */
   const handleImageChange = (empId, e) => {
     e?.stopPropagation();
     const file = e?.target?.files?.[0];
@@ -233,6 +163,9 @@ const EmployeesPage = () => {
     }
   };
 
+  /**
+ * Validator: Performs frontend checks (Required fields, Email format, NIC format) before submission.
+ */
   const validateForm = () => {
     const newErrors = {};
     const { Full_Name, Contact_Phone, Email, NIC, EPF_Eligible, EPF_Number, Hire_Date } = addForm;
@@ -274,6 +207,10 @@ const EmployeesPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+ * Add Employee: Sends the new employee data to the backend.
+ * Automatically handles the conversion of 'Hire Date' and UI reset on success.
+ */
   const addEmployee = (e) => {
     e?.stopPropagation();
     if (!validateForm()) {
@@ -284,7 +221,7 @@ const EmployeesPage = () => {
       try {
         const now = new Date();
         const hireDate = addForm.Hire_Date || now.toISOString().slice(0, 10);
-        
+
         const payload = {
           ...addForm,
           Full_Name: addForm.Full_Name.trim(),
@@ -298,10 +235,10 @@ const EmployeesPage = () => {
         setShowAddForm(false);
       } catch (err) {
         console.error('addEmployee error:', err);
-        
+
         // Build error message with validation details
         let errorMsg = err?.response?.data?.message || 'Failed to add employee';
-        
+
         // Add validation errors if present
         if (err?.response?.data?.validationErrors && Array.isArray(err.response.data.validationErrors)) {
           const validationDetails = err.response.data.validationErrors
@@ -309,7 +246,7 @@ const EmployeesPage = () => {
             .join('\n');
           errorMsg = `${errorMsg}\n\n${validationDetails}`;
         }
-        
+
         alert(errorMsg);
       }
     })();
@@ -321,6 +258,9 @@ const EmployeesPage = () => {
     setErrors({});
   };
 
+  /**
+ * Deactivation: Marks an employee as "Inactive" via the backend API.
+ */
   const deleteEmployee = (emp, e) => {
     e?.stopPropagation();
     const confirmed = window.confirm(`Delete employee "${emp.name}"?`);
@@ -328,7 +268,7 @@ const EmployeesPage = () => {
     (async () => {
       try {
         await axios.delete(`${API_BASE}/employees/${emp.id}`);
-        const updated = employees.map(item => 
+        const updated = employees.map(item =>
           String(item.id) === String(emp.id) ? { ...item, status: 'Inactive', raw: { ...item.raw, Status: 'Inactive' } } : item
         );
         persistEmployees(updated);
@@ -350,7 +290,7 @@ const EmployeesPage = () => {
     (async () => {
       try {
         await axios.patch(`${API_BASE}/employees/${emp.id}/status`, { Status: 'Active' });
-        const updated = employees.map(item => 
+        const updated = employees.map(item =>
           String(item.id) === String(emp.id) ? { ...item, status: 'Active', raw: { ...item.raw, Status: 'Active' } } : item
         );
         persistEmployees(updated);
@@ -430,9 +370,9 @@ const EmployeesPage = () => {
         />
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
             gap: '6px',
             background: '#0d9488',
             color: '#fff',
@@ -677,7 +617,7 @@ const EmployeesPage = () => {
                   _employees.splice(dragOverItem.current, 0, draggedItemContent);
                   dragItem.current = null;
                   dragOverItem.current = null;
-                  try { persistEmployees(_employees); } catch {}
+                  try { persistEmployees(_employees); } catch { }
                 }}
                 style={{
                   cursor: searchTerm ? 'default' : 'grab',
@@ -777,7 +717,7 @@ const EmployeesPage = () => {
                     padding: '16px',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                     border: '1px solid #e8e8e8',
-                  zIndex: 10,
+                    zIndex: 10,
                   }}
                 >
                   <div className="mb-2">

@@ -7,6 +7,9 @@ import autoTable from 'jspdf-autotable';
 const API_BASE = 'http://localhost:5000/api/hr';
 
 // Salary configuration based on role
+/**
+ * Helper: Retrieves salary configuration (base, rates, bonus rules) based on employee role.
+ */
 const getSalaryConfig = (role) => {
   const configs = {
     Cashier: {
@@ -36,6 +39,11 @@ const getSalaryConfig = (role) => {
 };
 
 // Calculate salary components
+/**
+ * MAIN PAYROLL CALCULATION ENGINE (Frontend):
+ * Calculates all salary components (Basic, OT, Bonus, Tea, Deductions, Net) based on stats and config.
+ * Implements role-specific logic like Cashier tea allowance exclusion.
+ */
 const calculateSalary = (config, role, stats, cardsMade = 0) => {
   let basicSalary = 0;
   let productionEarnings = 0;
@@ -92,8 +100,6 @@ export default function Payroll() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [showBankModal, setShowBankModal] = useState(false);
   const [bankDetails, setBankDetails] = useState({ bankName: '', accountNumber: '', recipientEmail: '', notes: '' });
@@ -111,7 +117,11 @@ export default function Payroll() {
 
 
   // Helper to calculate daily tea cost (Replicating AttendancePage logic)
-  const getDailyTeaCost = (rec, role) => {
+  /**
+ * Helper: Calculates daily tea cost for an employee record.
+ * Logic: Rs 60 standard, Rs 450 if working past 5 PM. Excludes specific roles.
+ */
+const getDailyTeaCost = (rec, role) => {
     if (rec.Status !== 'Present' || !rec.Check_In_Time || !rec.Check_Out_Time) return 0;
     const roleText = String(role || '').toLowerCase();
     if (roleText.includes('cashier') || roleText.includes('manager') || roleText.includes('admin')) return 0;
@@ -127,7 +137,11 @@ export default function Payroll() {
   };
 
   // Fetch employees, payroll, and monthly attendance
-  const fetchPayrollData = async (monthStr) => {
+  /**
+ * Data Fetcher: Loads Employees, Payroll, and Attendance data from the backend.
+ * Merges them into a single "combined" record format for the UI table.
+ */
+const fetchPayrollData = async (monthStr) => {
     try {
       setLoading(true);
       const [year, month] = monthStr.split('-');
@@ -211,16 +225,10 @@ export default function Payroll() {
     fetchPayrollData(selectedMonth);
   }, [selectedMonth]);
 
-  const updatePayrollField = (field, value) => {
-    setEditForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const startEdit = (record) => {
-    setEditingId(record.id);
-    setEditForm({ ...record });
-  };
-
-  const persistRecord = async (recordData, newStatus) => {
+  /**
+ * Persister: Sends updated payroll data to the backend (POST for new, PUT for existing).
+ */
+const persistRecord = async (recordData, newStatus) => {
     const [year, month] = selectedMonth.split('-');
     const payload = {
       Employee_ID: recordData.id,
@@ -249,35 +257,6 @@ export default function Payroll() {
     } else {
       await axios.post(`${API_BASE}/payroll`, payload);
     }
-  };
-
-  const saveEdit = async () => {
-    if (!editingId) return;
-
-    try {
-      setLoading(true);
-      const config = getSalaryConfig(editForm.employeeRole);
-      const salary = calculateSalary(config, editForm.employeeRole, { daysWorked: editForm.daysWorked, totalOtHours: 0, totalTeaCost: editForm.teaAllowance }, 0);
-      
-      const newRecordData = {
-        ...editForm,
-        ...salary
-      };
-      
-      await persistRecord(newRecordData, newRecordData.status);
-      await fetchPayrollData(selectedMonth);
-      setEditingId(null);
-    } catch (error) {
-      console.error('Failed to save payroll:', error);
-      alert(error?.response?.data?.message || 'Failed to save payroll');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditForm({});
   };
 
   const approveRecord = async (id) => {
@@ -470,7 +449,10 @@ export default function Payroll() {
     doc.save(`Payroll_Report_${selectedMonth}.pdf`);
   };
 
-  const handleMailToBank = async () => {
+  /**
+ * Export Helper: Generates a paysheet PDF and calls the backend email API to send it to the bank.
+ */
+const handleMailToBank = async () => {
     if (!bankDetails.recipientEmail || !bankDetails.bankName) {
       alert('Please enter bank name and recipient email.');
       return;
@@ -562,23 +544,35 @@ export default function Payroll() {
       setLoading(true);
       const [year, month] = selectedMonth.split('-');
       const firstDay = `${year}-${month}-01`;
-      const lastDay = new Date(year, month, 0).getDate();
+      const lastDayDate = new Date(year, month, 0);
+      const lastDayStr = lastDayDate.toISOString().split('T')[0];
+      const lastDay = lastDayDate.getDate();
       
-      // Fetch existing records for the month
-      const res = await axios.get(`${API_BASE}/attendance`, { 
-        params: { employeeId: emp.id, from: firstDay, to: `${year}-${month}-${lastDay}` } 
-      });
-      const existing = res.data.data || [];
+      // Fetch existing records and leaves for the month
+      const [attRes, leavesRes] = await Promise.all([
+        axios.get(`${API_BASE}/attendance`, { 
+          params: { employeeId: emp.id, from: firstDay, to: lastDayStr } 
+        }),
+        axios.get(`${API_BASE}/leaves`, {
+          params: { employeeId: emp.id, from: firstDay, to: lastDayStr, status: 'Approved' }
+        })
+      ]);
+
+      const existing = attRes.data.data || [];
+      const leaves = leavesRes.data.data || [];
       
       const days = [];
       for (let i = 1; i <= lastDay; i++) {
         const dateStr = `${year}-${month}-${String(i).padStart(2, '0')}`;
         const match = existing.find(a => a.Attendance_Date === dateStr);
+        const leaveMatch = leaves.find(l => l.Start_Date <= dateStr && l.End_Date >= dateStr);
+
         days.push({
           date: dateStr,
           day: i,
-          cards: match?.Cards_Produced || 0,
-          status: match?.Status || 'Absent'
+          cards: leaveMatch ? 0 : (match?.Cards_Produced || 0),
+          status: leaveMatch ? 'Leave' : (match?.Status || 'Absent'),
+          isLeave: !!leaveMatch
         });
       }
       
@@ -586,6 +580,7 @@ export default function Payroll() {
       setSelectedEmpForCards(emp);
       setShowCardsModal(true);
     } catch (error) {
+      console.error('openDailyCardsModal error:', error);
       alert('Failed to load daily cards data');
     } finally {
       setLoading(false);
@@ -888,6 +883,7 @@ export default function Payroll() {
                     type="number"
                     min="0"
                     value={day.cards || ''}
+                    disabled={day.isLeave}
                     onChange={(e) => {
                       const newData = [...dailyCardsData];
                       newData[idx].cards = parseInt(e.target.value) || 0;
@@ -897,20 +893,32 @@ export default function Payroll() {
                       }
                       setDailyCardsData(newData);
                     }}
-                    style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: 700, textAlign: 'center', outline: 'none' }}
+                    style={{ 
+                      width: '100%', padding: '8px', borderRadius: '8px', 
+                      border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: 700, 
+                      textAlign: 'center', outline: 'none',
+                      background: day.isLeave ? '#f1f5f9' : '#fff',
+                      color: day.isLeave ? '#94a3b8' : '#1e3a5f'
+                    }}
                   />
                   <div style={{ marginTop: '8px', display: 'flex', gap: '4px' }}>
                     <select 
                       value={day.status}
+                      disabled={day.isLeave}
                       onChange={(e) => {
                         const newData = [...dailyCardsData];
                         newData[idx].status = e.target.value;
                         setDailyCardsData(newData);
                       }}
-                      style={{ width: '100%', fontSize: '10px', padding: '4px', borderRadius: '4px', border: 'none', background: '#e2e8f0', fontWeight: 600 }}
+                      style={{ 
+                        width: '100%', fontSize: '10px', padding: '4px', borderRadius: '4px', 
+                        border: 'none', background: day.isLeave ? '#dcfce7' : '#e2e8f0', 
+                        fontWeight: 600, color: day.isLeave ? '#166534' : '#1e293b'
+                      }}
                     >
                       <option value="Present">Present</option>
                       <option value="Absent">Absent</option>
+                      <option value="Leave">Leave</option>
                     </select>
                   </div>
                 </div>

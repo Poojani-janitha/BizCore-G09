@@ -2,6 +2,10 @@ const { EmployeeLeave, Employee } = require('../../models/index');
 const { Op } = require('sequelize');
 const { findEmployeeByParam } = require('../../utils/hrEmployeeLookup');
 
+/**
+ * Retrieves leave requests from the database.
+ * Supports filtering by employeeId, status (Pending/Approved/Rejected), and date range.
+ */
 const getLeaves = async (req, res) => {
     try {
         const { employeeId, status, from, to } = req.query;
@@ -43,33 +47,11 @@ const getLeaves = async (req, res) => {
     }
 };
 
-const getLeaveById = async (req, res) => {
-    try {
-        const row = await EmployeeLeave.findByPk(req.params.leaveId, {
-            include: [
-                {
-                    model: Employee,
-                    as: 'Employee',
-                    attributes: ['Employee_ID', 'Employee_Code', 'Full_Name']
-                }
-            ]
-        });
-
-        if (!row) {
-            return res.status(404).json({ success: false, message: 'Leave record not found' });
-        }
-
-        return res.status(200).json({ success: true, data: row });
-    } catch (error) {
-        console.error('getLeaveById error:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch leave',
-            error: error.message
-        });
-    }
-};
-
+/**
+ * Creates a new leave request.
+ * Sets the initial status to 'Pending'.
+ * Requires employee identification, leave type, and dates.
+ */
 const createLeave = async (req, res) => {
     try {
         const {
@@ -123,29 +105,10 @@ const createLeave = async (req, res) => {
     }
 };
 
-const updateLeave = async (req, res) => {
-    try {
-        const row = await EmployeeLeave.findByPk(req.params.leaveId);
-        if (!row) {
-            return res.status(404).json({ success: false, message: 'Leave record not found' });
-        }
-
-        const blocked = ['Leave_ID', 'Created_At'];
-        const payload = { ...req.body };
-        blocked.forEach((k) => delete payload[k]);
-
-        await row.update(payload);
-        return res.status(200).json({ success: true, data: row });
-    } catch (error) {
-        console.error('updateLeave error:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to update leave',
-            error: error.message
-        });
-    }
-};
-
+/**
+ * Finalizes a leave request by marking it as 'Approved'.
+ * Records who approved it and on what date.
+ */
 const approveLeave = async (req, res) => {
     try {
         const row = await EmployeeLeave.findByPk(req.params.leaveId);
@@ -172,6 +135,10 @@ const approveLeave = async (req, res) => {
     }
 };
 
+/**
+ * Finalizes a leave request by marking it as 'Rejected'.
+ * Requires a reason for rejection.
+ */
 const rejectLeave = async (req, res) => {
     try {
         const row = await EmployeeLeave.findByPk(req.params.leaveId);
@@ -204,9 +171,7 @@ const rejectLeave = async (req, res) => {
 
 module.exports = {
     getLeaves,
-    getLeaveById,
     createLeave,
-    updateLeave,
     approveLeave,
     rejectLeave
 };

@@ -1,12 +1,14 @@
-const path = require('path');
 const {
-    Employee,
-    EmployeeDocument,
-    User
+    Employee
 } = require('../../models/index');
 const { Op } = require('sequelize');
 const { findEmployeeByParam } = require('../../utils/hrEmployeeLookup');
 
+/**
+ * Fetches all employees from the database.
+ * Supports filtering by status and department, and provides a search feature 
+ * across Name, Code, NIC, Phone, and Email.
+ */
 const getEmployees = async (req, res) => {
     try {
         const { department, status, search } = req.query;
@@ -51,34 +53,11 @@ const getEmployees = async (req, res) => {
     }
 };
 
-const getEmployeeById = async (req, res) => {
-    try {
-        const employee = await findEmployeeByParam(req.params.employeeId);
-        if (!employee) {
-            return res.status(404).json({ success: false, message: 'Employee not found' });
-        }
-
-        const linkedUser = await User.findOne({
-            where: { Employee_ID: employee.Employee_ID },
-            attributes: ['User_ID', 'Username', 'Email', 'User_Type', 'Status']
-        });
-
-        return res.status(200).json({
-            success: true,
-            data: employee,
-            linkedUser
-        });
-    } catch (error) {
-        console.error('getEmployeeById error:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch employee',
-            error: error.message
-        });
-    }
-};
-
 // Helper function to validate all employee fields according to model
+/**
+ * INTERNAL HELPER: Validates all employee data against business rules and model constraints.
+ * Checks for required fields, data formats (Date, Phone, Email), and database uniqueness (NIC, Email).
+ */
 const validateEmployeeFields = async (payload) => {
     const errors = [];
 
@@ -110,9 +89,9 @@ const validateEmployeeFields = async (payload) => {
     if (!payload.Salary_Category || String(payload.Salary_Category).trim() === '') {
         errors.push({ path: 'Salary_Category', message: 'Salary_Category is required and cannot be empty' });
     } else if (!['Monthly_Fixed', 'Daily_Rate', 'Production_Based', 'Hybrid'].includes(payload.Salary_Category)) {
-        errors.push({ 
-            path: 'Salary_Category', 
-            message: 'Salary_Category must be one of: Monthly_Fixed, Daily_Rate, Production_Based, Hybrid' 
+        errors.push({
+            path: 'Salary_Category',
+            message: 'Salary_Category must be one of: Monthly_Fixed, Daily_Rate, Production_Based, Hybrid'
         });
     }
 
@@ -199,6 +178,13 @@ const validateEmployeeFields = async (payload) => {
     return errors;
 };
 
+/**
+ * ONBOARDING ENGINE:
+ * 1. Validates input data.
+ * 2. Cleans payload (converts types, removes invalid fields).
+ * 3. Creates employee with a temporary code to satisfy constraints.
+ * 4. Generates and updates a permanent Employee_Code (e.g., EMP-001) based on the new ID.
+ */
 const createEmployee = async (req, res) => {
     try {
         const payload = { ...req.body };
@@ -218,7 +204,7 @@ const createEmployee = async (req, res) => {
         // Step 2: Remove fields not in the model
         delete payload.Department;
         delete payload.image;
-        
+
         // Step 3: Clean and convert data types
         // Convert empty strings to null for date fields
         const dateFields = ['Hire_Date', 'Confirmation_Date', 'Date_Of_Birth', 'Resignation_Date', 'Termination_Date'];
@@ -227,7 +213,7 @@ const createEmployee = async (req, res) => {
                 payload[field] = null;
             }
         });
-        
+
         // Convert empty strings to null for ENUM fields
         const enumFields = ['Gender', 'Marital_Status', 'Employee_Type', 'Status'];
         enumFields.forEach(field => {
@@ -235,31 +221,31 @@ const createEmployee = async (req, res) => {
                 payload[field] = null;
             }
         });
-        
+
         // Convert boolean-like strings to actual booleans
         if (payload.EPF_Eligible === 'Yes') payload.EPF_Eligible = true;
         if (payload.EPF_Eligible === 'No') payload.EPF_Eligible = false;
         if (payload.ETF_Eligible === 'Yes') payload.ETF_Eligible = true;
         if (payload.ETF_Eligible === 'No') payload.ETF_Eligible = false;
-        
-        console.log('📝 Cleaned payload, creating employee...');
+
+        console.log(' Cleaned payload, creating employee...');
 
         // Step 4: Create with a temporary code (required by the model's NOT NULL constraint)
         const tempCode = `PENDING-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         payload.Employee_Code = tempCode;
 
         const created = await Employee.create(payload);
-        console.log('✅ Employee created with ID:', created.Employee_ID);
+        console.log(' Employee created with ID:', created.Employee_ID);
 
         // Step 5: Update with the real Employee_Code based on the generated ID
         const realCode = `EMP-${String(created.Employee_ID).padStart(3, '0')}`;
         await created.update({ Employee_Code: realCode });
-        console.log('✅ Employee code updated to:', realCode);
+        console.log(' Employee code updated to:', realCode);
 
-        return res.status(201).json({ 
-            success: true, 
+        return res.status(201).json({
+            success: true,
             message: 'Employee created successfully',
-            data: created 
+            data: created
         });
     } catch (error) {
         console.error('❌ createEmployee error:', error.message);
@@ -278,6 +264,10 @@ const createEmployee = async (req, res) => {
     }
 };
 
+/**
+ * Updates existing employee information.
+ * Protects immutable fields like Employee_ID.
+ */
 const updateEmployee = async (req, res) => {
     try {
         const employee = await findEmployeeByParam(req.params.employeeId);
@@ -301,6 +291,10 @@ const updateEmployee = async (req, res) => {
     }
 };
 
+/**
+ * Updates the employment status (e.g., Active, On_Leave, Resigned).
+ * Uses a raw SQL query to ensure the change persists immediately.
+ */
 const updateEmployeeStatus = async (req, res) => {
     try {
         const { Status } = req.body;
@@ -317,17 +311,17 @@ const updateEmployeeStatus = async (req, res) => {
         await Employee.sequelize.query(
             'UPDATE EMPLOYEE SET Status = :status, Updated_At = :now WHERE Employee_ID = :id',
             {
-                replacements: { 
-                    status: Status, 
-                    id: employee.Employee_ID, 
-                    now: new Date() 
+                replacements: {
+                    status: Status,
+                    id: employee.Employee_ID,
+                    now: new Date()
                 },
                 type: Employee.sequelize.QueryTypes.UPDATE
             }
         );
 
-        return res.status(200).json({ 
-            success: true, 
+        return res.status(200).json({
+            success: true,
             message: `Employee status updated to ${Status}`
         });
     } catch (error) {
@@ -340,128 +334,11 @@ const updateEmployeeStatus = async (req, res) => {
     }
 };
 
-const linkUserToEmployee = async (req, res) => {
-    try {
-        const { User_ID } = req.body;
-        if (!User_ID) {
-            return res.status(400).json({ success: false, message: 'User_ID is required' });
-        }
-
-        const employee = await findEmployeeByParam(req.params.employeeId);
-        if (!employee) {
-            return res.status(404).json({ success: false, message: 'Employee not found' });
-        }
-
-        const user = await User.findByPk(User_ID);
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found' });
-        }
-
-        await user.update({ Employee_ID: employee.Employee_ID });
-        return res.status(200).json({ success: true, message: 'User linked to employee', data: user });
-    } catch (error) {
-        console.error('linkUserToEmployee error:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to link user',
-            error: error.message
-        });
-    }
-};
-
-const getEmployeeDocuments = async (req, res) => {
-    try {
-        const employee = await findEmployeeByParam(req.params.employeeId);
-        if (!employee) {
-            return res.status(404).json({ success: false, message: 'Employee not found' });
-        }
-
-        const docs = await EmployeeDocument.findAll({
-            where: { Employee_ID: employee.Employee_ID },
-            order: [['Created_At', 'DESC']]
-        });
-
-        return res.status(200).json({ success: true, count: docs.length, data: docs });
-    } catch (error) {
-        console.error('getEmployeeDocuments error:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch documents',
-            error: error.message
-        });
-    }
-};
-
-const addEmployeeDocument = async (req, res) => {
-    try {
-        const employee = await findEmployeeByParam(req.params.employeeId);
-        if (!employee) {
-            return res.status(404).json({ success: false, message: 'Employee not found' });
-        }
-
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: 'File is required' });
-        }
-
-        const {
-            Document_Type,
-            Document_Name,
-            Upload_Date,
-            Expiry_Date,
-            Notes,
-            Uploaded_By
-        } = req.body;
-
-        if (!Document_Type || !Document_Name) {
-            return res.status(400).json({
-                success: false,
-                message: 'Document_Type and Document_Name are required'
-            });
-        }
-
-        const relativePath = path.join('hr-documents', req.file.filename);
-        const doc = await EmployeeDocument.create({
-            Employee_ID: employee.Employee_ID,
-            Document_Type,
-            Document_Name,
-            File_Path: relativePath.replace(/\\/g, '/'),
-            File_Size: req.file.size,
-            Upload_Date: Upload_Date || null,
-            Expiry_Date: Expiry_Date || null,
-            Notes: Notes || null,
-            Uploaded_By: Uploaded_By ? parseInt(Uploaded_By, 10) : null
-        });
-
-        return res.status(201).json({ success: true, data: doc });
-    } catch (error) {
-        console.error('addEmployeeDocument error:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to upload document',
-            error: error.message
-        });
-    }
-};
-
-const deleteEmployeeDocument = async (req, res) => {
-    try {
-        const doc = await EmployeeDocument.findByPk(req.params.documentId);
-        if (!doc) {
-            return res.status(404).json({ success: false, message: 'Document not found' });
-        }
-
-        await doc.destroy();
-        return res.status(200).json({ success: true, message: 'Document removed' });
-    } catch (error) {
-        console.error('deleteEmployeeDocument error:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to delete document',
-            error: error.message
-        });
-    }
-};
-
+/**
+ * DEACTIVATION LOGIC:
+ * Instead of hard deleting, this marks an employee as "Inactive".
+ * Uses raw SQL to bypass any application-level soft-delete logic and ensure data persistence.
+ */
 const deleteEmployee = async (req, res) => {
     try {
         const employee = await findEmployeeByParam(req.params.employeeId);
@@ -478,9 +355,9 @@ const deleteEmployee = async (req, res) => {
             }
         );
 
-        return res.status(200).json({ 
-            success: true, 
-            message: 'Employee successfully marked as Inactive in database' 
+        return res.status(200).json({
+            success: true,
+            message: 'Employee successfully marked as Inactive in database'
         });
     } catch (error) {
         console.error('deleteEmployee error:', error);
@@ -494,13 +371,8 @@ const deleteEmployee = async (req, res) => {
 
 module.exports = {
     getEmployees,
-    getEmployeeById,
     createEmployee,
     updateEmployee,
     updateEmployeeStatus,
-    deleteEmployee,
-    linkUserToEmployee,
-    getEmployeeDocuments,
-    addEmployeeDocument,
-    deleteEmployeeDocument
+    deleteEmployee
 };

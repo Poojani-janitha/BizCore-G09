@@ -1,3 +1,11 @@
+/**
+ * HR MODULE ASSOCIATIONS:
+ * Defines the relational mappings between HR models using Sequelize.
+ * Centralizes connections for:
+ * - Employee <-> User (System Access)
+ * - Employee <-> Attendance/Leaves (Operational Logs)
+ * - Employee <-> Payroll/SalaryStructure/Advances (Financial Logs)
+ */
 const User = require('../user/User');
 const Employee = require('./Employee');
 const EmployeeLeave = require('./EmployeeLeave');
