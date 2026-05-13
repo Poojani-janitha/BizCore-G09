@@ -84,6 +84,8 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
     const calculateLineTotal = (item) => calculateLineSubtotal(item) + calculateLineTaxAmount(item);
 
 
+
+    //run calculation when tempItem changes to update the computed fields (subtotal, tax amount, total) in real-time as the user inputs data for the item being added to the cart. This ensures that the user sees accurate calculations based on their current inputs before they add the item to the cart.
     const currentEntryTaxAmount = useMemo(() => calculateLineTaxAmount(tempItem), [tempItem]);
     const currentEntryTotal = useMemo(() => calculateLineTotal(tempItem), [tempItem]);
 
@@ -94,7 +96,8 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         if (!value.trim()) {
             setSearchResults([]);
             // Reset inputs when search is cleared
-            setTempItem((prev) => ({ ...prev, discount: 0, quntity: 0, tax: 0, free: 0 }));
+           // setTempItem((prev) => ({ ...prev, discount: 0, quntity: 1, tax: 0, free: 0 }));
+           setTempItem(EMPTY_ITEM);
             return;
         }
 
