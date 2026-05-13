@@ -278,10 +278,33 @@ const POS = () => {
         return;
       }
 
-    
+      const accessToken = localStorage.getItem('token');
+      if (!accessToken) {
+        setError({ field: 'general', message: 'You are not logged in. Please sign in again before saving the sale.' });
+        setAction({});
+        return;
+      }
 
-      try {
-        const response = await axios.post(`http://localhost:5000/api/sales/`, {
+      const refreshAccessToken = async () => {
+        const refreshToken = localStorage.getItem('refresh_token');
+        if (!refreshToken) {
+          return null;
+        }
+
+        const refreshResponse = await axios.post('http://localhost:5000/api/users/refresh', {
+          refresh_token: refreshToken
+        });
+
+        if (refreshResponse.data?.success && refreshResponse.data.access_token) {
+          localStorage.setItem('token', refreshResponse.data.access_token);
+          return refreshResponse.data.access_token;
+        }
+
+        return null;
+      };
+
+      const submitSale = async (token) => {
+        return axios.post(`http://localhost:5000/api/sales/`, {
           customer: customerData,
           items: cartItems,
           invoiceDetails: { ...invoiceData, invoiceNo: invoiceNo },
@@ -290,7 +313,31 @@ const POS = () => {
           saleType: priceLevel === 'Retail' ? 'Retail' : 'Wholesale',
           location: location,
           action: action
+        }, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         });
+      };
+
+    
+
+      try {
+        let response;
+        try {
+          response = await submitSale(accessToken);
+        } catch (saleError) {
+          const status = saleError?.response?.status;
+          if (status === 401) {
+            const freshToken = await refreshAccessToken();
+            if (!freshToken) {
+              throw saleError;
+            }
+            response = await submitSale(freshToken);
+          } else {
+            throw saleError;
+          }
+        }
 
 
         // Attempt print, but don't let it block the form reset

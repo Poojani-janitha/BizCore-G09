@@ -1,5 +1,5 @@
 const sequelize = require('../../config/db');
-const { Product, UnitConversion, Sale,Inventory, Customer,Payment,SaleItem, CreditTranscation } = require('../../models/index');
+const { Product, UnitConversion, Sale, Inventory, Customer, Payment, SaleItem, CreditTranscation, StockMovement } = require('../../models/index');
 const { Op, where } = require('sequelize');
 
 const searchProducts = async (req, res) => {
@@ -280,6 +280,12 @@ const postSalesData = async (req, res) => {
     const t = await sequelize.transaction();
     try {
         const { customer: customerReq, items, invoiceDetails, paymentDetails, action, saleType, priceLevel, location } = req.body;
+        const createdBy = req.user?.sub;
+
+        if (!createdBy) {
+            await t.rollback();
+            return res.status(401).json({ success: false, message: 'Authenticated user id is required' });
+        }
 
 
         const resolvedSaleType = saleType || invoiceDetails?.saleType || 'Retail';
@@ -476,6 +482,24 @@ const postSalesData = async (req, res) => {
                 by: baseUnitQty, 
                 transaction: t 
             });
+
+            const updatedQtyAfterSale = currentQty - baseUnitQty;
+
+            await StockMovement.create({
+                P_ID: item.p_id,
+                PR_ID: item.pr_id || null,
+                Location: saleItem.Location_Taken_From,
+                Movement_Type: 'Sale',
+                Qty_In: 0,
+                Qty_Out: baseUnitQty,
+                Balance_After: updatedQtyAfterSale,
+                Ref_Type: 'Sales',
+                Ref_ID: sale.Sale_Id,
+                Move_Date: saleDate,
+                Move_Time: saleTime,
+                Notes: `Sale invoice ${sale.Invoice_No} - ${item.p_name || item.p_code || 'Item'}`,
+                Created_By: createdBy
+            }, { transaction: t });
 
 
 

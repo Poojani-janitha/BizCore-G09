@@ -4,6 +4,7 @@ const Production = require('./inventory/Production');
 const Inventory = require('./inventory/Inventory');
 const StockTransfer = require('./inventory/StockTransfer');
 const StockAdjustment = require('./inventory/StockAdjustment');
+const StockMovement = require('./inventory/StockMovement');
 const UnitConversion = require('./inventory/UnitConversion');
 const ProductReturn = require('./inventory/ProductReturn');
 const Supplier = require('./supplier/Supplier');
@@ -80,6 +81,7 @@ module.exports = {
     Inventory,
     StockTransfer,
     StockAdjustment,
+    StockMovement,
     UnitConversion,
     ProductReturn,
     Supplier,
