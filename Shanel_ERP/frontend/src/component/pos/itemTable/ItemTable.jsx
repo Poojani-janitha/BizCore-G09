@@ -30,6 +30,12 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
     const [availableQuantity, setAvailableQuantity] = useState(null); // Available quantity for the selected product
     const searchInputRef = useRef(null);
 
+    const getCartBaseQtyForProduct = (productId, excludeItemId = null) => {
+        return cartItems
+            .filter(item => item.p_id === productId && item.id !== excludeItemId)
+            .reduce((sum, item) => sum + (toNumber(item.quntity) * (item.conversionFactor || 1)), 0);
+    };
+
     // Fetch all units for the selected product
     useEffect(() => {
         const handleAllUnits = async () => {
@@ -84,6 +90,8 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
     const calculateLineTotal = (item) => calculateLineSubtotal(item) + calculateLineTaxAmount(item);
 
 
+
+    //run calculation when tempItem changes to update the computed fields (subtotal, tax amount, total) in real-time as the user inputs data for the item being added to the cart. This ensures that the user sees accurate calculations based on their current inputs before they add the item to the cart.
     const currentEntryTaxAmount = useMemo(() => calculateLineTaxAmount(tempItem), [tempItem]);
     const currentEntryTotal = useMemo(() => calculateLineTotal(tempItem), [tempItem]);
 
@@ -94,7 +102,8 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         if (!value.trim()) {
             setSearchResults([]);
             // Reset inputs when search is cleared
-            setTempItem((prev) => ({ ...prev, discount: 0, quntity: 0, tax: 0, free: 0 }));
+           // setTempItem((prev) => ({ ...prev, discount: 0, quntity: 1, tax: 0, free: 0 }));
+           setTempItem(EMPTY_ITEM);
             return;
         }
 
@@ -199,21 +208,21 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         const newItemQtyInBaseUnit = toNumber(tempItem.quntity) * (tempItem.conversionFactor || 1);
         
         // Calculate total quantity already in cart for this product (in base unit)
-        const totalInCartBaseUnit = cartItems
-            .filter(item => item.p_id === tempItem.p_id)
-            .reduce((sum, item) => {
-                const itemQtyInBase = toNumber(item.quntity) * (item.conversionFactor || 1);
-                return sum + itemQtyInBase;
-            }, 0);
+        const totalInCartBaseUnit = getCartBaseQtyForProduct(tempItem.p_id);
 
         // Total would be if we add this item
         const totalAfterAdd = totalInCartBaseUnit + newItemQtyInBaseUnit;
 
         // Check against available quantity
         if (availableQuantity !== null && totalAfterAdd > availableQuantity) {
+            const remainingQty = Math.max(0, availableQuantity - totalInCartBaseUnit);
+            const baseUnitName = tempItem.base_unit_name || 'base unit';
+           
             setError({
                 field: 'general',
-                message: `Only ${availableQuantity} ${tempItem.base_unit_name} available in stock, ${tempItem.quntity} ${tempItem.p_unit} needs ${newItemQtyInBaseUnit} ${tempItem.base_unit_name}`
+                message: totalInCartBaseUnit > 0
+                    ? `Your cart already has ${totalInCartBaseUnit} ${baseUnitName} of ${tempItem.p_name}. You entered ${tempItem.quntity} ${tempItem.p_unit} (${newItemQtyInBaseUnit} ${baseUnitName}), but only ${remainingQty} ${baseUnitName} is still available in ${location}.`
+                    : `Only ${availableQuantity} ${baseUnitName} available in ${location}. You entered ${tempItem.quntity} ${tempItem.p_unit} (${newItemQtyInBaseUnit} ${baseUnitName}).`
             });
             return;
         }
@@ -241,9 +250,17 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
             const numQty = toNumber(value);
             const conversionFactor = item.conversionFactor || 1;
             const convertedQty = numQty * conversionFactor;
+            const otherCartBaseQty = getCartBaseQtyForProduct(item.p_id, item.id);
+            const remainingQty = availableQuantity !== null ? Math.max(0, availableQuantity - otherCartBaseQty) : null;
 
-            if (availableQuantity !== null && item.p_id === (tempItem.p_id || selectedProduct?.p_id) && convertedQty > availableQuantity) {
-                setError({ field: 'general', message: `Only ${availableQuantity} units available in ${location} stock` });
+            if (remainingQty !== null && item.p_id === (tempItem.p_id || selectedProduct?.p_id) && convertedQty > remainingQty) {
+                const baseUnitName = item.base_unit_name || tempItem.base_unit_name || 'base unit';
+                setError({
+                    field: 'general',
+                    message: otherCartBaseQty > 0
+                        ? `Your cart already has ${otherCartBaseQty} ${baseUnitName} of ${item.p_name}. You entered ${numQty} ${item.p_unit} (${convertedQty} ${baseUnitName}), but only ${remainingQty} ${baseUnitName} is still available in ${location}.`
+                        : `Only ${availableQuantity} ${baseUnitName} available in ${location}. You entered ${numQty} ${item.p_unit} (${convertedQty} ${baseUnitName}).`
+                });
                 // Reset to 0 to prevent bypassing validation
                 updatedCart[index][field] = 0;
             } else {
@@ -355,6 +372,8 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         setTempItem((prev) => {
             const conversionFactor = prev.conversionFactor || 1;
             const convertedQty = numQty * conversionFactor; // Convert to base unit quantity for comparison
+            const alreadyInCartBaseQty = getCartBaseQtyForProduct(prev.p_id || selectedProduct?.p_id);
+            const remainingQty = availableQuantity !== null ? Math.max(0, availableQuantity - alreadyInCartBaseQty) : null;
 
             console.log('Qty Change Details:', {
                 inputQty: qty,
@@ -362,11 +381,18 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                 conversionFactor,
                 convertedQty,
                 availableQuantity,
+                alreadyInCartBaseQty,
                 hasError: availableQuantity !== null && convertedQty > availableQuantity
             });
 
-            if (availableQuantity !== null && convertedQty > availableQuantity) {
-                setError({ field: 'general', message: `Only ${availableQuantity} units available in ${location} stock` });
+            if (remainingQty !== null && convertedQty > remainingQty) {
+                const baseUnitName = prev.base_unit_name || 'base unit';
+                setError({
+                    field: 'general',
+                    message: alreadyInCartBaseQty > 0
+                        ? `Your cart already has ${alreadyInCartBaseQty} ${baseUnitName} of ${prev.p_name || 'this item'}. You entered ${numQty} ${prev.p_unit || 'unit'} (${convertedQty} ${baseUnitName}), but only ${remainingQty} ${baseUnitName} is still available in ${location}.`
+                        : `Only ${availableQuantity} ${baseUnitName} available in ${location}. You entered ${numQty} ${prev.p_unit || 'unit'} (${convertedQty} ${baseUnitName}).`
+                });
                 return { ...prev, quntity: 0 };
             } else {
                 if (error?.message?.includes('available')) {
