@@ -114,6 +114,8 @@ export default function Payroll() {
   const [adjData, setAdjData] = useState({ epf: 0, etf: 0, advance: 0, otherDeductions: 0, otherAllowances: 0, deductionReason: '', allowanceReason: '' });
   const [loading, setLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [monthlyHistory, setMonthlyHistory] = useState([]);
+  const [modalMonth, setModalMonth] = useState('');
 
 
 
@@ -563,6 +565,8 @@ export default function Payroll() {
       const leaves = leavesRes.data.data || [];
 
       const days = [];
+      const todayStr = new Date().toISOString().split('T')[0];
+
       for (let i = 1; i <= lastDay; i++) {
         const dateStr = `${year}-${month}-${String(i).padStart(2, '0')}`;
         const match = existing.find(a => a.Attendance_Date === dateStr);
@@ -571,14 +575,31 @@ export default function Payroll() {
         days.push({
           date: dateStr,
           day: i,
-          cards: leaveMatch ? 0 : (match?.Cards_Produced || 0),
+          cards: leaveMatch ? 0 : (match?.Cards_Produced ?? 0),
           status: leaveMatch ? 'Leave' : (match?.Status || 'Absent'),
-          isLeave: !!leaveMatch
+          isLeave: !!leaveMatch,
+          hasTimeIn: !!match?.Check_In_Time
         });
       }
 
       setDailyCardsData(days);
       setSelectedEmpForCards(emp);
+      
+      // Fetch historical totals for the last 12 months for the "Monthly History" view
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      const histRes = await axios.get(`${API_BASE}/attendance`, {
+        params: { employeeId: emp.id, from: oneYearAgo.toISOString().split('T')[0] }
+      });
+      
+      const historyMap = {};
+      (histRes.data.data || []).forEach(att => {
+        const m = att.Attendance_Date.substring(0, 7);
+        historyMap[m] = (historyMap[m] || 0) + (att.Cards_Produced || 0);
+      });
+      setMonthlyHistory(Object.entries(historyMap).sort((a,b) => b[0].localeCompare(a[0])));
+
+      setModalMonth(selectedMonth);
       setShowHistory(false);
       setShowCardsModal(true);
     } catch (error) {
@@ -588,6 +609,54 @@ export default function Payroll() {
       setLoading(false);
     }
   };
+
+  // Re-fetch daily data if the month is changed WITHIN the modal
+  useEffect(() => {
+    if (showCardsModal && modalMonth && selectedEmpForCards) {
+      const refreshModalData = async () => {
+        try {
+          const [year, month] = modalMonth.split('-');
+          const firstDay = `${year}-${month}-01`;
+          const lastDayDate = new Date(year, month, 0);
+          const lastDayStr = lastDayDate.toISOString().split('T')[0];
+          const lastDay = lastDayDate.getDate();
+
+          const [attRes, leavesRes] = await Promise.all([
+            axios.get(`${API_BASE}/attendance`, {
+              params: { employeeId: selectedEmpForCards.id, from: firstDay, to: lastDayStr }
+            }),
+            axios.get(`${API_BASE}/leaves`, {
+              params: { employeeId: selectedEmpForCards.id, from: firstDay, to: lastDayStr, status: 'Approved' }
+            })
+          ]);
+
+          const existing = attRes.data.data || [];
+          const leaves = leavesRes.data.data || [];
+          const todayStr = new Date().toISOString().split('T')[0];
+
+          const days = [];
+          for (let i = 1; i <= lastDay; i++) {
+            const dateStr = `${year}-${month}-${String(i).padStart(2, '0')}`;
+            const match = existing.find(a => a.Attendance_Date === dateStr);
+            const leaveMatch = leaves.find(l => l.Start_Date <= dateStr && l.End_Date >= dateStr);
+
+            days.push({
+              date: dateStr,
+              day: i,
+              cards: leaveMatch ? 0 : (match?.Cards_Produced ?? 0),
+              status: leaveMatch ? 'Leave' : (match?.Status || 'Absent'),
+              isLeave: !!leaveMatch,
+              hasTimeIn: !!match?.Check_In_Time
+            });
+          }
+          setDailyCardsData(days);
+        } catch (err) {
+          console.error('refreshModalData error:', err);
+        }
+      };
+      refreshModalData();
+    }
+  }, [modalMonth, showCardsModal]);
 
   const saveDailyCards = async () => {
     try {
@@ -873,6 +942,12 @@ export default function Payroll() {
                 <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>{selectedEmpForCards?.employeeName} - {selectedMonth}</p>
               </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <input 
+                  type="month" 
+                  value={modalMonth}
+                  onChange={(e) => setModalMonth(e.target.value)}
+                  style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 600, color: '#1e3a5f', outline: 'none' }}
+                />
                 {!showHistory && (
                   <button 
                     onClick={() => setShowHistory(true)}
@@ -886,14 +961,18 @@ export default function Payroll() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: showHistory ? 'repeat(auto-fill, minmax(120px, 1fr))' : '1fr', gap: '12px', marginBottom: '32px' }}>
-              {!showHistory && !dailyCardsData.some(d => d.date === new Date().toLocaleDateString('en-CA')) && (
+              {!showHistory && !dailyCardsData.some(d => d.date === new Date().toISOString().split('T')[0]) && (
                 <div style={{ padding: '32px', textAlign: 'center', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
                   <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>Today's date is not in the selected month ({selectedMonth}).</p>
                   <button onClick={() => setShowHistory(true)} style={{ marginTop: '12px', background: 'none', border: 'none', color: '#0d9488', fontWeight: 700, cursor: 'pointer', fontSize: '14px' }}>View Full Card History</button>
                 </div>
               )}
-              {dailyCardsData.filter(d => showHistory || d.date === new Date().toLocaleDateString('en-CA')).map((day) => {
-                const isToday = day.date === new Date().toLocaleDateString('en-CA');
+              {dailyCardsData.filter(d => {
+                const todayStr = new Date().toISOString().split('T')[0];
+                if (!showHistory) return d.date === todayStr;
+                return d.date <= todayStr;
+              }).map((day) => {
+                const isToday = day.date === new Date().toISOString().split('T')[0];
                 const originalIdx = dailyCardsData.findIndex(d => d.date === day.date);
                 
                 return (
@@ -912,49 +991,81 @@ export default function Payroll() {
                       type="number"
                       min="0"
                       value={day.cards || ''}
-                      disabled={day.isLeave || (showHistory && !isToday)}
+                      disabled={day.status !== 'Present'}
                       onChange={(e) => {
                         const newData = [...dailyCardsData];
                         newData[originalIdx].cards = parseInt(e.target.value) || 0;
-                        if (newData[originalIdx].cards > 0 && (newData[originalIdx].status === 'Absent' || !newData[originalIdx].status)) {
-                          newData[originalIdx].status = 'Present';
-                        }
                         setDailyCardsData(newData);
                       }}
                       style={{
                         width: '100%', padding: '8px', borderRadius: '8px',
                         border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: 700,
                         textAlign: 'center', outline: 'none',
-                        background: (day.isLeave || (showHistory && !isToday)) ? '#f1f5f9' : '#fff',
-                        color: (day.isLeave || (showHistory && !isToday)) ? '#94a3b8' : '#1e3a5f'
+                        background: (day.status !== 'Present' || (showHistory && !isToday)) ? '#f1f5f9' : '#fff',
+                        color: (day.status !== 'Present' || (showHistory && !isToday)) ? '#94a3b8' : '#1e3a5f'
                       }}
                     />
                     <div style={{ marginTop: '8px', display: 'flex', gap: '4px' }}>
-                      <select
-                        value={day.status}
-                        disabled={day.isLeave || (showHistory && !isToday)}
-                        onChange={(e) => {
-                          const newData = [...dailyCardsData];
-                          newData[originalIdx].status = e.target.value;
-                          setDailyCardsData(newData);
-                        }}
-                        style={{
-                          width: '100%', fontSize: '10px', padding: '4px', borderRadius: '4px',
-                          border: 'none', background: day.isLeave ? '#dcfce7' : '#e2e8f0',
-                          fontWeight: 600, color: day.isLeave ? '#166534' : '#1e293b'
-                        }}
-                      >
-                        <option value="Present">Present</option>
-                        <option value="Absent">Absent</option>
-                        <option value="Leave">Leave</option>
-                      </select>
+                      <div style={{
+                        width: '100%', 
+                        fontSize: '10px', 
+                        padding: '6px', 
+                        borderRadius: '6px',
+                        textAlign: 'center',
+                        background: day.status === 'Present' ? '#dcfce7' : 
+                                   day.status === 'Leave' ? '#fef3c7' : '#fee2e2',
+                        fontWeight: 700, 
+                        color: day.status === 'Present' ? '#166534' : 
+                               day.status === 'Leave' ? '#92400e' : '#991b1b',
+                        border: '1px solid rgba(0,0,0,0.05)',
+                        opacity: 0.9,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.02em'
+                      }}>
+                        {day.status}
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            {/* Monthly History Summary Section */}
+            {showHistory && monthlyHistory.length > 0 && (
+              <div style={{ marginTop: '24px', padding: '16px', background: '#f0fdfa', borderRadius: '12px', border: '1px solid #ccfbf1' }}>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: '#0f766e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <History size={16} /> Monthly Production Summary
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+                  {monthlyHistory.map(([month, total]) => (
+                    <div 
+                      key={month} 
+                      onClick={() => setModalMonth(month)}
+                      className="monthly-history-item"
+                      style={{ 
+                        background: modalMonth === month ? '#f0fdfa' : '#fff', 
+                        padding: '8px 12px', 
+                        borderRadius: '8px', 
+                        border: modalMonth === month ? '2px solid #0d9488' : '1px solid #e2e8f0', 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: modalMonth === month ? '0 2px 4px rgba(13,148,136,0.1)' : 'none'
+                      }}
+                    >
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: modalMonth === month ? '#0d9488' : '#475569' }}>
+                        {new Date(month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                      </span>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: '#0d9488' }}>{total} <span style={{ fontSize: '10px', fontWeight: 400 }}>Cards</span></span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '32px' }}>
               <button onClick={() => setShowCardsModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #d1d5db', background: 'white', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
               <button onClick={saveDailyCards} style={{ padding: '12px 32px', borderRadius: '12px', border: 'none', background: '#0d9488', color: 'white', fontWeight: 700, cursor: 'pointer' }}>Save Production Data</button>
             </div>

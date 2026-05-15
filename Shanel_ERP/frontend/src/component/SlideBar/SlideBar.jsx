@@ -43,9 +43,12 @@ const SlideBar = () => {
             to: '/hr',
             moduleKey: 'hr',
             subItems: [
+                { label: 'Dashboard', to: '/hr', icon: <BarChart2 size={14} /> },
                 { label: 'Employees', to: '/hr/employees', icon: <Users size={14} /> },
                 { label: 'Attendance', to: '/hr/attendance', icon: <FileText size={14} /> },
+                { label: 'Leaves', to: '/hr/leave', icon: <Archive size={14} /> },
                 { label: 'Payroll', to: '/hr/payroll', icon: <DollarSign size={14} /> },
+                { label: 'Reports', to: '/hr/reports', icon: <BarChart2 size={14} /> },
             ]
         },
         {
