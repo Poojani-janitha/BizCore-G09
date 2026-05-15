@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Plus, RotateCcw, AlertCircle, DollarSign, Eye, Edit2, Trash2 } from 'react-feather';
+import { useTranslation } from 'react-i18next';
 import { Modal, Button, Table, Badge } from 'react-bootstrap';
 import ProcessReturnModal from '../../component/Inventory/Returns/ProcessReturnModal';
 import EditReturnModal from '../../component/Inventory/Returns/EditReturnModal';
@@ -12,6 +13,8 @@ const ReturnsManagement = () => {
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedReturn, setSelectedReturn] = useState(null);
+    const { t, i18n } = useTranslation();
+    const isSinhala = i18n.language?.startsWith('si');
 
     const fetchReturns = async () => {
         setLoading(true);
@@ -65,20 +68,19 @@ const ReturnsManagement = () => {
 
     return (
         <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
-            <div className="d-flex justify-content-between align-items-center mb-3">
-                <h6 className='fw-bold text-dark mb-0'>Returns Management</h6>
+            <div className="d-flex justify-content-end align-items-center mb-3">
                 <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm"
                         onClick={() => setShowModal(true)}>
-                    <Plus size={14}/> Process Return
+                    <Plus size={14}/> {t('inventory.pages.returns.btn_new')}
                 </button>
             </div>
 
             {/* Metrics Row */}
             <div className="row g-3 mb-4">
-                <MetricCard title="Total Returns" value={returns.length} icon={<RotateCcw size={20} className="text-danger"/>} borderColor="border-danger" label="All return records" />
-                <MetricCard title="Items Restocked" value={totalGoodQty.toFixed(2)} icon={<RotateCcw size={20} className="text-primary"/>} borderColor="border-primary" label="Good items added back" />
-                <MetricCard title="Customer Returns" value={customerReturnsCount} icon={<AlertCircle size={20} className="text-info"/>} borderColor="border-info" label="From customers" />
-                <MetricCard title="Total Refund Value" value={`LKR ${totalRefund.toLocaleString()}`} icon={<DollarSign size={20} className="text-success"/>} borderColor="border-success" label="Total refunded" />
+                <MetricCard title={t('inventory.pages.returns.metric_total')} value={returns.length} icon={<RotateCcw size={20} className="text-danger"/>} borderColor="border-danger" label={t('inventory.pages.returns.metric_total_label')} />
+                <MetricCard title={t('inventory.pages.returns.metric_restocked')} value={totalGoodQty.toFixed(2)} icon={<RotateCcw size={20} className="text-primary"/>} borderColor="border-primary" label={t('inventory.pages.returns.metric_restocked_label')} />
+                <MetricCard title={t('inventory.pages.returns.metric_customer')} value={customerReturnsCount} icon={<AlertCircle size={20} className="text-info"/>} borderColor="border-info" label={t('inventory.pages.returns.metric_customer_label')} />
+                <MetricCard title={t('inventory.pages.returns.metric_refund')} value={`LKR ${totalRefund.toLocaleString()}`} icon={<DollarSign size={20} className="text-success"/>} borderColor="border-success" label={t('inventory.pages.returns.metric_refund_label')} />
             </div>
 
             {/* Return Logs Table */}
@@ -87,15 +89,15 @@ const ReturnsManagement = () => {
                     <table className="table table-hover align-middle mb-0" style={{ fontSize: '13px' }}>
                         <thead>
                             <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
-                                <th className='text-uppercase py-3 px-4 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '7%' }}>Return ID</th>
-                                <th className='text-uppercase py-3 px-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '9%' }}>Date</th>
-                                <th className='text-uppercase py-3 px-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '14%' }}>Invoice & Customer</th>
-                                <th className='text-uppercase py-3 px-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '14%' }}>Product</th>
-                                <th className='text-uppercase py-3 px-4 text-end' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '10%' }}>Quantity</th>
-                                <th className='text-uppercase py-3 px-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '8%' }}>Type</th>
-                                <th className='text-uppercase py-3 px-4 text-end' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '12%' }}>Refund</th>
-                                <th className='text-uppercase py-3 px-4 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '10%' }}>Status</th>
-                                <th className='text-uppercase py-3 px-4 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '16%' }}>Actions</th>
+                                <th className='text-uppercase py-3 px-4 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '7%' }}>{t('inventory.pages.returns.col_return_id')}</th>
+                                <th className='text-uppercase py-3 px-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '9%' }}>{t('inventory.pages.returns.col_date')}</th>
+                                <th className='text-uppercase py-3 px-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '14%' }}>{t('inventory.pages.returns.col_invoice')}</th>
+                                <th className='text-uppercase py-3 px-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '14%' }}>{t('inventory.pages.returns.col_product')}</th>
+                                <th className='text-uppercase py-3 px-4 text-end' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '10%' }}>{t('inventory.pages.returns.col_quantity')}</th>
+                                <th className='text-uppercase py-3 px-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '8%' }}>{t('inventory.pages.returns.col_type')}</th>
+                                <th className='text-uppercase py-3 px-4 text-end' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '12%' }}>{t('inventory.pages.returns.col_refund')}</th>
+                                <th className='text-uppercase py-3 px-4 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '10%' }}>{t('inventory.pages.returns.col_status')}</th>
+                                <th className='text-uppercase py-3 px-4 text-center' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '16%' }}>{t('inventory.pages.returns.col_actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -108,7 +110,7 @@ const ReturnsManagement = () => {
                                         <small className="text-muted">{ret.C_Name || 'Unknown'}</small>
                                     </td>
                                     <td className="px-4 py-3">
-                                        <div className="fw-bold text-dark">{ret.P_Name || 'Unknown Product'}</div>
+                                        <div className="fw-bold text-dark">{(isSinhala && ret.P_Name_Sinhala) ? ret.P_Name_Sinhala : (ret.P_Name || 'Unknown Product')}</div>
                                         <small className="text-muted">{ret.P_Code}</small>
                                     </td>
                                     <td className="px-4 py-3 text-end">

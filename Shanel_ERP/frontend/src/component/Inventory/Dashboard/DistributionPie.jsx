@@ -1,14 +1,24 @@
 import React from 'react';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 const DistributionPie = ({ data = [] }) => {
+  const { t } = useTranslation();
   const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+  const chartData = Array.isArray(data)
+    ? data
+        .map(item => ({
+          name: item.name || 'Unknown',
+          value: Number(item.value) || 0
+        }))
+        .filter(item => item.value > 0)
+    : [];
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
-      const value = payload[0].value;
-      const total = data.reduce((sum, item) => sum + item.value, 0);
-      const percentage = ((value / total) * 100).toFixed(1);
+      const value = Number(payload[0].value) || 0;
+      const total = chartData.reduce((sum, item) => sum + item.value, 0);
+      const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
       
       return (
         <div className="bg-white border border-2 rounded-2 p-2 shadow-sm" style={{ fontSize: '12px' }}>
@@ -28,17 +38,17 @@ const DistributionPie = ({ data = [] }) => {
     <div className="card border-0 shadow-sm rounded-3 h-100 bg-white">
       <div className="pt-4 px-4">
         <div>
-          <h6 className="mb-1 fw-bold text-dark">Inventory Distribution</h6>
-          <p className="text-muted mb-0 small">Stock breakdown by category</p>
+          <h6 className="mb-1 fw-bold text-dark">{t('inventory.dashboard.distribution.title')}</h6>
+          <p className="text-muted mb-0 small">{t('inventory.dashboard.distribution.subtitle')}</p>
         </div>
       </div>
 
-      {data.length > 0 ? (
+      {chartData.length > 0 ? (
         <>
           <ResponsiveContainer width="100%" height={280}>
             <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
               <Pie 
-                data={data} 
+                data={chartData} 
                 innerRadius={50} 
                 outerRadius={90} 
                 paddingAngle={2} 
@@ -46,7 +56,7 @@ const DistributionPie = ({ data = [] }) => {
                 startAngle={90}
                 endAngle={-270}
               >
-                {data.map((entry, index) => (
+                {chartData.map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`} 
                     fill={COLORS[index % COLORS.length]}
@@ -61,7 +71,7 @@ const DistributionPie = ({ data = [] }) => {
           {/* Legend */}
           <div className="px-4 pb-3">
             <div className="d-flex flex-wrap gap-2">
-              {data.map((item, index) => (
+              {chartData.map((item, index) => (
                 <div key={index} className="d-flex align-items-center gap-2" style={{ fontSize: '12px' }}>
                   <div 
                     className="rounded-circle"
@@ -80,7 +90,7 @@ const DistributionPie = ({ data = [] }) => {
         </>
       ) : (
         <div className="text-center py-5 text-muted">
-          <p className="small mb-0">No distribution data available</p>
+          <p className="small mb-0">{t('inventory.dashboard.distribution.no_data')}</p>
         </div>
       )}
     </div>

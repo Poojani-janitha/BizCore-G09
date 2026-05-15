@@ -5,10 +5,15 @@ const StockTransfer = require('./StockTransfer');
 const StockAdjustment = require('./StockAdjustment');
 const UnitConversion = require('./UnitConversion');
 const ProductReturn = require('./ProductReturn');
+const Supplier = require('./Supplier');
 const User = require('../user/User');
 
 module.exports = () => {
     // ===== PRODUCT ASSOCIATIONS =====
+    
+    // Product <-> Supplier (One Product belongs to One Supplier)
+    Product.belongsTo(Supplier, { foreignKey: 'S_ID', as: 'supplier' });
+    Supplier.hasMany(Product, { foreignKey: 'S_ID', as: 'products' });
     
     // Product <-> Inventory (One Product has Many Inventory Records)
     Product.hasMany(Inventory, { foreignKey: 'P_ID', as: 'inventories' });

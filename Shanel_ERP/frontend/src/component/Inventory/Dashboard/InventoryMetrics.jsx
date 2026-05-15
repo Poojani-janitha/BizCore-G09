@@ -1,51 +1,53 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Package, Store, AlertTriangle, BoxIcon, TrendingUp, TrendingDown } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 const InventoryMetrics = ({ metrics = {} }) => {
     const navigate = useNavigate()
+    const { t } = useTranslation()
 
     const cardData = [
         {
-            title: "Company Items",
+            title: t('inventory.dashboard.metrics.company_items'),
             value: metrics?.companyItems || '0',
-            label: 'Items in catalog',
+            label: t('inventory.dashboard.metrics.company_items_label'),
             icon: <Package className="text-primary" size={20} />,
             color: 'border-primary',
             trend: metrics?.companyItemsTrend || 0,
             onClick: () => navigate('/inventory/company-items')
         },
         { 
-            title: 'Other Items', 
+            title: t('inventory.dashboard.metrics.other_items'),
             value: metrics?.otherItems || '0', 
-            label: 'Other products', 
+            label: t('inventory.dashboard.metrics.other_items_label'),
             icon: <BoxIcon className="text-info" size={20} />,
             color: 'border-info',
             trend: metrics?.otherItemsTrend || 0,
             onClick: () => navigate('/inventory/other-items')
         },
         {
-            title: 'Production Stock', 
+            title: t('inventory.dashboard.metrics.production_stock'),
             value: Math.round(metrics?.productionStock) || '0', 
-            label: 'Units in production', 
+            label: t('inventory.dashboard.metrics.production_stock_label'),
             icon: <Package className="text-success" size={20} />,
             color: 'border-success',
             trend: metrics?.productionTrend || 0,
             onClick: () => navigate('/inventory/production-stock')
         },
         {
-            title: 'Sales Stock', 
+            title: t('inventory.dashboard.metrics.sales_stock'),
             value: Math.round(metrics?.salesStock) || '0', 
-            label: 'Units in store', 
+            label: t('inventory.dashboard.metrics.sales_stock_label'),
             icon: <Store className="text-warning" size={20} />,
             color: 'border-warning',
             trend: metrics?.salesTrend || 0,
             onClick: () => navigate('/inventory/salesStock')
         },
         {
-            title: 'Alerts', 
+            title: t('inventory.dashboard.metrics.alerts'),
             value: metrics?.alertsCount || '0', 
-            label: 'Requires attention', 
+            label: t('inventory.dashboard.metrics.alerts_label'),
             icon: <AlertTriangle className="text-danger" size={20} />,
             color: 'border-danger',
             trend: 0,

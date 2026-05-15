@@ -41,8 +41,11 @@ router.get("/dashboard-stats", async (req, res) => {
         const [[{ alertsCount }]] = await db.query('SELECT COUNT(*) as alertsCount FROM STOCK_ALERT_LOGS WHERE Status = "Active"');
         const [[{ productionStock }]] = await db.query('SELECT SUM(Qty) as productionStock FROM INVENTORY WHERE Location = "Production"');
         const [[{ storeStock }]] = await db.query('SELECT SUM(Qty) as storeStock FROM INVENTORY WHERE Location = "Store"');
+        const [[{ companyItems }]] = await db.query('SELECT COUNT(*) as companyItems FROM PRODUCT WHERE P_Type = "Company"');
+        const [[{ otherItems }]] = await db.query('SELECT COUNT(*) as otherItems FROM PRODUCT WHERE P_Type = "Other"');
 
     res.json({ 
+        success: true,
         stockLevel, 
         distribution, 
         alerts, 
@@ -52,6 +55,8 @@ router.get("/dashboard-stats", async (req, res) => {
             alertsCount,
             productionStock: productionStock || 0, // Handle null case
             storeStock: storeStock || 0, // Handle null case
+            companyItems: companyItems || 0,
+            otherItems: otherItems || 0,
             pendingOrders: 1 // Hardcoded for now until you build the Order module
         }
     });
