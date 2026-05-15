@@ -5,14 +5,18 @@ module.exports = {
     try {
       console.log('🔄 Adding Cheque_Ref column to payment table...');
       
-      await queryInterface.addColumn('payment', 'Cheque_Ref', {
-        type: Sequelize.STRING(100),
-        allowNull: true,
-        comment: 'Reference for cheque payment',
-        after: 'Cheque_Delivered_By'
-      });
-      
-      console.log('✅ Cheque_Ref column added successfully!');
+      const tableInfo = await queryInterface.describeTable('payment');
+      if (!tableInfo.Cheque_Ref) {
+        await queryInterface.addColumn('payment', 'Cheque_Ref', {
+          type: Sequelize.STRING(100),
+          allowNull: true,
+          comment: 'Reference for cheque payment',
+          after: 'Cheque_Delivered_By'
+        });
+        console.log('✅ Cheque_Ref column added successfully!');
+      } else {
+        console.log('⚠️ Cheque_Ref column already exists, skipping...');
+      }
     } catch (error) {
       console.error('❌ Error adding Cheque_Ref column:', error.message);
       throw error;

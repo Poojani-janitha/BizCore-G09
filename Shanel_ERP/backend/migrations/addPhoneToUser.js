@@ -24,4 +24,4 @@ module.exports = {
     }
 };
 
-
+// npx sequelize-cli db:migrate --to migration-file-name.js
