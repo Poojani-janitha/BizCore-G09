@@ -29,8 +29,7 @@ const {
 
 const {
     getAttendance,
-    bulkAttendance,
-    deleteAttendance
+    bulkAttendance
 } = require('../../controllers/hr/attendanceController');
 
 const {
@@ -58,7 +57,7 @@ router.patch('/leaves/:leaveId/reject', rejectLeave);
 // --- Attendance ---
 router.get('/attendance', getAttendance);
 router.post('/attendance/bulk', bulkAttendance);
-router.delete('/attendance/:attendanceId', deleteAttendance);
+
 
 // --- Payroll ---
 router.post('/payroll/mail-to-bank', mailPayrollToBank);

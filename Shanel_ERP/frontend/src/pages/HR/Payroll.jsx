@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Calculator, Send, Download, CheckCircle, AlertCircle, Edit2, Save, X, Eye, Printer, FileText } from 'lucide-react';
+import { Calculator, Send, Download, CheckCircle, AlertCircle, Edit2, Save, X, Eye, Printer, FileText, History } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -8,7 +8,7 @@ const API_BASE = 'http://localhost:5000/api/hr';
 
 // Salary configuration based on role
 /**
- * Helper: Retrieves salary configuration (base, rates, bonus rules) based on employee role.
+ * Retrieves salary configuration (base, rates, bonus rules) based on employee role.
  */
 const getSalaryConfig = (role) => {
   const configs = {
@@ -72,7 +72,7 @@ const calculateSalary = (config, role, stats, cardsMade = 0) => {
 
   const grossSalary = basicSalary + productionEarnings + overtimeEarnings + attendanceBonus + teaAllowance + otherAllowances;
 
-  const totalDeductions = epfDeduction + etfDeduction + advanceDeduction + otherDeductions; 
+  const totalDeductions = epfDeduction + etfDeduction + advanceDeduction + otherDeductions;
   const netSalary = grossSalary - totalDeductions;
 
   return {
@@ -113,6 +113,7 @@ export default function Payroll() {
   const [selectedEmpForAdj, setSelectedEmpForAdj] = useState(null);
   const [adjData, setAdjData] = useState({ epf: 0, etf: 0, advance: 0, otherDeductions: 0, otherAllowances: 0, deductionReason: '', allowanceReason: '' });
   const [loading, setLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
 
 
@@ -121,7 +122,7 @@ export default function Payroll() {
  * Helper: Calculates daily tea cost for an employee record.
  * Logic: Rs 60 standard, Rs 450 if working past 5 PM. Excludes specific roles.
  */
-const getDailyTeaCost = (rec, role) => {
+  const getDailyTeaCost = (rec, role) => {
     if (rec.Status !== 'Present' || !rec.Check_In_Time || !rec.Check_Out_Time) return 0;
     const roleText = String(role || '').toLowerCase();
     if (roleText.includes('cashier') || roleText.includes('manager') || roleText.includes('admin')) return 0;
@@ -129,11 +130,11 @@ const getDailyTeaCost = (rec, role) => {
     const [inH, inM] = rec.Check_In_Time.split(':').map(Number);
     const [outH, outM] = rec.Check_Out_Time.split(':').map(Number);
     const workedHours = ((outH * 60 + outM) - (inH * 60 + inM)) / 60;
-    
+
     if (workedHours < 4) return 0;
-    
+
     const outMinutes = outH * 60 + outM;
-    return outMinutes > (17 * 60) ? 450 : 60;
+    return outMinutes > (18 * 60) ? 450 : 60;
   };
 
   // Fetch employees, payroll, and monthly attendance
@@ -141,13 +142,13 @@ const getDailyTeaCost = (rec, role) => {
  * Data Fetcher: Loads Employees, Payroll, and Attendance data from the backend.
  * Merges them into a single "combined" record format for the UI table.
  */
-const fetchPayrollData = async (monthStr) => {
+  const fetchPayrollData = async (monthStr) => {
     try {
       setLoading(true);
       const [year, month] = monthStr.split('-');
       const firstDay = `${year}-${month}-01`;
       const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
-      
+
       const [empRes, payRes, attRes] = await Promise.all([
         axios.get(`${API_BASE}/employees`, { params: { status: 'Active' } }),
         axios.get(`${API_BASE}/payroll`, { params: { month, year } }),
@@ -157,13 +158,13 @@ const fetchPayrollData = async (monthStr) => {
       const employees = Array.isArray(empRes?.data?.data) ? empRes.data.data : [];
       const dbPayrolls = Array.isArray(payRes?.data?.data) ? payRes.data.data : [];
       const attendances = Array.isArray(attRes?.data?.data) ? attRes.data.data : [];
-      
+
       // Compute monthly stats from attendance
       const statsMap = {};
       attendances.forEach(att => {
         const id = att.Employee_ID;
         if (!statsMap[id]) statsMap[id] = { daysWorked: 0, totalOtHours: 0, totalTeaCost: 0, totalCards: 0 };
-        
+
         if (att.Status === 'Present') {
           statsMap[id].daysWorked += 1;
           statsMap[id].totalOtHours += parseFloat(att.Overtime_Hours || 0);
@@ -179,20 +180,20 @@ const fetchPayrollData = async (monthStr) => {
         const dbRec = payrollMap[empId];
         const role = emp.Role || 'Staff';
         const stats = statsMap[empId] || { daysWorked: 0, totalOtHours: 0, totalTeaCost: 0, totalCards: 0 };
-        
+
         const config = getSalaryConfig(role);
         // Special case for Cashier OT rate if config doesn't have it (though it does)
         if (String(role || '').toLowerCase() === 'cashier' && !config.otRate) {
-            config.otRate = 100;
+          config.otRate = 100;
         }
 
-        const salary = calculateSalary(config, role, { 
-            ...stats, 
-            epfDeduction: parseFloat(dbRec?.EPF_Employee_Deduction || 0),
-            etfDeduction: parseFloat(dbRec?.ETF_Employee_Deduction || 0),
-            advanceDeduction: parseFloat(dbRec?.Advance_Deduction || 0),
-            otherDeductions: parseFloat(dbRec?.Other_Deductions || 0),
-            otherAllowances: parseFloat(dbRec?.Other_Allowances || 0)
+        const salary = calculateSalary(config, role, {
+          ...stats,
+          epfDeduction: parseFloat(dbRec?.EPF_Employee_Deduction || 0),
+          etfDeduction: parseFloat(dbRec?.ETF_Employee_Deduction || 0),
+          advanceDeduction: parseFloat(dbRec?.Advance_Deduction || 0),
+          otherDeductions: parseFloat(dbRec?.Other_Deductions || 0),
+          otherAllowances: parseFloat(dbRec?.Other_Allowances || 0)
         }, stats.totalCards);
 
         return {
@@ -228,7 +229,7 @@ const fetchPayrollData = async (monthStr) => {
   /**
  * Persister: Sends updated payroll data to the backend (POST for new, PUT for existing).
  */
-const persistRecord = async (recordData, newStatus) => {
+  const persistRecord = async (recordData, newStatus) => {
     const [year, month] = selectedMonth.split('-');
     const payload = {
       Employee_ID: recordData.id,
@@ -258,7 +259,7 @@ const persistRecord = async (recordData, newStatus) => {
       await axios.post(`${API_BASE}/payroll`, payload);
     }
   };
-
+  //approves a record.
   const approveRecord = async (id) => {
     const record = payrollRecords.find(r => r.id === id);
     try {
@@ -272,7 +273,7 @@ const persistRecord = async (recordData, newStatus) => {
       setLoading(false);
     }
   };
-
+  //reverts the approval status of a record.
   const revertApproval = async (id) => {
     const record = payrollRecords.find(r => r.id === id);
     try {
@@ -286,7 +287,7 @@ const persistRecord = async (recordData, newStatus) => {
       setLoading(false);
     }
   };
-
+  //opens the view modal.
   const openViewModal = (record) => {
     setSelectedEmpForView(record);
     setShowViewModal(true);
@@ -298,7 +299,7 @@ const persistRecord = async (recordData, newStatus) => {
       alert('No pending records to approve.');
       return;
     }
-    
+
     try {
       setLoading(true);
       for (const record of pendingRecords) {
@@ -322,7 +323,7 @@ const persistRecord = async (recordData, newStatus) => {
     }
 
     if (!window.confirm('Are you sure you want to reset all approved records back to pending?')) return;
-    
+
     try {
       setLoading(true);
       for (const record of approvedRecords) {
@@ -347,7 +348,7 @@ const persistRecord = async (recordData, newStatus) => {
   const pendingCount = filteredRecords.filter((r) => r.status === 'Pending').length;
   const approvedCount = filteredRecords.filter((r) => r.status === 'Approved').length;
 
-  // Helper to format month for display
+  // to format month for display
   const getFriendlyMonth = (monthStr) => {
     if (!monthStr) return '';
     const [year, month] = monthStr.split('-');
@@ -452,7 +453,7 @@ const persistRecord = async (recordData, newStatus) => {
   /**
  * Export Helper: Generates a paysheet PDF and calls the backend email API to send it to the bank.
  */
-const handleMailToBank = async () => {
+  const handleMailToBank = async () => {
     if (!bankDetails.recipientEmail || !bankDetails.bankName) {
       alert('Please enter bank name and recipient email.');
       return;
@@ -518,15 +519,15 @@ const handleMailToBank = async () => {
     const friendlyMonth = getFriendlyMonth(selectedMonth);
     const headers = ['Employee Code', 'Employee Name', 'Role', 'Gross Salary', 'EPF', 'ETF', 'Advance', 'Other Ded', 'Net Salary', 'Status'];
     const rows = filteredRecords.map((r) => [
-      r.employeeCode, 
-      r.employeeName, 
-      r.employeeRole, 
-      r.grossSalary, 
+      r.employeeCode,
+      r.employeeName,
+      r.employeeRole,
+      r.grossSalary,
       r.epfDeduction,
       r.etfDeduction,
       r.advanceDeduction,
       r.otherDeductions,
-      r.netSalary, 
+      r.netSalary,
       r.status
     ]);
     const csvContent = [`Payroll Report - ${friendlyMonth}`, "", headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
@@ -547,11 +548,11 @@ const handleMailToBank = async () => {
       const lastDayDate = new Date(year, month, 0);
       const lastDayStr = lastDayDate.toISOString().split('T')[0];
       const lastDay = lastDayDate.getDate();
-      
+
       // Fetch existing records and leaves for the month
       const [attRes, leavesRes] = await Promise.all([
-        axios.get(`${API_BASE}/attendance`, { 
-          params: { employeeId: emp.id, from: firstDay, to: lastDayStr } 
+        axios.get(`${API_BASE}/attendance`, {
+          params: { employeeId: emp.id, from: firstDay, to: lastDayStr }
         }),
         axios.get(`${API_BASE}/leaves`, {
           params: { employeeId: emp.id, from: firstDay, to: lastDayStr, status: 'Approved' }
@@ -560,7 +561,7 @@ const handleMailToBank = async () => {
 
       const existing = attRes.data.data || [];
       const leaves = leavesRes.data.data || [];
-      
+
       const days = [];
       for (let i = 1; i <= lastDay; i++) {
         const dateStr = `${year}-${month}-${String(i).padStart(2, '0')}`;
@@ -575,9 +576,10 @@ const handleMailToBank = async () => {
           isLeave: !!leaveMatch
         });
       }
-      
+
       setDailyCardsData(days);
       setSelectedEmpForCards(emp);
+      setShowHistory(false);
       setShowCardsModal(true);
     } catch (error) {
       console.error('openDailyCardsModal error:', error);
@@ -597,7 +599,7 @@ const handleMailToBank = async () => {
         Cards_Produced: d.cards,
         Marked_By: 'Manual'
       }));
-      
+
       await axios.post(`${API_BASE}/attendance/bulk`, { records });
       await fetchPayrollData(selectedMonth);
       setShowCardsModal(false);
@@ -636,14 +638,14 @@ const handleMailToBank = async () => {
         deductionReason: adjData.deductionReason,
         allowanceReason: adjData.allowanceReason
       };
-      
+
       // Recalculate salary with new adjustments
       const config = getSalaryConfig(updatedRecord.employeeRole);
-      const salary = calculateSalary(config, updatedRecord.employeeRole, { 
-        daysWorked: updatedRecord.daysWorked, 
-        totalOtHours: updatedRecord.overtimeEarnings / (config.otRate || 1), 
+      const salary = calculateSalary(config, updatedRecord.employeeRole, {
+        daysWorked: updatedRecord.daysWorked,
+        totalOtHours: updatedRecord.overtimeEarnings / (config.otRate || 1),
         totalTeaCost: updatedRecord.teaAllowance,
-        ...updatedRecord 
+        ...updatedRecord
       }, updatedRecord.totalCards);
 
       await persistRecord({ ...updatedRecord, ...salary }, updatedRecord.status);
@@ -660,14 +662,14 @@ const handleMailToBank = async () => {
     <div style={{ minHeight: '100vh', background: '#f5f6fa', padding: '28px 32px', fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif" }}>
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ 
-            margin: 0, 
-            fontSize: '26px', 
-            fontWeight: 900, 
+          <h1 style={{
+            margin: 0,
+            fontSize: '26px',
+            fontWeight: 900,
             background: 'linear-gradient(135deg, rgb(13, 148, 136), rgb(15, 23, 42))',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            letterSpacing: '-0.02em' 
+            letterSpacing: '-0.02em'
           }}>Payroll Management</h1>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>Calculate salaries for {selectedMonth}</p>
         </div>
@@ -760,7 +762,7 @@ const handleMailToBank = async () => {
                   <td style={{ padding: '14px 20px', textAlign: 'center', fontSize: '13px', color: '#1e293b', fontWeight: 700 }}>{record.daysWorked}</td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
                     {record.salaryType === 'Card Based' ? (
-                      <div 
+                      <div
                         onClick={() => openDailyCardsModal(record)}
                         style={{ cursor: 'pointer', padding: '6px 12px', background: '#f1f5f9', borderRadius: '8px', color: '#1e293b', fontWeight: 800, border: '1px solid #e2e8f0', display: 'inline-block' }}
                       >
@@ -771,7 +773,7 @@ const handleMailToBank = async () => {
                     )}
                   </td>
                   <td style={{ padding: '14px 20px', textAlign: 'right', fontSize: '14px', color: '#1e293b', fontWeight: 600 }}>
-                    Rs. {( (record.basicSalary || 0) + (record.productionEarnings || 0) ).toLocaleString()}
+                    Rs. {((record.basicSalary || 0) + (record.productionEarnings || 0)).toLocaleString()}
                   </td>
                   <td style={{ padding: '14px 20px', textAlign: 'right', fontSize: '14px', color: '#1e293b', fontWeight: 600 }}>
                     {record.overtimeEarnings > 0 ? `Rs. ${(record.overtimeEarnings || 0).toLocaleString()}` : <span style={{ color: '#cbd5e1' }}>—</span>}
@@ -791,7 +793,7 @@ const handleMailToBank = async () => {
                     )}
                   </td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
-                    <span style={{ 
+                    <span style={{
                       padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700,
                       background: record.status === 'Approved' ? '#dcfce7' : '#fef3c7',
                       color: record.status === 'Approved' ? '#166534' : '#92400e',
@@ -802,31 +804,31 @@ const handleMailToBank = async () => {
                   </td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <button 
-                        onClick={() => openViewModal(record)} 
+                      <button
+                        onClick={() => openViewModal(record)}
                         style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#1e3a5f', cursor: 'pointer', padding: '6px', borderRadius: '6px' }}
                         title="View Breakdown"
                       >
                         <Eye size={16} />
                       </button>
-                      <button 
-                        onClick={() => openAdjModal(record)} 
+                      <button
+                        onClick={() => openAdjModal(record)}
                         style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', cursor: 'pointer', padding: '6px', borderRadius: '6px' }}
                         title="Deductions & Adjustments"
                       >
                         <Edit2 size={16} />
                       </button>
                       {record.status === 'Pending' ? (
-                        <button 
-                          onClick={() => approveRecord(record.id)} 
+                        <button
+                          onClick={() => approveRecord(record.id)}
                           style={{ background: '#f0fdf4', border: '1px solid #dcfce7', color: '#10b981', cursor: 'pointer', padding: '6px', borderRadius: '6px' }}
                           title="Approve"
                         >
                           <CheckCircle size={16} />
                         </button>
                       ) : record.status === 'Approved' ? (
-                        <button 
-                          onClick={() => revertApproval(record.id)} 
+                        <button
+                          onClick={() => revertApproval(record.id)}
                           style={{ background: '#fff1f2', border: '1px solid #ffe4e6', color: '#f43f5e', cursor: 'pointer', padding: '6px', borderRadius: '6px' }}
                           title="Revert to Pending"
                         >
@@ -870,59 +872,86 @@ const handleMailToBank = async () => {
                 <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#1e293b' }}>Daily Card Production</h2>
                 <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>{selectedEmpForCards?.employeeName} - {selectedMonth}</p>
               </div>
-              <button onClick={() => setShowCardsModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={24} /></button>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {!showHistory && (
+                  <button 
+                    onClick={() => setShowHistory(true)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#1e3a5f' }}
+                  >
+                    <History size={16} /> Card history
+                  </button>
+                )}
+                <button onClick={() => setShowCardsModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={24} /></button>
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '12px', marginBottom: '32px' }}>
-              {dailyCardsData.map((day, idx) => (
-                <div key={idx} style={{ padding: '12px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#1e3a5f', marginBottom: '8px' }}>
-                    {new Date(day.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short', weekday: 'short' })}
-                  </div>
-                  <input
-                    type="number"
-                    min="0"
-                    value={day.cards || ''}
-                    disabled={day.isLeave}
-                    onChange={(e) => {
-                      const newData = [...dailyCardsData];
-                      newData[idx].cards = parseInt(e.target.value) || 0;
-                      // Auto-set status to present if cards > 0 and no status
-                      if (newData[idx].cards > 0 && (newData[idx].status === 'Absent' || !newData[idx].status)) {
-                        newData[idx].status = 'Present';
-                      }
-                      setDailyCardsData(newData);
-                    }}
-                    style={{ 
-                      width: '100%', padding: '8px', borderRadius: '8px', 
-                      border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: 700, 
-                      textAlign: 'center', outline: 'none',
-                      background: day.isLeave ? '#f1f5f9' : '#fff',
-                      color: day.isLeave ? '#94a3b8' : '#1e3a5f'
-                    }}
-                  />
-                  <div style={{ marginTop: '8px', display: 'flex', gap: '4px' }}>
-                    <select 
-                      value={day.status}
-                      disabled={day.isLeave}
+            <div style={{ display: 'grid', gridTemplateColumns: showHistory ? 'repeat(auto-fill, minmax(120px, 1fr))' : '1fr', gap: '12px', marginBottom: '32px' }}>
+              {!showHistory && !dailyCardsData.some(d => d.date === new Date().toLocaleDateString('en-CA')) && (
+                <div style={{ padding: '32px', textAlign: 'center', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+                  <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>Today's date is not in the selected month ({selectedMonth}).</p>
+                  <button onClick={() => setShowHistory(true)} style={{ marginTop: '12px', background: 'none', border: 'none', color: '#0d9488', fontWeight: 700, cursor: 'pointer', fontSize: '14px' }}>View Full Card History</button>
+                </div>
+              )}
+              {dailyCardsData.filter(d => showHistory || d.date === new Date().toLocaleDateString('en-CA')).map((day) => {
+                const isToday = day.date === new Date().toLocaleDateString('en-CA');
+                const originalIdx = dailyCardsData.findIndex(d => d.date === day.date);
+                
+                return (
+                  <div key={day.date} style={{ 
+                    padding: '12px', 
+                    background: isToday ? '#f0fdfa' : '#f8fafc', 
+                    borderRadius: '12px', 
+                    border: isToday ? '1px solid #0d9488' : '1px solid #e2e8f0',
+                    boxShadow: isToday ? '0 4px 6px -1px rgba(13, 148, 136, 0.1)' : 'none'
+                  }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: isToday ? '#0d9488' : '#1e3a5f', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>{new Date(day.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short', weekday: 'short' })}</span>
+                      {isToday && <span style={{ fontSize: '10px', background: '#0d9488', color: '#fff', padding: '1px 6px', borderRadius: '4px' }}>TODAY</span>}
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      value={day.cards || ''}
+                      disabled={day.isLeave || (showHistory && !isToday)}
                       onChange={(e) => {
                         const newData = [...dailyCardsData];
-                        newData[idx].status = e.target.value;
+                        newData[originalIdx].cards = parseInt(e.target.value) || 0;
+                        if (newData[originalIdx].cards > 0 && (newData[originalIdx].status === 'Absent' || !newData[originalIdx].status)) {
+                          newData[originalIdx].status = 'Present';
+                        }
                         setDailyCardsData(newData);
                       }}
-                      style={{ 
-                        width: '100%', fontSize: '10px', padding: '4px', borderRadius: '4px', 
-                        border: 'none', background: day.isLeave ? '#dcfce7' : '#e2e8f0', 
-                        fontWeight: 600, color: day.isLeave ? '#166534' : '#1e293b'
+                      style={{
+                        width: '100%', padding: '8px', borderRadius: '8px',
+                        border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: 700,
+                        textAlign: 'center', outline: 'none',
+                        background: (day.isLeave || (showHistory && !isToday)) ? '#f1f5f9' : '#fff',
+                        color: (day.isLeave || (showHistory && !isToday)) ? '#94a3b8' : '#1e3a5f'
                       }}
-                    >
-                      <option value="Present">Present</option>
-                      <option value="Absent">Absent</option>
-                      <option value="Leave">Leave</option>
-                    </select>
+                    />
+                    <div style={{ marginTop: '8px', display: 'flex', gap: '4px' }}>
+                      <select
+                        value={day.status}
+                        disabled={day.isLeave || (showHistory && !isToday)}
+                        onChange={(e) => {
+                          const newData = [...dailyCardsData];
+                          newData[originalIdx].status = e.target.value;
+                          setDailyCardsData(newData);
+                        }}
+                        style={{
+                          width: '100%', fontSize: '10px', padding: '4px', borderRadius: '4px',
+                          border: 'none', background: day.isLeave ? '#dcfce7' : '#e2e8f0',
+                          fontWeight: 600, color: day.isLeave ? '#166534' : '#1e293b'
+                        }}
+                      >
+                        <option value="Present">Present</option>
+                        <option value="Absent">Absent</option>
+                        <option value="Leave">Leave</option>
+                      </select>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
@@ -1064,16 +1093,16 @@ const handleMailToBank = async () => {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button onClick={() => setShowBankModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #d1d5db', background: 'white', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-              <button 
-                onClick={handleMailToBank} 
+              <button
+                onClick={handleMailToBank}
                 disabled={loading}
-                style={{ 
-                  padding: '12px 32px', 
-                  borderRadius: '12px', 
-                  border: 'none', 
-                  background: loading ? '#94a3b8' : '#1e3a5f', 
-                  color: 'white', 
-                  fontWeight: 700, 
+                style={{
+                  padding: '12px 32px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: loading ? '#94a3b8' : '#1e3a5f',
+                  color: 'white',
+                  fontWeight: 700,
                   cursor: loading ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',

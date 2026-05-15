@@ -5,7 +5,7 @@ import axios from 'axios';
 const API_BASE = 'http://localhost:5000/api/hr';
 
 /**
- * Mapper: Converts a backend Employee record to a frontend-friendly object.
+ * Converts a backend Employee record to a frontend-friendly object.
  * Normalizes status and adds a 'raw' reference for deep access.
  */
 const mapEmployeeFromApi = (emp) => ({
@@ -26,7 +26,7 @@ const defaultAddForm = {
   Full_Name: '', Name_With_Initials: '', NIC: '', Date_Of_Birth: '', Gender: '', Marital_Status: '',
   Contact_Phone: '', Contact_Phone_2: '', Email: '', City: '', Department: 'HR', Role: 'Staff',
   Salary_Category: 'Monthly_Fixed', Employee_Type: 'Permanent', Hire_Date: '', Confirmation_Date: '',
-  Status: 'Active', EPF_Eligible: 'Yes', ETF_Eligible: 'Yes', EPF_Number: '', Bank_Name: '',
+  Status: 'Active', EPF_Eligible: 'Yes', ETF_Eligible: 'Yes', EPF_Number: '', ETF_Number: '', Bank_Name: '',
   Bank_Account_No: '', Bank_Branch: '', Bank_Account_Name: '', Permanent_Address: '',
   Current_Address: '', Emergency_Contact_Name: '', Emergency_Contact_Phone: '',
   Emergency_Contact_Relationship: '', Notes: '', image: ''
@@ -118,7 +118,7 @@ const EmployeesPage = () => {
   const startEdit = (emp, e) => {
     e.stopPropagation();
     setEditingId(emp.id);
-    setEditForm({ name: emp.name, role: emp.role, email: emp.email || '', phone: emp.phone || '', department: emp.department || '', image: emp.image || '' });
+    setEditForm({ name: emp.name, role: emp.role, email: emp.email || '', phone: emp.phone || '', department: emp.department || '', image: emp.image || '', etfNumber: emp.raw?.ETF_Number || '' });
   };
 
   const cancelEdit = (e) => {
@@ -137,6 +137,7 @@ const EmployeesPage = () => {
           Email: editForm.email?.trim() || null,
           Contact_Phone: editForm.phone?.trim() || '',
           Department: editForm.department || 'HR',
+          ETF_Number: editForm.etfNumber || null,
         };
         await axios.put(`${API_BASE}/employees/${editingId}`, payload);
         await fetchEmployees();
@@ -151,7 +152,7 @@ const EmployeesPage = () => {
   const updateEditField = (field, value) => {
     setEditForm(prev => ({ ...prev, [field]: value }));
   };
-
+  //updates the data and clears error messages.
   const updateAddFormField = (field, value) => {
     setAddForm(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -201,6 +202,10 @@ const EmployeesPage = () => {
 
     if (EPF_Eligible === 'Yes' && !EPF_Number?.trim()) {
       newErrors.EPF_Number = 'Required if eligible';
+    }
+
+    if (addForm.ETF_Eligible === 'Yes' && !addForm.ETF_Number?.trim()) {
+      newErrors.ETF_Number = 'Required if eligible';
     }
 
     setErrors(newErrors);
@@ -476,7 +481,7 @@ const EmployeesPage = () => {
               <label className="form-label small mb-0">Salary Category</label>
               <select className="form-select form-select-sm" value={addForm.Salary_Category} onChange={e => updateAddFormField('Salary_Category', e.target.value)}>
                 <option value="Monthly_Fixed">Monthly Fixed</option>
-                <option value="Card_Based">Card Based</option>
+                <option value="Production_Based">Production Based</option>
               </select>
             </div>
             <div className="col-12 col-md-4">
@@ -521,6 +526,12 @@ const EmployeesPage = () => {
                 EPF Number {errors.EPF_Number && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.EPF_Number})</span>}
               </label>
               <input className="form-control form-control-sm" style={{ borderColor: errors.EPF_Number ? '#dc2626' : '#ced4da' }} placeholder="EPF Number" value={addForm.EPF_Number} onChange={e => updateAddFormField('EPF_Number', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0" style={{ color: errors.ETF_Number ? '#dc2626' : 'inherit' }}>
+                ETF Number {errors.ETF_Number && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.ETF_Number})</span>}
+              </label>
+              <input className="form-control form-control-sm" style={{ borderColor: errors.ETF_Number ? '#dc2626' : '#ced4da' }} placeholder="ETF Number" value={addForm.ETF_Number} onChange={e => updateAddFormField('ETF_Number', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Bank Name</label>
@@ -746,6 +757,10 @@ const EmployeesPage = () => {
                     <input className="form-control form-control-sm" value={editForm.department} onChange={e => updateEditField('department', e.target.value)} />
                   </div>
                   <div className="mb-2">
+                    <label className="form-label small mb-0">ETF Number</label>
+                    <input className="form-control form-control-sm" value={editForm.etfNumber} onChange={e => updateEditField('etfNumber', e.target.value)} />
+                  </div>
+                  <div className="mb-2">
                     <label className="form-label small mb-0">Profile photo</label>
                     <div onClick={e => triggerImagePick(emp.id, e)} style={{ cursor: 'pointer', display: 'inline-block' }} title="Click to change">
                       <div style={{
@@ -801,6 +816,7 @@ const EmployeesPage = () => {
               padding: '20px'
             }}
           >
+            {/*Display employee details.*/}
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h4 style={{ margin: 0 }}>Employee Details</h4>
               <button className="btn btn-sm btn-outline-secondary" onClick={() => setViewingEmployee(null)}>Close</button>
@@ -829,6 +845,7 @@ const EmployeesPage = () => {
               <div className="col-12 col-md-6"><strong>EPF Eligible:</strong> {renderDetailValue(viewingEmployee.raw?.EPF_Eligible)}</div>
               <div className="col-12 col-md-6"><strong>ETF Eligible:</strong> {renderDetailValue(viewingEmployee.raw?.ETF_Eligible)}</div>
               <div className="col-12 col-md-6"><strong>EPF Number:</strong> {renderDetailValue(viewingEmployee.raw?.EPF_Number)}</div>
+              <div className="col-12 col-md-6"><strong>ETF Number:</strong> {renderDetailValue(viewingEmployee.raw?.ETF_Number)}</div>
               <div className="col-12 col-md-6"><strong>Bank Name:</strong> {renderDetailValue(viewingEmployee.raw?.Bank_Name)}</div>
               <div className="col-12 col-md-6"><strong>Bank Account No:</strong> {renderDetailValue(viewingEmployee.raw?.Bank_Account_No)}</div>
               <div className="col-12 col-md-6"><strong>Bank Branch:</strong> {renderDetailValue(viewingEmployee.raw?.Bank_Branch)}</div>

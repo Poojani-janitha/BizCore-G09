@@ -137,7 +137,7 @@ const approveLeave = async (req, res) => {
 
 /**
  * Finalizes a leave request by marking it as 'Rejected'.
- * Requires a reason for rejection.
+
  */
 const rejectLeave = async (req, res) => {
     try {

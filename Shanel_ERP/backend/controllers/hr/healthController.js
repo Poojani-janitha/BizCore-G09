@@ -1,9 +1,9 @@
 const sequelize = require('../../config/db');
 const { Employee } = require('../../models/index');
 
-/**
- * Health Check: Verifies DB connectivity and ensures the HR Employee table is reachable.
- */
+
+//Health Check: Verifies DB connectivity and ensures the HR Employee table is reachable.
+
 const getHrDbHealth = async (req, res) => {
     try {
         await sequelize.authenticate();

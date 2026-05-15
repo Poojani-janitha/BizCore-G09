@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
+//viewing and editing an individual employee's profile.
 const API_BASE = 'http://localhost:5000/api/hr';
 
 const EmployeeDetail = () => {

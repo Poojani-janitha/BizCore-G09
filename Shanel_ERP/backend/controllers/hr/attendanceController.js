@@ -4,7 +4,6 @@ const { findEmployeeByParam } = require('../../utils/hrEmployeeLookup');
 
 /**
  * Retrieves daily attendance records.
- * Supports filtering by employeeId, date range (from/to), and status.
  */
 const getAttendance = async (req, res) => {
     try {
@@ -80,6 +79,12 @@ const bulkAttendance = async (req, res) => {
                 continue;
             }
 
+            const today = new Date().toISOString().split('T')[0];
+            if (rec.Attendance_Date > today) {
+                results.push({ ok: false, error: 'Cannot mark attendance for future dates', rec });
+                continue;
+            }
+
             const ex = await Attendance.findOne({
                 where: { Employee_ID: empId, Attendance_Date: rec.Attendance_Date }
             });
@@ -119,29 +124,9 @@ const bulkAttendance = async (req, res) => {
     }
 };
 
-/**
- * Removes a specific attendance record by its ID.
- */
-const deleteAttendance = async (req, res) => {
-    try {
-        const row = await Attendance.findByPk(req.params.attendanceId);
-        if (!row) {
-            return res.status(404).json({ success: false, message: 'Attendance record not found' });
-        }
-        await row.destroy();
-        return res.status(200).json({ success: true, message: 'Attendance record deleted' });
-    } catch (error) {
-        console.error('deleteAttendance error:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to delete attendance',
-            error: error.message
-        });
-    }
-};
+
 
 module.exports = {
     getAttendance,
-    bulkAttendance,
-    deleteAttendance
+    bulkAttendance
 };

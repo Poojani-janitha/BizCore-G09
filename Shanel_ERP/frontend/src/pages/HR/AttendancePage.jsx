@@ -6,6 +6,7 @@ import HrStatsCard from '../../component/HR/Dashboard/HrStatsCard';
 
 const API_BASE = 'http://localhost:5000/api/hr';
 
+//sets up the initial state and variables that the Attendance page needs to function
 const Attendance = () => {
   const today = new Date().toISOString().split('T')[0];
   const [employees, setEmployees] = useState([]);
@@ -112,20 +113,21 @@ const Attendance = () => {
       setLoading(false);
     }
   };
-
+  //loads employee and attendance data for today.
   useEffect(() => {
     loadEmployeesAndAttendance(today);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+
+  //loads employee and attendance data when the date changes.
   useEffect(() => {
     loadEmployeesAndAttendance(date);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
   const [submitted, setSubmitted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  //Calculates work hours.
   const getWorkHours = (timeIn, timeOut) => {
     if (!timeIn || !timeOut) return 0;
     const [inH, inM] = timeIn.split(':').map(Number);
@@ -206,7 +208,7 @@ const Attendance = () => {
 
     return next;
   };
-
+  //Updates the attendance record when a field is changed.
   const updateField = (id, field, value) => {
     const empRole = employees.find(e => e.id === String(id))?.role || '';
     setAttendance(prev => {
@@ -252,6 +254,11 @@ const Attendance = () => {
  */
   const handleSubmit = async () => {
     try {
+      const today = new Date().toISOString().split('T')[0];
+      if (date > today) {
+        alert('Cannot mark attendance for future dates');
+        return;
+      }
       const records = employees.map((emp) => {
         const rec = attendance[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 };
         const totalHours = getWorkHours(rec.timeIn, rec.timeOut);
@@ -288,38 +295,7 @@ const Attendance = () => {
     }
   };
 
-  const handleDelete = async (empId) => {
-    const record = attendance[empId];
-    if (!record || !record.attendanceId) {
-      // Just clear local UI state if it hasn't been saved to DB yet
-      setAttendance(prev => ({
-        ...prev,
-        [empId]: { status: 'absent', timeIn: '', timeOut: '', otHours: 0 }
-      }));
-      return;
-    }
 
-    if (!window.confirm('Are you sure you want to delete this attendance record?')) return;
-
-    try {
-      setLoading(true);
-      await axios.delete(`${API_BASE}/attendance/${record.attendanceId}`);
-
-      // Update local state to reflect deletion
-      setAttendance(prev => ({
-        ...prev,
-        [empId]: { status: 'absent', timeIn: '', timeOut: '', otHours: 0 }
-      }));
-
-      // Reload to ensure totals are correct
-      loadEmployeesAndAttendance(date);
-    } catch (err) {
-      console.error('handleDelete error:', err);
-      alert(err?.response?.data?.message || 'Failed to delete attendance record');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const summary = {
     present: employees.filter(e => attendance[e.id]?.status === 'present').length,
@@ -403,6 +379,7 @@ const Attendance = () => {
           <input
             type="date"
             value={date}
+            max={today}
             onChange={e => setDate(e.target.value)}
             style={{
               padding: '7px 12px', borderRadius: '8px', border: '1px solid #d1d5db',
@@ -474,7 +451,7 @@ const Attendance = () => {
           if (rec.status === 'present' && !isExcludedFromTea && rec.timeIn && rec.timeOut && workedHours >= 4) {
             const [outH, outM] = rec.timeOut.split(':').map(Number);
             const outMinutes = outH * 60 + outM;
-            teaCost = outMinutes > (17 * 60) ? 'Rs 450' : 'Rs 60';
+            teaCost = outMinutes > (18 * 60) ? 'Rs 450' : 'Rs 60';
           }
 
           const rowBg = index % 2 === 0 ? '#fff' : '#fafbfc';

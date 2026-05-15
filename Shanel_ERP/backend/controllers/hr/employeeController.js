@@ -4,11 +4,7 @@ const {
 const { Op } = require('sequelize');
 const { findEmployeeByParam } = require('../../utils/hrEmployeeLookup');
 
-/**
- * Fetches all employees from the database.
- * Supports filtering by status and department, and provides a search feature 
- * across Name, Code, NIC, Phone, and Email.
- */
+//Retrieves a list of employees with optional filters for  Name search.
 const getEmployees = async (req, res) => {
     try {
         const { department, status, search } = req.query;
@@ -88,10 +84,10 @@ const validateEmployeeFields = async (payload) => {
 
     if (!payload.Salary_Category || String(payload.Salary_Category).trim() === '') {
         errors.push({ path: 'Salary_Category', message: 'Salary_Category is required and cannot be empty' });
-    } else if (!['Monthly_Fixed', 'Daily_Rate', 'Production_Based', 'Hybrid'].includes(payload.Salary_Category)) {
+    } else if (!['Monthly_Fixed', 'Production_Based'].includes(payload.Salary_Category)) {
         errors.push({
             path: 'Salary_Category',
-            message: 'Salary_Category must be one of: Monthly_Fixed, Daily_Rate, Production_Based, Hybrid'
+            message: 'Salary_Category must be one of: Monthly_Fixed, Production_Based'
         });
     }
 
@@ -125,6 +121,14 @@ const validateEmployeeFields = async (payload) => {
     // OPTIONAL TEXT FIELDS - Length validation
     if (payload.NIC && String(payload.NIC).length > 20) {
         errors.push({ path: 'NIC', message: 'NIC must not exceed 20 characters' });
+    }
+
+    if (payload.EPF_Number && String(payload.EPF_Number).length > 50) {
+        errors.push({ path: 'EPF_Number', message: 'EPF_Number must not exceed 50 characters' });
+    }
+
+    if (payload.ETF_Number && String(payload.ETF_Number).length > 50) {
+        errors.push({ path: 'ETF_Number', message: 'ETF_Number must not exceed 50 characters' });
     }
 
     if (payload.Email && String(payload.Email).trim() !== '') {
@@ -295,6 +299,8 @@ const updateEmployee = async (req, res) => {
  * Updates the employment status (e.g., Active, On_Leave, Resigned).
  * Uses a raw SQL query to ensure the change persists immediately.
  */
+//Because the system uses soft deletion,
+//this function restores inactive employees to active status when rehired or deactivated by mistake.
 const updateEmployeeStatus = async (req, res) => {
     try {
         const { Status } = req.body;
@@ -336,7 +342,7 @@ const updateEmployeeStatus = async (req, res) => {
 
 /**
  * DEACTIVATION LOGIC:
- * Instead of hard deleting, this marks an employee as "Inactive".
+ * Instead of hard deleting, this marks an employee as "Inactive" in database.
  * Uses raw SQL to bypass any application-level soft-delete logic and ensure data persistence.
  */
 const deleteEmployee = async (req, res) => {
