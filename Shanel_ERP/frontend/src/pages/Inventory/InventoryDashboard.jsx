@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { ChevronRight } from "react-feather";
 import StockChart from "../../component/Inventory/Dashboard/StockChart";
 import DistributionPie from "../../component/Inventory/Dashboard/DistributionPie";
 import StockAlerts from "../../component/Inventory/Dashboard/StockAlerts";
@@ -8,6 +10,7 @@ import InventoryMetrics from "../../component/Inventory/Dashboard/InventoryMetri
 import { useTranslation } from "react-i18next";
 
 const InventoryDashboard = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState({ 
     stockLevel: [], 
     distribution: [],
@@ -18,15 +21,21 @@ const InventoryDashboard = () => {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isSinhala = i18n.language?.startsWith('si');
 
   const fetchData = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/inventory/dashboard-stats");
-      if (res.data.success) {
-        setData(res.data);
+      const [dashRes, prodRes] = await Promise.all([
+        axios.get("http://localhost:5000/api/inventory/dashboard-stats"),
+        axios.get("http://localhost:5000/api/inventory/products")
+      ]);
+      
+      if (dashRes.data.success) {
+        setData(dashRes.data);
         setError(null);
       }
+
     } catch (err) {
       console.error("Error fetching data:", err);
       setError("Failed to load dashboard data");

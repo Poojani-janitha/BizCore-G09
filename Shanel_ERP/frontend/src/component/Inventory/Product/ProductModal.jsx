@@ -517,6 +517,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                                                 {formData.Base_Unit}
                                             </small>
                                         </div>
+
                                     </div>
                                 )}
 

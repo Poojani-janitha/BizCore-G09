@@ -11,14 +11,18 @@ const formatStock = (value) => {
 const AlertsPage = () => {
   const [alerts, setAlerts] = useState([]);
   const [expiryAlerts, setExpiryAlerts] = useState([]);
+  // const [productExpiryAlerts, setProductExpiryAlerts] = useState([]);
+  const [outOfStockProducts, setOutOfStockProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("low");
   const { t, i18n } = useTranslation();
   const isSinhala = i18n.language?.startsWith('si');
 
   useEffect(() => {
     fetchAlerts();
     fetchExpiryAlerts();
+    // fetchProductExpiryAlerts();
+    fetchOutOfStockProducts();
   }, []);
 
   const fetchAlerts = async () => {
@@ -52,6 +56,48 @@ const AlertsPage = () => {
     }
   };
 
+  // const fetchProductExpiryAlerts = async () => {
+  //   try {
+  //     const res = await axios.get("http://localhost:5000/api/inventory/products");
+  //     if (Array.isArray(res.data)) {
+  //       const today = new Date();
+  //       today.setHours(0, 0, 0, 0);
+
+  //       // Filter products expiring within 3 months (90 days) for Other/Raw/Company-Ishara items
+  //       const expiringProducts = res.data
+  //         .filter(p => p.expireDate && (p.type === 'Other' || p.type === 'Raw' || (p.type === 'Company' && p.isIsharaProduct)))
+  //         .map(p => {
+  //           const expDate = new Date(p.expireDate);
+  //           expDate.setHours(0, 0, 0, 0);
+  //           const daysUntilExpiry = Math.floor((expDate - today) / (1000 * 60 * 60 * 24));
+  //           return { ...p, daysUntilExpiry };
+  //         })
+  //         .filter(p => p.daysUntilExpiry >= 0 && p.daysUntilExpiry <= 90)
+  //         .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
+
+  //       setProductExpiryAlerts(expiringProducts);
+  //     }
+  //   } catch (err) {
+  //     console.error("Error fetching product expiry alerts:", err);
+  //   }
+  // };
+
+  const fetchOutOfStockProducts = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/inventory/products");
+      if (Array.isArray(res.data)) {
+        // Filter products with stock count <= 0
+        const outOfStock = res.data
+          .filter(p => parseFloat(p.stockCount || 0) <= 0)
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        setOutOfStockProducts(outOfStock);
+      }
+    } catch (err) {
+      console.error("Error fetching out of stock products:", err);
+    }
+  };
+
   const getAlertType = (current, min) => {
     if (current <= 0) return "Out of Stock";
     if (current < min) return "Low Stock";
@@ -61,13 +107,17 @@ const AlertsPage = () => {
   // Separate critical and low stock (excluding critical from low stock)
   const criticalAlerts = alerts.filter(a => a.current <= 0);
   const lowStockAlerts = alerts.filter(a => a.current > 0 && a.current < a.min);
+  // Remove out of stock items from the main alerts display (they go only to the dedicated tab)
+  const filteredMainAlerts = alerts.filter(a => a.current > 0);
   const activeAlerts = lowStockAlerts.length;
-  const totalAlerts = alerts.length;
+  // const totalAlerts = filteredMainAlerts.length + expiryAlerts.length + productExpiryAlerts.length + outOfStockProducts.length;
+  const totalAlerts = filteredMainAlerts.length + expiryAlerts.length + outOfStockProducts.length;
 
   const getFilteredAlerts = () => {
-    if (activeTab === "all") return alerts;
     if (activeTab === "low") return lowStockAlerts;
     if (activeTab === "expiry") return expiryAlerts;
+    // if (activeTab === "product-expiry") return productExpiryAlerts;
+    if (activeTab === "out-of-stock") return outOfStockProducts;
     return [];
   };
 
@@ -147,20 +197,10 @@ const AlertsPage = () => {
           {/* Tabs */}
           <div className="d-flex gap-0 mb-4 border-bottom" style={{ overflow: 'auto' }}>
             <button
-              className={`btn btn-sm border-0 fw-semibold ${activeTab === "all"
-                  ? "border-bottom border-primary text-primary"
-                  : "text-muted"
-                } rounded-0 pb-2`}
-              onClick={() => setActiveTab("all")}
-              style={{ borderBottom: activeTab === "all" ? "3px solid #0d6efd" : "none" }}
-            >
-              {t('inventory.pages.alerts.tab_all')} ({totalAlerts})
-            </button>
-            <button
               className={`btn btn-sm border-0 fw-semibold ${activeTab === "low"
                   ? "border-bottom border-primary text-primary"
                   : "text-muted"
-                } rounded-0 pb-2 ms-3`}
+                } rounded-0 pb-2`}
               onClick={() => setActiveTab("low")}
               style={{ borderBottom: activeTab === "low" ? "3px solid #0d6efd" : "none" }}
             >
@@ -175,6 +215,26 @@ const AlertsPage = () => {
               style={{ borderBottom: activeTab === "expiry" ? "3px solid #0d6efd" : "none" }}
             >
               {t('inventory.pages.alerts.tab_expiry')} ({expiryAlerts.length})
+            </button>
+            {/* <button
+              className={`btn btn-sm border-0 fw-semibold ${activeTab === "product-expiry"
+                  ? "border-bottom border-primary text-primary"
+                  : "text-muted"
+                } rounded-0 pb-2 ms-3`}
+              onClick={() => setActiveTab("product-expiry")}
+              style={{ borderBottom: activeTab === "product-expiry" ? "3px solid #0d6efd" : "none" }}
+            >
+              Expire Soon (Other Items) ({productExpiryAlerts.length})
+            </button> */}
+            <button
+              className={`btn btn-sm border-0 fw-semibold ${activeTab === "out-of-stock"
+                  ? "border-bottom border-primary text-primary"
+                  : "text-muted"
+                } rounded-0 pb-2 ms-3`}
+              onClick={() => setActiveTab("out-of-stock")}
+              style={{ borderBottom: activeTab === "out-of-stock" ? "3px solid #0d6efd" : "none" }}
+            >
+              Out of Stock ({outOfStockProducts.length})
             </button>
           </div>
 
@@ -200,6 +260,16 @@ const AlertsPage = () => {
                         <th className="fw-semibold text-dark text-end">{t('inventory.pages.alerts.col_qty')}</th>
                         <th className="fw-semibold text-dark">{t('inventory.pages.alerts.col_status')}</th>
                       </>
+                    ) : activeTab === "out-of-stock" ? (
+                      <>
+                        <th className="fw-semibold text-dark ps-3">{t('inventory.table.col_id')}</th>
+                        <th className="fw-semibold text-dark">{t('inventory.table.col_name')}</th>
+                        <th className="fw-semibold text-dark">{t('inventory.table.col_type')}</th>
+                        <th className="fw-semibold text-dark">{t('inventory.table.col_category')}</th>
+                        <th className="fw-semibold text-dark text-end">{t('inventory.table.col_stock')}</th>
+                        <th className="fw-semibold text-dark text-end">Min. Stock</th>
+                        <th className="fw-semibold text-dark">{t('inventory.pages.alerts.col_status')}</th>
+                      </>
                     ) : (
                       <>
                         <th className="fw-semibold text-dark ps-3">{t('inventory.pages.alerts.col_alert_type')}</th>
@@ -216,7 +286,53 @@ const AlertsPage = () => {
                 </thead>
                 <tbody>
                   {filteredAlerts.map((alert, index) => {
-                    if (activeTab === "expiry") {
+                    if (activeTab === "product-expiry") {
+                      // Product expiry alerts table row
+                      return (
+                        <tr key={index} className="border-bottom">
+                          <td className="ps-3 fw-semibold text-primary">{alert.id}</td>
+                          <td className="fw-semibold text-dark">{(isSinhala && alert.nameSinhala) ? alert.nameSinhala : alert.name}</td>
+                          <td>
+                            <span className={`badge ${alert.type === 'Company' ? 'bg-info-subtle text-info' : 'bg-warning-subtle text-warning'} border px-2 py-1`}>
+                              {alert.type}
+                            </span>
+                          </td>
+                          <td className="text-center">
+                            <span style={{ color: alert.daysUntilExpiry <= 90 ? '#dc3545' : '#6c757d', fontWeight: alert.daysUntilExpiry <= 90 ? 'bold' : 'normal' }}>
+                              {alert.expireDate ? new Date(alert.expireDate).toLocaleDateString('en-LK') : 'N/A'}
+                            </span>
+                          </td>
+                          <td className="text-end fw-semibold" style={{ color: alert.daysUntilExpiry <= 30 ? '#dc3545' : alert.daysUntilExpiry <= 60 ? '#fd7e14' : '#0dcaf0' }}>
+                            {alert.daysUntilExpiry} days
+                          </td>
+                          <td className="text-end">{formatStock(alert.stockCount)} {alert.baseUnit || ''}</td>
+                          <td>
+                            <span className={`badge ${alert.daysUntilExpiry <= 30 ? 'bg-danger' : alert.daysUntilExpiry <= 60 ? 'bg-warning text-dark' : 'bg-info'}`}>
+                              {alert.daysUntilExpiry <= 30 ? '🔴 URGENT' : alert.daysUntilExpiry <= 60 ? '🟠 WARNING' : '🔵 SOON'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    } else if (activeTab === "out-of-stock") {
+                      // Out of stock products table row
+                      return (
+                        <tr key={index} className="border-bottom">
+                          <td className="ps-3 fw-semibold text-primary">{alert.id}</td>
+                          <td className="fw-semibold text-dark">{(isSinhala && alert.nameSinhala) ? alert.nameSinhala : alert.name}</td>
+                          <td>
+                            <span className={`badge ${alert.type === 'Company' ? 'bg-info-subtle text-info' : alert.type === 'Raw' ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary'} border px-2 py-1`}>
+                              {alert.type}
+                            </span>
+                          </td>
+                          <td className="text-muted">{alert.category || 'N/A'}</td>
+                          <td className="text-end fw-semibold text-danger">{formatStock(alert.stockCount)} {alert.baseUnit || ''}</td>
+                          <td className="text-end">{formatStock(alert.minStockLevel || 0)} {alert.baseUnit || ''}</td>
+                          <td>
+                            <span className="badge bg-danger text-white fw-bold">🔴 OUT OF STOCK</span>
+                          </td>
+                        </tr>
+                      );
+                    } else if (activeTab === "expiry") {
                       // Expiry alerts table row
                       const daysToExpiry = alert.DaysToExpire || 0;
                       const statusBadge = daysToExpiry <= 7 ? "bg-danger" : daysToExpiry <= 30 ? "bg-warning text-dark" : "bg-info";

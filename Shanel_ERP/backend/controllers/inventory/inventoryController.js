@@ -1,39 +1,46 @@
 const { Product, Inventory, Production, UnitConversion, StockTransfer, Supplier } = require('../../models/index');
 const sequelize = require('../../config/db');
-const { Op } = require('sequelize');
+const { Op } = require('sequelize');              //Used for SQL operators.
 
-const emptyToNull = (value) => {
+//Converts empty values into null
+const emptyToNull = (value) => {  
     if (value === undefined || value === null || value === '' || value === 'null') {
         return null;
     }
     return value;
 };
 
+//Converts text into decimal number.(required fields)
 const toRequiredFloat = (value, fallback = 0) => {
     const parsed = parseFloat(value);
-    return Number.isNaN(parsed) ? fallback : parsed;
+    return Number.isNaN(parsed) ? fallback : parsed;  //If value is not a number, return fallback. it means 0
 };
 
+//for optinal decimal values
 const toOptionalFloat = (value) => {
-    const normalized = emptyToNull(value);
+    const normalized = emptyToNull(value);  //First converts empty values to null.
     if (normalized === null) {
         return null;
     }
 
-    const parsed = parseFloat(normalized);
+    const parsed = parseFloat(normalized);  //Convert to decimal number.
     return Number.isNaN(parsed) ? null : parsed;
 };
 
+//converts different true values into JavaScript true.
 const toBoolean = (value) => value === true || value === 'true' || value === 1 || value === '1';
 
+//unit conversions of a product.
 const syncProductUnits = async (productId, baseUnit, units, transaction) => {
     const desiredUnits = [
+        //Adds base unit first.
         {
             unitName: baseUnit,
             conversionRate: 1,
             isBaseUnit: true
         },
         ...(Array.isArray(units) ? units : []).map(unit => ({
+            //Creates alternative unit objects.
             id: unit.id,
             unitName: unit.unitName,
             conversionRate: unit.conversionRate,
@@ -41,38 +48,45 @@ const syncProductUnits = async (productId, baseUnit, units, transaction) => {
         }))
     ].filter(unit => unit.unitName && toRequiredFloat(unit.conversionRate, NaN) > 0);
 
+    //Gets already saved units for that product from database.
     const existingUnits = await UnitConversion.findAll({
         where: { P_ID: productId },
         transaction
     });
 
-    const existingById = new Map(existingUnits.map(unit => [String(unit.U_ID), unit]));
+    //Fast search by unit ID.
+    const existingById = new Map(existingUnits.map(unit => [String(unit.U_ID), unit]));   //{ U_ID: 2, Unit_Name: "Card" }
+    //Fast search by name
     const existingByName = new Map(existingUnits.map(unit => [unit.Unit_Name.toLowerCase(), unit]));
-    const touchedIds = new Set();
+    //Stores unit IDs that were updated or created.
+    const touchedIds = new Set();       
 
     for (const unit of desiredUnits) {
-        const matchById = unit.id ? existingById.get(String(unit.id)) : null;
-        const matchByName = existingByName.get(unit.unitName.toLowerCase());
-        const existing = matchById || matchByName;
+        const matchById = unit.id ? existingById.get(String(unit.id)) : null;  //Checks if unit already exists by ID.
+        const matchByName = existingByName.get(unit.unitName.toLowerCase());    //Checks if unit already exists by name.
+        const existing = matchById || matchByName;  //If found by ID or name, use that existing record.
 
+        //Prepares unit data for database.
         const unitData = {
             Unit_Name: unit.unitName,
             Unit_Conversion: toRequiredFloat(unit.conversionRate, 1),
             Is_Base_Unit: unit.isBaseUnit
         };
 
+        //If unit exists, update it. If not, create new unit.
         if (existing) {
             await existing.update(unitData, { transaction });
             touchedIds.add(existing.U_ID);
         } else {
             const created = await UnitConversion.create({
                 P_ID: productId,
-                ...unitData
+                ...unitData         //... spread operator to copy all properties from unitData into this object
             }, { transaction });
             touchedIds.add(created.U_ID);
         }
     }
 
+    //Finds old units that are no longer needed. Deletes them if they are not used 
     const staleUnits = existingUnits.filter(unit => !touchedIds.has(unit.U_ID));
     for (const unit of staleUnits) {
         try {
@@ -95,29 +109,30 @@ const getDashboardStats = async (req, res) => {
                 ['P_Name_Sinhala', 'nameSinhala'],
                 ['Min_Stock', 'min'],
                 ['P_ID', 'productId'],
-                [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('inventories.Qty')), 0), 'current']
+                [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('inventories.Qty')), 0), 'current']  //calculates total stock for each product
             ],
             include: [{
                 model: Inventory,
                 as: 'inventories',
                 attributes: [],
-                required: false
+                required: false  //product still appears even if no inventory exists.
             }],
-            group: ['Product.P_ID'],
+            group: ['Product.P_ID'],  //Groups stock by product
             where: {
                 Min_Stock: { [Op.gt]: 0 } // Only include products that have a min stock defined
             },
             order: [
-                // Prioritize products closest to or below minimum stock
+                // Prioritize products closest to or below minimum stock (current stock - minimum stock)
                 [sequelize.literal('(COALESCE(SUM(inventories.Qty), 0) - Min_Stock)'), 'ASC']
             ],
             limit: 15, // Show only top 15 most critical items
             subQuery: false,
-            raw: true
+            raw: true  //return plain javascript object
         });
 
         // --- 2. LOW STOCK ALERTS ---
         // Logic: Find products where Total Inventory <= Min_Stock
+        // gets inventory quantity and supplier details.
         const products = await Product.findAll({
             attributes: ['P_Name', 'P_Name_Sinhala', 'Min_Stock', 'P_Type', 'Base_Unit'],
             include: [
@@ -127,8 +142,11 @@ const getDashboardStats = async (req, res) => {
         });
 
         const alerts = [];
+        // Loops each product
         products.forEach(p => {
-            const total = p.inventories.reduce((sum, inv) => sum + parseFloat(inv.Qty), 0);
+            //Calculates total stock.
+            const total = p.inventories.reduce((sum, inv) => sum + parseFloat(inv.Qty), 0); 
+            //If current stock is less than or equal minimum stock, create alert.
             if (total <= parseFloat(p.Min_Stock) && p.Min_Stock > 0) {
                 alerts.push({
                     name: p.P_Name,
@@ -144,18 +162,20 @@ const getDashboardStats = async (req, res) => {
             }
         });
 
-        // --- 3. DISTRIBUTION BY TYPE ---
+        // --- 3. DISTRIBUTION BY TYPE (pie chart) ---
         const distributionRows = await Product.findAll({
             attributes: [['P_Type', 'name'], [sequelize.fn('COUNT', sequelize.col('P_ID')), 'value']],
-            group: ['P_Type'],
+            group: ['P_Type'],  //Gets product count by type.
             raw: true
         });
+
+        //Formats result for frontend chart.
         const distribution = distributionRows.map(row => ({
             name: row.name || 'Unknown',
             value: Number(row.value) || 0
         })).filter(row => row.value > 0);
 
-        // --- 4. RECENT TRANSFERS ---
+        // --- 4. RECENT TRANSFERS  (Latest 5 transfers only).---
         const transfers = await StockTransfer.findAll({
             attributes: ['ST_ID', 'P_ID', 'From_Location', 'To_Location', 'Qty', 'Transfer_Date', 'Status'],
             include: [{
@@ -167,14 +187,14 @@ const getDashboardStats = async (req, res) => {
             limit: 5
         }); 
 
-        // --- 5. SUMMARY COUNTS ---
+        // --- 5. SUMMARY Cards ---
         const companyItems = await Product.count({ where: { P_Type: 'Company' } });
         const otherItems = await Product.count({ where: { P_Type: 'Other' } });
         const productionStock = await Inventory.sum('Qty', { where: { Location: 'Production' } }) || 0;
         const salesStock = await Inventory.sum('Qty', { where: { Location: 'Shop' } }) || 0;
         const alertsCount = alerts.length;
 
-        // --- FINAL RESPONSE ---
+        // --- FINAL RESPONSE-- Sends all dashboard data to frontend. ---
         res.json({
             success: true,
             stockLevel: stockLevelData,
@@ -205,7 +225,7 @@ const getAllStockLevels = async (req, res) => {
         const filterType = req.query.type; // filter by product type
         const offset = (page - 1) * limit;
 
-        // Build where clause
+        // Build where clause -- Only products with minimum stock.
         const whereClause = {
             Min_Stock: { [Op.gt]: 0 }
         };
@@ -213,7 +233,7 @@ const getAllStockLevels = async (req, res) => {
             whereClause.P_Type = filterType;
         }
 
-        // Get total count
+        // Counts total matching records.
         const totalCount = await Product.count({ where: whereClause });
 
         // Sort mapping
@@ -223,7 +243,7 @@ const getAllStockLevels = async (req, res) => {
             'name': [['P_Name', 'ASC']]
         };
 
-        // Fetch paginated results
+        // Fetch paginated results -- Gets stock level data from database.
         const stockLevels = await Product.findAll({
             attributes: [
                 ['P_ID', 'productId'],
@@ -251,6 +271,7 @@ const getAllStockLevels = async (req, res) => {
             raw: true
         });
 
+        // Sends data and pagination info to frontend
         res.json({
             success: true,
             data: stockLevels,
@@ -272,7 +293,7 @@ const getProducts = async (req, res) => {
     try {
         const products = await Product.findAll({
             attributes: [
-                ['P_ID', 'id'], 
+                ['P_ID', 'id'],   //database- P_ID , frontend - id
                 ['P_Code', 'code'],
                 ['P_Name', 'name'],
                 ['P_Name_Sinhala', 'nameSinhala'],
@@ -303,7 +324,7 @@ const getProducts = async (req, res) => {
                 [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('inventories.Qty')), 0), 'stockCount']
             ],
             include: [{
-                model: Inventory,
+                model: Inventory,  //join inventry table to get stock count
                 as: 'inventories',
                 attributes: [],
                 required: false
@@ -312,7 +333,7 @@ const getProducts = async (req, res) => {
             raw: true
         });
         
-        // Fetch units for each product
+        // For each product, get unit conversions
         const productsWithUnits = await Promise.all(
             products.map(async (product) => {
                 const units = await UnitConversion.findAll({
@@ -325,7 +346,7 @@ const getProducts = async (req, res) => {
                     where: { P_ID: product.id },
                     raw: true
                 });
-                return { ...product, units };
+                return { ...product, units };  //Adds units into product object
             })
         );
         
@@ -336,7 +357,7 @@ const getProducts = async (req, res) => {
     }
 };
 
-// 3. Add Product
+// 3. Add a new Product
 const addProduct = async (req, res) => {
     try {
         // Debug log
@@ -348,6 +369,7 @@ const addProduct = async (req, res) => {
         let units = [];
         if (req.body.units) {
             try {
+                //If units come as text, put it into array
                 units = typeof req.body.units === 'string' ? JSON.parse(req.body.units) : req.body.units;
             } catch (e) {
                 console.error("Error parsing units:", e);
@@ -355,6 +377,7 @@ const addProduct = async (req, res) => {
             }
         }
 
+        //Converts Ishara product value to boolean
         const isIsharaProduct = toBoolean(req.body.isIsharaProduct);
 
         // Transform camelCase field names to database column names
@@ -386,7 +409,8 @@ const addProduct = async (req, res) => {
             // Status will default to "In Stock" as per model definition
         };
 
-        const newProduct = await Product.create(productData);
+        //Creates product in database
+        const newProduct = await Product.create(productData);  
         
         // Create base unit record
         await UnitConversion.create({
@@ -398,6 +422,7 @@ const addProduct = async (req, res) => {
         
         // Handle alternative unit conversions if provided
         if (Array.isArray(units) && units.length > 0) {
+            //Creates all alternative units.
             const unitPromises = units.map(unit => 
                 UnitConversion.create({
                     P_ID: newProduct.P_ID,
@@ -406,13 +431,13 @@ const addProduct = async (req, res) => {
                     Is_Base_Unit: false
                 })
             );
-            await Promise.all(unitPromises);
+            await Promise.all(unitPromises);  //Waits until all units are saved.
         }
 
         // Create inventory entry if initial quantity provided (for supplier items and Ishara products)
         const initialQty = parseFloat(req.body.initialQty) || 0;
-        let inventoryLocation = null;
         
+        let inventoryLocation = null;
         // Determine inventory location based on product type
         if (req.body.type === 'Other') {
             inventoryLocation = 'Shop';
@@ -423,6 +448,7 @@ const addProduct = async (req, res) => {
             inventoryLocation = 'Shop';
         }
         
+        //If location exists and quantity is greater than 0. Create inventory record for that location.
         if (inventoryLocation && initialQty > 0) {
             await Inventory.create({
                 P_ID: newProduct.P_ID,
@@ -442,7 +468,7 @@ const addProduct = async (req, res) => {
 // 4. Update Product
 const updateProduct = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { id } = req.params;  //Gets product ID from URL.
         
         console.log("📝 Update Product Request - ID:", id);
         console.log("📝 Request Body:", {
@@ -471,7 +497,7 @@ const updateProduct = async (req, res) => {
 
         // Transform camelCase field names to database column names
         const updateData = {
-            P_Code: emptyToNull(req.body.code),
+            P_Code: emptyToNull(req.body.code),  //If code is empty, save null.
             P_Name: req.body.name,
             P_Name_Sinhala: emptyToNull(req.body.nameSinhala),
             P_Type: req.body.type,
@@ -493,13 +519,16 @@ const updateProduct = async (req, res) => {
             Barcode_Type: emptyToNull(req.body.barcodeType),
             Auto_Generate_Barcode: toBoolean(req.body.autoGenerateBarcode),
             Is_Ishara_Product: isIsharaProduct,
-            S_ID: emptyToNull(req.body.supplierId) ? parseInt(req.body.supplierId) : null
+            S_ID: emptyToNull(req.body.supplierId) ? parseInt(req.body.supplierId) : null,
             // Status is NOT updated as it's calculated dynamically based on stock levels
         };
 
         console.log("📝 Update Data prepared:", updateData);
         
         // Validate required fields
+        if (!updateData.P_Code) {
+            return res.status(400).json({ success: false, error: "Product code is required" });
+        }
         if (!updateData.P_Name) {
             return res.status(400).json({ success: false, error: "Product name is required" });
         }
@@ -517,7 +546,10 @@ const updateProduct = async (req, res) => {
         }
         
         console.log("✓ Validation passed, updating product...");
+
+        //transaction - If one update fails, all changes rollback.
         await sequelize.transaction(async (transaction) => {
+            //Find product by ID.
             const product = await Product.findByPk(id, { transaction });
             if (!product) {
                 const notFound = new Error("Product not found");
@@ -525,10 +557,12 @@ const updateProduct = async (req, res) => {
                 throw notFound;
             }
 
+            //Update product table with new data.
             await product.update(updateData, { transaction });
             console.log("Product updated successfully.");
             
             // Sync units in place so existing U_ID values used by sales/purchases are preserved.
+            //Updates unit conversions.
             if (req.body.units !== undefined) {
                 console.log("Handling unit conversions...");
                 await syncProductUnits(id, req.body.baseUnit, units, transaction);
@@ -537,12 +571,13 @@ const updateProduct = async (req, res) => {
 
             // Update inventory for supplier items and Ishara products if initialQty provided
             console.log("initialQty value:", req.body.initialQty);
+
             if (req.body.initialQty !== undefined && req.body.initialQty !== null && req.body.initialQty !== '') {
                 console.log("Handling inventory update...");
-                const initialQty = parseFloat(req.body.initialQty);
+                const initialQty = parseFloat(req.body.initialQty);  //Convert quantity to number
                 console.log("Parsed initialQty:", initialQty);
-                let inventoryLocation = null;
                 
+                let inventoryLocation = null;
                 // Determine inventory location based on product type
                 if (req.body.type === 'Other') {
                     inventoryLocation = 'Shop';
@@ -555,6 +590,7 @@ const updateProduct = async (req, res) => {
                 console.log("Inventory location:", inventoryLocation, "Initial Qty:", initialQty);
                 
                 if (inventoryLocation && !isNaN(initialQty) && initialQty >= 0) {
+                    //Checks whether inventory already exists. If exists, update quantity. If not exists, create new inventory record.
                     const existingInventory = await Inventory.findOne({
                         where: { P_ID: id, Location: inventoryLocation },
                         transaction
@@ -611,6 +647,7 @@ const getProductLocationInventory = async (req, res) => {
             'Shop': 0
         };
         
+        //Loop each inventory row and add quantity by location.
         inventories.forEach(inv => {
             if (inv.Location && result.hasOwnProperty(inv.Location)) {
                 result[inv.Location] += parseFloat(inv.Qty) || 0;
@@ -634,6 +671,7 @@ const getProductUnitConversions = async (req, res) => {
             order: [['Display_Order', 'ASC']]
         });
 
+        //If no units exist send empty unit list
         if (units.length === 0) {
             return res.json({
                 success: true,
@@ -665,7 +703,7 @@ const getProductUnitConversions = async (req, res) => {
     }
 };
 
-// Get Available Base Units
+// 8. Get Available Base Units
 const getAvailableBaseUnits = async (req, res) => {
     try {
         const units = await UnitConversion.findAll({
@@ -684,7 +722,7 @@ const getAvailableBaseUnits = async (req, res) => {
     }
 };
 
-// Get Available Alternative Units
+// 9. Get Available Alternative Units
 const getAvailableAlternativeUnits = async (req, res) => {
     try {
         const units = await UnitConversion.findAll({
