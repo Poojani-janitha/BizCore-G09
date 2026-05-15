@@ -19,10 +19,16 @@ const Reports = () => {
   });
   const [triggerRefresh, setTriggerRefresh] = useState(0);
 
+  // Force re-fetches data by incrementing a trigger state
   const handleRefresh = () => setTriggerRefresh(prev => prev + 1);
 
+  // Normalizes a date string to YYYY-MM-DD format
   const normDate = (d) => d ? String(d).split('T')[0] : '';
 
+  /**
+   * PDF Generator: Uses jsPDF and autoTable to create structured reports.
+   * Handles specialized table layouts for Employee Details, Attendance (Daily/Monthly), Leaves, and Payments.
+   */
   const savePdf = (reportId) => {
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -175,6 +181,10 @@ const Reports = () => {
     doc.save(`${fileSafe(title)}.pdf`);
   };
 
+  /**
+   * Print Helper: Creates a hidden iframe to render a specific report section for printing.
+   * Injects custom CSS for print-friendly styling.
+   */
   const printSection = (sectionId, title, mode = 'print') => {
     const el = document.getElementById(sectionId);
     if (!el) return;
@@ -248,7 +258,14 @@ const Reports = () => {
 
   const API_BASE = 'http://localhost:5000/api/hr';
 
-  useEffect(() => {
+  /**
+ * MAIN DATA FETCHER (Reports):
+ * Orchestrates API calls based on the active report type.
+ * Aggregates raw Attendance and Leave data to compute statuses (Present/Absent/Leave) for the UI.
+ * Implements specialized logic for 'Monthly' and 'Individual' tracking.
+ */
+useEffect(() => {
+    // Fetches the necessary data for the currently active report type
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -499,6 +516,7 @@ const Reports = () => {
     if (activeReport) fetchData();
   }, [activeReport, dailyDate, month, leaveDate, paymentMonth, selectedEmp, triggerRefresh]);
 
+  // Filters the employee list based on the search input
   const employeeDetails = useMemo(() => {
     if (!employeeSearch.trim()) return employees;
     const q = employeeSearch.toLowerCase();
@@ -513,6 +531,7 @@ const Reports = () => {
     );
   }, [employees, employeeSearch]);
 
+  // Processes and filters daily attendance records for the table
   const daily = useMemo(() => {
     const filtered = !dailySearch.trim()
       ? dailyData.rows
@@ -531,6 +550,7 @@ const Reports = () => {
   const leaveReport = leaveReportData;
   const paymentReport = paymentReportData;
 
+  // Small component to display a summary statistic card
   const Stat = ({ title, value, subtitle, color }) => (
     <div style={{
       background: '#fff',

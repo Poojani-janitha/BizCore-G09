@@ -33,7 +33,7 @@ const Employee = sequelize.define(
         },
         Role: { type: DataTypes.STRING(100), allowNull: false },
         Salary_Category: {
-            type: DataTypes.ENUM('Monthly_Fixed', 'Daily_Rate', 'Production_Based', 'Hybrid'),
+            type: DataTypes.ENUM('Monthly_Fixed', 'Production_Based'),
             allowNull: false
         },
         Working_Hours_Start: { type: DataTypes.TIME, defaultValue: '08:00:00' },
@@ -41,6 +41,7 @@ const Employee = sequelize.define(
         EPF_Eligible: { type: DataTypes.BOOLEAN, defaultValue: false },
         ETF_Eligible: { type: DataTypes.BOOLEAN, defaultValue: false },
         EPF_Number: { type: DataTypes.STRING(50), allowNull: true },
+        ETF_Number: { type: DataTypes.STRING(50), allowNull: true },
         Bank_Name: { type: DataTypes.STRING(100), allowNull: true },
         Bank_Account_No: { type: DataTypes.STRING(50), allowNull: true },
         Bank_Branch: { type: DataTypes.STRING(100), allowNull: true },

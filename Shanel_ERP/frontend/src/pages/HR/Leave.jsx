@@ -3,6 +3,7 @@ import axios from 'axios';
 
 const API_BASE = 'http://localhost:5000/api/hr';
 
+//set up variables for functions within leave page
 const Leave = () => {
   const today = new Date().toISOString().split('T')[0];
   const [date, setDate] = useState(today);
@@ -11,7 +12,7 @@ const Leave = () => {
   const [attendances, setAttendances] = useState([]);
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(false);
-  
+
   // Add Leave Modal State
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -22,6 +23,9 @@ const Leave = () => {
     Reason: ''
   });
 
+  /**
+ * Data Fetcher: Loads Employees, Attendance, and Leave records for the selected date.
+ */
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -42,7 +46,7 @@ const Leave = () => {
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [date]);
 
   const leaveEmployees = React.useMemo(() => {
@@ -65,7 +69,7 @@ const Leave = () => {
         department: emp.Department || '—'
       };
     });
-      
+
     if (!searchTerm.trim()) return list;
     const q = searchTerm.toLowerCase();
     return list.filter(e =>
@@ -77,11 +81,14 @@ const Leave = () => {
     );
   }, [employees, leaves, searchTerm]);
 
+  /**
+ * Submission Handler: Calculates total leave days and sends the new request to the backend.
+ */
   const handleAddLeave = async (e) => {
     e.preventDefault();
     try {
       if (!formData.Employee_ID) return alert('Please select an employee');
-      
+
       const start = new Date(formData.Start_Date);
       const end = new Date(formData.End_Date);
       const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
@@ -109,6 +116,9 @@ const Leave = () => {
     }
   };
 
+  /**
+ * Status Updater: Approves or rejects a leave request via the backend API.
+ */
   const updateLeaveStatus = async (leaveId, action) => {
     try {
       const endpoint = action === 'approve' ? 'approve' : 'reject';
@@ -131,7 +141,7 @@ const Leave = () => {
     }}>
       <div style={{ marginBottom: '18px' }}>
         <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 800, letterSpacing: '-0.5px' }}>
-          <span style={{ 
+          <span style={{
             background: 'linear-gradient(135deg, #0d9488, #0f172a)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
@@ -296,9 +306,9 @@ const Leave = () => {
                   <div style={{ fontWeight: 400, color: '#94a3b8' }}>to {emp.endDate}</div>
                   <div style={{ fontWeight: 800, color: '#0d9488', marginTop: '2px' }}>{emp.totalDays} Day(s)</div>
                 </div>
-                <div style={{ 
-                  fontSize: '12px', 
-                  color: '#4b5563', 
+                <div style={{
+                  fontSize: '12px',
+                  color: '#4b5563',
                   fontStyle: 'italic',
                   paddingRight: '10px',
                   lineHeight: '1.4'
@@ -308,18 +318,18 @@ const Leave = () => {
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
                   {emp.leaveStatus === 'Pending' ? (
                     <>
-                      <button 
+                      <button
                         onClick={() => updateLeaveStatus(emp.leaveId, 'approve')}
                         style={{
-                          padding: '5px 10px', background: '#10b981', color: '#fff', border: 'none', 
+                          padding: '5px 10px', background: '#10b981', color: '#fff', border: 'none',
                           borderRadius: '6px', cursor: 'pointer', fontSize: '10px', fontWeight: 800,
                           boxShadow: '0 2px 4px rgba(16,185,129,0.2)', transition: 'all 0.2s'
                         }}
                       >APPROVE</button>
-                      <button 
+                      <button
                         onClick={() => updateLeaveStatus(emp.leaveId, 'reject')}
                         style={{
-                          padding: '5px 10px', background: '#ef4444', color: '#fff', border: 'none', 
+                          padding: '5px 10px', background: '#ef4444', color: '#fff', border: 'none',
                           borderRadius: '6px', cursor: 'pointer', fontSize: '10px', fontWeight: 800,
                           boxShadow: '0 2px 4px rgba(239,68,68,0.2)', transition: 'all 0.2s'
                         }}
@@ -358,7 +368,7 @@ const Leave = () => {
             <form onSubmit={handleAddLeave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#4b5563', marginBottom: '6px' }}>Employee</label>
-                <select 
+                <select
                   value={formData.Employee_ID}
                   onChange={e => setFormData({ ...formData, Employee_ID: e.target.value })}
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none' }}
@@ -373,7 +383,7 @@ const Leave = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#4b5563', marginBottom: '6px' }}>Leave Type</label>
-                  <select 
+                  <select
                     value={formData.Leave_Type}
                     onChange={e => setFormData({ ...formData, Leave_Type: e.target.value })}
                     style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none' }}
@@ -386,7 +396,7 @@ const Leave = () => {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#4b5563', marginBottom: '6px' }}>Start Date</label>
-                  <input 
+                  <input
                     type="date"
                     value={formData.Start_Date}
                     onChange={e => setFormData({ ...formData, Start_Date: e.target.value })}
@@ -397,7 +407,7 @@ const Leave = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#4b5563', marginBottom: '6px' }}>End Date</label>
-                <input 
+                <input
                   type="date"
                   value={formData.End_Date}
                   onChange={e => setFormData({ ...formData, End_Date: e.target.value })}
@@ -407,7 +417,7 @@ const Leave = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#4b5563', marginBottom: '6px' }}>Reason</label>
-                <textarea 
+                <textarea
                   value={formData.Reason}
                   onChange={e => setFormData({ ...formData, Reason: e.target.value })}
                   placeholder="Why is this employee taking leave?"
@@ -416,12 +426,12 @@ const Leave = () => {
               </div>
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowModal(false)}
                   style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #d1d5db', background: '#fff', fontWeight: 700, cursor: 'pointer' }}
                 >Cancel</button>
-                <button 
+                <button
                   type="submit"
                   style={{ flex: 1, padding: '12px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
                 >Submit Request</button>

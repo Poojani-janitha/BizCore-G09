@@ -1,90 +1,13 @@
-// import React, { useState, useEffect, useRef } from 'react';
-// import { useNavigate } from 'react-router-dom';
-// import { generateEmployees, EMP_KEY } from '../../storeContext/employeesData';
-
-// const EmployeesPage = () => {
-//   const navigate = useNavigate();
-//   const [employees, setEmployees] = useState([]);
-//   const dragItem = useRef();
-//   const dragOverItem = useRef();
-
-//   useEffect(() => {
-//     const stored = localStorage.getItem(EMP_KEY);
-//     if (stored) {
-//       try { setEmployees(JSON.parse(stored)); } catch { setEmployees(generateEmployees()); }
-//     } else {
-//       const gen = generateEmployees();
-//       setEmployees(gen);
-//       localStorage.setItem(EMP_KEY, JSON.stringify(gen));
-//     }
-//     // no selected panel in this layout
-//   }, []);
-
-//   return (
-//     <div style={{
-//       minHeight: '100vh',
-//       background: '#f5f6fa',
-//       padding: '28px 32px',
-//       fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
-//     }}>
-//       <div style={{ marginBottom: '18px' }}>
-//         <h1 style={{
-//           margin: 0,
-//           fontSize: '22px',
-//           fontWeight: 700,
-//           color: '#1a1a2e'
-//         }}>
-//           <span style={{
-//             background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
-//             WebkitBackgroundClip: 'text',
-//             WebkitTextFillColor: 'transparent',
-//           }}>Employees</span>
-//         </h1>
-//       </div>
-
-//       <div className="mb-2 text-muted">Tip: drag cards to rearrange employee order.</div>
-//       <div className="row g-3">
-//         {employees.map((emp, index) => (
-//           <div className="col-sm-6 col-md-4" key={emp.id}
-//             onDragEnter={() => (dragOverItem.current = index)}>
-//             <div
-//               className="card"
-//               draggable
-//               onDragStart={(e) => { dragItem.current = index; e.dataTransfer.effectAllowed = 'move'; }}
-//               onDragOver={(e) => e.preventDefault()}
-//               onDragEnd={() => {
-//                 const _employees = [...employees];
-//                 const draggedItemContent = _employees.splice(dragItem.current, 1)[0];
-//                 _employees.splice(dragOverItem.current, 0, draggedItemContent);
-//                 dragItem.current = null;
-//                 dragOverItem.current = null;
-//                 setEmployees(_employees);
-//                 try { localStorage.setItem(EMP_KEY, JSON.stringify(_employees)); } catch {}
-//               }}
-//               style={{ cursor: 'grab' }}
-//               onClick={() => navigate(`/hr/employees/${emp.id}`)}
-//             >
-//               <div className="card-body">
-//                 <h5 className="card-title mb-1">{emp.name}</h5>
-//                 <p className="mb-0"><small className="text-muted">{emp.role}</small></p>
-//                 <p className="mb-0"><small className="text-muted">{emp.email}</small></p>
-//               </div>
-//             </div>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default EmployeesPage;
-
 
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:5000/api/hr';
 
+/**
+ * Converts a backend Employee record to a frontend-friendly object.
+ * Normalizes status and adds a 'raw' reference for deep access.
+ */
 const mapEmployeeFromApi = (emp) => ({
   id: String(emp.Employee_ID),
   name: emp.Full_Name || '',
@@ -103,7 +26,7 @@ const defaultAddForm = {
   Full_Name: '', Name_With_Initials: '', NIC: '', Date_Of_Birth: '', Gender: '', Marital_Status: '',
   Contact_Phone: '', Contact_Phone_2: '', Email: '', City: '', Department: 'HR', Role: 'Staff',
   Salary_Category: 'Monthly_Fixed', Employee_Type: 'Permanent', Hire_Date: '', Confirmation_Date: '',
-  Status: 'Active', EPF_Eligible: 'Yes', ETF_Eligible: 'Yes', EPF_Number: '', Bank_Name: '',
+  Status: 'Active', EPF_Eligible: 'Yes', ETF_Eligible: 'Yes', EPF_Number: '', ETF_Number: '', Bank_Name: '',
   Bank_Account_No: '', Bank_Branch: '', Bank_Account_Name: '', Permanent_Address: '',
   Current_Address: '', Emergency_Contact_Name: '', Emergency_Contact_Phone: '',
   Emergency_Contact_Relationship: '', Notes: '', image: ''
@@ -129,6 +52,10 @@ const EmployeesPage = () => {
     window.dispatchEvent(new Event('employees-updated'));
   };
 
+  /**
+ * Data Fetcher: Loads the full list of employees from the backend.
+ * Filters for 'Active' by default but can be extended.
+ */
   const fetchEmployees = async () => {
     try {
       setIsLoading(true);
@@ -146,6 +73,9 @@ const EmployeesPage = () => {
     }
   };
 
+  /**
+ * Photo Handler: Manages local preview and state updates for employee profile images.
+ */
   const handleImageChange = (empId, e) => {
     e?.stopPropagation();
     const file = e?.target?.files?.[0];
@@ -188,7 +118,7 @@ const EmployeesPage = () => {
   const startEdit = (emp, e) => {
     e.stopPropagation();
     setEditingId(emp.id);
-    setEditForm({ name: emp.name, role: emp.role, email: emp.email || '', phone: emp.phone || '', department: emp.department || '', image: emp.image || '' });
+    setEditForm({ name: emp.name, role: emp.role, email: emp.email || '', phone: emp.phone || '', department: emp.department || '', image: emp.image || '', etfNumber: emp.raw?.ETF_Number || '' });
   };
 
   const cancelEdit = (e) => {
@@ -207,6 +137,7 @@ const EmployeesPage = () => {
           Email: editForm.email?.trim() || null,
           Contact_Phone: editForm.phone?.trim() || '',
           Department: editForm.department || 'HR',
+          ETF_Number: editForm.etfNumber || null,
         };
         await axios.put(`${API_BASE}/employees/${editingId}`, payload);
         await fetchEmployees();
@@ -221,7 +152,7 @@ const EmployeesPage = () => {
   const updateEditField = (field, value) => {
     setEditForm(prev => ({ ...prev, [field]: value }));
   };
-
+  //updates the data and clears error messages.
   const updateAddFormField = (field, value) => {
     setAddForm(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -233,6 +164,9 @@ const EmployeesPage = () => {
     }
   };
 
+  /**
+ * Validator: Performs frontend checks (Required fields, Email format, NIC format) before submission.
+ */
   const validateForm = () => {
     const newErrors = {};
     const { Full_Name, Contact_Phone, Email, NIC, EPF_Eligible, EPF_Number, Hire_Date } = addForm;
@@ -270,10 +204,18 @@ const EmployeesPage = () => {
       newErrors.EPF_Number = 'Required if eligible';
     }
 
+    if (addForm.ETF_Eligible === 'Yes' && !addForm.ETF_Number?.trim()) {
+      newErrors.ETF_Number = 'Required if eligible';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+ * Add Employee: Sends the new employee data to the backend.
+ * Automatically handles the conversion of 'Hire Date' and UI reset on success.
+ */
   const addEmployee = (e) => {
     e?.stopPropagation();
     if (!validateForm()) {
@@ -284,7 +226,7 @@ const EmployeesPage = () => {
       try {
         const now = new Date();
         const hireDate = addForm.Hire_Date || now.toISOString().slice(0, 10);
-        
+
         const payload = {
           ...addForm,
           Full_Name: addForm.Full_Name.trim(),
@@ -298,10 +240,10 @@ const EmployeesPage = () => {
         setShowAddForm(false);
       } catch (err) {
         console.error('addEmployee error:', err);
-        
+
         // Build error message with validation details
         let errorMsg = err?.response?.data?.message || 'Failed to add employee';
-        
+
         // Add validation errors if present
         if (err?.response?.data?.validationErrors && Array.isArray(err.response.data.validationErrors)) {
           const validationDetails = err.response.data.validationErrors
@@ -309,7 +251,7 @@ const EmployeesPage = () => {
             .join('\n');
           errorMsg = `${errorMsg}\n\n${validationDetails}`;
         }
-        
+
         alert(errorMsg);
       }
     })();
@@ -321,6 +263,9 @@ const EmployeesPage = () => {
     setErrors({});
   };
 
+  /**
+ * Deactivation: Marks an employee as "Inactive" via the backend API.
+ */
   const deleteEmployee = (emp, e) => {
     e?.stopPropagation();
     const confirmed = window.confirm(`Delete employee "${emp.name}"?`);
@@ -328,7 +273,7 @@ const EmployeesPage = () => {
     (async () => {
       try {
         await axios.delete(`${API_BASE}/employees/${emp.id}`);
-        const updated = employees.map(item => 
+        const updated = employees.map(item =>
           String(item.id) === String(emp.id) ? { ...item, status: 'Inactive', raw: { ...item.raw, Status: 'Inactive' } } : item
         );
         persistEmployees(updated);
@@ -350,7 +295,7 @@ const EmployeesPage = () => {
     (async () => {
       try {
         await axios.patch(`${API_BASE}/employees/${emp.id}/status`, { Status: 'Active' });
-        const updated = employees.map(item => 
+        const updated = employees.map(item =>
           String(item.id) === String(emp.id) ? { ...item, status: 'Active', raw: { ...item.raw, Status: 'Active' } } : item
         );
         persistEmployees(updated);
@@ -430,9 +375,9 @@ const EmployeesPage = () => {
         />
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
             gap: '6px',
             background: '#0d9488',
             color: '#fff',
@@ -536,7 +481,7 @@ const EmployeesPage = () => {
               <label className="form-label small mb-0">Salary Category</label>
               <select className="form-select form-select-sm" value={addForm.Salary_Category} onChange={e => updateAddFormField('Salary_Category', e.target.value)}>
                 <option value="Monthly_Fixed">Monthly Fixed</option>
-                <option value="Card_Based">Card Based</option>
+                <option value="Production_Based">Production Based</option>
               </select>
             </div>
             <div className="col-12 col-md-4">
@@ -581,6 +526,12 @@ const EmployeesPage = () => {
                 EPF Number {errors.EPF_Number && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.EPF_Number})</span>}
               </label>
               <input className="form-control form-control-sm" style={{ borderColor: errors.EPF_Number ? '#dc2626' : '#ced4da' }} placeholder="EPF Number" value={addForm.EPF_Number} onChange={e => updateAddFormField('EPF_Number', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0" style={{ color: errors.ETF_Number ? '#dc2626' : 'inherit' }}>
+                ETF Number {errors.ETF_Number && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.ETF_Number})</span>}
+              </label>
+              <input className="form-control form-control-sm" style={{ borderColor: errors.ETF_Number ? '#dc2626' : '#ced4da' }} placeholder="ETF Number" value={addForm.ETF_Number} onChange={e => updateAddFormField('ETF_Number', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Bank Name</label>
@@ -677,7 +628,7 @@ const EmployeesPage = () => {
                   _employees.splice(dragOverItem.current, 0, draggedItemContent);
                   dragItem.current = null;
                   dragOverItem.current = null;
-                  try { persistEmployees(_employees); } catch {}
+                  try { persistEmployees(_employees); } catch { }
                 }}
                 style={{
                   cursor: searchTerm ? 'default' : 'grab',
@@ -777,7 +728,7 @@ const EmployeesPage = () => {
                     padding: '16px',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                     border: '1px solid #e8e8e8',
-                  zIndex: 10,
+                    zIndex: 10,
                   }}
                 >
                   <div className="mb-2">
@@ -804,6 +755,10 @@ const EmployeesPage = () => {
                   <div className="mb-2">
                     <label className="form-label small mb-0">Department</label>
                     <input className="form-control form-control-sm" value={editForm.department} onChange={e => updateEditField('department', e.target.value)} />
+                  </div>
+                  <div className="mb-2">
+                    <label className="form-label small mb-0">ETF Number</label>
+                    <input className="form-control form-control-sm" value={editForm.etfNumber} onChange={e => updateEditField('etfNumber', e.target.value)} />
                   </div>
                   <div className="mb-2">
                     <label className="form-label small mb-0">Profile photo</label>
@@ -861,6 +816,7 @@ const EmployeesPage = () => {
               padding: '20px'
             }}
           >
+            {/*Display employee details.*/}
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h4 style={{ margin: 0 }}>Employee Details</h4>
               <button className="btn btn-sm btn-outline-secondary" onClick={() => setViewingEmployee(null)}>Close</button>
@@ -889,6 +845,7 @@ const EmployeesPage = () => {
               <div className="col-12 col-md-6"><strong>EPF Eligible:</strong> {renderDetailValue(viewingEmployee.raw?.EPF_Eligible)}</div>
               <div className="col-12 col-md-6"><strong>ETF Eligible:</strong> {renderDetailValue(viewingEmployee.raw?.ETF_Eligible)}</div>
               <div className="col-12 col-md-6"><strong>EPF Number:</strong> {renderDetailValue(viewingEmployee.raw?.EPF_Number)}</div>
+              <div className="col-12 col-md-6"><strong>ETF Number:</strong> {renderDetailValue(viewingEmployee.raw?.ETF_Number)}</div>
               <div className="col-12 col-md-6"><strong>Bank Name:</strong> {renderDetailValue(viewingEmployee.raw?.Bank_Name)}</div>
               <div className="col-12 col-md-6"><strong>Bank Account No:</strong> {renderDetailValue(viewingEmployee.raw?.Bank_Account_No)}</div>
               <div className="col-12 col-md-6"><strong>Bank Branch:</strong> {renderDetailValue(viewingEmployee.raw?.Bank_Branch)}</div>

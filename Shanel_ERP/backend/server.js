@@ -2,6 +2,10 @@ const express = require("express");
 const path = require("path");
 require('dotenv').config();
 
+if (!process.env.JWT_SECRET || !process.env.REFRESH_TOKEN_SECRET) {
+    throw new Error("Authentication secrets (JWT_SECRET or REFRESH_TOKEN_SECRET) are not configured. Add them to backend/.env as described in AUTH_SETUP.md.");
+}
+
 /** Load Sequelize models & associations before routes so HR/inventory use one shared registry */
 require('./models');
 

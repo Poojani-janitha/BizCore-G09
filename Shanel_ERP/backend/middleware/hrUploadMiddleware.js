@@ -1,3 +1,10 @@
+/**
+ * HR DOCUMENT UPLOAD MIDDLEWARE:
+ * Configures Multer for handling file uploads related to employee records (NIC, CV, Certs).
+ * - Target: backend/uploads/hr-documents
+ * - Validation: Restricts to Images, PDF, and Word docs.
+ * - Limit: 15MB per file.
+ */
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');

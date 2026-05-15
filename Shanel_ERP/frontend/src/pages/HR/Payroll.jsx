@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Calculator, Send, Download, CheckCircle, AlertCircle, Edit2, Save, X, Eye, Printer, FileText } from 'lucide-react';
+import { Calculator, Send, Download, CheckCircle, AlertCircle, Edit2, Save, X, Eye, Printer, FileText, History } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const API_BASE = 'http://localhost:5000/api/hr';
 
 // Salary configuration based on role
+/**
+ * Retrieves salary configuration (base, rates, bonus rules) based on employee role.
+ */
 const getSalaryConfig = (role) => {
   const configs = {
     Cashier: {
@@ -36,6 +39,11 @@ const getSalaryConfig = (role) => {
 };
 
 // Calculate salary components
+/**
+ * MAIN PAYROLL CALCULATION ENGINE (Frontend):
+ * Calculates all salary components (Basic, OT, Bonus, Tea, Deductions, Net) based on stats and config.
+ * Implements role-specific logic like Cashier tea allowance exclusion.
+ */
 const calculateSalary = (config, role, stats, cardsMade = 0) => {
   let basicSalary = 0;
   let productionEarnings = 0;
@@ -64,7 +72,7 @@ const calculateSalary = (config, role, stats, cardsMade = 0) => {
 
   const grossSalary = basicSalary + productionEarnings + overtimeEarnings + attendanceBonus + teaAllowance + otherAllowances;
 
-  const totalDeductions = epfDeduction + etfDeduction + advanceDeduction + otherDeductions; 
+  const totalDeductions = epfDeduction + etfDeduction + advanceDeduction + otherDeductions;
   const netSalary = grossSalary - totalDeductions;
 
   return {
@@ -92,8 +100,6 @@ export default function Payroll() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [showBankModal, setShowBankModal] = useState(false);
   const [bankDetails, setBankDetails] = useState({ bankName: '', accountNumber: '', recipientEmail: '', notes: '' });
@@ -107,10 +113,17 @@ export default function Payroll() {
   const [selectedEmpForAdj, setSelectedEmpForAdj] = useState(null);
   const [adjData, setAdjData] = useState({ epf: 0, etf: 0, advance: 0, otherDeductions: 0, otherAllowances: 0, deductionReason: '', allowanceReason: '' });
   const [loading, setLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [monthlyHistory, setMonthlyHistory] = useState([]);
+  const [modalMonth, setModalMonth] = useState('');
 
 
 
   // Helper to calculate daily tea cost (Replicating AttendancePage logic)
+  /**
+ * Helper: Calculates daily tea cost for an employee record.
+ * Logic: Rs 60 standard, Rs 450 if working past 5 PM. Excludes specific roles.
+ */
   const getDailyTeaCost = (rec, role) => {
     if (rec.Status !== 'Present' || !rec.Check_In_Time || !rec.Check_Out_Time) return 0;
     const roleText = String(role || '').toLowerCase();
@@ -119,21 +132,25 @@ export default function Payroll() {
     const [inH, inM] = rec.Check_In_Time.split(':').map(Number);
     const [outH, outM] = rec.Check_Out_Time.split(':').map(Number);
     const workedHours = ((outH * 60 + outM) - (inH * 60 + inM)) / 60;
-    
+
     if (workedHours < 4) return 0;
-    
+
     const outMinutes = outH * 60 + outM;
-    return outMinutes > (17 * 60) ? 450 : 60;
+    return outMinutes > (18 * 60) ? 450 : 60;
   };
 
   // Fetch employees, payroll, and monthly attendance
+  /**
+ * Data Fetcher: Loads Employees, Payroll, and Attendance data from the backend.
+ * Merges them into a single "combined" record format for the UI table.
+ */
   const fetchPayrollData = async (monthStr) => {
     try {
       setLoading(true);
       const [year, month] = monthStr.split('-');
       const firstDay = `${year}-${month}-01`;
       const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
-      
+
       const [empRes, payRes, attRes] = await Promise.all([
         axios.get(`${API_BASE}/employees`, { params: { status: 'Active' } }),
         axios.get(`${API_BASE}/payroll`, { params: { month, year } }),
@@ -143,13 +160,13 @@ export default function Payroll() {
       const employees = Array.isArray(empRes?.data?.data) ? empRes.data.data : [];
       const dbPayrolls = Array.isArray(payRes?.data?.data) ? payRes.data.data : [];
       const attendances = Array.isArray(attRes?.data?.data) ? attRes.data.data : [];
-      
+
       // Compute monthly stats from attendance
       const statsMap = {};
       attendances.forEach(att => {
         const id = att.Employee_ID;
         if (!statsMap[id]) statsMap[id] = { daysWorked: 0, totalOtHours: 0, totalTeaCost: 0, totalCards: 0 };
-        
+
         if (att.Status === 'Present') {
           statsMap[id].daysWorked += 1;
           statsMap[id].totalOtHours += parseFloat(att.Overtime_Hours || 0);
@@ -165,20 +182,20 @@ export default function Payroll() {
         const dbRec = payrollMap[empId];
         const role = emp.Role || 'Staff';
         const stats = statsMap[empId] || { daysWorked: 0, totalOtHours: 0, totalTeaCost: 0, totalCards: 0 };
-        
+
         const config = getSalaryConfig(role);
         // Special case for Cashier OT rate if config doesn't have it (though it does)
         if (String(role || '').toLowerCase() === 'cashier' && !config.otRate) {
-            config.otRate = 100;
+          config.otRate = 100;
         }
 
-        const salary = calculateSalary(config, role, { 
-            ...stats, 
-            epfDeduction: parseFloat(dbRec?.EPF_Employee_Deduction || 0),
-            etfDeduction: parseFloat(dbRec?.ETF_Employee_Deduction || 0),
-            advanceDeduction: parseFloat(dbRec?.Advance_Deduction || 0),
-            otherDeductions: parseFloat(dbRec?.Other_Deductions || 0),
-            otherAllowances: parseFloat(dbRec?.Other_Allowances || 0)
+        const salary = calculateSalary(config, role, {
+          ...stats,
+          epfDeduction: parseFloat(dbRec?.EPF_Employee_Deduction || 0),
+          etfDeduction: parseFloat(dbRec?.ETF_Employee_Deduction || 0),
+          advanceDeduction: parseFloat(dbRec?.Advance_Deduction || 0),
+          otherDeductions: parseFloat(dbRec?.Other_Deductions || 0),
+          otherAllowances: parseFloat(dbRec?.Other_Allowances || 0)
         }, stats.totalCards);
 
         return {
@@ -211,15 +228,9 @@ export default function Payroll() {
     fetchPayrollData(selectedMonth);
   }, [selectedMonth]);
 
-  const updatePayrollField = (field, value) => {
-    setEditForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const startEdit = (record) => {
-    setEditingId(record.id);
-    setEditForm({ ...record });
-  };
-
+  /**
+ * Persister: Sends updated payroll data to the backend (POST for new, PUT for existing).
+ */
   const persistRecord = async (recordData, newStatus) => {
     const [year, month] = selectedMonth.split('-');
     const payload = {
@@ -250,36 +261,7 @@ export default function Payroll() {
       await axios.post(`${API_BASE}/payroll`, payload);
     }
   };
-
-  const saveEdit = async () => {
-    if (!editingId) return;
-
-    try {
-      setLoading(true);
-      const config = getSalaryConfig(editForm.employeeRole);
-      const salary = calculateSalary(config, editForm.employeeRole, { daysWorked: editForm.daysWorked, totalOtHours: 0, totalTeaCost: editForm.teaAllowance }, 0);
-      
-      const newRecordData = {
-        ...editForm,
-        ...salary
-      };
-      
-      await persistRecord(newRecordData, newRecordData.status);
-      await fetchPayrollData(selectedMonth);
-      setEditingId(null);
-    } catch (error) {
-      console.error('Failed to save payroll:', error);
-      alert(error?.response?.data?.message || 'Failed to save payroll');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditForm({});
-  };
-
+  //approves a record.
   const approveRecord = async (id) => {
     const record = payrollRecords.find(r => r.id === id);
     try {
@@ -293,7 +275,7 @@ export default function Payroll() {
       setLoading(false);
     }
   };
-
+  //reverts the approval status of a record.
   const revertApproval = async (id) => {
     const record = payrollRecords.find(r => r.id === id);
     try {
@@ -307,7 +289,7 @@ export default function Payroll() {
       setLoading(false);
     }
   };
-
+  //opens the view modal.
   const openViewModal = (record) => {
     setSelectedEmpForView(record);
     setShowViewModal(true);
@@ -319,7 +301,7 @@ export default function Payroll() {
       alert('No pending records to approve.');
       return;
     }
-    
+
     try {
       setLoading(true);
       for (const record of pendingRecords) {
@@ -343,7 +325,7 @@ export default function Payroll() {
     }
 
     if (!window.confirm('Are you sure you want to reset all approved records back to pending?')) return;
-    
+
     try {
       setLoading(true);
       for (const record of approvedRecords) {
@@ -368,7 +350,7 @@ export default function Payroll() {
   const pendingCount = filteredRecords.filter((r) => r.status === 'Pending').length;
   const approvedCount = filteredRecords.filter((r) => r.status === 'Approved').length;
 
-  // Helper to format month for display
+  // to format month for display
   const getFriendlyMonth = (monthStr) => {
     if (!monthStr) return '';
     const [year, month] = monthStr.split('-');
@@ -470,6 +452,9 @@ export default function Payroll() {
     doc.save(`Payroll_Report_${selectedMonth}.pdf`);
   };
 
+  /**
+ * Export Helper: Generates a paysheet PDF and calls the backend email API to send it to the bank.
+ */
   const handleMailToBank = async () => {
     if (!bankDetails.recipientEmail || !bankDetails.bankName) {
       alert('Please enter bank name and recipient email.');
@@ -536,15 +521,15 @@ export default function Payroll() {
     const friendlyMonth = getFriendlyMonth(selectedMonth);
     const headers = ['Employee Code', 'Employee Name', 'Role', 'Gross Salary', 'EPF', 'ETF', 'Advance', 'Other Ded', 'Net Salary', 'Status'];
     const rows = filteredRecords.map((r) => [
-      r.employeeCode, 
-      r.employeeName, 
-      r.employeeRole, 
-      r.grossSalary, 
+      r.employeeCode,
+      r.employeeName,
+      r.employeeRole,
+      r.grossSalary,
       r.epfDeduction,
       r.etfDeduction,
       r.advanceDeduction,
       r.otherDeductions,
-      r.netSalary, 
+      r.netSalary,
       r.status
     ]);
     const csvContent = [`Payroll Report - ${friendlyMonth}`, "", headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
@@ -562,35 +547,116 @@ export default function Payroll() {
       setLoading(true);
       const [year, month] = selectedMonth.split('-');
       const firstDay = `${year}-${month}-01`;
-      const lastDay = new Date(year, month, 0).getDate();
-      
-      // Fetch existing records for the month
-      const res = await axios.get(`${API_BASE}/attendance`, { 
-        params: { employeeId: emp.id, from: firstDay, to: `${year}-${month}-${lastDay}` } 
-      });
-      const existing = res.data.data || [];
-      
+      const lastDayDate = new Date(year, month, 0);
+      const lastDayStr = lastDayDate.toISOString().split('T')[0];
+      const lastDay = lastDayDate.getDate();
+
+      // Fetch existing records and leaves for the month
+      const [attRes, leavesRes] = await Promise.all([
+        axios.get(`${API_BASE}/attendance`, {
+          params: { employeeId: emp.id, from: firstDay, to: lastDayStr }
+        }),
+        axios.get(`${API_BASE}/leaves`, {
+          params: { employeeId: emp.id, from: firstDay, to: lastDayStr, status: 'Approved' }
+        })
+      ]);
+
+      const existing = attRes.data.data || [];
+      const leaves = leavesRes.data.data || [];
+
       const days = [];
+      const todayStr = new Date().toISOString().split('T')[0];
+
       for (let i = 1; i <= lastDay; i++) {
         const dateStr = `${year}-${month}-${String(i).padStart(2, '0')}`;
         const match = existing.find(a => a.Attendance_Date === dateStr);
+        const leaveMatch = leaves.find(l => l.Start_Date <= dateStr && l.End_Date >= dateStr);
+
         days.push({
           date: dateStr,
           day: i,
-          cards: match?.Cards_Produced || 0,
-          status: match?.Status || 'Absent'
+          cards: leaveMatch ? 0 : (match?.Cards_Produced ?? 0),
+          status: leaveMatch ? 'Leave' : (match?.Status || 'Absent'),
+          isLeave: !!leaveMatch,
+          hasTimeIn: !!match?.Check_In_Time
         });
       }
-      
+
       setDailyCardsData(days);
       setSelectedEmpForCards(emp);
+      
+      // Fetch historical totals for the last 12 months for the "Monthly History" view
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      const histRes = await axios.get(`${API_BASE}/attendance`, {
+        params: { employeeId: emp.id, from: oneYearAgo.toISOString().split('T')[0] }
+      });
+      
+      const historyMap = {};
+      (histRes.data.data || []).forEach(att => {
+        const m = att.Attendance_Date.substring(0, 7);
+        historyMap[m] = (historyMap[m] || 0) + (att.Cards_Produced || 0);
+      });
+      setMonthlyHistory(Object.entries(historyMap).sort((a,b) => b[0].localeCompare(a[0])));
+
+      setModalMonth(selectedMonth);
+      setShowHistory(false);
       setShowCardsModal(true);
     } catch (error) {
+      console.error('openDailyCardsModal error:', error);
       alert('Failed to load daily cards data');
     } finally {
       setLoading(false);
     }
   };
+
+  // Re-fetch daily data if the month is changed WITHIN the modal
+  useEffect(() => {
+    if (showCardsModal && modalMonth && selectedEmpForCards) {
+      const refreshModalData = async () => {
+        try {
+          const [year, month] = modalMonth.split('-');
+          const firstDay = `${year}-${month}-01`;
+          const lastDayDate = new Date(year, month, 0);
+          const lastDayStr = lastDayDate.toISOString().split('T')[0];
+          const lastDay = lastDayDate.getDate();
+
+          const [attRes, leavesRes] = await Promise.all([
+            axios.get(`${API_BASE}/attendance`, {
+              params: { employeeId: selectedEmpForCards.id, from: firstDay, to: lastDayStr }
+            }),
+            axios.get(`${API_BASE}/leaves`, {
+              params: { employeeId: selectedEmpForCards.id, from: firstDay, to: lastDayStr, status: 'Approved' }
+            })
+          ]);
+
+          const existing = attRes.data.data || [];
+          const leaves = leavesRes.data.data || [];
+          const todayStr = new Date().toISOString().split('T')[0];
+
+          const days = [];
+          for (let i = 1; i <= lastDay; i++) {
+            const dateStr = `${year}-${month}-${String(i).padStart(2, '0')}`;
+            const match = existing.find(a => a.Attendance_Date === dateStr);
+            const leaveMatch = leaves.find(l => l.Start_Date <= dateStr && l.End_Date >= dateStr);
+
+            days.push({
+              date: dateStr,
+              day: i,
+              cards: leaveMatch ? 0 : (match?.Cards_Produced ?? 0),
+              status: leaveMatch ? 'Leave' : (match?.Status || 'Absent'),
+              isLeave: !!leaveMatch,
+              hasTimeIn: !!match?.Check_In_Time
+            });
+          }
+          setDailyCardsData(days);
+        } catch (err) {
+          console.error('refreshModalData error:', err);
+        }
+      };
+      refreshModalData();
+    }
+  }, [modalMonth, showCardsModal]);
 
   const saveDailyCards = async () => {
     try {
@@ -602,7 +668,7 @@ export default function Payroll() {
         Cards_Produced: d.cards,
         Marked_By: 'Manual'
       }));
-      
+
       await axios.post(`${API_BASE}/attendance/bulk`, { records });
       await fetchPayrollData(selectedMonth);
       setShowCardsModal(false);
@@ -641,14 +707,14 @@ export default function Payroll() {
         deductionReason: adjData.deductionReason,
         allowanceReason: adjData.allowanceReason
       };
-      
+
       // Recalculate salary with new adjustments
       const config = getSalaryConfig(updatedRecord.employeeRole);
-      const salary = calculateSalary(config, updatedRecord.employeeRole, { 
-        daysWorked: updatedRecord.daysWorked, 
-        totalOtHours: updatedRecord.overtimeEarnings / (config.otRate || 1), 
+      const salary = calculateSalary(config, updatedRecord.employeeRole, {
+        daysWorked: updatedRecord.daysWorked,
+        totalOtHours: updatedRecord.overtimeEarnings / (config.otRate || 1),
         totalTeaCost: updatedRecord.teaAllowance,
-        ...updatedRecord 
+        ...updatedRecord
       }, updatedRecord.totalCards);
 
       await persistRecord({ ...updatedRecord, ...salary }, updatedRecord.status);
@@ -665,14 +731,14 @@ export default function Payroll() {
     <div style={{ minHeight: '100vh', background: '#f5f6fa', padding: '28px 32px', fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif" }}>
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ 
-            margin: 0, 
-            fontSize: '26px', 
-            fontWeight: 900, 
+          <h1 style={{
+            margin: 0,
+            fontSize: '26px',
+            fontWeight: 900,
             background: 'linear-gradient(135deg, rgb(13, 148, 136), rgb(15, 23, 42))',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            letterSpacing: '-0.02em' 
+            letterSpacing: '-0.02em'
           }}>Payroll Management</h1>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>Calculate salaries for {selectedMonth}</p>
         </div>
@@ -765,7 +831,7 @@ export default function Payroll() {
                   <td style={{ padding: '14px 20px', textAlign: 'center', fontSize: '13px', color: '#1e293b', fontWeight: 700 }}>{record.daysWorked}</td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
                     {record.salaryType === 'Card Based' ? (
-                      <div 
+                      <div
                         onClick={() => openDailyCardsModal(record)}
                         style={{ cursor: 'pointer', padding: '6px 12px', background: '#f1f5f9', borderRadius: '8px', color: '#1e293b', fontWeight: 800, border: '1px solid #e2e8f0', display: 'inline-block' }}
                       >
@@ -776,7 +842,7 @@ export default function Payroll() {
                     )}
                   </td>
                   <td style={{ padding: '14px 20px', textAlign: 'right', fontSize: '14px', color: '#1e293b', fontWeight: 600 }}>
-                    Rs. {( (record.basicSalary || 0) + (record.productionEarnings || 0) ).toLocaleString()}
+                    Rs. {((record.basicSalary || 0) + (record.productionEarnings || 0)).toLocaleString()}
                   </td>
                   <td style={{ padding: '14px 20px', textAlign: 'right', fontSize: '14px', color: '#1e293b', fontWeight: 600 }}>
                     {record.overtimeEarnings > 0 ? `Rs. ${(record.overtimeEarnings || 0).toLocaleString()}` : <span style={{ color: '#cbd5e1' }}>—</span>}
@@ -796,7 +862,7 @@ export default function Payroll() {
                     )}
                   </td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
-                    <span style={{ 
+                    <span style={{
                       padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700,
                       background: record.status === 'Approved' ? '#dcfce7' : '#fef3c7',
                       color: record.status === 'Approved' ? '#166534' : '#92400e',
@@ -807,31 +873,31 @@ export default function Payroll() {
                   </td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <button 
-                        onClick={() => openViewModal(record)} 
+                      <button
+                        onClick={() => openViewModal(record)}
                         style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#1e3a5f', cursor: 'pointer', padding: '6px', borderRadius: '6px' }}
                         title="View Breakdown"
                       >
                         <Eye size={16} />
                       </button>
-                      <button 
-                        onClick={() => openAdjModal(record)} 
+                      <button
+                        onClick={() => openAdjModal(record)}
                         style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', cursor: 'pointer', padding: '6px', borderRadius: '6px' }}
                         title="Deductions & Adjustments"
                       >
                         <Edit2 size={16} />
                       </button>
                       {record.status === 'Pending' ? (
-                        <button 
-                          onClick={() => approveRecord(record.id)} 
+                        <button
+                          onClick={() => approveRecord(record.id)}
                           style={{ background: '#f0fdf4', border: '1px solid #dcfce7', color: '#10b981', cursor: 'pointer', padding: '6px', borderRadius: '6px' }}
                           title="Approve"
                         >
                           <CheckCircle size={16} />
                         </button>
                       ) : record.status === 'Approved' ? (
-                        <button 
-                          onClick={() => revertApproval(record.id)} 
+                        <button
+                          onClick={() => revertApproval(record.id)}
                           style={{ background: '#fff1f2', border: '1px solid #ffe4e6', color: '#f43f5e', cursor: 'pointer', padding: '6px', borderRadius: '6px' }}
                           title="Revert to Pending"
                         >
@@ -875,49 +941,131 @@ export default function Payroll() {
                 <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#1e293b' }}>Daily Card Production</h2>
                 <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>{selectedEmpForCards?.employeeName} - {selectedMonth}</p>
               </div>
-              <button onClick={() => setShowCardsModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={24} /></button>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <input 
+                  type="month" 
+                  value={modalMonth}
+                  onChange={(e) => setModalMonth(e.target.value)}
+                  style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 600, color: '#1e3a5f', outline: 'none' }}
+                />
+                {!showHistory && (
+                  <button 
+                    onClick={() => setShowHistory(true)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#1e3a5f' }}
+                  >
+                    <History size={16} /> Card history
+                  </button>
+                )}
+                <button onClick={() => setShowCardsModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={24} /></button>
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '12px', marginBottom: '32px' }}>
-              {dailyCardsData.map((day, idx) => (
-                <div key={idx} style={{ padding: '12px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#1e3a5f', marginBottom: '8px' }}>
-                    {new Date(day.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short', weekday: 'short' })}
-                  </div>
-                  <input
-                    type="number"
-                    min="0"
-                    value={day.cards || ''}
-                    onChange={(e) => {
-                      const newData = [...dailyCardsData];
-                      newData[idx].cards = parseInt(e.target.value) || 0;
-                      // Auto-set status to present if cards > 0 and no status
-                      if (newData[idx].cards > 0 && (newData[idx].status === 'Absent' || !newData[idx].status)) {
-                        newData[idx].status = 'Present';
-                      }
-                      setDailyCardsData(newData);
-                    }}
-                    style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: 700, textAlign: 'center', outline: 'none' }}
-                  />
-                  <div style={{ marginTop: '8px', display: 'flex', gap: '4px' }}>
-                    <select 
-                      value={day.status}
+            <div style={{ display: 'grid', gridTemplateColumns: showHistory ? 'repeat(auto-fill, minmax(120px, 1fr))' : '1fr', gap: '12px', marginBottom: '32px' }}>
+              {!showHistory && !dailyCardsData.some(d => d.date === new Date().toISOString().split('T')[0]) && (
+                <div style={{ padding: '32px', textAlign: 'center', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+                  <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>Today's date is not in the selected month ({selectedMonth}).</p>
+                  <button onClick={() => setShowHistory(true)} style={{ marginTop: '12px', background: 'none', border: 'none', color: '#0d9488', fontWeight: 700, cursor: 'pointer', fontSize: '14px' }}>View Full Card History</button>
+                </div>
+              )}
+              {dailyCardsData.filter(d => {
+                const todayStr = new Date().toISOString().split('T')[0];
+                if (!showHistory) return d.date === todayStr;
+                return d.date <= todayStr;
+              }).map((day) => {
+                const isToday = day.date === new Date().toISOString().split('T')[0];
+                const originalIdx = dailyCardsData.findIndex(d => d.date === day.date);
+                
+                return (
+                  <div key={day.date} style={{ 
+                    padding: '12px', 
+                    background: isToday ? '#f0fdfa' : '#f8fafc', 
+                    borderRadius: '12px', 
+                    border: isToday ? '1px solid #0d9488' : '1px solid #e2e8f0',
+                    boxShadow: isToday ? '0 4px 6px -1px rgba(13, 148, 136, 0.1)' : 'none'
+                  }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: isToday ? '#0d9488' : '#1e3a5f', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>{new Date(day.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short', weekday: 'short' })}</span>
+                      {isToday && <span style={{ fontSize: '10px', background: '#0d9488', color: '#fff', padding: '1px 6px', borderRadius: '4px' }}>TODAY</span>}
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      value={day.cards || ''}
+                      disabled={day.status !== 'Present'}
                       onChange={(e) => {
                         const newData = [...dailyCardsData];
-                        newData[idx].status = e.target.value;
+                        newData[originalIdx].cards = parseInt(e.target.value) || 0;
                         setDailyCardsData(newData);
                       }}
-                      style={{ width: '100%', fontSize: '10px', padding: '4px', borderRadius: '4px', border: 'none', background: '#e2e8f0', fontWeight: 600 }}
-                    >
-                      <option value="Present">Present</option>
-                      <option value="Absent">Absent</option>
-                    </select>
+                      style={{
+                        width: '100%', padding: '8px', borderRadius: '8px',
+                        border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: 700,
+                        textAlign: 'center', outline: 'none',
+                        background: (day.status !== 'Present' || (showHistory && !isToday)) ? '#f1f5f9' : '#fff',
+                        color: (day.status !== 'Present' || (showHistory && !isToday)) ? '#94a3b8' : '#1e3a5f'
+                      }}
+                    />
+                    <div style={{ marginTop: '8px', display: 'flex', gap: '4px' }}>
+                      <div style={{
+                        width: '100%', 
+                        fontSize: '10px', 
+                        padding: '6px', 
+                        borderRadius: '6px',
+                        textAlign: 'center',
+                        background: day.status === 'Present' ? '#dcfce7' : 
+                                   day.status === 'Leave' ? '#fef3c7' : '#fee2e2',
+                        fontWeight: 700, 
+                        color: day.status === 'Present' ? '#166534' : 
+                               day.status === 'Leave' ? '#92400e' : '#991b1b',
+                        border: '1px solid rgba(0,0,0,0.05)',
+                        opacity: 0.9,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.02em'
+                      }}>
+                        {day.status}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            {/* Monthly History Summary Section */}
+            {showHistory && monthlyHistory.length > 0 && (
+              <div style={{ marginTop: '24px', padding: '16px', background: '#f0fdfa', borderRadius: '12px', border: '1px solid #ccfbf1' }}>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: '#0f766e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <History size={16} /> Monthly Production Summary
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+                  {monthlyHistory.map(([month, total]) => (
+                    <div 
+                      key={month} 
+                      onClick={() => setModalMonth(month)}
+                      className="monthly-history-item"
+                      style={{ 
+                        background: modalMonth === month ? '#f0fdfa' : '#fff', 
+                        padding: '8px 12px', 
+                        borderRadius: '8px', 
+                        border: modalMonth === month ? '2px solid #0d9488' : '1px solid #e2e8f0', 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: modalMonth === month ? '0 2px 4px rgba(13,148,136,0.1)' : 'none'
+                      }}
+                    >
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: modalMonth === month ? '#0d9488' : '#475569' }}>
+                        {new Date(month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                      </span>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: '#0d9488' }}>{total} <span style={{ fontSize: '10px', fontWeight: 400 }}>Cards</span></span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '32px' }}>
               <button onClick={() => setShowCardsModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #d1d5db', background: 'white', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
               <button onClick={saveDailyCards} style={{ padding: '12px 32px', borderRadius: '12px', border: 'none', background: '#0d9488', color: 'white', fontWeight: 700, cursor: 'pointer' }}>Save Production Data</button>
             </div>
@@ -1056,16 +1204,16 @@ export default function Payroll() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button onClick={() => setShowBankModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #d1d5db', background: 'white', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-              <button 
-                onClick={handleMailToBank} 
+              <button
+                onClick={handleMailToBank}
                 disabled={loading}
-                style={{ 
-                  padding: '12px 32px', 
-                  borderRadius: '12px', 
-                  border: 'none', 
-                  background: loading ? '#94a3b8' : '#1e3a5f', 
-                  color: 'white', 
-                  fontWeight: 700, 
+                style={{
+                  padding: '12px 32px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: loading ? '#94a3b8' : '#1e3a5f',
+                  color: 'white',
+                  fontWeight: 700,
                   cursor: loading ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
