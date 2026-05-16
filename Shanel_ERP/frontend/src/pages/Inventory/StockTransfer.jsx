@@ -16,7 +16,7 @@ const StockTransfer = () => {
     const isSinhala = i18n.language?.startsWith('si');
 
     const fetchData = () => {
-        axios.get('http://localhost:5000/api/inventory/transfers/history')
+        axios.get('/api/inventory/transfers/history')
             .then(res => {
                 if (res.data && res.data.transfers) {
                     setData(res.data);
@@ -31,7 +31,7 @@ const StockTransfer = () => {
 
     const fetchInventory = async () => {
         try {
-            const productsRes = await axios.get('http://localhost:5000/api/inventory/products');
+            const productsRes = await axios.get('/api/inventory/products');
             
             // API returns array directly or wrapped in .products
             const products = Array.isArray(productsRes.data) ? productsRes.data : productsRes.data?.products || [];
@@ -43,7 +43,7 @@ const StockTransfer = () => {
                         try {
                             const productId = product.id;  // API returns 'id', not 'P_ID'
                             const locationRes = await axios.get(
-                                `http://localhost:5000/api/inventory/product/${productId}/locations`
+                                `/api/inventory/product/${productId}/locations`
                             );
                             console.log(`Product ${productId} locations:`, locationRes.data);
                             return {

@@ -38,7 +38,7 @@ const EditTransactionsPage = () => {
                 setLoadingMore(true);
             }
             
-            const response = await axios.get(`http://localhost:5000/api/journal-entries/correction/list?page=${pageNum}&limit=10`);
+            const response = await axios.get(`/api/journal-entries/correction/list?page=${pageNum}&limit=10`);
             if (response.data.success) {
                 if (reset) {
                     setTransactions(response.data.data);
@@ -66,7 +66,7 @@ const EditTransactionsPage = () => {
 
     const fetchAccounts = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/accounts');
+            const response = await axios.get('/api/accounts');
             if (response.data.success) {
                 setAccounts(response.data.data);
             }
@@ -126,7 +126,7 @@ const EditTransactionsPage = () => {
         }
 
         try {
-            const response = await axios.post('http://localhost:5000/api/journal-entries/correction/submit', {
+            const response = await axios.post('/api/journal-entries/correction/submit', {
                 originalJournalID: selectedTransaction.Journal_ID,
                 correctedData: correctionForm
             });

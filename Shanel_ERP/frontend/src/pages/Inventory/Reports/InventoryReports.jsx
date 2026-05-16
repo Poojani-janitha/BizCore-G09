@@ -28,7 +28,7 @@ const InventoryReports = () => {
         setIsLoading(true);
         setSelectedReport(report);
         try {
-            const response = await axios.get(`http://localhost:5000${report.endpoint}`);
+            const response = await axios.get(`${report.endpoint}`);
             setReportData(response.data.data || []);
         } catch (error) {
             console.error('Error loading report:', error);

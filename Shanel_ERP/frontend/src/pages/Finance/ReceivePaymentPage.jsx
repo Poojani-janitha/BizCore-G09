@@ -7,9 +7,9 @@ import {
 } from 'react-feather';
 import QuickAccountModal from '../../component/Finance/QuickAccountModal';
 
-const API_BASE = 'http://localhost:5000/api/incomes';
-const CUSTOMER_API = 'http://localhost:5000/api/customer';
-const CREDIT_API = 'http://localhost:5000/api/credit-payments';
+const API_BASE = '/api/incomes';
+const CUSTOMER_API = '/api/customer';
+const CREDIT_API = '/api/credit-payments';
 
 const PAYMENT_METHODS = [
   { id: 'Cash', label: 'Cash', icon: '💵' },
@@ -73,7 +73,7 @@ const ReceivePaymentPage = () => {
     try {
       setLoadingCategories(true);
       // Only fetch Revenue (Income) accounts for the income category dropdown
-      const res = await axios.get('http://localhost:5000/api/accounts?active=true&type=Revenue');
+      const res = await axios.get('/api/accounts?active=true&type=Revenue');
       if (res.data.success) {
         // Store full account objects to filter by type later if needed
         const accounts = res.data.data;

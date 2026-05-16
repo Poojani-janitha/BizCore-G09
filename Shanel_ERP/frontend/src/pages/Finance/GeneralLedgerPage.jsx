@@ -45,7 +45,7 @@ const GeneralLedgerPage = () => {
       if (reset) setLoadingEntries(true);
       else setLoadingMore(true);
       
-      const res = await axios.get(`http://localhost:5000/api/journal-entries?page=${pageNum}&limit=10`);
+      const res = await axios.get(`/api/journal-entries?page=${pageNum}&limit=10`);
       if (res.data.success) {
         if (reset) {
           setJournalEntries(res.data.data);
@@ -68,7 +68,7 @@ const GeneralLedgerPage = () => {
   const fetchFiscalPeriods = async () => {
     try {
       setLoadingPeriods(true);
-      const res = await axios.get('http://localhost:5000/api/fiscal-periods');
+      const res = await axios.get('/api/fiscal-periods');
       if (res.data.success) {
         setFiscalPeriods(res.data.data);
       }
@@ -85,7 +85,7 @@ const GeneralLedgerPage = () => {
     const nextStatus = statuses[(statuses.indexOf(currentStatus) + 1) % statuses.length];
     
     try {
-      const res = await axios.put(`http://localhost:5000/api/fiscal-periods/${id}/status`, { status: nextStatus });
+      const res = await axios.put(`/api/fiscal-periods/${id}/status`, { status: nextStatus });
       if (res.data.success) {
         fetchFiscalPeriods();
       }

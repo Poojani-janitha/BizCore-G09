@@ -27,7 +27,7 @@ const CustomerInfo = ({ customerData, setCustomerData, invoiceNo, WALKIN_CUSTOME
   //   }
 
   //   try {
-  //     const res = await axios.get(`http://localhost:5000/api/customer/${id}`);
+  //     const res = await axios.get(`/api/customer/${id}`);
   //     if (res.data.success) {
 
   //       console.log(res.data);
@@ -106,7 +106,7 @@ const CustomerInfo = ({ customerData, setCustomerData, invoiceNo, WALKIN_CUSTOME
     }
 
     try{
-      const res = await axios.get('http://localhost:5000/api/customer/search', {
+      const res = await axios.get('/api/customer/search', {
         params: { q: term }
       });
       if(res.data.success){

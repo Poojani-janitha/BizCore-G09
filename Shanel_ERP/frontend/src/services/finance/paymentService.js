@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const INCOME_API = 'http://localhost:5000/api/incomes';
-const EXPENSE_API = 'http://localhost:5000/api/expenses';
+const INCOME_API = '/api/incomes';
+const EXPENSE_API = '/api/expenses';
 
 const extractData = (response) => response?.data?.data || [];
 
@@ -141,7 +141,7 @@ export const filterTransactionsByTab = (transactions, activeTab) => {
 };
 
 export const fetchDashboardStats = async () => {
-  const response = await axios.get('http://localhost:5000/api/finance/dashboard/stats');
+  const response = await axios.get('/api/finance/dashboard/stats');
   return response?.data || { success: false };
 };
 

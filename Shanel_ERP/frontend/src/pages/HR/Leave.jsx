@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:5000/api/hr';
+const API_BASE = '/api/hr';
 
 //set up variables for functions within leave page
 const Leave = () => {

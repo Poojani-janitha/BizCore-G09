@@ -34,7 +34,7 @@ const QuickAccountModal = ({ isOpen, onClose, initialCode = '', initialType = 'A
 
     const fetchNextCode = async (type) => {
         try {
-            const res = await axios.get(`http://localhost:5000/api/accounts/next-code/${type}`);
+            const res = await axios.get(`/api/accounts/next-code/${type}`);
             if (res.data.success) {
                 setFormData(prev => ({ ...prev, accountCode: res.data.nextCode }));
             }
@@ -51,7 +51,7 @@ const QuickAccountModal = ({ isOpen, onClose, initialCode = '', initialType = 'A
         setError(null);
 
         try {
-            const res = await axios.post('http://localhost:5000/api/accounts/create', formData);
+            const res = await axios.post('/api/accounts/create', formData);
             if (res.data.success) {
                 setSuccess(true);
                 setTimeout(() => {

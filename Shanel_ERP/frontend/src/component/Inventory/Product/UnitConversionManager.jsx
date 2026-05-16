@@ -17,8 +17,8 @@ const UnitConversionManager = ({ baseUnit, setBaseUnit, units, setUnits }) => {
         const fetchUnits = async () => {
             try {
                 const [baseRes, altRes] = await Promise.all([
-                    axios.get('http://localhost:5000/api/inventory/available-base-units'),
-                    axios.get('http://localhost:5000/api/inventory/available-alternative-units')
+                    axios.get('/api/inventory/available-base-units'),
+                    axios.get('/api/inventory/available-alternative-units')
                 ]);
                 
                 setAvailableBaseUnits(baseRes.data.units || []);

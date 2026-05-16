@@ -7,7 +7,7 @@ const PurchaseReport = () => {
     const [reportData, setReportData] = useState([]);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/inventory/reports/purchases').then(res => setReportData(res.data.data));
+        axios.get('/api/inventory/reports/purchases').then(res => setReportData(res.data.data));
     }, []);
 
     const handleExportPDF = () => {

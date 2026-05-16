@@ -28,7 +28,7 @@ const UserDashboard = () => {
         modules: []
     });
 
-    const API_BASE = 'http://localhost:5000/api/users';
+    const API_BASE = '/api/users';
 
     // Fetch all users
     const fetchAllUsers = async () => {

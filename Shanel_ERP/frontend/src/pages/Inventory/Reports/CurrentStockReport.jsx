@@ -8,7 +8,7 @@ const CurrentStockReport = () => {
 
     useEffect(() => {
         // We use the view 'v_current_stock' from your DB dump
-        axios.get('http://localhost:5000/api/inventory/reports/current-stock')
+        axios.get('/api/inventory/reports/current-stock')
             .then(res => setReportData(res.data.data));
     }, []);
 

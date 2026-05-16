@@ -78,10 +78,10 @@ const AdminHome = () => {
         const fetchAll = async () => {
             try {
                 const [invRes, finRes, salesRes, hrRes] = await Promise.allSettled([
-                    axios.get('http://localhost:5000/api/inventory/dashboard-stats'),
-                    axios.get('http://localhost:5000/api/finance/dashboard/stats'),
-                    axios.get('http://localhost:5000/api/sales/all'),
-                    axios.get('http://localhost:5000/api/hr/employees'),
+                    axios.get('/api/inventory/dashboard-stats'),
+                    axios.get('/api/finance/dashboard/stats'),
+                    axios.get('/api/sales/all'),
+                    axios.get('/api/hr/employees'),
                 ]);
                 if (invRes.status === 'fulfilled' && invRes.value.data.success) setInv(invRes.value.data);
                 if (finRes.status === 'fulfilled' && finRes.value.data.success) setFinance(finRes.value.data);

@@ -256,7 +256,7 @@ const Reports = () => {
   const [paymentReportData, setPaymentReportData] = useState({ rows: [], totals: { gross: 0, deductions: 0, net: 0 } });
   const [loading, setLoading] = useState(false);
 
-  const API_BASE = 'http://localhost:5000/api/hr';
+  const API_BASE = '/api/hr';
 
   /**
  * MAIN DATA FETCHER (Reports):

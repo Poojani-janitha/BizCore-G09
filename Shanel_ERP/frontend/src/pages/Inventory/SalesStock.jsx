@@ -14,9 +14,9 @@ const SalesStock = () => {
 
     useEffect(() => {
         Promise.all([
-            axios.get('http://localhost:5000/api/inventory/sales/stock-overview'),
-            axios.get('http://localhost:5000/api/inventory/sales/recent-stock-in'),
-            axios.get('http://localhost:5000/api/inventory/sales/recent-stock-out')
+            axios.get('/api/inventory/sales/stock-overview'),
+            axios.get('/api/inventory/sales/recent-stock-in'),
+            axios.get('/api/inventory/sales/recent-stock-out')
         ])
         .then(([res1, res2, res3]) => {
             if(res1.data.success) setData(res1.data);

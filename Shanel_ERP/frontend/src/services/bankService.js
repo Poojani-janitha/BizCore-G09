@@ -4,7 +4,7 @@ import axios from 'axios';
 
 export const getBanks = async () => {
     try {
-        const response = await axios.get(`http://localhost:5000/api/banks/banks`);
+        const response = await axios.get(`/api/banks/banks`);
         return response.data;
     } catch (error) {
         console.error('Error fetching banks:', error);
@@ -14,7 +14,7 @@ export const getBanks = async () => {
 
 export const getBranches = async (bankId) => {
     try {
-        const response = await axios.get(`http://localhost:5000/api/banks/banks/${bankId}/branches`);
+        const response = await axios.get(`/api/banks/banks/${bankId}/branches`);
         return response.data;
     } catch (error) {
         console.error('Error fetching branches:', error);

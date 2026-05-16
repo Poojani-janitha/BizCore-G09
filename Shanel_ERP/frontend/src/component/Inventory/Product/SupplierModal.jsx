@@ -76,7 +76,7 @@ const SupplierModal = ({ show, onHide, onSupplierAdded }) => {
 
         setLoading(true);
         try {
-            const response = await axios.post('http://localhost:5000/api/inventory/suppliers', formData);
+            const response = await axios.post('/api/inventory/suppliers', formData);
             if (response.data.success) {
                 if (onSupplierAdded) {
                     onSupplierAdded(response.data.data);

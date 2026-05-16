@@ -126,7 +126,7 @@ const ReportsPage = () => {
   const fetchPL = async () => {
     try {
       setPlLoading(true); setError(null);
-      const res = await axios.get(`http://localhost:5000/api/finance/dashboard/profit-loss?startDate=${plStart}&endDate=${plEnd}`);
+      const res = await axios.get(`/api/finance/dashboard/profit-loss?startDate=${plStart}&endDate=${plEnd}`);
       if (res.data.success) setPlData(res.data.data);
     } catch { setError('Failed to load Profit & Loss data'); }
     finally { setPlLoading(false); }
@@ -135,7 +135,7 @@ const ReportsPage = () => {
   const fetchBS = async () => {
     try {
       setBsLoading(true); setError(null);
-      const res = await axios.get(`http://localhost:5000/api/finance/dashboard/balance-sheet?asOfDate=${bsDate}`);
+      const res = await axios.get(`/api/finance/dashboard/balance-sheet?asOfDate=${bsDate}`);
       if (res.data.success) setBsData(res.data.data);
     } catch { setError('Failed to load Balance Sheet data'); }
     finally { setBsLoading(false); }

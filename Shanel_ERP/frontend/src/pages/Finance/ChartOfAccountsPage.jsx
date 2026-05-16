@@ -20,7 +20,7 @@ const ChartOfAccountsPage = () => {
   const fetchAccounts = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('http://localhost:5000/api/accounts');
+      const res = await axios.get('/api/accounts');
       if (res.data.success) {
         setAccounts(res.data.data);
       } else {

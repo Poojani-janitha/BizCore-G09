@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import HrStatsCard from '../../component/HR/Dashboard/HrStatsCard';
 
-const API_BASE = 'http://localhost:5000/api/hr';
+const API_BASE = '/api/hr';
 
 //sets up the initial state and variables that the Attendance page needs to function
 const Attendance = () => {

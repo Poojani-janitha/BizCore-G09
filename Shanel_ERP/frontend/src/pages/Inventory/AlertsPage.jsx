@@ -28,7 +28,7 @@ const AlertsPage = () => {
   const fetchAlerts = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:5000/api/inventory/dashboard-stats");
+      const res = await axios.get("/api/inventory/dashboard-stats");
       if (res.data.success && res.data.alerts) {
         setAlerts(res.data.alerts);
       }
@@ -41,7 +41,7 @@ const AlertsPage = () => {
 
   const fetchExpiryAlerts = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/production/stock-overview");
+      const res = await axios.get("/api/production/stock-overview");
       if (res.data.success && res.data.wip) {
         // Filter approved batches that are expiring soon (within 60 days)
         const expiringSoon = res.data.wip
@@ -58,7 +58,7 @@ const AlertsPage = () => {
 
   // const fetchProductExpiryAlerts = async () => {
   //   try {
-  //     const res = await axios.get("http://localhost:5000/api/inventory/products");
+  //     const res = await axios.get("/api/inventory/products");
   //     if (Array.isArray(res.data)) {
   //       const today = new Date();
   //       today.setHours(0, 0, 0, 0);
@@ -84,7 +84,7 @@ const AlertsPage = () => {
 
   const fetchOutOfStockProducts = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/inventory/products");
+      const res = await axios.get("/api/inventory/products");
       if (Array.isArray(res.data)) {
         // Filter products with stock count <= 0
         const outOfStock = res.data

@@ -148,7 +148,7 @@ describe('ItemTable Component', () => {
       
       await waitFor(() => {
         expect(mockedAxios.get).toHaveBeenCalledWith(
-          'http://localhost:5000/api/sales/search?q=Test'
+          '/api/sales/search?q=Test'
         );
       });
     });
@@ -233,7 +233,7 @@ describe('ItemTable Component', () => {
       
       await waitFor(() => {
         expect(mockedAxios.get).toHaveBeenCalledWith(
-          `http://localhost:5000/api/sales/units?productId=${mockProduct.p_id}`
+          `/api/sales/units?productId=${mockProduct.p_id}`
         );
       });
     });

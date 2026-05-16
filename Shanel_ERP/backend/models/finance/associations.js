@@ -1,4 +1,5 @@
 const AccountChart      = require('./AccountChart');
+const AccountType       = require('./AccountType');
 const BankAccount       = require('./BankAccount');
 const BankTransaction   = require('./BankTransaction');
 const JournalEntry      = require('./JournalEntry');
@@ -26,6 +27,16 @@ AccountChart.hasMany(AccountChart, {
 AccountChart.belongsTo(AccountChart, {
     foreignKey: 'Parent_Account_ID',
     as: 'ParentAccount'
+});
+
+// ── AccountChart <──> AccountType ─────────────────────────────────────────────
+AccountChart.belongsTo(AccountType, {
+    foreignKey: 'Type_ID',
+    as: 'AccountType'
+});
+AccountType.hasMany(AccountChart, {
+    foreignKey: 'Type_ID',
+    as: 'Accounts'
 });
 
 // ── AccountChart  <──>  BankAccount ───────────────────────────────────────────

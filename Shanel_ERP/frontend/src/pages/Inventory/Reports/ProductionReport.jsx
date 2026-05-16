@@ -7,7 +7,7 @@ const ProductionReport = () => {
     const [reportData, setReportData] = useState([]);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/inventory/reports/production')
+        axios.get('/api/inventory/reports/production')
             .then(res => setReportData(res.data.data))
             .catch(err => console.error(err));
     }, []);

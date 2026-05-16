@@ -18,8 +18,8 @@ AccountChart.init({
         type: Sequelize.STRING(200),
         allowNull: false
     },
-    Account_Type: {
-        type: Sequelize.ENUM('Asset', 'Liability', 'Equity', 'Revenue', 'Expense'),
+    Type_ID: {
+        type: Sequelize.INTEGER,
         allowNull: false
     },
     Account_Category: {

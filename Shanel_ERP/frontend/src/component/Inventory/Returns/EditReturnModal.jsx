@@ -51,7 +51,7 @@ const EditReturnModal = ({ show, onHide, returnItem, refresh }) => {
 
         try {
             const response = await axios.put(
-                `http://localhost:5000/api/inventory/returns/${returnItem.RT_ID}`,
+                `/api/inventory/returns/${returnItem.RT_ID}`,
                 {
                     Qty: parseFloat(formData.Qty),
                     Reason: formData.Reason,

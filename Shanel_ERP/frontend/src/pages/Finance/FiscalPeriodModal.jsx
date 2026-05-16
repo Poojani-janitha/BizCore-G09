@@ -20,7 +20,7 @@ const FiscalPeriodModal = ({ isOpen, onClose, onRefresh }) => {
       setLoading(true);
       setError(null);
       
-      const res = await axios.post('http://localhost:5000/api/fiscal-periods', formData);
+      const res = await axios.post('/api/fiscal-periods', formData);
       if (res.data.success) {
         onRefresh();
         onClose();

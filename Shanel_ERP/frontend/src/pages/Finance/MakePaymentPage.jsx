@@ -4,7 +4,7 @@ import { DollarSign, CreditCard, FileText, Briefcase, Plus, Trash2, Check, Alert
 import axios from 'axios';
 import QuickAccountModal from '../../component/Finance/QuickAccountModal';
 
-const API_BASE = 'http://localhost:5000/api/expenses';
+const API_BASE = '/api/expenses';
 
 const PAYMENT_METHODS = [
     { id: 'Cash', label: 'Cash', Icon: DollarSign },
@@ -86,7 +86,7 @@ const MakePaymentPage = () => {
         try {
             setLoadingCategories(true);
             // Only fetch Expense accounts for the category dropdown
-            const res = await axios.get('http://localhost:5000/api/accounts?active=true&type=Expense');
+            const res = await axios.get('/api/accounts?active=true&type=Expense');
             if (res.data.success) {
                 const dbCategories = res.data.data.map(acc => ({
                     value: acc.Account_Name,
@@ -104,7 +104,7 @@ const MakePaymentPage = () => {
     const fetchSuppliers = async () => {
         try {
             setLoadingSuppliers(true);
-            const res = await axios.get('http://localhost:5000/api/supplier-payments');
+            const res = await axios.get('/api/supplier-payments');
             if (res.data.success) setSuppliers(res.data.data || []);
         } catch (e) { console.error(e); }
         finally { setLoadingSuppliers(false); }
@@ -113,7 +113,7 @@ const MakePaymentPage = () => {
     const fetchOutstandingBills = async (id) => {
         setLoadingBills(true);
         try {
-            const res = await axios.get(`http://localhost:5000/api/supplier-payments/bills/${id}`);
+            const res = await axios.get(`/api/supplier-payments/bills/${id}`);
             if (res.data?.success) setOutstandingBills(res.data.data || []);
         } catch (e) { setOutstandingBills([]); }
         finally { setLoadingBills(false); }
@@ -227,7 +227,7 @@ const MakePaymentPage = () => {
                     paymentDate: expenseDate,
                     notes: description
                 };
-                res = await axios.post('http://localhost:5000/api/supplier-payments/pay-credit', payload);
+                res = await axios.post('/api/supplier-payments/pay-credit', payload);
             } else {
                 const payload = {
                     ...commonPayload,

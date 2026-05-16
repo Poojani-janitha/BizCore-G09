@@ -11,7 +11,7 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation, 
     //fuction to get availabale quntity of the product in inventory when user select the product from search result
     const fetchProductQuantity = async (productId) => {
         try {
-            const res = await axios.get(`http://localhost:5000/api/sales/product-quantity/${productId}`);
+            const res = await axios.get(`/api/sales/product-quantity/${productId}`);
             console.log('Product Quantity Response:', res.data);
             if (res.data.success) {
                 const shopQty = toNumber(res.data.shopQty);

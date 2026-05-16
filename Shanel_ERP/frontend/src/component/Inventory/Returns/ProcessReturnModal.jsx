@@ -28,7 +28,7 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
 
         setSearchStatus('loading');
         try {
-            const res = await axios.get(`http://localhost:5000/api/inventory/invoice/${invoiceNo}`);
+            const res = await axios.get(`/api/inventory/invoice/${invoiceNo}`);
             if (res.data.success) {
                 setInvoiceData(res.data.invoice);
                 setFormData(prev => ({
@@ -54,7 +54,7 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
     const loadInvoiceItems = async (saleId) => {
         setLoadingItems(true);
         try {
-            const res = await axios.get(`http://localhost:5000/api/inventory/invoice-details/${saleId}`);
+            const res = await axios.get(`/api/inventory/invoice-details/${saleId}`);
             if (res.data.success) {
                 setInvoiceItems(res.data.items);
                 // Initialize return items array
@@ -139,7 +139,7 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
             const returnPromises = formData.returnItems
                 .filter(item => parseFloat(item.Good_Qty) > 0 || parseFloat(item.Bad_Qty) > 0)
                 .map(item => 
-                    axios.post('http://localhost:5000/api/inventory/returns/process', {
+                    axios.post('/api/inventory/returns/process', {
                         P_ID: item.P_ID,
                         Return_Type: formData.Return_Type,
                         Ref_ID: formData.Ref_ID,

@@ -40,7 +40,7 @@ const ProductionStock = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:5000/api/production/stock-overview');
+            const res = await axios.get('/api/production/stock-overview');
             if (res.data.success) setWip(res.data.wip);
         } catch (error) { console.error(error); }
         setLoading(false);
@@ -49,13 +49,13 @@ const ProductionStock = () => {
     useEffect(() => { fetchData(); }, []);
 
     const handleStatusUpdate = async (id, status) => {
-        await axios.put(`http://localhost:5000/api/production/update/${id}`, { status });
+        await axios.put(`/api/production/update/${id}`, { status });
         fetchData();
     };
 
     const handleDelete = async (id) => {
         if (window.confirm('Delete this batch?')) {
-            await axios.delete(`http://localhost:5000/api/production/${id}`);
+            await axios.delete(`/api/production/${id}`);
             fetchData();
         }
     };

@@ -15,7 +15,7 @@ const EditAdjustmentModal = ({ show, onHide, adjustment, refresh }) => {
     // Fetch products when modal opens
     useEffect(() => {
         if (show) {
-            axios.get('http://localhost:5000/api/inventory/products')
+            axios.get('/api/inventory/products')
                 .then(res => setProducts(res.data))
                 .catch(err => console.error("Error loading products:", err));
         }
@@ -49,7 +49,7 @@ const EditAdjustmentModal = ({ show, onHide, adjustment, refresh }) => {
         
         try {
             const response = await axios.put(
-                `http://localhost:5000/api/inventory/adjustments/${adjustment.Adjustment_ID}`,
+                `/api/inventory/adjustments/${adjustment.Adjustment_ID}`,
                 formData
             );
             if (response.data.success) {

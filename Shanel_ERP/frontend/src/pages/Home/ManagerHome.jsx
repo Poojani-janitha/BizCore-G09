@@ -71,8 +71,8 @@ const ManagerHome = () => {
         const fetchAll = async () => {
             try {
                 const [invRes, hrRes] = await Promise.allSettled([
-                    axios.get('http://localhost:5000/api/inventory/dashboard-stats'),
-                    axios.get('http://localhost:5000/api/hr/employees'),
+                    axios.get('/api/inventory/dashboard-stats'),
+                    axios.get('/api/hr/employees'),
                 ]);
                 if (invRes.status === 'fulfilled' && invRes.value.data.success) setInv(invRes.value.data);
                 if (hrRes.status === 'fulfilled') {

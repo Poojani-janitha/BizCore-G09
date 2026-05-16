@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:5000/api/hr';
+const API_BASE = '/api/hr';
 
 /**
  * Converts a backend Employee record to a frontend-friendly object.

@@ -39,7 +39,7 @@ const CreateAccountPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/api/accounts/create', {
+      const res = await axios.post('/api/accounts/create', {
         accountCode: formData.accountCode,
         accountName: formData.accountName,
         accountType: formData.accountType,

@@ -58,7 +58,7 @@ const CashierHome = () => {
     }, []);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/sales/all')
+        axios.get('/api/sales/all')
             .then(res => { if (res.data.success) setSales(res.data.data || []); })
             .catch(console.error)
             .finally(() => setLoading(false));

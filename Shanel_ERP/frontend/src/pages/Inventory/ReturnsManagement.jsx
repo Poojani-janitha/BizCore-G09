@@ -19,7 +19,7 @@ const ReturnsManagement = () => {
     const fetchReturns = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:5000/api/inventory/returns');
+            const res = await axios.get('/api/inventory/returns');
             if (res.data.success) {
                 setReturns(res.data.returns);
             }
@@ -44,7 +44,7 @@ const ReturnsManagement = () => {
     const handleDelete = async (RT_ID) => {
         if (window.confirm('Are you sure you want to delete this return? Inventory will be reversed if applicable.')) {
             try {
-                const response = await axios.delete(`http://localhost:5000/api/inventory/returns/${RT_ID}`);
+                const response = await axios.delete(`/api/inventory/returns/${RT_ID}`);
                 if (response.data.success) {
                     fetchReturns();
                     alert('Return deleted successfully');

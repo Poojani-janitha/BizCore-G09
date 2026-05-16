@@ -27,8 +27,8 @@ const InventoryDashboard = () => {
   const fetchData = async () => {
     try {
       const [dashRes, prodRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/inventory/dashboard-stats"),
-        axios.get("http://localhost:5000/api/inventory/products")
+        axios.get("/api/inventory/dashboard-stats"),
+        axios.get("/api/inventory/products")
       ]);
       
       if (dashRes.data.success) {

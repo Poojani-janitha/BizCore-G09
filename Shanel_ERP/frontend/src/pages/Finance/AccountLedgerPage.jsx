@@ -20,7 +20,7 @@ const AccountLedgerPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await axios.get(`http://localhost:5000/api/accounts/ledger/${accountCode}`);
+      const res = await axios.get(`/api/accounts/ledger/${accountCode}`);
       if (res.data.success) {
         setLedgerData(res.data.data);
       } else {

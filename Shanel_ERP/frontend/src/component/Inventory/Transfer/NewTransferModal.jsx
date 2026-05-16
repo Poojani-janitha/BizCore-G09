@@ -13,7 +13,7 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
 
     useEffect(() => {
         if (show) {
-            axios.get('http://localhost:5000/api/inventory/products').then(res => setProducts(res.data));
+            axios.get('/api/inventory/products').then(res => setProducts(res.data));
             const userId = localStorage.getItem('userId');
             
             if (editTransfer) {
@@ -34,7 +34,7 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
                         setSelectedProduct(product);
                     }
                     
-                    axios.get(`http://localhost:5000/api/inventory/product/${editTransfer.P_ID}/locations`)
+                    axios.get(`/api/inventory/product/${editTransfer.P_ID}/locations`)
                         .then(res => setLocationInventory(res.data || {}))
                         .catch(err => console.log('Failed to fetch location inventory'));
                 }
@@ -65,7 +65,7 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
         setFormData({...formData, P_ID: productId});
         
         // Fetch inventory details for this product by location
-        axios.get(`http://localhost:5000/api/inventory/product/${productId}/locations`)
+        axios.get(`/api/inventory/product/${productId}/locations`)
             .then(res => {
                 setLocationInventory(res.data || {});
             })
@@ -88,10 +88,10 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
         try {
             if (isEditing && editTransfer) {
                 // Update existing transfer
-                await axios.put(`http://localhost:5000/api/inventory/transfers/${editTransfer.ST_ID}`, formData);
+                await axios.put(`/api/inventory/transfers/${editTransfer.ST_ID}`, formData);
             } else {
                 // Create new transfer
-                await axios.post('http://localhost:5000/api/inventory/transfers/create', formData);
+                await axios.post('/api/inventory/transfers/create', formData);
             }
             refreshData();
             onHide();

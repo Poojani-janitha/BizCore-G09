@@ -1,5 +1,6 @@
 const { Sequelize, Op } = require('sequelize');
 const AccountChart = require('../../models/finance/AccountChart');
+const AccountType = require('../../models/finance/AccountType');
 const JournalEntry = require('../../models/finance/JournalEntry');
 const JournalEntryLine = require('../../models/finance/JournalEntryLine');
 
@@ -9,12 +10,16 @@ class ChartOfAccountsController {
         try {
             const { type, active } = req.query;
             const whereClause = {};
-            if (type) whereClause.Account_Type = type;
             if (active !== undefined) whereClause.Is_Active = active === 'true';
 
-            // 1. Fetch all accounts
+            // 1. Fetch all accounts with their type
             const accounts = await AccountChart.findAll({
                 where: whereClause,
+                include: [{
+                    model: AccountType,
+                    as: 'AccountType',
+                    attributes: ['Type_Name']
+                }],
                 order: [['Account_Code', 'ASC']]
             });
 
@@ -37,14 +42,17 @@ class ChartOfAccountsController {
             const accountsWithBalances = accounts.map(account => {
                 let netBalance = balanceMap[account.Account_ID] || 0;
                 
-                // Adjust sign based on account type
+                // Adjust sign based on account type name
+                const typeName = account.AccountType ? account.AccountType.Type_Name : '';
+
                 // Liabilities, Equity, and Revenue accounts are credit-normal (Credit - Debit)
-                if (['Liability', 'Equity', 'Revenue'].includes(account.Account_Type)) {
+                if (['Liability', 'Equity', 'Revenue'].includes(typeName)) {
                     netBalance = -netBalance;
                 }
 
                 // Create a plain object to add the dynamic property
                 const plainAccount = account.get({ plain: true });
+                plainAccount.Account_Type = typeName; // Flatten for frontend
                 plainAccount.Current_Balance = netBalance.toFixed(2);
                 return plainAccount;
             });

@@ -5,7 +5,7 @@ import { generatePDF } from '../../../services/reportGenerator';
 const TransferReport = () => {
     const [reportData, setReportData] = useState([]);
     useEffect(() => {
-        axios.get('http://localhost:5000/api/inventory/reports/transfers').then(res => setReportData(res.data.data));
+        axios.get('/api/inventory/reports/transfers').then(res => setReportData(res.data.data));
     }, []);
 
     const handleExportPDF = () => {

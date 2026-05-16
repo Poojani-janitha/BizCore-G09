@@ -75,7 +75,7 @@ describe('Inventory - Company Products List Load', () => {
     // ASSERT
     // 1. Verify axios.get was called with correct API endpoint
     await waitFor(() => {
-      expect(axios.get).toHaveBeenCalledWith('http://localhost:5000/api/inventory/products');
+      expect(axios.get).toHaveBeenCalledWith('/api/inventory/products');
     });
 
     // 2. Verify products are loaded and displayed

@@ -5,7 +5,7 @@ import axios from 'axios';
 import HrStatsCard from '../../component/HR/Dashboard/HrStatsCard';
 import QuickActions from '../../component/HR/Dashboard/Quickactions';
 
-const API_BASE = 'http://localhost:5000/api/hr';
+const API_BASE = '/api/hr';
 
 const Hrdashboardpage = () => {
   const today = new Date().toISOString().split('T')[0];

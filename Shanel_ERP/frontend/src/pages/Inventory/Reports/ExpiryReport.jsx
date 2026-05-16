@@ -7,7 +7,7 @@ const ExpiryReport = () => {
     const [reportData, setReportData] = useState([]);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/inventory/reports/expiry')
+        axios.get('/api/inventory/reports/expiry')
             .then(res => setReportData(res.data.data))
             .catch(err => console.error(err));
     }, []);
