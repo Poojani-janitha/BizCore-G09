@@ -178,7 +178,8 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
     };
 
     return (
-        <Modal show={show} onHide={handleClose} size="lg" centered scrollable>
+        <>
+        <Modal show={show} onHide={handleClose} size="lg" centered scrollable className="centered-modal">
             <Modal.Header closeButton className="border-0 pb-2">
                 <Modal.Title className="fw-bold">Process New Return</Modal.Title>
             </Modal.Header>
@@ -420,6 +421,23 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
                 </Modal.Footer>
             </Form>
         </Modal>
+
+        <style>{`
+            /* Scoped modal centering for returns processing modal */
+            .modal.centered-modal {
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                padding: 1rem;
+                min-height: 100vh;
+            }
+            .modal.centered-modal .modal-dialog { margin: 0; }
+            .modal.centered-modal .modal-dialog.modal-md { max-width: 720px; }
+            .modal.centered-modal .modal-dialog.modal-lg { max-width: 980px; }
+            .modal.centered-modal .modal-content { max-height: calc(100vh - 120px); overflow-y: auto; }
+        `}</style>
+
+        </>
     );
 };
 

@@ -69,7 +69,8 @@ const AdjustmentModal = ({ show, onHide, refresh }) => {
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="lg" centered>
+        <>
+        <Modal show={show} onHide={onHide} size="lg" centered className="centered-modal">
             <Modal.Header closeButton className="border-0 pb-0">
                 <Modal.Title className="fw-bold fs-5">Create Stock Adjustment</Modal.Title>
             </Modal.Header>
@@ -182,17 +183,34 @@ const AdjustmentModal = ({ show, onHide, refresh }) => {
                     <Button variant="link" className="text-decoration-none text-muted" onClick={onHide}>
                         Cancel
                     </Button>
-                    <Button 
-                        variant="primary" 
-                        type="submit" 
-                        className="px-4 py-2 rounded-3 shadow-sm"
-                        style={{ backgroundColor: '#24381f', borderColor: '#14290e' }} // Matched your Figma Orange
-                    >
-                        Submit Adjustment
-                    </Button>
+                        <Button 
+                            variant="primary" 
+                            type="submit" 
+                            className="px-4 py-2 rounded-3 shadow-sm"
+                            style={{ backgroundColor: '#24381f', borderColor: '#14290e' }} // Matched your Figma Orange
+                        >
+                            Submit Adjustment
+                        </Button>
                 </Modal.Footer>
             </Form>
-        </Modal>
+            </Modal>
+
+            <style>{`
+                /* Scoped modal centering for this component */
+                .modal.centered-modal {
+                    display: flex !important;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 1rem;
+                    min-height: 100vh;
+                }
+                .modal.centered-modal .modal-dialog { margin: 0; }
+                .modal.centered-modal .modal-dialog.modal-md { max-width: 720px; }
+                .modal.centered-modal .modal-dialog.modal-lg { max-width: 980px; }
+                .modal.centered-modal .modal-content { max-height: calc(100vh - 120px); overflow-y: auto; }
+            `}</style>
+
+            </>
     );
 };
 
