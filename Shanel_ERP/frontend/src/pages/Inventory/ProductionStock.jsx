@@ -1,71 +1,193 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { Play, Trash2, Loader, Edit2 } from 'react-feather';
+import { Play, Trash2, Loader, Edit2, Search, ChevronLeft, ChevronRight } from 'react-feather';
 import ProductionModal from '../../component/Inventory/Production/ProductionModal';
 import EditProductionModal from '../../component/Inventory/Production/EditProductionModal';
 import { useTranslation } from 'react-i18next';
+
+const PAGE_SIZE = 10;
+const API_BASE = 'http://localhost:5000/api/production/stock-overview';
 
 const formatStock = (value) => {
     const num = parseFloat(value) || 0;
     return Number.isInteger(num) ? num : num.toFixed(2);
 };
 
+const defaultPagination = {
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: PAGE_SIZE,
+    totalRecords: 0
+};
+
+const TablePagination = ({ pagination, onPageChange, t }) => {
+    if (!pagination || pagination.totalRecords === 0) return null;
+
+    const { currentPage, totalPages, pageSize, totalRecords } = pagination;
+    const start = ((currentPage - 1) * pageSize) + 1;
+    const end = Math.min(currentPage * pageSize, totalRecords);
+
+    return (
+        <div className="card-footer bg-white border-0 py-3 px-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 border-top">
+            <span className="text-muted small">
+                {t('inventory.pages.production_stock.showing_entries', { start, end, total: totalRecords })}
+            </span>
+            {totalPages > 1 && (
+                <nav>
+                    <ul className="pagination pagination-sm mb-0 gap-1">
+                        <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                            <button type="button" className="page-link border-0 rounded-3 shadow-sm px-3" onClick={() => onPageChange(currentPage - 1)}>
+                                <ChevronLeft size={16} />
+                            </button>
+                        </li>
+                        {[...Array(totalPages)].map((_, i) => {
+                            const pageNum = i + 1;
+                            if (pageNum === 1 || pageNum === totalPages || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)) {
+                                return (
+                                    <li key={pageNum} className={`page-item ${currentPage === pageNum ? 'active' : ''}`}>
+                                        <button
+                                            type="button"
+                                            className={`page-link border-0 rounded-3 shadow-sm px-3 ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-light text-dark'}`}
+                                            onClick={() => onPageChange(pageNum)}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    </li>
+                                );
+                            }
+                            if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                                return <li key={pageNum} className="page-item disabled"><span className="page-link border-0 bg-transparent">...</span></li>;
+                            }
+                            return null;
+                        })}
+                        <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                            <button type="button" className="page-link border-0 rounded-3 shadow-sm px-3" onClick={() => onPageChange(currentPage + 1)}>
+                                <ChevronRight size={16} />
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            )}
+        </div>
+    );
+};
+
 const ProductionStock = () => {
-    const [wip, setWip] = useState([]);
+    const [workingItems, setWorkingItems] = useState([]);
+    const [approvedItems, setApprovedItems] = useState([]);
+    const [wipPagination, setWipPagination] = useState(defaultPagination);
+    const [approvedPagination, setApprovedPagination] = useState(defaultPagination);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [tableLoading, setTableLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedBatch, setSelectedBatch] = useState(null);
+
+    const [search, setSearch] = useState('');
+    const [productFilter, setProductFilter] = useState('');
+    const [expiryFilter, setExpiryFilter] = useState('all');
+    const [wipPage, setWipPage] = useState(1);
+    const [approvedPage, setApprovedPage] = useState(1);
+
     const { t, i18n } = useTranslation();
     const isSinhala = i18n.language?.startsWith('si');
 
-    const workingItems = wip.filter((item) => item.Status !== 'Approved');
-    const approvedItems = wip.filter((item) => item.Status === 'Approved');
-
-    // Format days into readable format (years, months, days)
     const formatDaysToExpiry = (days) => {
         if (days === null) return 'N/A';
         if (days < 0) return 'EXPIRED';
-        
+
         const years = Math.floor(days / 365);
         const remainingDaysAfterYears = days % 365;
         const months = Math.floor(remainingDaysAfterYears / 30);
         const remainingDays = remainingDaysAfterYears % 30;
-        
-        let result = [];
+
+        const result = [];
         if (years > 0) result.push(`${years} year${years > 1 ? 's' : ''}`);
         if (months > 0) result.push(`${months} month${months > 1 ? 's' : ''}`);
         if (remainingDays > 0) result.push(`${remainingDays} day${remainingDays > 1 ? 's' : ''}`);
-        
+
         return result.length > 0 ? result.join(' ') : '0 days';
     };
 
-    const fetchData = async () => {
-        setLoading(true);
+    const fetchSection = useCallback(async (section, page, filters, setItems, setPagination) => {
+        const params = {
+            section,
+            page,
+            limit: PAGE_SIZE,
+            search: filters.search,
+            productId: filters.productFilter || undefined,
+            expiryFilter: section === 'approved' ? filters.expiryFilter : undefined
+        };
+
+        const res = await axios.get(API_BASE, { params });
+        if (res.data.success) {
+            setItems(res.data.data || []);
+            setPagination(res.data.pagination || defaultPagination);
+        }
+    }, []);
+
+    const fetchData = useCallback(async (isInitial = false) => {
+        if (isInitial) setLoading(true);
+        else setTableLoading(true);
+
+        const filters = { search, productFilter, expiryFilter };
+
         try {
-            const res = await axios.get('http://localhost:5000/api/production/stock-overview');
-            if (res.data.success) setWip(res.data.wip);
+            await Promise.all([
+                fetchSection('wip', wipPage, filters, setWorkingItems, setWipPagination),
+                fetchSection('approved', approvedPage, filters, setApprovedItems, setApprovedPagination)
+            ]);
 
             const productRes = await axios.get('http://localhost:5000/api/inventory/products');
             if (Array.isArray(productRes.data)) {
                 setProducts(productRes.data.filter((p) => p.type === 'Company').map((p) => ({ id: p.id, name: p.name })));
             }
-        } catch (error) { console.error(error); }
-        setLoading(false);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+            setTableLoading(false);
+        }
+    }, [search, productFilter, expiryFilter, wipPage, approvedPage, fetchSection]);
+
+    const isFirstRender = useRef(true);
+
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            fetchData(true);
+            return;
+        }
+        fetchData(false);
+    }, [search, productFilter, expiryFilter, wipPage, approvedPage, fetchData]);
+
+    const handleSearchChange = (value) => {
+        setSearch(value);
+        setWipPage(1);
+        setApprovedPage(1);
     };
 
-    useEffect(() => { fetchData(); }, []);
+    const handleProductFilterChange = (value) => {
+        setProductFilter(value);
+        setWipPage(1);
+        setApprovedPage(1);
+    };
+
+    const handleExpiryFilterChange = (value) => {
+        setExpiryFilter(value);
+        setApprovedPage(1);
+    };
 
     const handleStatusUpdate = async (id, status) => {
         await axios.put(`http://localhost:5000/api/production/update/${id}`, { status });
-        fetchData();
+        fetchData(false);
     };
 
     const handleDelete = async (id) => {
         if (window.confirm('Delete this batch?')) {
             await axios.delete(`http://localhost:5000/api/production/${id}`);
-            fetchData();
+            fetchData(false);
         }
     };
 
@@ -74,26 +196,90 @@ const ProductionStock = () => {
         setShowEditModal(true);
     };
 
-    if (loading) return <div className='vh-100 d-flex justify-content-center align-items-center'><Loader className="spinner-border text-primary"/></div>;
+    if (loading) {
+        return (
+            <div className='vh-100 d-flex justify-content-center align-items-center'>
+                <Loader className="spinner-border text-primary" />
+            </div>
+        );
+    }
 
     return (
         <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
-            <div className="d-flex justify-content-end align-items-center mb-3">
-                <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm" onClick={() => setShowModal(true)}>
-                    <Play size={14}/> {t('inventory.pages.production_stock.btn_new_batch')}
-                </button>
-            </div>
-
-            <ProductionModal show={showModal} onHide={() => setShowModal(false)} refreshData={fetchData} />
+            <ProductionModal show={showModal} onHide={() => setShowModal(false)} refreshData={() => fetchData(false)} />
             <EditProductionModal
                 show={showEditModal}
                 onHide={() => { setShowEditModal(false); setSelectedBatch(null); }}
-                refreshData={fetchData}
+                refreshData={() => fetchData(false)}
                 batch={selectedBatch}
                 products={products}
             />
 
-            <div className='card border-0 shadow-sm rounded-3 overflow-hidden'>
+            <div className='card border-0 shadow-sm mb-3'>
+                <div className='card-body py-2 px-3'>
+                    <div className='d-flex flex-wrap align-items-center gap-2'>
+                        <span className='large fw-semibold text-primary text-nowrap pe-1'>
+                            {t('inventory.pages.production_stock.filter_title')}
+                        </span>
+                        <div className='flex-grow-1' style={{ minWidth: '160px', maxWidth: '280px' }}>
+                            <div className='input-group input-group-sm bg-light rounded border'>
+                                <span className='input-group-text bg-transparent border-0 py-1'>
+                                    <Search size={14} className="text-muted" />
+                                </span>
+                                <input
+                                    type="text"
+                                    className='form-control border-0 bg-transparent shadow-none py-1'
+                                    placeholder={t('inventory.pages.production_stock.search_placeholder')}
+                                    value={search}
+                                    onChange={(e) => handleSearchChange(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <select
+                            className='form-select form-select-sm'
+                            style={{ width: 'auto', minWidth: '130px', maxWidth: '180px' }}
+                            value={productFilter}
+                            onChange={(e) => handleProductFilterChange(e.target.value)}
+                        >
+                            <option value="">{t('inventory.pages.production_stock.filter_product')}</option>
+                            {products.map((p) => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
+                        <select
+                            className='form-select form-select-sm'
+                            style={{ width: 'auto', minWidth: '140px', maxWidth: '180px' }}
+                            value={expiryFilter}
+                            onChange={(e) => handleExpiryFilterChange(e.target.value)}
+                            title={t('inventory.pages.production_stock.expiry_filter_hint')}
+                        >
+                            <option value="all">{t('inventory.pages.production_stock.filter_expiry')}</option>
+                            <option value="expired">{t('inventory.pages.production_stock.expiry_expired')}</option>
+                            <option value="within_7">{t('inventory.pages.production_stock.expiry_within_7')}</option>
+                            <option value="within_30">{t('inventory.pages.production_stock.expiry_within_30')}</option>
+                            <option value="within_60">{t('inventory.pages.production_stock.expiry_within_60')}</option>
+                        </select>
+
+                        <button
+                            type="button"
+                            className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm ms-md-auto flex-shrink-0"
+                            onClick={() => setShowModal(true)} >
+                            
+                             <Play size={14}/> {t('inventory.pages.production_stock.btn_new_batch')}
+
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <h6 className='fw-bold text-dark mb-2 mt-4'>{t('inventory.pages.production_stock.pending_batches')}</h6>
+
+            <div className='card border-0 shadow-sm rounded-3 overflow-hidden position-relative'>
+                {tableLoading && (
+                    <div className="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-white bg-opacity-75" style={{ zIndex: 2 }}>
+                        <Loader className="spinner-border text-primary" />
+                    </div>
+                )}
                 <div className='table-responsive'>
                     <table className='table align-middle mb-0'>
                         <thead>
@@ -119,17 +305,17 @@ const ProductionStock = () => {
                                         {(() => {
                                             const completion = Number(item.Completion || 0);
                                             return (
-                                        <div className="d-flex align-items-center">
-                                            <div className="progress flex-grow-1 me-2" style={{ height: '8px', borderRadius: '10px' }}>
-                                                <div className={`progress-bar ${completion >= 90 ? 'bg-success' : 'bg-warning'}`} 
-                                                     style={{ width: `${completion}%` }}></div>
-                                            </div>
-                                            <span className="fw-bold">{completion}%</span>
-                                        </div>
+                                                <div className="d-flex align-items-center">
+                                                    <div className="progress flex-grow-1 me-2" style={{ height: '8px', borderRadius: '10px' }}>
+                                                        <div className={`progress-bar ${completion >= 90 ? 'bg-success' : 'bg-warning'}`}
+                                                             style={{ width: `${completion}%` }}></div>
+                                                    </div>
+                                                    <span className="fw-bold">{completion}%</span>
+                                                </div>
                                             );
                                         })()}
                                     </td>
-                                    <td className="text-end">
+                                    <td className="text-end pe-4">
                                         <button className="btn btn-success btn-sm me-2" title="Approve & Sync Stock" onClick={() => handleStatusUpdate(item.PR_ID, 'Approved')}>{t('inventory.pages.production_stock.btn_approve')}</button>
                                         <button className="btn btn-link text-primary p-0 me-3" title="Edit batch" onClick={() => handleEdit(item)}><Edit2 size={16}/></button>
                                         <button className="btn btn-link text-danger p-0" title="Delete" onClick={() => handleDelete(item.PR_ID)}><Trash2 size={16}/></button>
@@ -144,10 +330,16 @@ const ProductionStock = () => {
                         </tbody>
                     </table>
                 </div>
+                <TablePagination pagination={wipPagination} onPageChange={setWipPage} t={t} />
             </div>
 
             <h6 className='fw-bold text-dark mb-2 mt-4'>{t('inventory.pages.production_stock.approved_batches')}</h6>
-            <div className='card border-0 shadow-sm rounded-3 overflow-hidden'>
+            <div className='card border-0 shadow-sm rounded-3 overflow-hidden position-relative'>
+                {tableLoading && (
+                    <div className="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-white bg-opacity-75" style={{ zIndex: 2 }}>
+                        <Loader className="spinner-border text-primary" />
+                    </div>
+                )}
                 <div className='table-responsive'>
                     <table className='table align-middle mb-0'>
                         <thead>
@@ -167,7 +359,7 @@ const ProductionStock = () => {
                                 if (daysLeft <= 0) badgeClass = 'bg-danger-subtle text-danger';
                                 else if (daysLeft <= 7) badgeClass = 'bg-danger-subtle text-danger';
                                 else if (daysLeft <= 30) badgeClass = 'bg-warning-subtle text-warning';
-                                
+
                                 return (
                                     <tr key={item.PR_ID}>
                                         <td className='text-primary fw-medium ps-4'>{item.Batch_No}</td>
@@ -191,6 +383,7 @@ const ProductionStock = () => {
                         </tbody>
                     </table>
                 </div>
+                <TablePagination pagination={approvedPagination} onPageChange={setApprovedPage} t={t} />
             </div>
         </div>
     );

@@ -5,7 +5,7 @@ import ProductFilters from '../../component/Inventory/Product/ProductFilters';
 import ProductTable from '../../component/Inventory/Product/ProductTable';
 import ProductModal from '../../component/Inventory/Product/ProductModal';
 import ProductViewModal from '../../component/Inventory/Product/ProductViewModal';
-import { X } from 'react-feather';
+import { X, Search } from 'react-feather';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -40,6 +40,9 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     const [activeOnly, setActiveOnly] = useState(false);
     const [showQuickStockModal, setShowQuickStockModal] = useState(false);
     const [stockForm, setStockForm] = useState({ productId: '', qty: '' });
+    const [stockProductSearch, setStockProductSearch] = useState('');
+    const [showStockProductDropdown, setShowStockProductDropdown] = useState(false);
+    const [stockDropdownBrowse, setStockDropdownBrowse] = useState(true);
     const [stockError, setStockError] = useState('');
     const [isSavingStock, setIsSavingStock] = useState(false);
     const [productionPromptProduct, setProductionPromptProduct] = useState(null);
@@ -153,6 +156,17 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
         return quickStockProducts.find(product => product.id?.toString() === stockForm.productId);
     }, [quickStockProducts, stockForm.productId]);
 
+    const filteredQuickStockProducts = useMemo(() => {
+        if (stockDropdownBrowse) return quickStockProducts;
+
+        const term = stockProductSearch.trim().toLowerCase();
+        if (!term) return quickStockProducts;
+
+        return quickStockProducts.filter((product) =>
+            (product.name?.toLowerCase() || '').includes(term)
+        );
+    }, [quickStockProducts, stockProductSearch, stockDropdownBrowse]);
+
     const getStockLocation = () => {
         if (typeFilter === 'Raw') return 'Production';
         return 'Shop';
@@ -160,8 +174,38 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
 
     const openQuickStockModal = () => {
         setStockForm({ productId: '', qty: '' });
+        setStockProductSearch('');
+        setShowStockProductDropdown(false);
+        setStockDropdownBrowse(true);
         setStockError('');
         setShowQuickStockModal(true);
+    };
+
+    const handleSelectStockProduct = (product) => {
+        setStockForm((prev) => ({ ...prev, productId: product.id?.toString() || '' }));
+        setStockProductSearch(`${product.id} - ${product.name}`);
+        setShowStockProductDropdown(false);
+        setStockDropdownBrowse(true);
+    };
+
+    const handleStockProductSearchChange = (value) => {
+        setStockDropdownBrowse(false);
+        setStockProductSearch(value);
+        setShowStockProductDropdown(true);
+        setStockForm((prev) => ({ ...prev, productId: '' }));
+    };
+
+    const handleClearStockProduct = () => {
+        setStockForm((prev) => ({ ...prev, productId: '' }));
+        setStockProductSearch('');
+        setStockDropdownBrowse(true);
+        setShowStockProductDropdown(true);
+    };
+
+    const handleStockProductFocus = () => {
+        if (stockForm.productId) return;
+        setShowStockProductDropdown(true);
+        setStockDropdownBrowse(true);
     };
 
     const handleQuickStockSubmit = async (e) => {
@@ -191,6 +235,9 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
 
             setShowQuickStockModal(false);
             setStockForm({ productId: '', qty: '' });
+            setStockProductSearch('');
+            setShowStockProductDropdown(false);
+            setStockDropdownBrowse(true);
             await fetchProducts();
         } catch (error) {
             setStockError(error.response?.data?.message || 'Failed to update stock.');
@@ -444,7 +491,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                 <div className='modal d-block' style={{ backgroundColor: 'rgba(15,23,42,0.6)', zIndex: 1055 }}
                      onClick={(e) => { if (e.target === e.currentTarget) setShowQuickStockModal(false); }}>
                     <div className='modal-dialog modal-dialog-centered' style={{ maxWidth: '460px' }}>
-                        <form className='modal-content border-0 shadow-lg rounded-4 overflow-hidden' onSubmit={handleQuickStockSubmit}>
+                        <form className='modal-content border-0 shadow-lg rounded-4' onSubmit={handleQuickStockSubmit}>
                             <div className='modal-header border-0 px-4 pt-4 pb-2'>
                                 <div>
                                     <h6 className='fw-bold mb-0'>Update Quantity</h6>
@@ -463,22 +510,69 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                                 </button>
                             </div>
 
-                            <div className='modal-body px-4 py-3'>
+                            <div className='modal-body px-4 py-3' style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                                 {stockError && <div className='alert alert-danger py-2 small mb-3'>{stockError}</div>}
 
                                 <label className='form-label small fw-semibold text-muted mb-1'>Product</label>
-                                <select
-                                    className='form-select form-select-sm bg-light border-0 py-2 shadow-none mb-3'
-                                    value={stockForm.productId}
-                                    onChange={(e) => setStockForm({ ...stockForm, productId: e.target.value })}
-                                >
-                                    <option value=''>Select by product name or ID</option>
-                                    {quickStockProducts.map(product => (
-                                        <option key={product.id} value={product.id}>
-                                            {product.id} - {product.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className='mb-3'>
+                                    <div className={`input-group input-group-sm rounded border ${stockForm.productId ? 'bg-white' : 'bg-light'}`}>
+                                        <span className='input-group-text bg-transparent border-0 py-1'>
+                                            <Search size={14} className='text-muted' />
+                                        </span>
+                                        <input
+                                            type='text'
+                                            className='form-control border-0 bg-transparent shadow-none py-2'
+                                            placeholder='Search or select product...'
+                                            value={stockProductSearch}
+                                            readOnly={Boolean(stockForm.productId)}
+                                            onChange={(e) => handleStockProductSearchChange(e.target.value)}
+                                            onFocus={handleStockProductFocus}
+                                            onClick={handleStockProductFocus}
+                                            onBlur={() => setTimeout(() => setShowStockProductDropdown(false), 150)}
+                                            disabled={quickStockProducts.length === 0}
+                                        />
+                                        {stockForm.productId && (
+                                            <button
+                                                type='button'
+                                                className='btn btn-link text-muted border-0 px-2 py-0'
+                                                onClick={handleClearStockProduct}
+                                                title='Change product'
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {showStockProductDropdown && !stockForm.productId && filteredQuickStockProducts.length > 0 && (
+                                        <ul
+                                            className='list-group border rounded shadow-sm mt-2 mb-0'
+                                            style={{ maxHeight: '180px', overflowY: 'auto' }}
+                                        >
+                                            {filteredQuickStockProducts.map((product) => (
+                                                <li
+                                                    key={product.id}
+                                                    className='list-group-item list-group-item-action py-2 small'
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => handleSelectStockProduct(product)}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <div className='fw-semibold'>{product.id} - {product.name}</div>
+                                                    {product.code && (
+                                                        <div className='text-muted' style={{ fontSize: '11px' }}>
+                                                            Code: {product.code}
+                                                        </div>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+
+                                    {showStockProductDropdown && !stockForm.productId && stockProductSearch.trim() && !stockDropdownBrowse && filteredQuickStockProducts.length === 0 && (
+                                        <div className='border rounded shadow-sm mt-2 px-3 py-2 small text-muted bg-white'>
+                                            No matching products found.
+                                        </div>
+                                    )}
+                                </div>
 
                                 {quickStockProducts.length === 0 && (
                                     <p className='text-muted small mb-3'>
@@ -486,23 +580,27 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                                     </p>
                                 )}
 
-                                {selectedStockProduct && (
+                                {!showStockProductDropdown && selectedStockProduct && (
                                     <div className='bg-light rounded-3 p-3 mb-3 d-flex justify-content-between'>
                                         <span className='text-muted small'>Current Stock</span>
                                         <strong>{selectedStockProduct.stockCount || 0} {selectedStockProduct.baseUnit || ''}</strong>
                                     </div>
                                 )}
 
-                                <label className='form-label small fw-semibold text-muted mb-1'>Quantity to Add</label>
-                                <input
-                                    type='number'
-                                    min='0.01'
-                                    step='0.01'
-                                    className='form-control form-control-sm bg-light border-0 py-2 shadow-none'
-                                    placeholder='Enter supplied quantity'
-                                    value={stockForm.qty}
-                                    onChange={(e) => setStockForm({ ...stockForm, qty: e.target.value })}
-                                />
+                                {!showStockProductDropdown && (
+                                    <>
+                                        <label className='form-label small fw-semibold text-muted mb-1'>Quantity to Add</label>
+                                        <input
+                                            type='number'
+                                            min='0.01'
+                                            step='0.01'
+                                            className='form-control form-control-sm bg-light border-0 py-2 shadow-none'
+                                            placeholder='Enter supplied quantity'
+                                            value={stockForm.qty}
+                                            onChange={(e) => setStockForm({ ...stockForm, qty: e.target.value })}
+                                        />
+                                    </>
+                                )}
                             </div>
 
                             <div className='modal-footer border-0 px-4 pb-4 pt-1 gap-2'>

@@ -32,45 +32,6 @@ const ProductHeader = ({
         }));
     };
 
-    // Export as CSV
-    const handleExportCSV = () => {
-        if (!products || products.length === 0) {
-            alert('No products to export');
-            return;
-        }
-
-        const headers = ['ID', 'Name', 'Type', 'Base Unit', 'Cost Price', 'Retail Price', 'Wholesale Price', 'Min Stock', 'Tax Rate', 'Barcode', 'Status'];
-        const rows = products.map(p => [
-            p.id,
-            p.name,
-            p.type,
-            p.baseUnit || '',
-            p.costPrice || 0,
-            p.retailPrice || 0,
-            p.wholesalePrice || 0,
-            p.minStock || 0,
-            p.taxRate || 0,
-            p.barcode || '',
-            p.status || ''
-        ]);
-
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `products-${new Date().toISOString().slice(0, 10)}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        setShowExportMenu(false);
-    };
-
     // Export as Excel (XLSX)
     const handleExportExcel = async () => {
         if (!products || products.length === 0) {
@@ -92,7 +53,7 @@ const ProductHeader = ({
             XLSX.writeFile(wb, `products-${new Date().toISOString().slice(0, 10)}.xlsx`);
             setShowExportMenu(false);
         } catch (error) {
-            alert('Excel export requires xlsx library. Please use CSV or PDF instead.');
+            alert('Excel export requires xlsx library. Please use PDF instead.');
             console.error('Excel export error:', error);
         }
     };
@@ -104,11 +65,20 @@ const ProductHeader = ({
             return;
         }
 
-        // Helper function to get correct status
         const getStatus = (stockCount, minStock) => {
             if (stockCount === 0) return 'Out of Stock';
             if (stockCount < minStock) return 'Low Stock';
             return 'In Stock';
+        };
+
+        const reportMeta = {
+            'Company Items': { reportTitle: 'Company Item Price List', fileName: 'Company_Item_Price_List_Report' },
+            'Other Items': { reportTitle: 'Other Item Price List', fileName: 'Other_Item_Price_List_Report' },
+            'Raw Materials': { reportTitle: 'Raw Material Price List', fileName: 'Raw_Material_Price_List_Report' }
+        };
+        const { reportTitle, fileName } = reportMeta[title] || {
+            reportTitle: `${title} Price List`,
+            fileName: `${String(title).replace(/\s+/g, '_')}_Price_List_Report`
         };
 
         const columns = ['ID', 'Name', 'Type', 'Cost Price', 'Retail Price', 'Wholesale Price', 'Status'];
@@ -122,7 +92,7 @@ const ProductHeader = ({
             'Status': getStatus(p.stockCount, p.minStock)
         }));
 
-        generatePDF('Company Items', columns, data, 'Company_Items_Report');
+        generatePDF(reportTitle, columns, data, fileName);
         setShowExportMenu(false);
     };
 
@@ -151,15 +121,6 @@ const ProductHeader = ({
                             minWidth: '150px',
                             marginTop: '4px'
                         }}>
-                            <button 
-                                className='btn btn-sm btn-light w-100 text-start px-3 py-2 mb-1'
-                                onClick={handleExportCSV}
-                                style={{ border: 'none', borderRadius: '6px', transition: 'all 0.2s' }}
-                                onMouseEnter={(e) => e.target.style.backgroundColor = '#f1f5f9'}
-                                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                            >
-                                📄 CSV
-                            </button>
                             <button 
                                 className='btn btn-sm btn-light w-100 text-start px-3 py-2 mb-1'
                                 onClick={handleExportExcel}

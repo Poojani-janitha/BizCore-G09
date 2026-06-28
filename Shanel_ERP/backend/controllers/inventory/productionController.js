@@ -2,55 +2,132 @@ const { Production, Product, Inventory } = require('../../models/index');
 const sequelize = require('../../config/db');
 const { Op } = require('sequelize');
 
-// 1. Get All Active WIP Batches
+const formatProductionItem = (item) => {
+    let completionVal = 0;
+    if (item.Status === 'In_Progress') {
+        const createdAt = item.Created_At ? new Date(item.Created_At) : null;
+        const updatedAt = item.Updated_At ? new Date(item.Updated_At) : null;
+        completionVal = (createdAt && updatedAt && updatedAt.getTime() > createdAt.getTime()) ? 50 : 0;
+    } else if (item.Status === 'Quality_Check') {
+        completionVal = 85;
+    } else if (item.Status === 'Approved' || item.Status === 'Completed') {
+        completionVal = 100;
+    }
+
+    let daysToExpire = null;
+    if (item.Exp_Date) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const expDate = new Date(item.Exp_Date);
+        expDate.setHours(0, 0, 0, 0);
+        daysToExpire = Math.floor((expDate - today) / (1000 * 60 * 60 * 24));
+    }
+
+    return {
+        PR_ID: item.PR_ID,
+        P_ID: item.P_ID,
+        Batch_No: item.Batch_No,
+        P_Name: item.Product ? item.Product.P_Name : 'Unknown',
+        P_Name_Sinhala: item.Product ? item.Product.P_Name_Sinhala : '',
+        Base_Unit: item.Product ? item.Product.Base_Unit : '',
+        Total_Qty_Produced: item.Total_Qty_Produced,
+        Production_Date: item.Production_Date,
+        Exp_Date: item.Exp_Date,
+        Status: item.Status,
+        Completion: completionVal,
+        DaysToExpire: daysToExpire
+    };
+};
+
+const buildProductionQuery = (query) => {
+    const { section, search = '', status, productId, expiryFilter } = query;
+    const andConditions = [];
+
+    if (section === 'wip') {
+        andConditions.push({
+            Status: status || { [Op.in]: ['In_Progress', 'Quality_Check'] }
+        });
+    } else if (section === 'approved') {
+        andConditions.push({ Status: 'Approved' });
+    } else {
+        andConditions.push({ Status: { [Op.in]: ['In_Progress', 'Quality_Check', 'Approved'] } });
+    }
+
+    if (productId) {
+        andConditions.push({ P_ID: parseInt(productId, 10) });
+    }
+
+    if (section === 'approved' && expiryFilter && expiryFilter !== 'all') {
+        if (expiryFilter === 'expired') {
+            andConditions.push(sequelize.where(sequelize.col('Exp_Date'), '<', sequelize.fn('CURDATE')));
+        } else {
+            const daysMap = { within_7: 7, within_30: 30, within_60: 60 };
+            const days = daysMap[expiryFilter];
+            if (days) {
+                andConditions.push(sequelize.where(sequelize.col('Exp_Date'), '>=', sequelize.fn('CURDATE')));
+                andConditions.push(
+                    sequelize.where(
+                        sequelize.col('Exp_Date'),
+                        '<=',
+                        sequelize.literal(`DATE_ADD(CURDATE(), INTERVAL ${days} DAY)`)
+                    )
+                );
+            }
+        }
+    }
+
+    const trimmedSearch = String(search).trim();
+    if (trimmedSearch) {
+        const term = `%${trimmedSearch}%`;
+        andConditions.push({
+            [Op.or]: [
+                { Batch_No: { [Op.like]: term } },
+                { '$Product.P_Name$': { [Op.like]: term } },
+                { '$Product.P_Name_Sinhala$': { [Op.like]: term } }
+            ]
+        });
+    }
+
+    return {
+        where: { [Op.and]: andConditions },
+        include: [{ model: Product, attributes: ['P_Name', 'P_Name_Sinhala', 'Base_Unit'] }],
+        order: [['Created_At', 'DESC']],
+        subQuery: false
+    };
+};
+
+// 1. Get All Active WIP Batches (supports optional filtering & pagination)
 exports.getProductionData = async (req, res) => {
     try {
-        const wipData = await Production.findAll({
-            where: { Status: ['In_Progress', 'Quality_Check', 'Approved'] },
-            include: [{ model: Product, attributes: ['P_Name', 'P_Name_Sinhala', 'Base_Unit'] }],
-            order: [['Created_At', 'DESC']]
-        });
+        const { page, limit = '10' } = req.query;
+        const isPaginated = page !== undefined;
+        const queryOpts = buildProductionQuery(req.query);
 
-        const formattedWip = wipData.map(item => {
-            let completionVal = 0;
-            if (item.Status === 'In_Progress') {
-                // New batches remain at 0% until user explicitly marks them In Progress.
-                const createdAt = item.Created_At ? new Date(item.Created_At) : null;
-                const updatedAt = item.Updated_At ? new Date(item.Updated_At) : null;
-                completionVal = (createdAt && updatedAt && updatedAt.getTime() > createdAt.getTime()) ? 50 : 0;
-            } else if (item.Status === 'Quality_Check') {
-                completionVal = 85;
-            } else if (item.Status === 'Approved' || item.Status === 'Completed') {
-                completionVal = 100;
-            }
+        if (isPaginated) {
+            const pageNum = Math.max(1, parseInt(page, 10) || 1);
+            const pageSize = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
 
-            // Calculate days to expiry
-            let daysToExpire = null;
-            if (item.Exp_Date) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const expDate = new Date(item.Exp_Date);
-                expDate.setHours(0, 0, 0, 0);
-                daysToExpire = Math.floor((expDate - today) / (1000 * 60 * 60 * 24));
-            }
+            const { count, rows } = await Production.findAndCountAll({
+                ...queryOpts,
+                limit: pageSize,
+                offset: (pageNum - 1) * pageSize,
+                distinct: true
+            });
 
-            return {
-                PR_ID: item.PR_ID,
-                P_ID: item.P_ID,
-                Batch_No: item.Batch_No,
-                P_Name: item.Product ? item.Product.P_Name : 'Unknown',
-                P_Name_Sinhala: item.Product ? item.Product.P_Name_Sinhala : '',
-                Base_Unit: item.Product ? item.Product.Base_Unit : '',
-                Total_Qty_Produced: item.Total_Qty_Produced,
-                Production_Date: item.Production_Date,
-                Exp_Date: item.Exp_Date,
-                Status: item.Status,
-                Completion: completionVal,
-                DaysToExpire: daysToExpire
-            };
-        });
+            return res.status(200).json({
+                success: true,
+                data: rows.map(formatProductionItem),
+                pagination: {
+                    currentPage: pageNum,
+                    totalPages: Math.max(1, Math.ceil(count / pageSize)),
+                    pageSize,
+                    totalRecords: count
+                }
+            });
+        }
 
-        res.status(200).json({ success: true, wip: formattedWip });
+        const wipData = await Production.findAll(queryOpts);
+        res.status(200).json({ success: true, wip: wipData.map(formatProductionItem) });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
