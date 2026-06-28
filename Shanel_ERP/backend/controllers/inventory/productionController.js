@@ -1,5 +1,6 @@
 const { Production, Product, Inventory } = require('../../models/index');
 const sequelize = require('../../config/db');
+const { Op } = require('sequelize');
 
 // 1. Get All Active WIP Batches
 exports.getProductionData = async (req, res) => {
@@ -55,6 +56,37 @@ exports.getProductionData = async (req, res) => {
     }
 };
 
+// 1.1 Get Next Batch Number (BATCH-YYYY-NNN)
+exports.getNextBatchNumber = async (req, res) => {
+    try {
+        const currentYear = String(new Date().getFullYear());
+        const yearPrefix = `BATCH-${currentYear}-%`;
+
+        const latestBatchByInsert = await Production.findOne({
+            attributes: ['Batch_No'],
+            where: {
+                Batch_No: {
+                    [Op.like]: yearPrefix
+                }
+            },
+            order: [['PR_ID', 'DESC']]
+        });
+
+        let nextSeq = 1;
+        if (latestBatchByInsert && latestBatchByInsert.Batch_No) {
+            const match = String(latestBatchByInsert.Batch_No).match(new RegExp(`^BATCH-${currentYear}-(\\d+)$`));
+            if (match) {
+                nextSeq = parseInt(match[1], 10) + 1;
+            }
+        }
+
+        const nextBatchNo = `BATCH-${currentYear}-${String(nextSeq).padStart(3, '0')}`;
+        res.status(200).json({ success: true, batchNo: nextBatchNo });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 // 2. Start New Production (Add WIP)
 exports.startProduction = async (req, res) => {
     try {
@@ -70,6 +102,43 @@ exports.startProduction = async (req, res) => {
         res.status(201).json({ success: true, data: newBatch });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// 2.1 Edit Production Batch (non-approved)
+exports.editProduction = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { P_ID, Total_Qty_Produced, Production_Date, Exp_Date } = req.body;
+
+        const batch = await Production.findByPk(id);
+        if (!batch) {
+            return res.status(404).json({ success: false, message: 'Batch not found' });
+        }
+
+        if (batch.Status === 'Approved') {
+            return res.status(400).json({ success: false, message: 'Approved batches cannot be edited' });
+        }
+
+        const qty = parseFloat(Total_Qty_Produced);
+        if (!qty || qty <= 0) {
+            return res.status(400).json({ success: false, message: 'Quantity must be greater than 0' });
+        }
+
+        if (Production_Date && Exp_Date && new Date(Exp_Date) < new Date(Production_Date)) {
+            return res.status(400).json({ success: false, message: 'Expiry date cannot be before production date' });
+        }
+
+        await batch.update({
+            P_ID,
+            Total_Qty_Produced: qty,
+            Production_Date,
+            Exp_Date
+        });
+
+        return res.json({ success: true, message: 'Batch updated successfully' });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 

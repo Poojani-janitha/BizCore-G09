@@ -264,7 +264,7 @@ const ManagerHome = () => {
                                     : (inv.transfers || []).map((trans, i) => (
                                         <div key={i} className="py-2 border-bottom">
                                             <div className="d-flex justify-content-between align-items-center">
-                                                <p className="mb-0 fw-semibold" style={{ fontSize: '12px' }}>{trans.name}</p>
+                                                <p className="mb-0 fw-semibold" style={{ fontSize: '12px' }}>{trans?.product?.P_Name || trans?.P_Name || trans?.name || 'Unknown Product'}</p>
                                                 <span className={`badge ${trans.Status === 'Completed' ? 'bg-success' : 'bg-warning text-dark'}`} style={{ fontSize: '10px' }}>{trans.Status}</span>
                                             </div>
                                             <small className="text-muted">{trans.From_Location} {t('manager.sections.transfer_route')} {trans.To_Location} · {trans.Qty} {t('manager.sections.transfer_units')}</small>

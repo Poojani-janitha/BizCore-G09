@@ -28,7 +28,6 @@ const SlideBar = () => {
                 { label: 'Other Items', to: '/inventory/other-items', icon: <Box size={14} /> },
                 { label: 'Raw Materials', to: '/inventory/raw-materials', icon: <Archive size={14} /> },
                 { label: 'Production Stock', to: '/inventory/production-stock', icon: <Truck size={14} /> },
-                { label: 'Sales Stock', to: '/inventory/salesStock', icon: <ShoppingCart size={14} /> },
                 { label: 'Stock Transfer', to: '/inventory/stock-transfers', icon: <RefreshCw size={14} /> },
                 { label: 'Stock Adjustments', to: '/inventory/stock-adjustments', icon: <Sliders size={14} /> },
                 { label: 'Returns', to: '/inventory/returns', icon: <CornerUpLeft size={14} /> },

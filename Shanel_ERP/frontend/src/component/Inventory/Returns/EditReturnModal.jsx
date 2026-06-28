@@ -122,6 +122,7 @@ const EditReturnModal = ({ show, onHide, returnItem, refresh }) => {
                                 <Form.Control
                                     type="number"
                                     step="0.01"
+                                    min="0"
                                     value={formData.Qty}
                                     onChange={(e) => setFormData({...formData, Qty: e.target.value})}
                                     className={errors.Qty ? 'is-invalid' : ''}
@@ -167,6 +168,7 @@ const EditReturnModal = ({ show, onHide, returnItem, refresh }) => {
                                 <Form.Control
                                     type="number"
                                     step="0.01"
+                                    min="0"
                                     value={formData.Refund_Amount}
                                     onChange={(e) => setFormData({...formData, Refund_Amount: e.target.value})}
                                     className={errors.Refund_Amount ? 'is-invalid' : ''}

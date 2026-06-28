@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Plus, RefreshCcw, CheckCircle, AlertCircle, XCircle, Edit2, ChevronDown } from 'react-feather';
 import NewTransferModal from '../../component/Inventory/Transfer/NewTransferModal';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const StockTransfer = () => {
     const [data, setData] = useState({ transfers: [], metrics: { totalTransfers: 0, pending: 0, completedToday: 0, totalItems: 0 } });
@@ -14,6 +15,8 @@ const StockTransfer = () => {
     const [showStockTable, setShowStockTable] = useState(false);
     const { t, i18n } = useTranslation();
     const isSinhala = i18n.language?.startsWith('si');
+    const location = useLocation();
+    const navigate = useNavigate();
 
     const fetchData = () => {
         axios.get('http://localhost:5000/api/inventory/transfers/history')
@@ -83,6 +86,15 @@ const StockTransfer = () => {
         fetchData();
         fetchInventory();
     }, []);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('new') === '1') {
+            setEditTransfer(null);
+            setShowModal(true);
+            navigate('/inventory/stock-transfers', { replace: true });
+        }
+    }, [location.search, navigate]);
 
     const handleEditTransfer = (transfer) => {
         setEditTransfer(transfer);

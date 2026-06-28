@@ -1,11 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCcw, CheckCircle, Clock, ArrowRight, ChevronRight } from 'lucide-react';
+import { RefreshCcw, CheckCircle, Clock, ArrowRight, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const StockTransfers = ({ transfers = [] }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  const getTransferProductName = (transfer) => {
+    return transfer?.product?.P_Name || transfer?.P_Name || transfer?.name || 'Unknown Product';
+  };
 
   const getStatusColor = (status) => {
     switch(status?.toLowerCase()) {
@@ -43,12 +47,21 @@ const StockTransfers = ({ transfers = [] }) => {
                 : t('inventory.dashboard.transfers_widget.recently_plural')}
             </p>
           </div>
-          <button 
-            className="btn btn-sm btn-outline-primary fw-bold"
-            onClick={() => navigate('/inventory/stock-transfers')}
-          >
-            {t('inventory.dashboard.transfers_widget.view_all')}
-          </button>
+          <div className="d-flex gap-2">
+            <button
+              className="btn btn-sm btn-primary fw-bold d-flex align-items-center gap-1"
+              onClick={() => navigate('/inventory/stock-transfers?new=1')}
+            >
+              <Plus size={14} />
+              {t('inventory.pages.stock_transfer.btn_new')}
+            </button>
+            <button 
+              className="btn btn-sm btn-outline-primary fw-bold"
+              onClick={() => navigate('/inventory/stock-transfers')}
+            >
+              {t('inventory.dashboard.transfers_widget.view_all')}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -70,6 +83,10 @@ const StockTransfers = ({ transfers = [] }) => {
                   onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
+                    {/*  */}
+                    <p className="mb-1 fw-semibold text-dark small" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {getTransferProductName(transfer)}
+                    </p>
                     <div className={`d-flex align-items-center gap-2 mb-1 small fw-bold ${statusColor.text}`} style={{ minWidth: 0 }}>
                       <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{transfer.From_Location || 'Unknown'}</span>
                       <ArrowRight size={12} style={{ flexShrink: 0 }} />

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Play, Trash2, CheckCircle, Loader } from 'react-feather';
+import { Play, Trash2, Loader, Edit2 } from 'react-feather';
 import ProductionModal from '../../component/Inventory/Production/ProductionModal';
+import EditProductionModal from '../../component/Inventory/Production/EditProductionModal';
 import { useTranslation } from 'react-i18next';
 
 const formatStock = (value) => {
@@ -11,8 +12,11 @@ const formatStock = (value) => {
 
 const ProductionStock = () => {
     const [wip, setWip] = useState([]);
+    const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedBatch, setSelectedBatch] = useState(null);
     const { t, i18n } = useTranslation();
     const isSinhala = i18n.language?.startsWith('si');
 
@@ -42,6 +46,11 @@ const ProductionStock = () => {
         try {
             const res = await axios.get('http://localhost:5000/api/production/stock-overview');
             if (res.data.success) setWip(res.data.wip);
+
+            const productRes = await axios.get('http://localhost:5000/api/inventory/products');
+            if (Array.isArray(productRes.data)) {
+                setProducts(productRes.data.filter((p) => p.type === 'Company').map((p) => ({ id: p.id, name: p.name })));
+            }
         } catch (error) { console.error(error); }
         setLoading(false);
     };
@@ -60,6 +69,11 @@ const ProductionStock = () => {
         }
     };
 
+    const handleEdit = (batch) => {
+        setSelectedBatch(batch);
+        setShowEditModal(true);
+    };
+
     if (loading) return <div className='vh-100 d-flex justify-content-center align-items-center'><Loader className="spinner-border text-primary"/></div>;
 
     return (
@@ -71,6 +85,13 @@ const ProductionStock = () => {
             </div>
 
             <ProductionModal show={showModal} onHide={() => setShowModal(false)} refreshData={fetchData} />
+            <EditProductionModal
+                show={showEditModal}
+                onHide={() => { setShowEditModal(false); setSelectedBatch(null); }}
+                refreshData={fetchData}
+                batch={selectedBatch}
+                products={products}
+            />
 
             <div className='card border-0 shadow-sm rounded-3 overflow-hidden'>
                 <div className='table-responsive'>
@@ -83,7 +104,6 @@ const ProductionStock = () => {
                                 <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{t('inventory.pages.production_stock.col_production_date')}</th>
                                 <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{t('inventory.pages.production_stock.col_expiry_date')}</th>
                                 <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{t('inventory.pages.production_stock.col_completion')}</th>
-                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{t('inventory.pages.production_stock.col_stage')}</th>
                                 <th className='text-uppercase py-3 text-end pe-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{t('inventory.pages.production_stock.col_actions')}</th>
                             </tr>
                         </thead>
@@ -109,55 +129,16 @@ const ProductionStock = () => {
                                             );
                                         })()}
                                     </td>
-                                    <td className="text-center align-middle">
-                                        {(() => {
-                                            const completion = Number(item.Completion || 0);
-                                            let stageName = '';
-                                            let badgeClass = '';
-                                            
-                                            if (item.Status === 'Quality_Check') {
-                                                stageName = t('inventory.pages.production_stock.stage_quality_check');
-                                                badgeClass = 'bg-info-subtle text-info';
-                                            } else if (item.Status === 'Approved') {
-                                                stageName = t('inventory.pages.production_stock.stage_approved');
-                                                badgeClass = 'bg-success-subtle text-success';
-                                            } else if (item.Status === 'In_Progress') {
-                                                if (completion < 50) {
-                                                    stageName = t('inventory.pages.production_stock.stage_start');
-                                                    badgeClass = 'bg-warning-subtle text-warning';
-                                                } else {
-                                                    stageName = t('inventory.pages.production_stock.stage_in_progress');
-                                                    badgeClass = 'bg-warning-subtle text-warning';
-                                                }
-                                            }
-                                            
-                                            return (
-                                                <span
-                                                    className={`badge d-inline-block text-center ${badgeClass} px-2`}
-                                                    style={{ minWidth: '120px' }}
-                                                >
-                                                    {stageName}
-                                                </span>
-                                            );
-                                        })()}
-                                    </td>
                                     <td className="text-end">
-                                        {Number(item.Completion || 0) < 50 && item.Status === 'In_Progress' && (
-                                            <button className="btn btn-link text-primary p-0 me-3" title="Move to In Progress" onClick={() => handleStatusUpdate(item.PR_ID, 'In_Progress')}>{t('inventory.pages.production_stock.btn_in_progress')}</button>
-                                        )}
-                                        {Number(item.Completion || 0) >= 50 && item.Status === 'In_Progress' && (
-                                            <button className="btn btn-link text-info p-0 me-3" title="Move to QC" onClick={() => handleStatusUpdate(item.PR_ID, 'Quality_Check')}>{t('inventory.pages.production_stock.btn_qc')}</button>
-                                        )}
-                                        {item.Status === 'Quality_Check' && (
-                                            <button className="btn btn-link text-success p-0 me-3" title="Approve & Sync Stock" onClick={() => handleStatusUpdate(item.PR_ID, 'Approved')}><CheckCircle size={16}/></button>
-                                        )}
+                                        <button className="btn btn-success btn-sm me-2" title="Approve & Sync Stock" onClick={() => handleStatusUpdate(item.PR_ID, 'Approved')}>{t('inventory.pages.production_stock.btn_approve')}</button>
+                                        <button className="btn btn-link text-primary p-0 me-3" title="Edit batch" onClick={() => handleEdit(item)}><Edit2 size={16}/></button>
                                         <button className="btn btn-link text-danger p-0" title="Delete" onClick={() => handleDelete(item.PR_ID)}><Trash2 size={16}/></button>
                                     </td>
                                 </tr>
                             ))}
                             {workingItems.length === 0 && (
                                 <tr>
-                                    <td colSpan="8" className="text-center text-muted py-4">{t('inventory.pages.production_stock.no_wip')}</td>
+                                    <td colSpan="7" className="text-center text-muted py-4">{t('inventory.pages.production_stock.no_wip')}</td>
                                 </tr>
                             )}
                         </tbody>
@@ -177,7 +158,6 @@ const ProductionStock = () => {
                                 <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{t('inventory.pages.production_stock.col_production_date')}</th>
                                 <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{t('inventory.pages.production_stock.col_expiry_date')}</th>
                                 <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{t('inventory.pages.production_stock.col_days_to_expire')}</th>
-                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{t('inventory.pages.production_stock.col_stage')}</th>
                             </tr>
                         </thead>
                         <tbody style={{textAlign:"center"}}>
@@ -200,17 +180,12 @@ const ProductionStock = () => {
                                                 {formatDaysToExpiry(daysLeft)}
                                             </span>
                                         </td>
-                                        <td className="text-center align-middle">
-                                            <span className="badge d-inline-block text-center bg-success-subtle text-success px-2" style={{ minWidth: '120px' }}>
-                                                {t('inventory.pages.production_stock.stage_approved')}
-                                            </span>
-                                        </td>
                                     </tr>
                                 );
                             })}
                             {approvedItems.length === 0 && (
                                 <tr>
-                                    <td colSpan="7" className="text-center text-muted py-4">{t('inventory.pages.production_stock.no_approved')}</td>
+                                    <td colSpan="6" className="text-center text-muted py-4">{t('inventory.pages.production_stock.no_approved')}</td>
                                 </tr>
                             )}
                         </tbody>

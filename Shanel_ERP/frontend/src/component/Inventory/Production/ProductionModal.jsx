@@ -4,10 +4,25 @@ import axios from 'axios';
 import { Package, Calendar, Layers, Hash } from 'react-feather';
 
 const ProductionModal = ({ show, onHide, refreshData }) => {
+    const getFallbackBatchNo = () => {
+        const currentYear = String(new Date().getFullYear());
+        return `BATCH-${currentYear}-001`;
+    };
+
     const [products, setProducts] = useState([]);
     const [formData, setFormData] = useState({ P_ID: '', Batch_No: '', Total_Qty_Produced: '', Production_Date: '', Exp_Date: '' });
     const [errors, setErrors] = useState({});
     const [existingBatches, setExistingBatches] = useState([]);
+
+    const fetchNextBatchNo = async () => {
+        try {
+            const res = await axios.get('http://localhost:5000/api/production/next-batch-number');
+            const nextBatchNo = res?.data?.batchNo || getFallbackBatchNo();
+            setFormData(prev => ({ ...prev, Batch_No: nextBatchNo }));
+        } catch (error) {
+            setFormData(prev => ({ ...prev, Batch_No: getFallbackBatchNo() }));
+        }
+    };
 
     const isIsharaProduct = (product) => {
         const flag = product.isIsharaProduct ?? product.Is_Ishara_Product;
@@ -20,11 +35,21 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
         });
         // Fetch existing batches for duplicate check
         axios.get('http://localhost:5000/api/production/stock-overview').then(res => {
-            if (res.data.success && res.data.wip) {
-                setExistingBatches(res.data.wip.map(item => item.Batch_No));
+            if (res.data.success) {
+                const allBatches = [
+                    ...(res.data.wip || []),
+                    ...(res.data.approved || [])
+                ].map(item => item.Batch_No);
+                setExistingBatches(allBatches);
             }
         });
     }, []);
+
+    useEffect(() => {
+        if (show) {
+            fetchNextBatchNo();
+        }
+    }, [show]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -46,7 +71,7 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
         }
 
         // Validation 3: Check for duplicate batch number
-        const batchNo = `BATCH-${formData.Batch_No}`;
+        const batchNo = formData.Batch_No;
         if (existingBatches.includes(batchNo)) {
             newErrors.Batch_No = 'This batch number already exists';
         }
@@ -60,9 +85,16 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
         try {
             setErrors({});
             await axios.post('http://localhost:5000/api/production/start', { ...formData, Batch_No: batchNo });
+            setExistingBatches([...existingBatches, batchNo]);
             refreshData();
             onHide();
-            setFormData({ P_ID: '', Batch_No: '', Total_Qty_Produced: '', Production_Date: '', Exp_Date: '' });
+            setFormData({
+                P_ID: '',
+                Batch_No: '',
+                Total_Qty_Produced: '',
+                Production_Date: '',
+                Exp_Date: ''
+            });
         } catch (error) { 
             setErrors({ submit: error.response?.data?.message || 'Error starting production' });
         }
@@ -104,15 +136,14 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
                                 <Form.Label style={{ margin: 0, fontWeight: '600', fontSize: '14px' }}>Batch Number</Form.Label>
                             </div>
                             <InputGroup style={{ borderRadius: '8px', overflow: 'hidden' }}>
-                                <InputGroup.Text style={{ backgroundColor: '#e7f1ff', border: '1px solid #dee2e6', fontWeight: '600', color: '#0d6efd', padding: '10px 12px' }}>
-                                    BATCH-
-                                </InputGroup.Text>
                                 <Form.Control 
                                     type="text" 
-                                    placeholder="e.g. 2026-001" 
+                                    placeholder="BATCH-2026-001" 
                                     required 
+                                    value={formData.Batch_No}
+                                    readOnly
                                     onChange={e => setFormData({...formData, Batch_No: e.target.value})}
-                                    style={{ borderRadius: '0 8px 8px 0', border: `1px solid ${errors.Batch_No ? '#dc3545' : '#dee2e6'}`, padding: '10px 12px' }} 
+                                    style={{ borderRadius: '8px', border: `1px solid ${errors.Batch_No ? '#dc3545' : '#dee2e6'}`, padding: '10px 12px', backgroundColor: '#f8f9fa' }} 
                                 />
                             </InputGroup>
                             {errors.Batch_No && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>❌ {errors.Batch_No}</div>}
@@ -126,6 +157,7 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
                             </div>
                             <Form.Control 
                                 type="number" 
+                                min="0"
                                 required 
                                 onChange={e => setFormData({...formData, Total_Qty_Produced: e.target.value})}
                                 style={{ borderRadius: '8px', border: `1px solid ${errors.Total_Qty_Produced ? '#dc3545' : '#dee2e6'}`, padding: '10px 12px' }} 

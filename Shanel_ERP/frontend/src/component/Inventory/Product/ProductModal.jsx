@@ -436,29 +436,29 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                                 {/* Pricing Section */}
                                 <div className="col-4">
                                     <label className="form-label mb-1 small fw-semibold text-muted">Cost (LKR) * <span className="text-danger small">{errors.Cost_Price && errors.Cost_Price}</span></label>
-                                    <input type="number" step="0.01" name="Cost_Price" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Cost_Price ? 'border border-danger' : ''}`}
+                                    <input type="number" step="0.01" min="0" name="Cost_Price" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Cost_Price ? 'border border-danger' : ''}`}
                                            value={formData.Cost_Price} onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur} required />
                                 </div>
                                 <div className="col-4">
                                     <label className="form-label mb-1 small fw-semibold text-muted">Retail (LKR) * <span className="text-danger small">{errors.Retail_Price && errors.Retail_Price}</span></label>
-                                    <input type="number" step="0.01" name="Retail_Price" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Retail_Price ? 'border border-danger' : ''}`}
+                                    <input type="number" step="0.01" min="0" name="Retail_Price" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Retail_Price ? 'border border-danger' : ''}`}
                                            value={formData.Retail_Price} onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur} required />
                                 </div>
                                 <div className="col-4">
                                     <label className="form-label mb-1 small fw-semibold text-muted">Wholesale (LKR) * <span className="text-danger small">{errors.Wholesale_Price && errors.Wholesale_Price}</span></label>
-                                    <input type="number" step="0.01" name="Wholesale_Price" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Wholesale_Price ? 'border border-danger' : ''}`}
+                                    <input type="number" step="0.01" min="0" name="Wholesale_Price" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Wholesale_Price ? 'border border-danger' : ''}`}
                                            value={formData.Wholesale_Price} onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur} required />
                                 </div>
 
                                 {/* Tax & Stock Levels */}
                                 <div className="col-6 mt-2">
                                     <label className="form-label mb-1 small fw-semibold text-muted">Tax Rate (%) <span className="text-danger small">{errors.Tax_Rate && errors.Tax_Rate}</span></label>
-                                    <input type="number" step="0.01" name="Tax_Rate" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Tax_Rate ? 'border border-danger' : ''}`}
+                                    <input type="number" step="0.01" min="0" name="Tax_Rate" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Tax_Rate ? 'border border-danger' : ''}`}
                                            value={formData.Tax_Rate} onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur} />
                                 </div>
                                 <div className="col-6 mt-2">
                                     <label className="form-label mb-1 small fw-semibold text-muted">Min Stock * <span className="text-danger small">{errors.Min_Stock && errors.Min_Stock}</span></label>
-                                    <input type="number" step="0.01" name="Min_Stock" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Min_Stock ? 'border border-danger' : ''}`}
+                                    <input type="number" step="0.01" min="0" name="Min_Stock" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Min_Stock ? 'border border-danger' : ''}`}
                                            value={formData.Min_Stock} onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur} />
                                 </div>
 
@@ -504,6 +504,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                                             <input 
                                                 type="number" 
                                                 step="0.01" 
+                                                min="0"
                                                 name="InitialQty" 
                                                 className={`form-control form-control-sm bg-light border-0 py-2 flex-grow-1 ${errors.InitialQty ? 'border border-danger' : ''}`} 
                                                 value={formData.InitialQty} 
@@ -524,7 +525,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                                 {/* Reorder Level */}
                                 <div className="col-12 mt-2">
                                     <label className="form-label mb-1 small fw-semibold text-muted">Reorder Level * <span className="text-danger small">{errors.Reorder_Level && errors.Reorder_Level}</span></label>
-                                    <input type="number" step="0.01" name="Reorder_Level" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Reorder_Level ? 'border border-danger' : ''}`} 
+                                    <input type="number" step="0.01" min="0" name="Reorder_Level" className={`form-control form-control-sm bg-light border-0 py-2 ${errors.Reorder_Level ? 'border border-danger' : ''}`} 
                                            value={formData.Reorder_Level} onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur} />
                                 </div>
 

@@ -108,7 +108,7 @@ const AdminHome = () => {
         { label: t('home.modules.pos'), icon: <ShoppingCart />, to: '/POS', color: '#41b883' },
         { label: t('home.modules.inventory'), icon: <Package />, to: '/inventory', color: '#004445' },
         { label: t('home.modules.production'), icon: <Box />, to: '/inventory/production-stock', color: '#2c7873' },
-        { label: t('home.modules.sales'), icon: <TrendingUp />, to: '/inventory/salesStock', color: '#6ab04c' },
+        { label: t('home.modules.sales'), icon: <TrendingUp />, to: '/sales', color: '#6ab04c' },
         { label: t('home.modules.finance'), icon: <DollarSign />, to: '/finance', color: '#f9ca24' },
         { label: t('home.modules.reports'), icon: <BarChart2 />, to: '/inventory/reports', color: '#0984e3' },
         { label: t('home.modules.hr'), icon: <Users />, to: '/hr', color: '#6c5ce7' },
@@ -259,7 +259,7 @@ const AdminHome = () => {
                                     (inv.transfers || []).map((transfer, i) => (
                                         <div key={i} className="py-2 border-bottom">
                                             <div className="d-flex justify-content-between">
-                                                <p className="mb-0 fw-semibold" style={{ fontSize: '12px' }}>{transfer.name}</p>
+                                                <p className="mb-0 fw-semibold" style={{ fontSize: '12px' }}>{transfer?.product?.P_Name || transfer?.P_Name || transfer?.name || 'Unknown Product'}</p>
                                                 <span className={`badge ${transfer.Status === 'Completed' ? 'bg-success' : 'bg-warning text-dark'}`} style={{ fontSize: '10px' }}>{transfer.Status}</span>
                                             </div>
                                             <small className="text-muted">{transfer.From_Location} {t('home.sections.from_to')} {transfer.To_Location} · {transfer.Qty} {t('home.sections.units')}</small>

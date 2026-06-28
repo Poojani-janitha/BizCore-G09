@@ -138,6 +138,7 @@ const AdjustmentModal = ({ show, onHide, refresh }) => {
                                 <Form.Control 
                                     type="number" 
                                     step="0.01"
+                                    min="0"
                                     placeholder={formData.Adjustment_Type === 'Stock_Take' ? "Enter quantity to add" : "Enter quantity to remove"} 
                                     required 
                                     className="bg-light border-0 py-2 shadow-none"

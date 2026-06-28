@@ -239,6 +239,8 @@
         "stage_start": "ආරම්භ",
         "btn_qc": "ගු.ප.",
         "btn_in_progress": "කාර්යාවලිය",
+        "btn_approve": "අනුමත",
+        "btn_edit": "සංස්කරණය",
         "no_wip": "කාර්යාවලියේ ඇති ඒකක නොමැත",
         "approved_batches": "අනුමත කණ්ඩායම්",
         "no_approved": "අනුමත ඒකක නොමැත"

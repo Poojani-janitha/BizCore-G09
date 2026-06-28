@@ -13,7 +13,6 @@ const applyMiddleware = require('./middleware/appMiddleware');
 const inventoryRoutes = require('./routes/inventory/inventory');
 const productionRoutes = require('./routes/inventory/productionRoutes');
 const customerRoutes = require('./routes/customer/CustomerRoutes');
-const inventorySalesRoutes = require('./routes/inventory/salesRoutes');
 const productSalesRoutes = require('./routes/sales/SalesRoutes');
 const transferRoutes = require('./routes/inventory/transferRoutes');
 const reportRoutes = require('./routes/inventory/reportRoutes');
@@ -45,7 +44,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 //inventry routes
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/production', productionRoutes);
-app.use('/api/inventory/sales', inventorySalesRoutes);
 app.use('/api/inventory/transfers', transferRoutes);
 app.use('/api/inventory/reports', reportRoutes);
 

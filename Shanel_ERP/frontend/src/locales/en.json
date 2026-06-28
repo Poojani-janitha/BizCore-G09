@@ -245,6 +245,8 @@
         "stage_start": "Start",
         "btn_qc": "QC",
         "btn_in_progress": "In Progress",
+        "btn_approve": "Approved",
+        "btn_edit": "Edit",
         "no_wip": "No work in progress items",
         "approved_batches": "Approved Batches",
         "no_approved": "No approved items yet"
