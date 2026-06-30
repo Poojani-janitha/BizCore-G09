@@ -141,6 +141,7 @@
       "col_type": "වර්ගය",
       "col_barcode": "බාර්කෝඩ්",
       "col_cost": "පිරිවැය මිල",
+      "col_price": "මිල",
       "col_retail": "සිල්ලර මිල",
       "col_wholesale": "තොග මිල",
       "col_tax": "බදු %",

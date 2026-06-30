@@ -147,6 +147,7 @@
       "col_type": "Type",
       "col_barcode": "Barcode",
       "col_cost": "Cost Price",
+      "col_price":"Price",
       "col_retail": "Retail Price",
       "col_wholesale": "Wholesale Price",
       "col_tax": "TAX %",

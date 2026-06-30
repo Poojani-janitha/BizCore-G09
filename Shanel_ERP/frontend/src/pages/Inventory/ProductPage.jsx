@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import ProductHeader from '../../component/Inventory/Product/ProductHeader';
-import ProductFilters from '../../component/Inventory/Product/ProductFilters';
 import ProductTable from '../../component/Inventory/Product/ProductTable';
 import ProductModal from '../../component/Inventory/Product/ProductModal';
 import ProductViewModal from '../../component/Inventory/Product/ProductViewModal';
@@ -26,6 +25,12 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedType, setSelectedType] = useState('');
     const [companySourceFilter, setCompanySourceFilter] = useState('all');
+
+    // Reset search whenever the user navigates to a different product page
+    useEffect(() => {
+        setSearchTerm('');
+        setCompanySourceFilter('all');
+    }, [typeFilter]);
 
     const [products, setProducts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -124,10 +129,11 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
             const name = product.name?.toLowerCase() || '';
             const id = product.id?.toString().toLowerCase() || '';
             const barcode = product.barcode?.toLowerCase() || '';
-            
-            const matchesSearch = name.includes(searchTerm.toLowerCase()) || 
-                                 id.includes(searchTerm.toLowerCase()) ||
-                                 barcode.includes(searchTerm.toLowerCase());
+            const term = searchTerm.toLowerCase();
+
+            const matchesSearch = name.startsWith(term) || 
+                                 id.includes(term) ||
+                                 barcode.includes(term);
                                  
             
             return matchesSearch && matchesType && matchesStatus && matchesCompanySource;
@@ -148,7 +154,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
         return products.filter(product => {
             if (product.type !== typeFilter) return false;
             if (typeFilter === 'Company') return isIsharaProduct(product);
-            return typeFilter === 'Other' || typeFilter === 'Raw';
+            return typeFilter === 'Other';
         });
     }, [products, typeFilter]);
 
@@ -163,12 +169,12 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
         if (!term) return quickStockProducts;
 
         return quickStockProducts.filter((product) =>
-            (product.name?.toLowerCase() || '').includes(term)
+            (product.name?.toLowerCase() || '').includes(term) ||
+            (product.id?.toString().toLowerCase() || '').includes(term)
         );
     }, [quickStockProducts, stockProductSearch, stockDropdownBrowse]);
 
     const getStockLocation = () => {
-        if (typeFilter === 'Raw') return 'Production';
         return 'Shop';
     };
 
@@ -388,10 +394,15 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                 title={pageTitle}
                 onAddClick={handleAddProduct}
                 onUpdateQtyClick={openQuickStockModal}
-                showUpdateQty={typeFilter === 'Company' || typeFilter === 'Other' || typeFilter === 'Raw'}
+                showUpdateQty={typeFilter === 'Company' || typeFilter === 'Other'}
                 onProductionStockClick={goToProductionStock}
                 showProductionStock={typeFilter === 'Company'}
                 products={filteredProducts}
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                onSearchReset={() => setSearchTerm('')}
+                activeOnly={activeOnly}
+                onActiveToggle={setActiveOnly}
             />
             <ProductModal
                 show={showModal}
@@ -402,7 +413,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                 onProductAdded={handleProductAdded}
             />
             <ProductViewModal show={showViewModal} onHide={handleCloseViewModal} product={viewingProduct} />
-            <ProductFilters onSearchChange={setSearchTerm} onTypeChange={setSelectedType} onActiveToggle={setActiveOnly} />
+
 
             {typeFilter === 'Company' && (
                 <div className='  rounded-3 p-2 mb-3 d-flex flex-wrap gap-2'>
@@ -425,7 +436,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                     ))}
                 </div>
             )}
-             
+
             {error && (
                 <div className="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
                     <div className="flex-grow-1">{error}</div>

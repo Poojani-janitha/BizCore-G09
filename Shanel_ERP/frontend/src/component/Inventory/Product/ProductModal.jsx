@@ -331,9 +331,9 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
     return (
         <>
             <div className="modal d-block" style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)', zIndex: 1050 }}>
-            <div className="modal-dialog modal-md modal-dialog-centered"> 
-                <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                    <form onSubmit={handleSubmit}>
+            <div className="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable">
+                <div className="modal-content border-0 shadow-lg rounded-4" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
                         
                         <div className="modal-header bg-white border-0 px-4 pt-4 pb-0">
                             <div>
@@ -343,7 +343,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                             <button type="button" className="btn-close shadow-none" onClick={handleClose}></button>
                         </div>
 
-                        <div className="modal-body px-4 py-2" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
+                        <div className="modal-body px-4 py-2" style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
                             <div className="row g-2">
                                 
                                 {/* Product Code */}
@@ -634,7 +634,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                         </div>
 
                         {/* Professional Footer */}
-                        <div className="modal-footer border-0 p-4 pt-2">
+                        <div className="modal-footer border-top px-4 pb-4 pt-3 bg-white" style={{ flexShrink: 0 }}>
                             <button type="button" className="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm fw-bold me-auto" onClick={handleClose}>Cancel</button>
                             <button type="submit" className="btn btn-dark px-3 py-2 rounded-3 shadow-sm fw-bold">
                                 <Save size={16} className="me-2" /> {editData ? 'Update Product' : 'Add Product'}

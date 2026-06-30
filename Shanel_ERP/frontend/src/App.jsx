@@ -84,7 +84,6 @@ const App = () => {
             <Route path="/inventory"                          element={<ProtectedRoute allowedRoles={['Admin','Manager']}><Inventory_Dashboard /></ProtectedRoute>} />
             <Route path="/inventory/company-items"            element={<ProtectedRoute allowedRoles={['Admin','Manager']}><ProductPage pageTitle="Company Items" typeFilter="Company" /></ProtectedRoute>} />
             <Route path="/inventory/other-items"              element={<ProtectedRoute allowedRoles={['Admin','Manager']}><ProductPage pageTitle="Other Items" typeFilter="Other" /></ProtectedRoute>} />
-            <Route path="/inventory/raw-materials"            element={<ProtectedRoute allowedRoles={['Admin','Manager']}><ProductPage pageTitle="Raw Materials" typeFilter="Raw" /></ProtectedRoute>} />
             <Route path="/inventory/production-stock"         element={<ProtectedRoute allowedRoles={['Admin','Manager']}><ProductionStock /></ProtectedRoute>} />
             <Route path="/inventory/stock-transfers"          element={<ProtectedRoute allowedRoles={['Admin','Manager']}><StockTransfer /></ProtectedRoute>} />
             <Route path="/inventory/stock-adjustments"        element={<ProtectedRoute allowedRoles={['Admin','Manager']}><StockAdjustment /></ProtectedRoute>} />
