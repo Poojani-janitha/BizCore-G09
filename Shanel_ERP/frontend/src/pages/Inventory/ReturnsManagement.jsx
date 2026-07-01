@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal, Button, Table, Badge } from 'react-bootstrap';
 import ProcessReturnModal from '../../component/Inventory/Returns/ProcessReturnModal';
 import EditReturnModal from '../../component/Inventory/Returns/EditReturnModal';
+import Pagination from '../../component/common/Pagination';
 
 const ReturnsManagement = () => {
     const [returns, setReturns] = useState([]);
@@ -13,6 +14,8 @@ const ReturnsManagement = () => {
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedReturn, setSelectedReturn] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
     const { t, i18n } = useTranslation();
     const isSinhala = i18n.language?.startsWith('si');
 
@@ -66,6 +69,10 @@ const ReturnsManagement = () => {
     const customerReturnsCount = returns.filter(r => r.Return_Type === 'Customer').length;
     const totalGoodQty = returns.reduce((sum, r) => sum + (r.Restock ? parseFloat(r.Qty) : 0), 0);
 
+    // Pagination
+    const totalItems = returns.length;
+    const paginatedReturns = returns.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
     return (
         <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
             <div className="d-flex justify-content-end align-items-center mb-3">
@@ -101,7 +108,7 @@ const ReturnsManagement = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {returns.length > 0 ? returns.map((ret, idx) => (
+                            {paginatedReturns.length > 0 ? paginatedReturns.map((ret, idx) => (
                                 <tr key={`${ret.RT_ID}-${idx}`} style={{ borderBottom: '1px solid #e9ecef' }}>
                                     <td className="px-4 py-3 text-muted">{ret.RT_ID}</td>
                                     <td className="px-4 py-3 text-muted">{new Date(ret.Return_Date).toLocaleDateString('en-LK')}</td>
@@ -158,6 +165,14 @@ const ReturnsManagement = () => {
                     </table>
                 </div>
             </div>
+
+            <Pagination
+                currentPage={currentPage}
+                totalItems={totalItems}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+            />
 
             {/* Modal Components */}
             <ProcessReturnModal 

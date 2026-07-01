@@ -1,66 +1,18 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
-import { Plus, RefreshCcw, CheckCircle, AlertCircle, XCircle, Edit2, ChevronLeft, ChevronRight, X } from 'react-feather';
+import { Plus, RefreshCcw, CheckCircle, AlertCircle, XCircle, Edit2, X } from 'react-feather';
 import NewTransferModal from '../../component/Inventory/Transfer/NewTransferModal';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
+import Pagination from '../../component/common/Pagination';
 
-const PAGE_SIZE_HISTORY = 10;
-const PAGE_SIZE_STOCK   = 10;
+const PAGE_SIZE_HISTORY = 25;
+const PAGE_SIZE_STOCK   = 25;
 
 const thStyle = {
     color: '#fff', fontSize: '0.72rem', fontWeight: 700,
     letterSpacing: '0.08em', background: 'transparent',
     borderBottom: '2px solid rgba(255,255,255,0.15)'
-};
-
-// ── Pagination helper ──────────────────────────────────────────────────────────
-const Pagination = ({ total, page, pageSize, onChange }) => {
-    const totalPages = Math.ceil(total / pageSize);
-    if (totalPages <= 1) return null;
-    return (
-        <div className="d-flex align-items-center justify-content-between px-1 pt-3 pb-1">
-            <small className="text-muted">
-                Showing {Math.min((page - 1) * pageSize + 1, total)}–{Math.min(page * pageSize, total)} of {total}
-            </small>
-            <div className="d-flex gap-1">
-                <button
-                    className="btn btn-sm btn-light border px-2 py-1"
-                    disabled={page === 1}
-                    onClick={() => onChange(page - 1)}
-                >
-                    <ChevronLeft size={14} />
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-                    .reduce((acc, p, i, arr) => {
-                        if (i > 0 && p - arr[i - 1] > 1) acc.push('…');
-                        acc.push(p);
-                        return acc;
-                    }, [])
-                    .map((p, i) =>
-                        p === '…' ? (
-                            <span key={`ellipsis-${i}`} className="btn btn-sm btn-light border px-2 py-1 disabled">…</span>
-                        ) : (
-                            <button
-                                key={p}
-                                className={`btn btn-sm px-2 py-1 ${page === p ? 'btn-dark' : 'btn-light border'}`}
-                                onClick={() => onChange(p)}
-                            >
-                                {p}
-                            </button>
-                        )
-                    )}
-                <button
-                    className="btn btn-sm btn-light border px-2 py-1"
-                    disabled={page === totalPages}
-                    onClick={() => onChange(page + 1)}
-                >
-                    <ChevronRight size={14} />
-                </button>
-            </div>
-        </div>
-    );
 };
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
@@ -77,7 +29,9 @@ const StockTransfer = () => {
 
     // Pagination
     const [historyPage, setHistoryPage] = useState(1);
+    const [historyPageSize, setHistoryPageSize] = useState(PAGE_SIZE_HISTORY);
     const [stockPage, setStockPage]     = useState(1);
+    const [stockPageSize, setStockPageSize] = useState(PAGE_SIZE_STOCK);
     const [stockSearch, setStockSearch] = useState('');
 
     const { t, i18n } = useTranslation();
@@ -136,8 +90,8 @@ const StockTransfer = () => {
     // Paginated slices
     const pagedHistory = useMemo(() => {
         const all = data.transfers || [];
-        return all.slice((historyPage - 1) * PAGE_SIZE_HISTORY, historyPage * PAGE_SIZE_HISTORY);
-    }, [data.transfers, historyPage]);
+        return all.slice((historyPage - 1) * historyPageSize, historyPage * historyPageSize);
+    }, [data.transfers, historyPage, historyPageSize]);
 
     const filteredStock = useMemo(() => {
         const query = stockSearch.trim().toLowerCase();
@@ -156,8 +110,8 @@ const StockTransfer = () => {
     }, [inventory, stockSearch]);
 
     const pagedStock = useMemo(() => {
-        return filteredStock.slice((stockPage - 1) * PAGE_SIZE_STOCK, stockPage * PAGE_SIZE_STOCK);
-    }, [filteredStock, stockPage]);
+        return filteredStock.slice((stockPage - 1) * stockPageSize, stockPage * stockPageSize);
+    }, [filteredStock, stockPage, stockPageSize]);
 
     useEffect(() => {
         setStockPage(1);
@@ -236,10 +190,11 @@ const StockTransfer = () => {
                                     />
                                 ))}
                                 <Pagination
-                                    total={data.transfers.length}
-                                    page={historyPage}
-                                    pageSize={PAGE_SIZE_HISTORY}
-                                    onChange={p => { setHistoryPage(p); }}
+                                    currentPage={historyPage}
+                                    totalItems={data.transfers.length}
+                                    pageSize={historyPageSize}
+                                    onPageChange={p => setHistoryPage(p)}
+                                    onPageSizeChange={(size) => { setHistoryPageSize(size); setHistoryPage(1); }}
                                 />
                             </>
                         ) : (
@@ -321,10 +276,11 @@ const StockTransfer = () => {
                                 </div>
                                 <div className="px-3">
                                     <Pagination
-                                        total={filteredStock.length}
-                                        page={stockPage}
-                                        pageSize={PAGE_SIZE_STOCK}
-                                        onChange={p => setStockPage(p)}
+                                        currentPage={stockPage}
+                                        totalItems={filteredStock.length}
+                                        pageSize={stockPageSize}
+                                        onPageChange={p => setStockPage(p)}
+                                        onPageSizeChange={(size) => { setStockPageSize(size); setStockPage(1); }}
                                     />
                                 </div>
                             </>

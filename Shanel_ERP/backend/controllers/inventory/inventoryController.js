@@ -1,4 +1,4 @@
-const { Product, Inventory, Production, UnitConversion, StockTransfer, Supplier } = require('../../models/index');
+const { Product, Inventory, Production, UnitConversion, StockTransfer, StockAdjustment, ProductReturn, SaleItem, Supplier } = require('../../models/index');
 const sequelize = require('../../config/db');
 const { Op } = require('sequelize');              //Used for SQL operators.
 
@@ -421,9 +421,14 @@ const addProduct = async (req, res) => {
         });
         
         // Handle alternative unit conversions if provided
-        if (Array.isArray(units) && units.length > 0) {
-            //Creates all alternative units.
-            const unitPromises = units.map(unit => 
+        // Filter out any entry that matches the base unit name to prevent duplicate constraint error
+        const baseUnitNameLower = (req.body.baseUnit || '').toLowerCase().trim();
+        const filteredUnits = Array.isArray(units)
+            ? units.filter(u => u.unitName && u.unitName.toLowerCase().trim() !== baseUnitNameLower)
+            : [];
+
+        if (filteredUnits.length > 0) {
+            const unitPromises = filteredUnits.map(unit =>
                 UnitConversion.create({
                     P_ID: newProduct.P_ID,
                     Unit_Name: unit.unitName,
@@ -431,7 +436,7 @@ const addProduct = async (req, res) => {
                     Is_Base_Unit: false
                 })
             );
-            await Promise.all(unitPromises);  //Waits until all units are saved.
+            await Promise.all(unitPromises);
         }
 
         // Create inventory entry if initial quantity provided (for supplier items and Ishara products)
@@ -461,7 +466,29 @@ const addProduct = async (req, res) => {
         
         res.status(201).json({ success: true, message: "Product created!", data: newProduct });
     } catch (err) {
-        res.status(500).json({ success: false, message: "Creation failed", error: err.message });
+        console.error("❌ AddProduct Error:", err);
+
+        // Return a specific, readable error message
+        let userMessage = "Failed to save product. Please try again.";
+
+        if (err.name === 'SequelizeUniqueConstraintError') {
+            const field = err.errors?.[0]?.path || '';
+            if (field.toLowerCase().includes('barcode')) {
+                userMessage = "A product with this barcode already exists. Please generate a new barcode.";
+            } else if (field.toLowerCase().includes('code') || field.toLowerCase().includes('p_code')) {
+                userMessage = "A product with this product code already exists.";
+            } else {
+                userMessage = `Duplicate value detected (${field}). Please check your inputs.`;
+            }
+        } else if (err.name === 'SequelizeValidationError') {
+            userMessage = err.errors.map(e => e.message).join(', ');
+        } else if (err.name === 'SequelizeForeignKeyConstraintError') {
+            userMessage = "Invalid reference — please check supplier or category selection.";
+        } else if (err.message) {
+            userMessage = err.message;
+        }
+
+        res.status(500).json({ success: false, message: userMessage, error: err.message });
     }
 };
 
@@ -625,10 +652,44 @@ const updateProduct = async (req, res) => {
 const deleteProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        await Product.destroy({ where: { P_ID: id } });
-        res.json({ success: true, message: "Product deleted!" });
+
+        // Block if the product has sales records
+        const salesCount = await SaleItem.count({ where: { P_ID: id } });
+        if (salesCount > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `This product cannot be deleted because it has ${salesCount} sales record(s). Consider deactivating it instead.`
+            });
+        }
+
+        // Block if the product has production batches
+        const prodCount = await Production.count({ where: { P_ID: id } });
+        if (prodCount > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `This product cannot be deleted because it has ${prodCount} production batch(es) linked to it.`
+            });
+        }
+
+        // Safe to delete — remove child records first inside a transaction
+        await sequelize.transaction(async (t) => {
+            const opts = { where: { P_ID: id }, transaction: t };
+            await ProductReturn.destroy(opts);
+            await StockAdjustment.destroy(opts);
+            await StockTransfer.destroy(opts);
+            await Inventory.destroy(opts);
+            await UnitConversion.destroy(opts);
+            await Product.destroy({ where: { P_ID: id }, transaction: t });
+        });
+
+        res.json({ success: true, message: 'Product deleted successfully.' });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error('❌ Delete Product Error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete product. Please try again.',
+            error: err.message
+        });
     }
 };
 

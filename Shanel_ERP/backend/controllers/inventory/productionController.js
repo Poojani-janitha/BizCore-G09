@@ -5,9 +5,7 @@ const { Op } = require('sequelize');
 const formatProductionItem = (item) => {
     let completionVal = 0;
     if (item.Status === 'In_Progress') {
-        const createdAt = item.Created_At ? new Date(item.Created_At) : null;
-        const updatedAt = item.Updated_At ? new Date(item.Updated_At) : null;
-        completionVal = (createdAt && updatedAt && updatedAt.getTime() > createdAt.getTime()) ? 50 : 0;
+        completionVal = 85;
     } else if (item.Status === 'Quality_Check') {
         completionVal = 85;
     } else if (item.Status === 'Approved' || item.Status === 'Completed') {

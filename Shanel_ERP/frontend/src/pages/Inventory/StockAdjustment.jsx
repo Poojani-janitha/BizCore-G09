@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Plus, AlertTriangle, ShieldOff, Archive, Package, Edit2, Trash2, ChevronLeft, ChevronRight } from 'react-feather';
+import { Plus, AlertTriangle, ShieldOff, Archive, Package, Edit2, Trash2 } from 'react-feather';
 import { useTranslation } from 'react-i18next';
 import AdjustmentModal from '../../component/Inventory/Adjustment/AdjustmentModal';
 import EditAdjustmentModal from '../../component/Inventory/Adjustment/EditAdjustmentModal';
+import Pagination from '../../component/common/Pagination';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 25;
 
 const StockAdjustment = () => {
     const [logs, setLogs] = useState([]);
@@ -14,6 +15,7 @@ const StockAdjustment = () => {
     const [selectedAdjustment, setSelectedAdjustment] = useState(null);
     const [cardTotals, setCardTotals] = useState({ Expired: 0, Damage: 0, Theft: 0 });
     const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(PAGE_SIZE);
     const { t, i18n } = useTranslation();
     const isSinhala = i18n.language?.startsWith('si');
 
@@ -41,8 +43,8 @@ const StockAdjustment = () => {
         setPage(1);
     }, [logs.length]);
 
-    const totalPages = Math.max(1, Math.ceil(logs.length / PAGE_SIZE));
-    const pagedLogs = logs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    const totalPages = Math.max(1, Math.ceil(logs.length / pageSize));
+    const pagedLogs = logs.slice((page - 1) * pageSize, page * pageSize);
 
     const handleEdit = (adjustment) => {
         setSelectedAdjustment(adjustment);
@@ -140,51 +142,13 @@ const StockAdjustment = () => {
                     </table>
                 </div>
 
-                {logs.length > 0 && (
-                    <div className="d-flex align-items-center justify-content-between px-3 py-3 border-top bg-white">
-                        <small className="text-muted">
-                            Showing {Math.min((page - 1) * PAGE_SIZE + 1, logs.length)}-{Math.min(page * PAGE_SIZE, logs.length)} of {logs.length}
-                        </small>
-                        <div className="d-flex gap-1">
-                            <button
-                                className="btn btn-sm btn-light border px-2 py-1"
-                                disabled={page === 1}
-                                onClick={() => setPage(page - 1)}
-                            >
-                                <ChevronLeft size={14} />
-                            </button>
-
-                            {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-                                .reduce((acc, p, i, arr) => {
-                                    if (i > 0 && p - arr[i - 1] > 1) acc.push('...');
-                                    acc.push(p);
-                                    return acc;
-                                }, [])
-                                .map((p, i) =>
-                                    p === '...' ? (
-                                        <span key={`ellipsis-${i}`} className="btn btn-sm btn-light border px-2 py-1 disabled">...</span>
-                                    ) : (
-                                        <button
-                                            key={p}
-                                            className={`btn btn-sm px-2 py-1 ${page === p ? 'btn-dark' : 'btn-light border'}`}
-                                            onClick={() => setPage(p)}
-                                        >
-                                            {p}
-                                        </button>
-                                    )
-                                )}
-
-                            <button
-                                className="btn btn-sm btn-light border px-2 py-1"
-                                disabled={page === totalPages}
-                                onClick={() => setPage(page + 1)}
-                            >
-                                <ChevronRight size={14} />
-                            </button>
-                        </div>
-                    </div>
-                )}
+            <Pagination
+                currentPage={page}
+                totalItems={logs.length}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+            />
             </div>
 
             <AdjustmentModal show={showModal} onHide={() => setShowModal(false)} refresh={fetchLogs} />

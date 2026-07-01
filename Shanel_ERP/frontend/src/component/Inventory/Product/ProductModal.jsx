@@ -32,6 +32,8 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState('');
     const [errors, setErrors] = useState({});
+    const [submitError, setSubmitError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [baseUnit, setBaseUnit] = useState('Packet');
     const [units, setUnits] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
@@ -125,6 +127,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                 setImagePreview('');
             }
             setErrors({});
+            setSubmitError('');
         }
     }, [show, editData]);
 
@@ -230,21 +233,17 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+        setSubmitError('');
+
         const newErrors = validateForm();
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
-            // Show validation error alert to user
-            const errorMessages = Object.entries(newErrors)
-                .map(([field, message]) => `• ${message}`)
-                .join('\n');
-            alert(`Please fix the following errors:\n\n${errorMessages}`);
-            console.warn('Validation errors:', newErrors);
+            // Scroll to first error instead of alert
             return;
         }
 
+        setIsSubmitting(true);
         try {
-            // Use FormData for file upload support
             const formDataToSend = new FormData();
             
             formDataToSend.append('code', formData.P_Code || '');
@@ -265,43 +264,45 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
             formDataToSend.append('isIsharaProduct', formData.IsIsharaProduct);
             formDataToSend.append('supplierId', formData.supplierId || '');
             
-            // Initial Quantity for supplier items and Ishara products
             if (formData.P_Type === 'Other' || formData.P_Type === 'Raw' || (formData.P_Type === 'Company' && formData.IsIsharaProduct)) {
                 formDataToSend.append('initialQty', parseFloat(formData.InitialQty) || 0);
             }
             
-            // Append image file if selected
             if (imageFile) {
                 formDataToSend.append('image', imageFile);
             }
             
-            // Append units as JSON string
             formDataToSend.append('units', JSON.stringify(units));
 
             if (editData) {
                 await axios.put(`http://localhost:5000/api/inventory/products/${editData.id}`, formDataToSend, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
-                alert("Product updated successfully!");
             } else {
                 await axios.post('http://localhost:5000/api/inventory/products', formDataToSend, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
-                if (onProductAdded) {
-                    onProductAdded({
-                        name: formData.P_Name,
-                        type: formData.P_Type,
-                        isIsharaProduct: formData.IsIsharaProduct
-                    });
-                } else {
-                    alert("Product added successfully!");
-                }
             }
-            refreshData(); 
+
+            refreshData();
             handleClose();
+
+            if (!editData && onProductAdded) {
+                onProductAdded({
+                    name: formData.P_Name,
+                    type: formData.P_Type,
+                    isIsharaProduct: formData.IsIsharaProduct
+                });
+            }
         } catch (error) {
             console.error("Error saving product:", error);
-            alert("Failed to save product: " + (error.response?.data?.message || error.response?.data?.error || error.message));
+            const msg = error.response?.data?.message
+                || error.response?.data?.error
+                || error.message
+                || 'An unexpected error occurred. Please try again.';
+            setSubmitError(msg);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -323,6 +324,8 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
         setUnits([]);
         setImageFile(null);
         setImagePreview('');
+        setSubmitError('');
+        setIsSubmitting(false);
         onHide(); 
     };
     
@@ -330,9 +333,9 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
 
     return (
         <>
-            <div className="modal d-block" style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)', zIndex: 1050 }}>
+            <div className="modal d-block" style={{ backgroundColor: 'rgba(42, 15, 24, 0.7)', zIndex: 1050 }}>
             <div className="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable">
-                <div className="modal-content border-0 shadow-lg rounded-4" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+                <div className="modal-content border-0 shadow-lg rounded-4" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column', minWidth:'90vh' }}>
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
                         
                         <div className="modal-header bg-white border-0 px-4 pt-4 pb-0">
@@ -344,21 +347,44 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                         </div>
 
                         <div className="modal-body px-4 py-2" style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
+
+                            {/* ── Inline error banner ── */}
+                            {submitError && (
+                                <div className="d-flex align-items-start gap-2 px-3 py-2 rounded-3 mb-3"
+                                    style={{ background: '#fef2f2', border: '1px solid #fca5a5' }}>
+                                    <span style={{ fontSize: '16px', lineHeight: 1.4, flexShrink: 0 }}>⚠️</span>
+                                    <div>
+                                        <p className="mb-0 small fw-semibold" style={{ color: '#b91c1c' }}>
+                                            Unable to save product
+                                        </p>
+                                        <p className="mb-0 small" style={{ color: '#dc2626' }}>
+                                            {submitError}
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn-close ms-auto"
+                                        style={{ fontSize: '10px' }}
+                                        onClick={() => setSubmitError('')}
+                                    />
+                                </div>
+                            )}
+
                             <div className="row g-2">
                                 
                                 {/* Product Code */}
                                 <div className="col-12 mb-2">
-                                    <label className="form-label mb-1 small fw-semibold text-muted">Product Code {!editData && <span className="text-muted small">(Auto-generated)</span>}</label>
+                                    <label className="form-label mb-1 small fw-semibold text-muted">
+                                        Product Code
+                                        {!editData && <span className="text-muted small ms-1">(Auto-generated)</span>}
+                                    </label>
                                     <input 
                                         type="text" 
                                         name="P_Code" 
                                         className="form-control form-control-sm bg-light border-0 py-2 shadow-none" 
-                                        placeholder="e.g. PRD001" 
                                         value={formData.P_Code} 
-                                        onChange={handleChange}
-                                        disabled={!editData}
-                                        style={!editData ? { backgroundColor: '#e2e8f0', cursor: 'not-allowed', opacity: 0.8 } : {}}
-                                        readOnly={!editData}
+                                        readOnly
+                                        style={{ backgroundColor: '#e2e8f0', cursor: 'not-allowed', opacity: 0.8 }}
                                     />
                                 </div>
 
@@ -422,6 +448,8 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                                         </div>
                                     </div>
                                 )}
+
+                                
 
                                 {/* Unit Conversion Manager */}
                                 <div className="col-12 mb-3">
@@ -635,9 +663,21 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
 
                         {/* Professional Footer */}
                         <div className="modal-footer border-top px-4 pb-4 pt-3 bg-white" style={{ flexShrink: 0 }}>
-                            <button type="button" className="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm fw-bold me-auto" onClick={handleClose}>Cancel</button>
-                            <button type="submit" className="btn btn-dark px-3 py-2 rounded-3 shadow-sm fw-bold">
-                                <Save size={16} className="me-2" /> {editData ? 'Update Product' : 'Add Product'}
+                            <button type="button" className="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm fw-bold me-auto" onClick={handleClose} disabled={isSubmitting}>
+                                Cancel
+                            </button>
+                            <button type="submit" className="btn btn-dark px-3 py-2 rounded-3 shadow-sm fw-bold" disabled={isSubmitting}>
+                                {isSubmitting ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        {editData ? 'Updating…' : 'Saving…'}
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save size={16} className="me-2" />
+                                        {editData ? 'Update Product' : 'Add Product'}
+                                    </>
+                                )}
                             </button>
                         </div>
                     </form>

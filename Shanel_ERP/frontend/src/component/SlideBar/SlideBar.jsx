@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import {
     Home, ShoppingCart, Package, DollarSign, Users,
     ChevronRight, ChevronDown, Box, Archive, Menu,
@@ -13,7 +14,26 @@ const SlideBar = () => {
     const [headerHover, setHeaderHover] = useState(false);
     const [openMenus, setOpenMenus] = useState({});
     const [permittedMenus, setPermittedMenus] = useState([]);
+    const [alertCount, setAlertCount] = useState(0);
     const location = useLocation();
+
+    // Fetch alert count for sidebar badge
+    useEffect(() => {
+        const fetchAlertCount = async () => {
+            try {
+                const res = await axios.get('http://localhost:5000/api/inventory/dashboard-stats');
+                if (res.data.success && res.data.alerts) {
+                    setAlertCount(res.data.alerts.length);
+                }
+            } catch (err) {
+                // silently fail — badge just won't show
+            }
+        };
+        fetchAlertCount();
+        // refresh count every 5 minutes
+        const interval = setInterval(fetchAlertCount, 5 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     const menuConfig = [
         { label: 'Home', icon: <Home size={18} />, to: '/home' }, // Public or always available
@@ -186,9 +206,29 @@ const SlideBar = () => {
                                     {openMenus[item.label] && !isCollapsed && (
                                         <ul className="nav flex-column ms-4 mt-1 border-start gap-1" style={{ borderColor: colors.borderLine }}>
                                             {item.subItems.map(sub => (
-                                                <NavLink key={sub.label} to={sub.to} className="nav-link py-1 d-flex align-items-center gap-2"
+                                                <NavLink key={sub.label} to={sub.to} className="nav-link py-1 d-flex align-items-center justify-content-between gap-2"
                                                     style={({ isActive }) => ({ color: isActive ? colors.activeAccent : colors.textMuted, fontSize: '13px' })}>
-                                                    {sub.icon} {sub.label}
+                                                    <span className="d-flex align-items-center gap-2">
+                                                        {sub.icon} {sub.label}
+                                                    </span>
+                                                    {sub.to === '/inventory/alerts' && alertCount > 0 && (
+                                                        <span
+                                                            style={{
+                                                                background: '#ef4444',
+                                                                color: '#fff',
+                                                                borderRadius: '10px',
+                                                                fontSize: '10px',
+                                                                fontWeight: 700,
+                                                                padding: '1px 6px',
+                                                                lineHeight: '16px',
+                                                                minWidth: '18px',
+                                                                textAlign: 'center',
+                                                                flexShrink: 0,
+                                                            }}
+                                                        >
+                                                            {alertCount}
+                                                        </span>
+                                                    )}
                                                 </NavLink>
                                             ))}
                                         </ul>

@@ -357,7 +357,17 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
                                         <Form.Label style={{ margin: 0, fontWeight: '600', fontSize: '14px' }}>Production Date</Form.Label>
                                     </div>
                                     <Form.Control type="date" required 
-                                        onChange={e => setFormData({...formData, Production_Date: e.target.value})}
+                                        onChange={e => {
+                                            const newProdDate = e.target.value;
+                                            setFormData(prev => {
+                                                const updated = { ...prev, Production_Date: newProdDate };
+                                                // Clear date error if now valid
+                                                if (newProdDate && prev.Exp_Date && new Date(prev.Exp_Date) >= new Date(newProdDate)) {
+                                                    setErrors(errs => ({ ...errs, Exp_Date: '' }));
+                                                }
+                                                return updated;
+                                            });
+                                        }}
                                         style={{ borderRadius: '8px', border: '1px solid #dee2e6', padding: '10px 12px' }} />
                                 </Form.Group>
                             </Col>
@@ -370,7 +380,17 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
                                     <Form.Control 
                                         type="date" 
                                         required 
-                                        onChange={e => setFormData({...formData, Exp_Date: e.target.value})}
+                                        onChange={e => {
+                                            const newExpDate = e.target.value;
+                                            setFormData(prev => {
+                                                const updated = { ...prev, Exp_Date: newExpDate };
+                                                // Clear date error if now valid
+                                                if (newExpDate && prev.Production_Date && new Date(newExpDate) >= new Date(prev.Production_Date)) {
+                                                    setErrors(errs => ({ ...errs, Exp_Date: '' }));
+                                                }
+                                                return updated;
+                                            });
+                                        }}
                                         style={{ borderRadius: '8px', border: `1px solid ${errors.Exp_Date ? '#dc3545' : '#dee2e6'}`, padding: '10px 12px' }} 
                                     />
                                     {errors.Exp_Date && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>❌ {errors.Exp_Date}</div>}

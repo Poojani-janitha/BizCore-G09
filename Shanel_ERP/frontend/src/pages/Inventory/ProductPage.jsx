@@ -4,6 +4,7 @@ import ProductHeader from '../../component/Inventory/Product/ProductHeader';
 import ProductTable from '../../component/Inventory/Product/ProductTable';
 import ProductModal from '../../component/Inventory/Product/ProductModal';
 import ProductViewModal from '../../component/Inventory/Product/ProductViewModal';
+import Pagination from '../../component/common/Pagination';
 import { X, Search } from 'react-feather';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +31,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     useEffect(() => {
         setSearchTerm('');
         setCompanySourceFilter('all');
+        setCurrentPage(1);
     }, [typeFilter]);
 
     const [products, setProducts] = useState([]);
@@ -43,6 +45,8 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     const [editingProduct, setEditingProduct] = useState(null);
 
     const [activeOnly, setActiveOnly] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
     const [showQuickStockModal, setShowQuickStockModal] = useState(false);
     const [stockForm, setStockForm] = useState({ productId: '', qty: '' });
     const [stockProductSearch, setStockProductSearch] = useState('');
@@ -140,8 +144,16 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
         });
     }, [searchTerm, selectedType, products, typeFilter, activeOnly, companySourceFilter]); // Re-run filtering when any of these change
 
-    const companySourceCounts = useMemo(() => {
-        const companyProducts = products.filter(product => product.type === 'Company');
+    // Reset to page 1 when search/filter changes
+    useEffect(() => { setCurrentPage(1); }, [searchTerm, activeOnly, companySourceFilter]);
+
+    // Paginated slice
+    const paginatedProducts = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return filteredProducts.slice(start, start + pageSize);
+    }, [filteredProducts, currentPage, pageSize]);
+
+    const companySourceCounts = useMemo(() => {        const companyProducts = products.filter(product => product.type === 'Company');
 
         return {
             all: companyProducts.length,
@@ -262,9 +274,10 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
         if (window.confirm("Are you sure you want to delete this product?")) {
             try {
                 await axios.delete(`http://localhost:5000/api/inventory/products/${id}`);
-                fetchProducts(); 
+                fetchProducts();
             } catch (error) {
-                console.error("Delete failed", error);
+                const msg = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to delete product.';
+                alert(msg);
             }
         }
     };
@@ -459,7 +472,15 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
             </div> 
             */}
 
-            <ProductTable products={filteredProducts} isLoading={isLoading} onDelete={handleDelete} onEdit={handleEdit} onView={handleView} onPrint={handlePrintSingle} error={error} />
+            <ProductTable products={paginatedProducts} isLoading={isLoading} onDelete={handleDelete} onEdit={handleEdit} onView={handleView} onPrint={handlePrintSingle} error={error} />
+
+            <Pagination
+                currentPage={currentPage}
+                totalItems={filteredProducts.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+            />
 
             {/* Barcode Qty Print Dialog */}
             {showPrintDialog && printTarget && (
@@ -681,7 +702,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
                 </div>
             )}
 
-            {/* Indicate emepty state */}
+            {/* Empty state */}
             {filteredProducts.length === 0 && !isLoading && (
                 <div className='text-center py-5 bg-white rounded-3 shadow-sm mt-3'>
                     <h5 className='text-muted'>No products found matching your criteria.</h5>

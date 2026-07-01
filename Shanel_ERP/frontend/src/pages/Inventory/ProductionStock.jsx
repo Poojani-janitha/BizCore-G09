@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { Play, Trash2, Loader, Edit2, Search, ChevronLeft, ChevronRight } from 'react-feather';
+import { Play, Trash2, Loader, Edit2, Search } from 'react-feather';
 import ProductionModal from '../../component/Inventory/Production/ProductionModal';
 import EditProductionModal from '../../component/Inventory/Production/EditProductionModal';
 import { useTranslation } from 'react-i18next';
+import Pagination from '../../component/common/Pagination';
 
-const PAGE_SIZE = 10;
 const API_BASE = 'http://localhost:5000/api/production/stock-overview';
 
 const formatStock = (value) => {
@@ -16,60 +16,8 @@ const formatStock = (value) => {
 const defaultPagination = {
     currentPage: 1,
     totalPages: 1,
-    pageSize: PAGE_SIZE,
+    pageSize: 25,
     totalRecords: 0
-};
-
-const TablePagination = ({ pagination, onPageChange, t }) => {
-    if (!pagination || pagination.totalRecords === 0) return null;
-
-    const { currentPage, totalPages, pageSize, totalRecords } = pagination;
-    const start = ((currentPage - 1) * pageSize) + 1;
-    const end = Math.min(currentPage * pageSize, totalRecords);
-
-    return (
-        <div className="card-footer bg-white border-0 py-3 px-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 border-top">
-            <span className="text-muted small">
-                {t('inventory.pages.production_stock.showing_entries', { start, end, total: totalRecords })}
-            </span>
-            {totalPages > 1 && (
-                <nav>
-                    <ul className="pagination pagination-sm mb-0 gap-1">
-                        <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                            <button type="button" className="page-link border-0 rounded-3 shadow-sm px-3" onClick={() => onPageChange(currentPage - 1)}>
-                                <ChevronLeft size={16} />
-                            </button>
-                        </li>
-                        {[...Array(totalPages)].map((_, i) => {
-                            const pageNum = i + 1;
-                            if (pageNum === 1 || pageNum === totalPages || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)) {
-                                return (
-                                    <li key={pageNum} className={`page-item ${currentPage === pageNum ? 'active' : ''}`}>
-                                        <button
-                                            type="button"
-                                            className={`page-link border-0 rounded-3 shadow-sm px-3 ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-light text-dark'}`}
-                                            onClick={() => onPageChange(pageNum)}
-                                        >
-                                            {pageNum}
-                                        </button>
-                                    </li>
-                                );
-                            }
-                            if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
-                                return <li key={pageNum} className="page-item disabled"><span className="page-link border-0 bg-transparent">...</span></li>;
-                            }
-                            return null;
-                        })}
-                        <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                            <button type="button" className="page-link border-0 rounded-3 shadow-sm px-3" onClick={() => onPageChange(currentPage + 1)}>
-                                <ChevronRight size={16} />
-                            </button>
-                        </li>
-                    </ul>
-                </nav>
-            )}
-        </div>
-    );
 };
 
 const ProductionStock = () => {
@@ -89,6 +37,8 @@ const ProductionStock = () => {
     const [expiryFilter, setExpiryFilter] = useState('all');
     const [wipPage, setWipPage] = useState(1);
     const [approvedPage, setApprovedPage] = useState(1);
+    const [wipLimit, setWipLimit] = useState(25);
+    const [approvedLimit, setApprovedLimit] = useState(25);
 
     const { t, i18n } = useTranslation();
     const isSinhala = i18n.language?.startsWith('si');
@@ -110,11 +60,11 @@ const ProductionStock = () => {
         return result.length > 0 ? result.join(' ') : '0 days';
     };
 
-    const fetchSection = useCallback(async (section, page, filters, setItems, setPagination) => {
+    const fetchSection = useCallback(async (section, page, limit, filters, setItems, setPagination) => {
         const params = {
             section,
             page,
-            limit: PAGE_SIZE,
+            limit,
             search: filters.search,
             productId: filters.productFilter || undefined,
             expiryFilter: section === 'approved' ? filters.expiryFilter : undefined
@@ -135,8 +85,8 @@ const ProductionStock = () => {
 
         try {
             await Promise.all([
-                fetchSection('wip', wipPage, filters, setWorkingItems, setWipPagination),
-                fetchSection('approved', approvedPage, filters, setApprovedItems, setApprovedPagination)
+                fetchSection('wip', wipPage, wipLimit, filters, setWorkingItems, setWipPagination),
+                fetchSection('approved', approvedPage, approvedLimit, filters, setApprovedItems, setApprovedPagination)
             ]);
 
             const productRes = await axios.get('http://localhost:5000/api/inventory/products');
@@ -149,7 +99,7 @@ const ProductionStock = () => {
             setLoading(false);
             setTableLoading(false);
         }
-    }, [search, productFilter, expiryFilter, wipPage, approvedPage, fetchSection]);
+    }, [search, productFilter, expiryFilter, wipPage, approvedPage, wipLimit, approvedLimit, fetchSection]);
 
     const isFirstRender = useRef(true);
 
@@ -160,7 +110,7 @@ const ProductionStock = () => {
             return;
         }
         fetchData(false);
-    }, [search, productFilter, expiryFilter, wipPage, approvedPage, fetchData]);
+    }, [search, productFilter, expiryFilter, wipPage, approvedPage, wipLimit, approvedLimit, fetchData]);
 
     const handleSearchChange = (value) => {
         setSearch(value);
@@ -330,8 +280,15 @@ const ProductionStock = () => {
                         </tbody>
                     </table>
                 </div>
-                <TablePagination pagination={wipPagination} onPageChange={setWipPage} t={t} />
-            </div>
+                <div className="px-3 py-2">
+                    <Pagination
+                        currentPage={wipPagination.currentPage}
+                        totalItems={wipPagination.totalRecords}
+                        pageSize={wipLimit}
+                        onPageChange={setWipPage}
+                        onPageSizeChange={(size) => { setWipLimit(size); setWipPage(1); }}
+                    />
+                </div>            </div>
 
             <h6 className='fw-bold text-dark mb-2 mt-4'>{t('inventory.pages.production_stock.approved_batches')}</h6>
             <div className='card border-0 shadow-sm rounded-3 overflow-hidden position-relative'>
@@ -383,7 +340,15 @@ const ProductionStock = () => {
                         </tbody>
                     </table>
                 </div>
-                <TablePagination pagination={approvedPagination} onPageChange={setApprovedPage} t={t} />
+                <div className="px-3 py-2">
+                    <Pagination
+                        currentPage={approvedPagination.currentPage}
+                        totalItems={approvedPagination.totalRecords}
+                        pageSize={approvedLimit}
+                        onPageChange={setApprovedPage}
+                        onPageSizeChange={(size) => { setApprovedLimit(size); setApprovedPage(1); }}
+                    />
+                </div>
             </div>
         </div>
     );
