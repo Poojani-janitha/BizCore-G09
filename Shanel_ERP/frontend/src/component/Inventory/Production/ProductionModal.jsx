@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Modal, Button, Form, Row, Col, InputGroup } from 'react-bootstrap';
 import axios from 'axios';
-import { Package, Calendar, Layers, Hash } from 'react-feather';
+import { Package, Calendar, Layers, Hash, Search, X } from 'react-feather';
 
 const ProductionModal = ({ show, onHide, refreshData }) => {
     const getFallbackBatchNo = () => {
@@ -10,9 +10,29 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
     };
 
     const [products, setProducts] = useState([]);
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [productSearch, setProductSearch] = useState('');
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef(null);
+
+    // Unit selection state
+    const [selectedUnitIndex, setSelectedUnitIndex] = useState(0); // 0 = base unit
+    const [displayQty, setDisplayQty] = useState(''); // qty in selected unit
+
     const [formData, setFormData] = useState({ P_ID: '', Batch_No: '', Total_Qty_Produced: '', Production_Date: '', Exp_Date: '' });
     const [errors, setErrors] = useState({});
     const [existingBatches, setExistingBatches] = useState([]);
+
+    // Close product dropdown on outside click
+    useEffect(() => {
+        const handleOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleOutside);
+        return () => document.removeEventListener('mousedown', handleOutside);
+    }, []);
 
     const fetchNextBatchNo = async () => {
         try {
@@ -48,8 +68,70 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
     useEffect(() => {
         if (show) {
             fetchNextBatchNo();
+            setProductSearch('');
+            setSelectedProduct(null);
+            setDisplayQty('');
+            setSelectedUnitIndex(0);
         }
     }, [show]);
+
+    // Build unit options: base unit first, then alternatives
+    const unitOptions = useMemo(() => {
+        if (!selectedProduct) return [];
+        const base = { label: selectedProduct.baseUnit || 'Unit', conversionRate: 1, isBase: true };
+        const alternatives = (selectedProduct.units || [])
+            .filter(u => !u.isBaseUnit)
+            .map(u => ({ label: u.unitName, conversionRate: parseFloat(u.conversionRate) || 1, isBase: false }));
+        return [base, ...alternatives];
+    }, [selectedProduct]);
+
+    const selectedUnit = unitOptions[selectedUnitIndex] || { label: '', conversionRate: 1, isBase: true };
+
+    const filteredProducts = useMemo(() => {
+        const query = productSearch.trim().toLowerCase();
+        if (!query) return products;
+        return products.filter(p => String(p.name || '').toLowerCase().startsWith(query));
+    }, [products, productSearch]);
+
+    const handleSelectProduct = (product) => {
+        setSelectedProduct(product);
+        setProductSearch(product.name || '');
+        setFormData(prev => ({ ...prev, P_ID: product.id, Total_Qty_Produced: '' }));
+        setDisplayQty('');
+        setSelectedUnitIndex(0);
+        setShowDropdown(false);
+    };
+
+    const handleClearProduct = () => {
+        setSelectedProduct(null);
+        setProductSearch('');
+        setFormData(prev => ({ ...prev, P_ID: '', Total_Qty_Produced: '' }));
+        setDisplayQty('');
+        setSelectedUnitIndex(0);
+        setShowDropdown(false);
+    };
+
+    const handleUnitChange = (idx) => {
+        setSelectedUnitIndex(idx);
+        const newUnit = unitOptions[idx] || { conversionRate: 1 };
+        if (formData.Total_Qty_Produced) {
+            const baseQty = parseFloat(formData.Total_Qty_Produced);
+            const inNewUnit = baseQty / newUnit.conversionRate;
+            setDisplayQty(Number.isInteger(inNewUnit) ? String(inNewUnit) : inNewUnit.toFixed(4).replace(/\.?0+$/, ''));
+        }
+    };
+
+    const handleDisplayQtyChange = (value) => {
+        const intVal = value.replace(/[^0-9]/g, '');
+        setDisplayQty(intVal);
+        const parsed = parseInt(intVal);
+        if (!isNaN(parsed) && parsed >= 0) {
+            const baseQty = parsed * selectedUnit.conversionRate;
+            setFormData(prev => ({ ...prev, Total_Qty_Produced: String(baseQty) }));
+        } else {
+            setFormData(prev => ({ ...prev, Total_Qty_Produced: '' }));
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -122,11 +204,64 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
                                 <Package size={18} style={{ color: '#0d6efd', marginRight: '8px' }} />
                                 <Form.Label style={{ margin: 0, fontWeight: '600', fontSize: '14px' }}>Select Product</Form.Label>
                             </div>
-                            <Form.Select required onChange={e => setFormData({...formData, P_ID: e.target.value})}
-                                style={{ borderRadius: '8px', border: '1px solid #dee2e6', padding: '10px 12px' }}>
-                                <option value="">Choose product...</option>
-                                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                            </Form.Select>
+                            <div ref={dropdownRef} style={{ position: 'relative' }}>
+                                <div className="input-group" style={{ borderRadius: '8px', border: '1px solid #dee2e6', background: '#fff' }}>
+                                    <span className="input-group-text border-0 bg-transparent"><Search size={14} /></span>
+                                    <input
+                                        type="text"
+                                        className="form-control border-0"
+                                        placeholder="Type first letter to search product..."
+                                        value={productSearch}
+                                        onChange={(e) => {
+                                            setProductSearch(e.target.value);
+                                            setSelectedProduct(null);
+                                            setFormData(prev => ({ ...prev, P_ID: '', Total_Qty_Produced: '' }));
+                                            setDisplayQty('');
+                                            setSelectedUnitIndex(0);
+                                            setShowDropdown(true);
+                                        }}
+                                        onFocus={() => setShowDropdown(true)}
+                                        autoComplete="off"
+                                        style={{ padding: '10px 12px' }}
+                                    />
+                                    {productSearch && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-link text-muted border-0"
+                                            onClick={handleClearProduct}
+                                            style={{ textDecoration: 'none' }}
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {showDropdown && (
+                                    <ul className="list-group shadow border rounded mt-1 mb-0"
+                                        style={{ position: 'absolute', zIndex: 1060, width: '100%', maxHeight: '220px', overflowY: 'auto', top: '100%', background: '#fff' }}>
+                                        {filteredProducts.length > 0 ? filteredProducts.map(p => (
+                                            <li key={p.id}
+                                                className="list-group-item list-group-item-action py-2 px-3"
+                                                style={{ cursor: 'pointer', fontSize: '13px' }}
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                onClick={() => handleSelectProduct(p)}>
+                                                <span className="fw-semibold">{p.name}</span>
+                                                <span className="text-muted ms-2" style={{ fontSize: '11px' }}>#{p.id}</span>
+                                            </li>
+                                        )) : (
+                                            <li className="list-group-item text-muted py-2 px-3" style={{ fontSize: '13px' }}>No products found</li>
+                                        )}
+                                    </ul>
+                                )}
+                            </div>
+                            <input type="hidden" required value={formData.P_ID} onChange={() => {}} />
+
+                            {selectedProduct && (
+                                <div className="mt-2 p-2 bg-light rounded" style={{ fontSize: '13px' }}>
+                                    <span className="text-muted">Base Unit: </span>
+                                    <span className="fw-bold text-success">{selectedProduct.baseUnit || 'Unit'}</span>
+                                </div>
+                            )}
                         </Form.Group>
 
                         {/* Batch Number */}
@@ -155,13 +290,61 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
                                 <Layers size={18} style={{ color: '#0d6efd', marginRight: '8px' }} />
                                 <Form.Label style={{ margin: 0, fontWeight: '600', fontSize: '14px' }}>Quantity to Produce</Form.Label>
                             </div>
-                            <Form.Control 
-                                type="number" 
-                                min="0"
-                                required 
-                                onChange={e => setFormData({...formData, Total_Qty_Produced: e.target.value})}
-                                style={{ borderRadius: '8px', border: `1px solid ${errors.Total_Qty_Produced ? '#dc3545' : '#dee2e6'}`, padding: '10px 12px' }} 
-                            />
+
+                            {unitOptions.length > 1 && (
+                                <div className="d-flex flex-wrap gap-2 mb-2">
+                                    {unitOptions.map((u, idx) => (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            className={`btn btn-sm px-3 py-1 rounded-pill fw-semibold ${selectedUnitIndex === idx ? 'btn-dark' : 'btn-light border'}`}
+                                            style={{ fontSize: '12px' }}
+                                            onClick={() => handleUnitChange(idx)}
+                                        >
+                                            {u.label}
+                                            {!u.isBase && (
+                                                <span className={`ms-1 badge rounded-pill ${selectedUnitIndex === idx ? 'bg-white text-dark' : 'bg-secondary-subtle text-secondary'}`}
+                                                    style={{ fontSize: '10px' }}>
+                                                    ×{u.conversionRate}
+                                                </span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            <InputGroup>
+                                <Form.Control
+                                    type="number"
+                                    step="1"
+                                    min="1"
+                                    required
+                                    disabled={!formData.P_ID}
+                                    placeholder={selectedUnit.label ? `Enter qty in ${selectedUnit.label}...` : 'Select product first...'}
+                                    value={displayQty}
+                                    onChange={e => handleDisplayQtyChange(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === '.' || e.key === ',' || e.key === '-') e.preventDefault();
+                                    }}
+                                    isInvalid={!!errors.Total_Qty_Produced}
+                                    style={{ borderRadius: '8px 0 0 8px', border: `1px solid ${errors.Total_Qty_Produced ? '#dc3545' : '#dee2e6'}`, padding: '10px 12px' }}
+                                />
+                                <InputGroup.Text style={{ borderRadius: '0 8px 8px 0' }}>
+                                    {selectedUnit.label || 'Unit'}
+                                </InputGroup.Text>
+                            </InputGroup>
+
+                            {displayQty && parseInt(displayQty) > 0 && !selectedUnit.isBase && (
+                                <div className="mt-2 px-3 py-2 rounded-3" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '12px' }}>
+                                    <span className="text-muted">
+                                        <strong className="text-dark">{parseInt(displayQty)} {selectedUnit.label}</strong>
+                                        {' = '}
+                                        <strong className="text-dark">{parseInt(displayQty) * selectedUnit.conversionRate} {selectedProduct?.baseUnit}</strong>
+                                        {' '}will be produced.
+                                    </span>
+                                </div>
+                            )}
+
                             {errors.Total_Qty_Produced && <div style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px' }}>❌ {errors.Total_Qty_Produced}</div>}
                         </Form.Group>
 

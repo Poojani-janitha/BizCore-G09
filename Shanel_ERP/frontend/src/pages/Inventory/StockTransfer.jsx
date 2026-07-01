@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
-import { Plus, RefreshCcw, CheckCircle, AlertCircle, XCircle, Edit2, ChevronLeft, ChevronRight } from 'react-feather';
+import { Plus, RefreshCcw, CheckCircle, AlertCircle, XCircle, Edit2, ChevronLeft, ChevronRight, X } from 'react-feather';
 import NewTransferModal from '../../component/Inventory/Transfer/NewTransferModal';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -78,6 +78,7 @@ const StockTransfer = () => {
     // Pagination
     const [historyPage, setHistoryPage] = useState(1);
     const [stockPage, setStockPage]     = useState(1);
+    const [stockSearch, setStockSearch] = useState('');
 
     const { t, i18n } = useTranslation();
     const isSinhala   = i18n.language?.startsWith('si');
@@ -138,9 +139,29 @@ const StockTransfer = () => {
         return all.slice((historyPage - 1) * PAGE_SIZE_HISTORY, historyPage * PAGE_SIZE_HISTORY);
     }, [data.transfers, historyPage]);
 
+    const filteredStock = useMemo(() => {
+        const query = stockSearch.trim().toLowerCase();
+        if (!query) return inventory;
+
+        return inventory.filter(item => {
+            const idText = String(item.id || '').toLowerCase();
+            const name = String(item.name || '').toLowerCase();
+            const nameSinhala = String(item.nameSinhala || '').toLowerCase();
+
+            const idMatch = idText.includes(query);
+            const nameMatch = name.startsWith(query) || nameSinhala.startsWith(query);
+
+            return idMatch || nameMatch;
+        });
+    }, [inventory, stockSearch]);
+
     const pagedStock = useMemo(() => {
-        return inventory.slice((stockPage - 1) * PAGE_SIZE_STOCK, stockPage * PAGE_SIZE_STOCK);
-    }, [inventory, stockPage]);
+        return filteredStock.slice((stockPage - 1) * PAGE_SIZE_STOCK, stockPage * PAGE_SIZE_STOCK);
+    }, [filteredStock, stockPage]);
+
+    useEffect(() => {
+        setStockPage(1);
+    }, [stockSearch]);
 
     if (loading) return (
         <div className='p-4 bg-light min-vh-100 d-flex justify-content-center align-items-center'>
@@ -172,12 +193,15 @@ const StockTransfer = () => {
             </div>
 
             {/* ── Tab switcher ── */}
-            <div className="card border-0 shadow-sm rounded-3 overflow-hidden mb-4">
+            <div
+                className="card border-0 shadow-sm rounded-4 overflow-hidden mb-4"
+                style={{ background: 'linear-gradient(145deg, #f8fbff 0%, #eef6f3 100%)' }}
+            >
                 {/* Tab headers */}
-                <div className="d-flex border-bottom bg-white">
+                <div className="d-flex border-bottom" style={{ background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(2px)' }}>
                     <button
-                        className={`flex-fill py-3 border-0 fw-semibold ${activeTab === 'history' ? 'bg-white text-dark border-bottom border-2 border-dark' : 'bg-light text-muted'}`}
-                        style={{ fontSize: '13px', borderBottom: activeTab === 'history' ? '2px solid #1e293b' : '2px solid transparent' }}
+                        className={`flex-fill py-3 border-0 fw-semibold ${activeTab === 'history' ? 'bg-white text-dark border-bottom border-2 border-dark' : 'bg-transparent text-muted'}`}
+                        style={{ fontSize: '13px', borderBottom: activeTab === 'history' ? '2px solid #14532d' : '2px solid transparent' }}
                         onClick={() => setActiveTab('history')}
                     >
                         📋 Transfer History
@@ -186,8 +210,8 @@ const StockTransfer = () => {
                         </span>
                     </button>
                     <button
-                        className={`flex-fill py-3 border-0 fw-semibold ${activeTab === 'stock' ? 'bg-white text-dark' : 'bg-light text-muted'}`}
-                        style={{ fontSize: '13px', borderBottom: activeTab === 'stock' ? '2px solid #1e293b' : '2px solid transparent' }}
+                        className={`flex-fill py-3 border-0 fw-semibold ${activeTab === 'stock' ? 'bg-white text-dark border-bottom border-2 border-dark' : 'bg-transparent text-muted'}`}
+                        style={{ fontSize: '13px', borderBottom: activeTab === 'stock' ? '2px solid #14532d' : '2px solid transparent' }}
                         onClick={() => setActiveTab('stock')}
                     >
                         📦 Current Stock by Location
@@ -199,7 +223,7 @@ const StockTransfer = () => {
 
                 {/* ── Transfer History Tab ── */}
                 {activeTab === 'history' && (
-                    <div className="p-3">
+                    <div className="p-3" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(241,249,255,0.8) 100%)' }}>
                         {data.transfers?.length > 0 ? (
                             <>
                                 {pagedHistory.map(transfer => (
@@ -229,14 +253,38 @@ const StockTransfer = () => {
 
                 {/* ── Current Stock Tab ── */}
                 {activeTab === 'stock' && (
-                    <div>
-                        <div className="d-flex justify-content-end px-3 pt-3 pb-2">
+                    <div style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(238,249,244,0.85) 100%)' }}>
+                        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 px-3 pt-3 pb-2">
+                            <div className="d-flex align-items-center gap-2" style={{ minWidth: '260px', maxWidth: '520px', width: '100%' }}>
+                                <span className="fw-semibold text-dark" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+                                    Search:
+                                </span>
+                                <div className="input-group input-group-sm">
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="By ID or product name"
+                                        value={stockSearch}
+                                        onChange={(e) => setStockSearch(e.target.value)}
+                                    />
+                                    {stockSearch && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-outline-secondary"
+                                            onClick={() => setStockSearch('')}
+                                            title="Clear search"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                             <button className="btn btn-sm btn-outline-secondary rounded-3" onClick={fetchInventory}>
                                 <RefreshCcw size={13} className="me-1" style={{ display: 'inline' }} />
                                 {t('inventory.pages.stock_transfer.btn_refresh')}
                             </button>
                         </div>
-                        {inventory.length > 0 ? (
+                        {filteredStock.length > 0 ? (
                             <>
                                 <div className="table-responsive">
                                     <table className="table table-sm table-hover mb-0">
@@ -273,7 +321,7 @@ const StockTransfer = () => {
                                 </div>
                                 <div className="px-3">
                                     <Pagination
-                                        total={inventory.length}
+                                        total={filteredStock.length}
                                         page={stockPage}
                                         pageSize={PAGE_SIZE_STOCK}
                                         onChange={p => setStockPage(p)}
@@ -282,7 +330,7 @@ const StockTransfer = () => {
                             </>
                         ) : (
                             <div className="text-center py-5 text-muted">
-                                <p className="mb-0">No inventory data available.</p>
+                                <p className="mb-0">No matching products found.</p>
                             </div>
                         )}
                     </div>
@@ -319,9 +367,16 @@ const TransferCard = ({ transfer, inventory, onEdit, isSinhala }) => {
     const productName = product ? ((isSinhala && product.nameSinhala) ? product.nameSinhala : product.name) : 'Unknown Product';
     const baseUnit    = product?.baseUnit || 'units';
     const baseQty     = transfer.Qty ? parseInt(transfer.Qty) : 0;
+    const displayQty  = transfer.Display_Qty !== undefined && transfer.Display_Qty !== null && transfer.Display_Qty !== ''
+        ? parseFloat(transfer.Display_Qty)
+        : baseQty;
+    const displayUnit = transfer.Display_Unit || baseUnit;
 
     return (
-        <div className="card border-0 shadow-sm rounded-4 p-3 mb-3">
+        <div
+            className="card border-0 shadow-sm rounded-4 p-3 mb-3"
+            style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f3f9ff 100%)', border: '1px solid #dbeafe' }}
+        >
             <div className="d-flex align-items-start gap-3">
                 <div className="p-2 rounded-3 bg-light text-primary">
                     <RefreshCcw size={16} />
@@ -359,23 +414,14 @@ const TransferCard = ({ transfer, inventory, onEdit, isSinhala }) => {
                         <strong style={{ fontSize: '13px' }}>{productName}</strong>
                         <span className="text-muted ms-1" style={{ fontSize: '11px' }}>(#{transfer.P_ID})</span>
 
-                        {/* Qty — show what the user actually entered, plus base unit equivalent */}
+                        {/* Qty — prioritize entered unit/qty and show base as secondary */}
                         <div className="mt-1 d-flex flex-wrap align-items-center gap-2">
-                            {/* Primary: base qty */}
                             <span className="badge bg-dark text-white px-2 py-1" style={{ fontSize: '12px' }}>
-                                {baseQty} {baseUnit}
+                                {Number.isInteger(displayQty) ? displayQty : displayQty.toFixed(2)} {displayUnit}
                             </span>
-                            {/* Alt unit equivalents */}
-                            {(product?.units || []).filter(u => !u.isBaseUnit).map((u, idx) => {
-                                const rate = parseFloat(u.conversionRate) || 1;
-                                const converted = baseQty / rate;
-                                if (converted < 0.01) return null;
-                                return (
-                                    <span key={idx} className="badge bg-secondary-subtle text-secondary border px-2 py-1" style={{ fontSize: '11px' }}>
-                                        = {Number.isInteger(converted) ? converted : converted.toFixed(2)} {u.unitName}
-                                    </span>
-                                );
-                            })}
+                            <span className="badge bg-secondary-subtle text-secondary border px-2 py-1" style={{ fontSize: '11px' }}>
+                                (= {baseQty} {baseUnit})
+                            </span>
                         </div>
 
                         {transfer.Reason && (

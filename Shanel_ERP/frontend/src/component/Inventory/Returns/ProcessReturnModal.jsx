@@ -179,19 +179,20 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
 
     return (
         <>
-        <Modal show={show} onHide={handleClose} size="lg" centered scrollable className="centered-modal">
-            <Modal.Header closeButton className="border-0 pb-2">
+        <Modal show={show} onHide={handleClose} size="xl" centered scrollable className="centered-modal">
+            <Modal.Header closeButton className="border-0 pb-2" style={{ background: 'linear-gradient(135deg, #f7fbff 0%, #eef7f2 100%)' }}>
                 <Modal.Title className="fw-bold">Process New Return</Modal.Title>
             </Modal.Header>
 
             <Form onSubmit={handleSubmit}>
-                <Modal.Body className="py-2 px-3" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                <Modal.Body className="py-3 px-3" style={{ maxHeight: '72vh', overflowY: 'auto', background: 'linear-gradient(180deg, #f9fcff 0%, #f5fbf7 100%)' }}>
                     
                     {/* Return Type Selection */}
-                    <Row className="mb-2">
+                    <Row className="mb-3">
                         <Col md={12}>
-                            <Form.Label className="small fw-bold text-secondary">RETURN TYPE</Form.Label>
-                            <div className="d-flex gap-2 mt-2">
+                            <div className="p-3 rounded-4" style={{ background: '#fff', border: '1px solid #dbe4ef' }}>
+                            <Form.Label className="small fw-bold text-secondary mb-2">RETURN TYPE</Form.Label>
+                            <div className="d-flex gap-3 mt-2">
                                 <Form.Check 
                                     type="radio" 
                                     label="Customer Return" 
@@ -207,13 +208,14 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
                                     onChange={() => setFormData({...formData, Return_Type: 'Supplier'})}
                                 />
                             </div>
+                            </div>
                         </Col>
                     </Row>
 
                     {/* Invoice Search Section */}
-                    <Row className="mb-2">
-                        <Col lg={6} md={8}>
-                            <div className="p-2 rounded-4 border bg-light">
+                    <Row className="mb-3">
+                        <Col lg={12} md={10}>
+                            <div className="p-3 rounded-4" style={{ background: '#fff', border: '1px solid #dbe4ef' }}>
                                 <Form.Label className="small fw-bold text-secondary mb-2">INVOICE NUMBER (e.g., 2026-001)</Form.Label>
                                 <div className="d-flex gap-2 mb-2">
                                     <Form.Control 
@@ -222,6 +224,7 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
                                         value={invoiceNo}
                                         onChange={(e) => setInvoiceNo(e.target.value)}
                                         className={errors.invoice ? 'is-invalid' : ''}
+                                        style={{ borderRadius: '10px', border: '1px solid #cbd5e1', padding: '10px 12px' }}
                                         onKeyPress={(e) => {
                                             if (e.key === 'Enter') {
                                                 handleSearchInvoice();
@@ -267,7 +270,7 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
 
                     {/* Customer Info - Show when invoice found */}
                     {invoiceData && (
-                        <Row className="mb-2 p-2 rounded-3 bg-info bg-opacity-10 border border-info-subtle">
+                        <Row className="mb-3 p-3 rounded-4" style={{ background: '#ecfeff', border: '1px solid #a5f3fc' }}>
                             <Col md={6}>
                                 <small className="text-secondary fw-bold">CUSTOMER</small>
                                 <p className="mb-0 fw-bold">{invoiceData.Customer_Name}</p>
@@ -288,17 +291,18 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
                         <>
                             {errors.items && <Alert variant="warning" className="mb-3">{errors.items}</Alert>}
                             
+                            <div className="p-2 rounded-4" style={{ background: '#fff', border: '1px solid #dbe4ef' }}>
                             <div className="table-responsive">
                                 <Table hover size="sm" className="mb-0">
-                                    <thead className="bg-light">
+                                    <thead>
                                         <tr>
-                                            <th className="fw-bold small">PRODUCT</th>
-                                            <th className="fw-bold small">BASE UNIT</th>
-                                            <th className="fw-bold small text-end">PURCHASED</th>
-                                            <th className="fw-bold small text-end">GOOD QTY</th>
-                                            <th className="fw-bold small text-end">BAD QTY</th>
-                                            <th className="fw-bold small text-end">UNIT PRICE</th>
-                                            <th className="fw-bold small text-end">REFUND AMOUNT</th>
+                                            <th className="fw-bold small" style={{ background: '#f8fafc' }}>PRODUCT</th>
+                                            <th className="fw-bold small" style={{ background: '#f8fafc' }}>BASE UNIT</th>
+                                            <th className="fw-bold small text-end" style={{ background: '#f8fafc' }}>PURCHASED</th>
+                                            <th className="fw-bold small text-end" style={{ background: '#f8fafc' }}>GOOD QTY</th>
+                                            <th className="fw-bold small text-end" style={{ background: '#f8fafc' }}>BAD QTY</th>
+                                            <th className="fw-bold small text-end" style={{ background: '#f8fafc' }}>UNIT PRICE</th>
+                                            <th className="fw-bold small text-end" style={{ background: '#f8fafc' }}>REFUND AMOUNT</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -323,6 +327,7 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
                                                         className="text-end"
                                                         min="0"
                                                         max={item.Base_Unit_Qty_Sold}
+                                                        style={{ borderRadius: '8px', border: '1px solid #cbd5e1' }}
                                                     />
                                                 </td>
                                                 <td>
@@ -335,6 +340,7 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
                                                         className="text-end"
                                                         min="0"
                                                         max={item.Base_Unit_Qty_Sold}
+                                                        style={{ borderRadius: '8px', border: '1px solid #cbd5e1' }}
                                                     />
                                                 </td>
                                                 <td className="text-end">
@@ -349,7 +355,7 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
                                                         onChange={(e) => updateReturnItem(idx, 'Refund_Amount', e.target.value)}
                                                         className="text-end"
                                                         min="0"
-                                                        style={{ width: '120px', marginLeft: 'auto' }}
+                                                        style={{ width: '120px', marginLeft: 'auto', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                                                     />
                                                 </td>
                                             </tr>
@@ -357,9 +363,10 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
                                     </tbody>
                                 </Table>
                             </div>
+                            </div>
 
                             {/* Reason & Details for each item */}
-                            <div className="mt-2">
+                            <div className="mt-3 p-3 rounded-4" style={{ background: '#fff', border: '1px solid #dbe4ef' }}>
                                 <Form.Label className="small fw-bold text-secondary">RETURN REASON & DETAILS</Form.Label>
                                 {formData.returnItems.map((item, idx) => (
                                     (parseFloat(item.Good_Qty) > 0 || parseFloat(item.Bad_Qty) > 0) && (
@@ -405,7 +412,7 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
 
                 </Modal.Body>
 
-                <Modal.Footer className="border-0 p-2">
+                <Modal.Footer className="border-0 p-2" style={{ background: 'linear-gradient(180deg, #f9fcff 0%, #f5fbf7 100%)' }}>
                     <Button variant="light" className="rounded-3 px-4" onClick={handleClose}>
                         Cancel
                     </Button>
@@ -434,6 +441,7 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
             .modal.centered-modal .modal-dialog { margin: 0; }
             .modal.centered-modal .modal-dialog.modal-md { max-width: 720px; }
             .modal.centered-modal .modal-dialog.modal-lg { max-width: 980px; }
+            .modal.centered-modal .modal-dialog.modal-xl { max-width: 1140px; }
             .modal.centered-modal .modal-content { max-height: calc(100vh - 120px); overflow-y: auto; }
         `}</style>
 

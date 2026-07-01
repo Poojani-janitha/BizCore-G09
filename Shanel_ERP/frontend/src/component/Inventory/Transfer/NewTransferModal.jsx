@@ -3,6 +3,8 @@ import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import { Search, X } from 'react-feather';
 import axios from 'axios';
 
+const LOCATION_OPTIONS = ['Production', 'Shop'];
+
 const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
     const [products, setProducts] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState(null);
@@ -86,6 +88,20 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
     }, [selectedProduct]);
 
     const selectedUnit = unitOptions[selectedUnitIndex] || { label: '', conversionRate: 1 };
+
+    // Keep selected unit and entered qty when editing existing transfer records.
+    useEffect(() => {
+        if (!show || !isEditing || !editTransfer || !selectedProduct || unitOptions.length === 0) return;
+
+        if (editTransfer.Display_Unit) {
+            const idx = unitOptions.findIndex(u => u.label === editTransfer.Display_Unit);
+            setSelectedUnitIndex(idx >= 0 ? idx : 0);
+        }
+
+        if (editTransfer.Display_Qty !== undefined && editTransfer.Display_Qty !== null && editTransfer.Display_Qty !== '') {
+            setDisplayQty(String(parseInt(editTransfer.Display_Qty)));
+        }
+    }, [show, isEditing, editTransfer, selectedProduct, unitOptions]);
 
     // When unit changes, recalculate displayQty from base qty
     const handleUnitChange = (idx) => {
@@ -177,7 +193,13 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
 
         try {
             // Always submit in base units
-            const payload = { ...formData, Qty: Math.round(parseFloat(formData.Qty)) };
+            const baseQty = parseFloat(formData.Qty);
+            const payload = {
+                ...formData,
+                Qty: Number.isFinite(baseQty) ? baseQty : 0,
+                Display_Qty: enteredQty,
+                Display_Unit: selectedUnit.label || selectedProduct?.baseUnit || 'Unit'
+            };
             if (isEditing && editTransfer) {
                 await axios.put(`http://localhost:5000/api/inventory/transfers/${editTransfer.ST_ID}`, payload);
             } else {
@@ -264,12 +286,38 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
                     <Row className="mb-3">
                         <Col>
                             <Form.Label className="small fw-bold">FROM</Form.Label>
-                            <Form.Select required value={formData.From_Location}
-                                onChange={e => setFormData({ ...formData, From_Location: e.target.value })}>
-                                <option value="">Source...</option>
-                                <option value="Production">Production</option>
-                                <option value="Shop">Shop</option>
-                            </Form.Select>
+                            <div className="input-group">
+                                <Form.Select required value={formData.From_Location}
+                                    onChange={e => {
+                                        const nextFrom = e.target.value;
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            From_Location: nextFrom,
+                                            To_Location: prev.To_Location === nextFrom ? '' : prev.To_Location
+                                        }));
+                                    }}>
+                                    <option value="">Source...</option>
+                                    {LOCATION_OPTIONS.map(location => (
+                                        <option
+                                            key={location}
+                                            value={location}
+                                            disabled={location === formData.To_Location}
+                                        >
+                                            {location}
+                                        </option>
+                                    ))}
+                                </Form.Select>
+                                <Button
+                                    variant="light"
+                                    type="button"
+                                    className="border"
+                                    onClick={() => setFormData(prev => ({ ...prev, From_Location: '' }))}
+                                    disabled={!formData.From_Location}
+                                    title="Clear source location"
+                                >
+                                    <X size={14} />
+                                </Button>
+                            </div>
                             {selectedProduct && formData.From_Location && (
                                 <div className="mt-2 p-2 bg-warning-subtle rounded" style={{ fontSize: '12px' }}>
                                     <span className="text-muted">Available: </span>
@@ -279,12 +327,38 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
                         </Col>
                         <Col>
                             <Form.Label className="small fw-bold">TO</Form.Label>
-                            <Form.Select required value={formData.To_Location}
-                                onChange={e => setFormData({ ...formData, To_Location: e.target.value })}>
-                                <option value="">Destination...</option>
-                                <option value="Production">Production</option>
-                                <option value="Shop">Shop</option>
-                            </Form.Select>
+                            <div className="input-group">
+                                <Form.Select required value={formData.To_Location}
+                                    onChange={e => {
+                                        const nextTo = e.target.value;
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            To_Location: nextTo,
+                                            From_Location: prev.From_Location === nextTo ? '' : prev.From_Location
+                                        }));
+                                    }}>
+                                    <option value="">Destination...</option>
+                                    {LOCATION_OPTIONS.map(location => (
+                                        <option
+                                            key={location}
+                                            value={location}
+                                            disabled={location === formData.From_Location}
+                                        >
+                                            {location}
+                                        </option>
+                                    ))}
+                                </Form.Select>
+                                <Button
+                                    variant="light"
+                                    type="button"
+                                    className="border"
+                                    onClick={() => setFormData(prev => ({ ...prev, To_Location: '' }))}
+                                    disabled={!formData.To_Location}
+                                    title="Clear destination location"
+                                >
+                                    <X size={14} />
+                                </Button>
+                            </div>
                         </Col>
                     </Row>
 

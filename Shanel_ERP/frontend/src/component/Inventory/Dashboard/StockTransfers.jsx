@@ -33,6 +33,13 @@ const StockTransfers = ({ transfers = [] }) => {
     }
   };
 
+  const getDisplayTransferQty = (transfer) => {
+    const qty = transfer?.Display_Qty ?? transfer?.Qty ?? 0;
+    const numericQty = parseFloat(qty) || 0;
+    const unit = transfer?.Display_Unit || 'units';
+    return `${Number.isInteger(numericQty) ? numericQty : numericQty.toFixed(2)} ${unit}`;
+  };
+
   return (
     <div className="card border-0 shadow-sm rounded-3 h-100 bg-white">
       <div className="pt-4 px-4">
@@ -93,7 +100,7 @@ const StockTransfers = ({ transfers = [] }) => {
                       <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{transfer.To_Location || 'Unknown'}</span>
                     </div>
                     <small className="text-muted d-block">
-                      {transfer.Qty || 0} {t('inventory.dashboard.transfers_widget.units')} • {formatDate(transfer.Transfer_Date)}
+                      {getDisplayTransferQty(transfer)} • {formatDate(transfer.Transfer_Date)}
                     </small>
                   </div>
                   <div className="d-flex flex-column align-items-end gap-1" style={{ flexShrink: 0 }}>
