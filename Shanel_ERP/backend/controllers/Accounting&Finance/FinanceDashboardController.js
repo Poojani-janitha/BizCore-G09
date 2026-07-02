@@ -16,7 +16,7 @@ class FinanceReportController {
 
             // Get all Revenue accounts with their journal line totals
             const revenueAccounts = await AccountChart.findAll({
-                where: { Account_Type: 'Revenue', Is_Active: true },
+                where: { Type_ID: 4, Is_Active: true },
                 include: [{
                     model: JournalEntryLine,
                     as: 'JournalLines',
@@ -29,7 +29,7 @@ class FinanceReportController {
 
             // Get ALL expense accounts - we'll split them by category
             const expenseAccounts = await AccountChart.findAll({
-                where: { Account_Type: 'Expense', Is_Active: true },
+                where: { Type_ID: 5, Is_Active: true },
                 include: [{
                     model: JournalEntryLine,
                     as: 'JournalLines',
@@ -140,7 +140,7 @@ class FinanceReportController {
             const date = asOfDate || new Date().toISOString().split('T')[0];
 
             const accounts = await AccountChart.findAll({
-                where: { Account_Type: { [Op.in]: ['Asset', 'Liability', 'Equity'] }, Is_Active: true },
+                where: { Type_ID: { [Op.in]: [1, 2, 3] }, Is_Active: true },
                 include: [{
                     model: JournalEntryLine,
                     as: 'JournalLines',

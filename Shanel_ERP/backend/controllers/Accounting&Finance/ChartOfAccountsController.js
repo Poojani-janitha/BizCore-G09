@@ -9,7 +9,8 @@ class ChartOfAccountsController {
         try {
             const { type, active } = req.query;
             const whereClause = {};
-            if (type) whereClause.Account_Type = type;
+            const typeMap = { 'Asset': 1, 'Liability': 2, 'Equity': 3, 'Revenue': 4, 'Expense': 5 };
+            if (type) whereClause.Type_ID = typeMap[type] || type;
             if (active !== undefined) whereClause.Is_Active = active === 'true';
 
             // 1. Fetch all accounts
@@ -92,10 +93,11 @@ class ChartOfAccountsController {
                 });
             }
 
+            const typeMap = { 'Asset': 1, 'Liability': 2, 'Equity': 3, 'Revenue': 4, 'Expense': 5 };
             const account = await AccountChart.create({
                 Account_Code: accountCode,
                 Account_Name: accountName,
-                Account_Type: accountType,
+                Type_ID: typeMap[accountType] || accountType,
                 Account_Category: accountCategory || null,
                 Parent_Account_ID: parentAccountId || null,
                 Description: description || null,
@@ -200,17 +202,42 @@ class ChartOfAccountsController {
                 });
             }
 
-            // 2. Build transaction where clause
-            const lineWhere = { Account_ID: account.Account_ID };
-            const entryWhere = {};
+            // 2. Find the latest CLOSED fiscal period to determine the cutoff date
+            const FiscalPeriod = require('../../models/finance/FiscalPeriod');
+            const latestClosedPeriod = await FiscalPeriod.findOne({
+                where: { Status: 'CLOSED' },
+                order: [['End_Date', 'DESC']]
+            });
 
-            if (startDate && endDate) {
+            // 3. Build transaction where clause
+            const lineWhere = { Account_ID: account.Account_ID };
+            const entryWhere = { Status: 'Posted' };
+
+            // If a fiscal period has been closed, only show transactions AFTER it
+            if (latestClosedPeriod) {
                 entryWhere.Entry_Date = {
-                    [Op.between]: [startDate, endDate]
+                    [Op.gt]: latestClosedPeriod.End_Date
                 };
             }
 
-            // 3. Get all transaction lines for this account
+            // If user also specifies custom date range, merge it
+            if (startDate && endDate) {
+                if (entryWhere.Entry_Date) {
+                    // Combine: after closed period AND within user range
+                    entryWhere.Entry_Date = {
+                        [Op.and]: [
+                            { [Op.gt]: latestClosedPeriod.End_Date },
+                            { [Op.between]: [startDate, endDate] }
+                        ]
+                    };
+                } else {
+                    entryWhere.Entry_Date = {
+                        [Op.between]: [startDate, endDate]
+                    };
+                }
+            }
+
+            // 4. Get all transaction lines for this account (only current period)
             const ledgerLines = await JournalEntryLine.findAll({
                 where: lineWhere,
                 include: [{
@@ -225,8 +252,13 @@ class ChartOfAccountsController {
                 ]
             });
 
-            // 4. Calculate totals and running balance
-            let runningBalance = 0; 
+            // 5. Use Balance_Brought_Forward as initial balance if a period has been closed
+            const balanceBroughtForward = latestClosedPeriod
+                ? parseFloat(account.Balance_Brought_Forward) || 0
+                : 0;
+
+            // 6. Calculate totals and running balance starting from BF
+            let runningBalance = balanceBroughtForward;
             const transactions = ledgerLines.map(line => {
                 const debit = parseFloat(line.Debit_Amount) || 0;
                 const credit = parseFloat(line.Credit_Amount) || 0;
@@ -255,9 +287,14 @@ class ChartOfAccountsController {
                         code: account.Account_Code,
                         type: account.Account_Type,
                         category: account.Account_Category,
-                        currentBalance: runningBalance.toFixed(2) // Use calculated balance for accuracy
+                        currentBalance: runningBalance.toFixed(2),
+                        balanceBroughtForward: balanceBroughtForward.toFixed(2)
                     },
-                    transactions: transactions // Chronological order
+                    transactions: transactions,
+                    closedPeriod: latestClosedPeriod ? {
+                        name: latestClosedPeriod.Period_Name,
+                        endDate: latestClosedPeriod.End_Date
+                    } : null
                 }
             });
 
@@ -272,3 +309,4 @@ class ChartOfAccountsController {
 }
 
 module.exports = new ChartOfAccountsController();
+

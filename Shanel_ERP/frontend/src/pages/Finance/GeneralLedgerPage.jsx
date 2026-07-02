@@ -5,11 +5,13 @@ import {
   PlusCircle, Loader, RefreshCw, AlertCircle, ChevronDown, CheckCircle, Lock, Shield
 } from 'react-feather';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import ChartOfAccountsPage from './ChartOfAccountsPage';
 import FiscalPeriodModal from './FiscalPeriodModal';
 
 const GeneralLedgerPage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('chart_of_accounts');
   const [journalEntries, setJournalEntries] = useState([]);
   const [fiscalPeriods, setFiscalPeriods] = useState([]);
@@ -25,10 +27,10 @@ const GeneralLedgerPage = () => {
   const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
 
   const tabs = [
-    { id: 'chart_of_accounts', label: 'Chart of Accounts', icon: (color) => <Box size={18} color={color} /> },
-    { id: 'journal_entries', label: 'Journal Entries', icon: (color) => <FileText size={18} color={color} /> },
-    { id: 'fiscal_periods', label: 'Fiscal Periods', icon: (color) => <Calendar size={18} color={color} /> },
-    { id: 'subledger_integration', label: 'Subledger Integration', icon: (color) => <Layers size={18} color={color} /> }
+    { id: 'chart_of_accounts', label: t('finance.tabs.chart_of_accounts'), icon: (color) => <Box size={18} color={color} /> },
+    { id: 'journal_entries', label: t('finance.tabs.journal_entries'), icon: (color) => <FileText size={18} color={color} /> },
+    { id: 'fiscal_periods', label: t('finance.tabs.fiscal_periods'), icon: (color) => <Calendar size={18} color={color} /> },
+    { id: 'subledger_integration', label: t('finance.tabs.subledger'), icon: (color) => <Layers size={18} color={color} /> }
   ];
 
   useEffect(() => {
@@ -81,17 +83,28 @@ const GeneralLedgerPage = () => {
   };
 
   const handleStatusChange = async (id, currentStatus) => {
-    const statuses = ['OPEN', 'CLOSED', 'LOCKED'];
-    const nextStatus = statuses[(statuses.indexOf(currentStatus) + 1) % statuses.length];
+    const nextStatus = currentStatus === 'OPEN' ? 'CLOSED' : 'OPEN';
     
+    // Confirm before closing — this triggers Balance Brought Forward calculation
+    if (nextStatus === 'CLOSED') {
+      const confirmed = window.confirm(t('finance.fiscal.confirm_close'));
+      if (!confirmed) return;
+    } else {
+      const confirmed = window.confirm(t('finance.fiscal.confirm_reopen'));
+      if (!confirmed) return;
+    }
+
     try {
       const res = await axios.put(`http://localhost:5000/api/fiscal-periods/${id}/status`, { status: nextStatus });
       if (res.data.success) {
         fetchFiscalPeriods();
+        if (nextStatus === 'CLOSED' && res.data.accountsUpdated > 0) {
+          alert(`✅ ${t('finance.fiscal.close_success', { count: res.data.accountsUpdated })}`);
+        }
       }
     } catch (err) {
       console.error('Error updating status:', err);
-      alert('Failed to update period status');
+      alert(err.response?.data?.message || 'Failed to update period status');
     }
   };
 
@@ -118,12 +131,12 @@ const GeneralLedgerPage = () => {
         {loadingEntries ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader className="animate-spin text-orange-500 mb-2" size={24} />
-            <p className="text-gray-500 text-sm">Loading journal entries...</p>
+            <p className="text-gray-500 text-sm">{t('finance.journal.loading')}</p>
           </div>
         ) : journalEntries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
             <FileText size={48} strokeWidth={1} className="mb-3 opacity-20" />
-            <p>No journal entries found</p>
+            <p>{t('finance.journal.no_entries')}</p>
           </div>
         ) : (
           <>
@@ -131,13 +144,13 @@ const GeneralLedgerPage = () => {
               <table className="w-full text-left">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
-                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">JE Number</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Description</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Reference</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Total Debit</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Total Credit</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.journal.date')}</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.journal.je_number')}</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.journal.description')}</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.journal.reference')}</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">{t('finance.journal.total_debit')}</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">{t('finance.journal.total_credit')}</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-center">{t('finance.journal.status')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -162,7 +175,7 @@ const GeneralLedgerPage = () => {
 
             <div className="p-4 bg-gray-50 border-t border-gray-100 flex flex-col items-center gap-3">
               <p className="text-xs text-gray-400 font-medium">
-                Showing {journalEntries.length} of {totalEntries} entries
+                {t('finance.journal.showing', { current: journalEntries.length, total: totalEntries })}
               </p>
               {hasMore && (
                 <button 
@@ -171,7 +184,7 @@ const GeneralLedgerPage = () => {
                   className="flex items-center gap-2 px-6 py-2 bg-white border border-gray-200 rounded-full text-sm font-bold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-50"
                 >
                   {loadingMore ? <Loader size={14} className="animate-spin" /> : <ChevronDown size={14} />}
-                  SEE MORE
+                  {t('finance.journal.see_more')}
                 </button>
               )}
             </div>
@@ -188,9 +201,9 @@ const GeneralLedgerPage = () => {
       <div className="w-full pt-4 flex flex-col gap-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { label: 'Current Period', value: currentPeriod.Period_Name, color: 'text-green-600', bg: 'bg-green-50', icon: <Calendar size={20} /> },
-            { label: 'Fiscal Year', value: 'FY 2026-27', color: 'text-orange-600', bg: 'bg-orange-50', icon: <RefreshCw size={20} /> },
-            { label: 'System Status', value: currentPeriod.Status === 'OPEN' ? 'Ready for Posting' : 'System Locked', color: 'text-blue-600', bg: 'bg-blue-50', icon: <Shield size={20} /> }
+            { label: t('finance.fiscal.current_period'), value: currentPeriod.Period_Name, color: 'text-green-600', bg: 'bg-green-50', icon: <Calendar size={20} /> },
+            { label: t('finance.fiscal.fiscal_year'), value: 'FY 2026-27', color: 'text-orange-600', bg: 'bg-orange-50', icon: <RefreshCw size={20} /> },
+            { label: t('finance.fiscal.system_status'), value: currentPeriod.Status === 'OPEN' ? t('finance.fiscal.ready_posting') : t('finance.fiscal.closed'), color: 'text-blue-600', bg: 'bg-blue-50', icon: <Shield size={20} /> }
           ].map((card, idx) => (
             <div key={idx} className="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm flex items-center gap-4">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center ${card.bg} ${card.color}`}>
@@ -212,25 +225,24 @@ const GeneralLedgerPage = () => {
           ) : fiscalPeriods.length === 0 ? (
              <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                 <Calendar size={48} className="mb-4 opacity-20" />
-                <p>No fiscal periods defined. Please create your first period.</p>
-                <button onClick={() => setIsPeriodModalOpen(true)} className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg font-bold text-sm">Initialize Periods</button>
+                <p>{t('finance.fiscal.no_periods')}</p>
+                <button onClick={() => setIsPeriodModalOpen(true)} className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg font-bold text-sm">{t('finance.fiscal.initialize')}</button>
              </div>
           ) : (
             <table className="w-full text-left">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Period Name</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Start Date</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">End Date</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.fiscal.period_name')}</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.fiscal.start_date')}</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.fiscal.end_date')}</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.fiscal.status')}</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">{t('finance.fiscal.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-sm">
                 {fiscalPeriods.map((row) => {
                   let statusColor = 'text-green-700 bg-green-50';
                   if (row.Status === 'CLOSED') statusColor = 'text-orange-700 bg-orange-50';
-                  if (row.Status === 'LOCKED') statusColor = 'text-red-700 bg-red-50';
                   
                   return (
                     <tr key={row.Period_ID} className="hover:bg-gray-50 transition-colors">
@@ -247,7 +259,7 @@ const GeneralLedgerPage = () => {
                           onClick={() => handleStatusChange(row.Period_ID, row.Status)}
                           className="text-orange-600 font-bold hover:text-orange-700 transition"
                         >
-                          Change Status
+                          {t('finance.fiscal.change_status')}
                         </button>
                       </td>
                     </tr>
@@ -267,14 +279,14 @@ const GeneralLedgerPage = () => {
       {/* Header Section */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-teal-950 tracking-tight">General Ledger</h1>
-          <p className="text-gray-500 mt-1">Comprehensive financial control and recording system</p>
+          <h1 className="text-3xl font-bold text-teal-950 tracking-tight">{t('finance.general_ledger')}</h1>
+          <p className="text-gray-500 mt-1">{t('finance.subtitle')}</p>
         </div>
         
         <div className="flex gap-3">
           {activeTab === 'journal_entries' && (
             <button className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold shadow-lg shadow-orange-200 hover:bg-orange-700 transition-all hover:scale-105 active:scale-95">
-              <PlusCircle size={18} /> Create Journal Entry
+              <PlusCircle size={18} /> {t('finance.journal.create_entry')}
             </button>
           )}
           {activeTab === 'chart_of_accounts' && null}
@@ -283,7 +295,7 @@ const GeneralLedgerPage = () => {
               onClick={() => setIsPeriodModalOpen(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold shadow-lg shadow-orange-200 hover:bg-orange-700 transition-all hover:scale-105 active:scale-95"
             >
-              <PlusCircle size={18} /> New Fiscal Period
+              <PlusCircle size={18} /> {t('finance.fiscal.new_period')}
             </button>
           )}
         </div>
@@ -318,9 +330,9 @@ const GeneralLedgerPage = () => {
         {activeTab === 'subledger_integration' && (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
             <Layers size={64} strokeWidth={1} className="mb-4 opacity-20" />
-            <h3 className="text-xl font-bold text-gray-500">Integration Hub</h3>
-            <p className="max-w-xs text-center mt-2">Connect subsidiary ledgers for automated posting and synchronization.</p>
-            <span className="mt-4 px-4 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase tracking-widest">Coming Soon</span>
+            <h3 className="text-xl font-bold text-gray-500">{t('finance.subledger.title')}</h3>
+            <p className="max-w-xs text-center mt-2">{t('finance.subledger.description')}</p>
+            <span className="mt-4 px-4 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase tracking-widest">{t('finance.subledger.coming_soon')}</span>
           </div>
         )}
       </div>
