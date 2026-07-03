@@ -2,6 +2,7 @@ import React, {useEffect,useState} from 'react';
 import axios from 'axios';
 import { Package, CheckCircle, DollarSign, Clock, TrendingUp, TrendingDown } from 'react-feather';
 import SalesMetricCard from '../../component/Inventory/Sales/SalesMetricCard';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const SalesStock = () => {
     const [data, setData] = useState({ tableData:[], metrics:{}});
@@ -11,9 +12,9 @@ const SalesStock = () => {
 
     useEffect(() => {
         Promise.all([
-            axios.get('http://localhost:5000/api/inventory/sales/stock-overview'),
-            axios.get('http://localhost:5000/api/inventory/sales/recent-stock-in'),
-            axios.get('http://localhost:5000/api/inventory/sales/recent-stock-out')
+            axios.get(API_ENDPOINTS.inventory.sales.stockOverview),
+            axios.get(API_ENDPOINTS.inventory.sales.recentStockIn),
+            axios.get(API_ENDPOINTS.inventory.sales.recentStockOut)
         ])
         .then(([res1, res2, res3]) => {
             if(res1.data.success) setData(res1.data);

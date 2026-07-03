@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const Reports = () => {
   const today = new Date().toISOString().split('T')[0];
@@ -211,7 +212,7 @@ const Reports = () => {
   const [paymentReportData, setPaymentReportData] = useState({ rows: [], totals: { gross: 0, deductions: 0, net: 0 } });
   const [loading, setLoading] = useState(false);
 
-  const API_BASE = 'http://localhost:5000/api/hr';
+  const API_BASE = API_ENDPOINTS.hr.root;
 
   useEffect(() => {
     const fetchData = async () => {

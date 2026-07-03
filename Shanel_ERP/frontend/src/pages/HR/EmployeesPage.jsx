@@ -82,8 +82,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
-const API_BASE = 'http://localhost:5000/api/hr';
+const API_BASE = API_ENDPOINTS.hr.root;
 
 const mapEmployeeFromApi = (emp) => ({
   id: String(emp.Employee_ID),

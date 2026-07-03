@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { DollarSign, Calculator, Send, Download, CheckCircle, AlertCircle, Edit2, Save, X } from 'lucide-react';
 import { generateEmployees, EMP_KEY } from '../../storeContext/employeesData';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const PAYROLL_KEY = 'shanel_payroll_v1';
 
@@ -99,7 +100,7 @@ export default function Payroll() {
     notes: '',
   });
 
-  const API_BASE = 'http://localhost:5000/api/hr';
+  const API_BASE = API_ENDPOINTS.hr.root;
 
   // Fetch employees and payroll for selected month
   const fetchPayrollData = async (monthStr) => {

@@ -7,6 +7,7 @@ import ProductModal from '../../component/Inventory/Product/ProductModal';
 import ProductViewModal from '../../component/Inventory/Product/ProductViewModal';
 import { X } from 'react-feather';
 import { useNavigate } from 'react-router-dom';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 // Utility function for stock status
 const getStockStatus = (stockCount, minStock) => {
@@ -84,7 +85,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     const fetchProducts = async () => {
             try {
                 setIsLoading(true);
-                const response = await axios.get('http://localhost:5000/api/inventory/products');
+                const response = await axios.get(API_ENDPOINTS.inventory.products);
                 setProducts(response.data);
                 setError(null);
             } catch (error) {
@@ -178,7 +179,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
 
         try {
             setIsSavingStock(true);
-            await axios.post('http://localhost:5000/api/inventory/adjustments/adjust', {
+            await axios.post(API_ENDPOINTS.inventory.adjustments.adjust, {
                 P_ID: stockForm.productId,
                 Location: getStockLocation(),
                 Adjustment_Qty: qty,
@@ -206,7 +207,7 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
     const handleDelete = async (id) => {
         if (window.confirm("Are you sure you want to delete this product?")) {
             try {
-                await axios.delete(`http://localhost:5000/api/inventory/products/${id}`);
+                await axios.delete(API_ENDPOINTS.inventory.productById(id));
                 fetchProducts(); 
             } catch (error) {
                 console.error("Delete failed", error);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Box, Activity, ShoppingCart, RefreshCcw, AlertCircle, Users, Download, ChevronDown } from 'react-feather';
 import { generatePDF } from '../../../services/reportGenerator';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const InventoryReports = () => {
     const [selectedReport, setSelectedReport] = useState(null);
@@ -9,12 +10,12 @@ const InventoryReports = () => {
     const [isLoading, setIsLoading] = useState(false);
 
     const reportCards = [
-        { title: "Current Stock", desc: "Real-time inventory", icon: <Box size={20} className="text-success"/>, key: "current-stock", endpoint: "/api/inventory/reports/current-stock", borderColor: "border-success" },
-        { title: "Production", desc: "Daily production output", icon: <Activity size={20} className="text-primary"/>, key: "daily-production", endpoint: "/api/inventory/reports/production", borderColor: "border-primary" },
-        { title: "Purchase", desc: "Supplier purchases", icon: <ShoppingCart size={20} className="text-info"/>, key: "purchases", endpoint: "/api/inventory/reports/purchases", borderColor: "border-info" },
-        { title: "Stock Transfer", desc: "Stock movements", icon: <RefreshCcw size={20} className="text-warning"/>, key: "transfers", endpoint: "/api/inventory/reports/transfers", borderColor: "border-warning" },
-        { title: "Expiry", desc: "Items nearing expiry", icon: <AlertCircle size={20} className="text-danger"/>, key: "expiry", endpoint: "/api/inventory/reports/expiry", borderColor: "border-danger" },
-        { title: "Supplier Spend", desc: "Purchase by supplier", icon: <Users size={20} className="text-secondary"/>, key: "supplier-purchases", endpoint: "/api/inventory/reports/supplier-purchases", borderColor: "border-secondary" },
+        { title: "Current Stock", desc: "Real-time inventory", icon: <Box size={20} className="text-success"/>, key: "current-stock", endpoint: API_ENDPOINTS.inventory.reports.currentStock, borderColor: "border-success" },
+        { title: "Production", desc: "Daily production output", icon: <Activity size={20} className="text-primary"/>, key: "daily-production", endpoint: API_ENDPOINTS.inventory.reports.production, borderColor: "border-primary" },
+        { title: "Purchase", desc: "Supplier purchases", icon: <ShoppingCart size={20} className="text-info"/>, key: "purchases", endpoint: API_ENDPOINTS.inventory.reports.purchases, borderColor: "border-info" },
+        { title: "Stock Transfer", desc: "Stock movements", icon: <RefreshCcw size={20} className="text-warning"/>, key: "transfers", endpoint: API_ENDPOINTS.inventory.reports.transfers, borderColor: "border-warning" },
+        { title: "Expiry", desc: "Items nearing expiry", icon: <AlertCircle size={20} className="text-danger"/>, key: "expiry", endpoint: API_ENDPOINTS.inventory.reports.expiry, borderColor: "border-danger" },
+        { title: "Supplier Spend", desc: "Purchase by supplier", icon: <Users size={20} className="text-secondary"/>, key: "supplier-purchases", endpoint: API_ENDPOINTS.inventory.reports.supplierPurchases, borderColor: "border-secondary" },
     ];
 
     const loadReport = async (report) => {
@@ -26,7 +27,7 @@ const InventoryReports = () => {
         setIsLoading(true);
         setSelectedReport(report);
         try {
-            const response = await axios.get(`http://localhost:5000${report.endpoint}`);
+            const response = await axios.get(`${report.endpoint}`);
             setReportData(response.data.data || []);
         } catch (error) {
             console.error('Error loading report:', error);

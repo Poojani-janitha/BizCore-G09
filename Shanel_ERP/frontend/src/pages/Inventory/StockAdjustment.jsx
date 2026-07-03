@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Plus, AlertTriangle, ShieldOff, Archive, Package, Edit2, Trash2 } from 'react-feather';
 import AdjustmentModal from '../../component/Inventory/Adjustment/AdjustmentModal';
 import EditAdjustmentModal from '../../component/Inventory/Adjustment/EditAdjustmentModal';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const StockAdjustment = () => {
     const [logs, setLogs] = useState([]);
@@ -12,7 +13,7 @@ const StockAdjustment = () => {
     const [cardTotals, setCardTotals] = useState({ Expired: 0, Damage: 0, Theft: 0 });
 
     const fetchLogs = () => {
-        axios.get('http://localhost:5000/api/inventory/adjustments').then(res => {
+        axios.get(API_ENDPOINTS.inventory.adjustments.root).then(res => {
             setLogs(res.data.logs);
             
             // Calculate total quantities by adjustment type
@@ -39,7 +40,7 @@ const StockAdjustment = () => {
     const handleDelete = async (adjustmentId) => {
         if (window.confirm('Are you sure you want to delete this adjustment? Stock will be reversed.')) {
             try {
-                const response = await axios.delete(`http://localhost:5000/api/inventory/adjustments/${adjustmentId}`);
+                const response = await axios.delete(API_ENDPOINTS.inventory.adjustments.byId(adjustmentId));
                 if (response.data.success) {
                     fetchLogs();
                     alert('Adjustment deleted successfully');

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import axios from 'axios';
 import { Search, Plus, Package } from 'lucide-react';
 import CustomerForm from './CustomerForm';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const CustomerInfo = ({ customerData, setCustomerData ,invoiceNo,WALKIN_CUSTOMER}) => {
 
@@ -25,7 +26,7 @@ const CustomerInfo = ({ customerData, setCustomerData ,invoiceNo,WALKIN_CUSTOMER
   //   }
 
   //   try {
-  //     const res = await axios.get(`http://localhost:5000/api/customer/${id}`);
+  //     const res = await axios.get(API_ENDPOINTS.customer.byId(id));
   //     if (res.data.success) {
 
   //       console.log(res.data);
@@ -104,7 +105,7 @@ const CustomerInfo = ({ customerData, setCustomerData ,invoiceNo,WALKIN_CUSTOMER
     }
 
     try{
-      const res = await axios.get('http://localhost:5000/api/customer/search', {
+      const res = await axios.get(API_ENDPOINTS.customer.search, {
         params: { q: term }
       });
       if(res.data.success){

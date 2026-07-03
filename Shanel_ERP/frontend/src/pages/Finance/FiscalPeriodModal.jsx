@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Calendar, Info, CheckCircle } from 'react-feather';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const FiscalPeriodModal = ({ isOpen, onClose, onRefresh }) => {
   const [formData, setFormData] = useState({
@@ -20,7 +21,7 @@ const FiscalPeriodModal = ({ isOpen, onClose, onRefresh }) => {
       setLoading(true);
       setError(null);
       
-      const res = await axios.post('http://localhost:5000/api/fiscal-periods', formData);
+      const res = await axios.post(API_ENDPOINTS.fiscalPeriods.root, formData);
       if (res.data.success) {
         onRefresh();
         onClose();

@@ -3,6 +3,7 @@ import { X, Save, RefreshCw, Upload } from 'react-feather';
 import axios from 'axios';
 import Barcode from 'react-barcode';
 import UnitConversionManager from './UnitConversionManager';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProductAdded }) => {
     const initialState = {
@@ -35,7 +36,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
     // Generate next product code based on existing products
     const generateNextProductCode = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/inventory/products');
+            const response = await axios.get(API_ENDPOINTS.inventory.products);
             const products = response.data || [];
             
             // Extract numeric parts from product codes (e.g., "PROD-1" -> 1)
@@ -82,7 +83,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
                 });
                 // Set existing image preview
                 if (editData.imagePath) {
-                    setImagePreview(`http://localhost:5000${editData.imagePath}`);
+                    setImagePreview(`${editData.imagePath}`);
                 }
                 // Load units for this product (filter out base unit, keep only alternatives)
                 setBaseUnit(editData.baseUnit || 'Packet');
@@ -218,12 +219,12 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
             formDataToSend.append('units', JSON.stringify(units));
 
             if (editData) {
-                await axios.put(`http://localhost:5000/api/inventory/products/${editData.id}`, formDataToSend, {
+                await axios.put(API_ENDPOINTS.inventory.productById(editData.id), formDataToSend, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
                 alert("Product updated successfully!");
             } else {
-                await axios.post('http://localhost:5000/api/inventory/products', formDataToSend, {
+                await axios.post(API_ENDPOINTS.inventory.products, formDataToSend, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
                 if (onProductAdded) {

@@ -5,6 +5,7 @@ import DistributionPie from "../../component/Inventory/Dashboard/DistributionPie
 import StockAlerts from "../../component/Inventory/Dashboard/StockAlerts";
 import StockTransfers from "../../component/Inventory/Dashboard/StockTransfers";
 import InventoryMetrics from "../../component/Inventory/Dashboard/InventoryMetrics";
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const InventoryDashboard = () => {
   const [data, setData] = useState({ 
@@ -20,7 +21,7 @@ const InventoryDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/inventory/dashboard-stats");
+      const res = await axios.get(API_ENDPOINTS.inventory.dashboardStats);
       if (res.data.success) {
         setData(res.data);
         setError(null);

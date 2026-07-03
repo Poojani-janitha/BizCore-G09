@@ -1,6 +1,7 @@
 import React from 'react'
 import { useEffect } from 'react';
 import { useState } from 'react'
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const TodayMatrix = () => {
     const [todayMatrixData, setTodayMatrixData] = useState({
@@ -13,7 +14,7 @@ const TodayMatrix = () => {
 
     const fetchTodayMatrixData = async () => {
         try {
-            const response = await fetch('/api/sales-management/metrics/today');
+            const response = await fetch(API_ENDPOINTS.salesManagement.metricsToday);
             const data = await response.json();
             setTodayMatrixData({
                 totalSales: data.totalSales,

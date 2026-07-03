@@ -1,6 +1,7 @@
 import axios from 'axios';
 import React, { useState } from 'react'
 import { X } from 'lucide-react';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const CustomerForm = ({ onClose }) => {
     const [customerInfo, setCustomerInfo] = useState({
@@ -75,7 +76,7 @@ const CustomerForm = ({ onClose }) => {
         }
 
         try {
-            const res = await axios.post('/api/customer', customerInfo);
+            const res = await axios.post(API_ENDPOINTS.customer.root, customerInfo);
             if (res.data.success) {
                 setSuccessMessage('Customer saved successfully!');
                 resetForm();

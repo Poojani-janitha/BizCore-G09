@@ -18,7 +18,7 @@ Frontend
 
 How It Works (Professional Approach)
 User from PC A uploads image → Saved to server/backend
-User from PC B accesses product → Gets URL http://localhost:5000/uploads/product-123.jpg
+User from PC B accesses product → Gets URL /uploads/product-123.jpg
 Any device can access via URL ✅
 
 Key Features

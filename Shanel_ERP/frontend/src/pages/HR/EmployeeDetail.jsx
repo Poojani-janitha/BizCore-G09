@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
-const API_BASE = 'http://localhost:5000/api/hr';
+const API_BASE = API_ENDPOINTS.hr.root;
 
 const EmployeeDetail = () => {
   const { id } = useParams();
