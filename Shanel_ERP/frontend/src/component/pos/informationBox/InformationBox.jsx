@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 import { useTranslation } from 'react-i18next'
 
 const InformationBox = ({ customerData, selectedProduct, location, setLocation, setError, cartItems , information, setInformation}) => {
@@ -11,7 +12,7 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation, 
     //fuction to get availabale quntity of the product in inventory when user select the product from search result
     const fetchProductQuantity = async (productId) => {
         try {
-            const res = await axios.get(`http://localhost:5000/api/sales/product-quantity/${productId}`);
+            const res = await axios.get(API_ENDPOINTS.sales.productQuantity(productId));
             console.log('Product Quantity Response:', res.data);
             if (res.data.success) {
                 const shopQty = toNumber(res.data.shopQty);

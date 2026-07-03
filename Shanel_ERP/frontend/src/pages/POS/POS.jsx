@@ -12,6 +12,7 @@ import BillTemplate from '../../component/pos/billTemplate/BillTemplate'
 import { useRef } from 'react'
 import { useReactToPrint } from 'react-to-print';
 import { Trash2, PauseCircle, Package } from 'lucide-react';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 
 // Create a walk-in customer object
@@ -104,7 +105,7 @@ const POS = () => {
   // Function to update the bill print status in the backend after printing the bill, this is optional and can be customized based on your backend API and requirements
   const updateBillPrintStatus = async () => {
     try {
-      await axios.put(`http://localhost:5000/api/sales/update-print-status/${invoiceNo}`, {
+      await axios.put(API_ENDPOINTS.sales.updatePrintStatus(invoiceNo), {
         printed: true
       });
       console.log(`Bill print status updated for invoice ${invoiceNo}`);
@@ -127,7 +128,7 @@ const POS = () => {
 
       // Fetch new invoice number for next sale
       console.log("Fetching new invoice number...");
-      const newResponse = await axios.get('http://localhost:5000/api/sales/generate-invoice-no');
+      const newResponse = await axios.get(API_ENDPOINTS.sales.generateInvoiceNo);
       console.log("New Invoice Response:", newResponse.data);
 
       if (newResponse.data.success) {
@@ -174,7 +175,7 @@ const POS = () => {
     }, {});
 
     for (const [productId, productInfo] of Object.entries(groupedItems)) {
-      const res = await axios.get(`http://localhost:5000/api/sales/product-quantity/${productId}`);
+      const res = await axios.get(API_ENDPOINTS.sales.productQuantity(productId));
 
       if (!res.data?.success) {
         continue;
@@ -291,7 +292,7 @@ const POS = () => {
           return null;
         }
 
-        const refreshResponse = await axios.post('http://localhost:5000/api/users/refresh', {
+        const refreshResponse = await axios.post(`${API_ENDPOINTS.root}/users/refresh`, {
           refresh_token: refreshToken
         });
 
@@ -304,7 +305,7 @@ const POS = () => {
       };
 
       const submitSale = async (token) => {
-        return axios.post(`http://localhost:5000/api/sales/`, {
+        return axios.post(API_ENDPOINTS.sales.root, {
           customer: customerData,
           items: cartItems,
           invoiceDetails: { ...invoiceData, invoiceNo: invoiceNo },
@@ -435,7 +436,7 @@ const POS = () => {
     const fetchInvoiceNo = async () => {
       try {
         console.log("Fetching invoice number from API...");
-        const response = await axios.get('http://localhost:5000/api/sales/generate-invoice-no');
+        const response = await axios.get(API_ENDPOINTS.sales.generateInvoiceNo);
         console.log("Full response:", response);
         console.log("Response data:", response.data);
         if (response.data.success) {

@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
-const INCOME_API = 'http://localhost:5000/api/incomes';
-const EXPENSE_API = 'http://localhost:5000/api/expenses';
+const INCOME_API = API_ENDPOINTS.incomes.root;
+const EXPENSE_API = API_ENDPOINTS.expenses.root;
 
 const extractData = (response) => response?.data?.data || [];
 
@@ -141,7 +142,7 @@ export const filterTransactionsByTab = (transactions, activeTab) => {
 };
 
 export const fetchDashboardStats = async () => {
-  const response = await axios.get('http://localhost:5000/api/finance/dashboard/stats');
+  const response = await axios.get(API_ENDPOINTS.financeDashboard.stats);
   return response?.data || { success: false };
 };
 

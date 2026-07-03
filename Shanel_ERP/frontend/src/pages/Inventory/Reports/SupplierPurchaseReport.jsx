@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { generatePDF } from '../../../services/reportGenerator';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const SupplierPurchaseReport = () => {
     const [reportData, setReportData] = useState([]);
     useEffect(() => {
-        axios.get('http://localhost:5000/api/inventory/reports/supplier-purchases').then(res => setReportData(res.data.data));
+        axios.get(API_ENDPOINTS.inventory.reports.supplierPurchases).then(res => setReportData(res.data.data));
     }, []);
 
     const handleExportPDF = () => {

@@ -25,7 +25,7 @@ const ProductViewModal = ({ show, onHide, product }) => {
                                 <div className="col-12 mb-3">
                                     <div className="d-flex justify-content-center">
                                         <img 
-                                            src={`http://localhost:5000${product.imagePath}`} 
+                                            src={`${product.imagePath}`} 
                                             alt={product.name}
                                             style={{
                                                 maxWidth: '100%',

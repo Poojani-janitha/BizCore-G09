@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
+import {
     Search, Filter, Edit3, CheckCircle, XCircle, AlertCircle, 
     ArrowRight, Plus, Trash2, Save, X, Eye, RefreshCw, ChevronDown
 } from 'react-feather';
@@ -38,7 +39,7 @@ const EditTransactionsPage = () => {
                 setLoadingMore(true);
             }
             
-            const response = await axios.get(`http://localhost:5000/api/journal-entries/correction/list?page=${pageNum}&limit=10`);
+            const response = await axios.get(API_ENDPOINTS.journalEntries.correctionsList(pageNum, 10));
             if (response.data.success) {
                 if (reset) {
                     setTransactions(response.data.data);
@@ -66,7 +67,7 @@ const EditTransactionsPage = () => {
 
     const fetchAccounts = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/accounts');
+            const response = await axios.get(API_ENDPOINTS.accounts.list);
             if (response.data.success) {
                 setAccounts(response.data.data);
             }
@@ -126,7 +127,7 @@ const EditTransactionsPage = () => {
         }
 
         try {
-            const response = await axios.post('http://localhost:5000/api/journal-entries/correction/submit', {
+            const response = await axios.post(API_ENDPOINTS.journalEntries.correctionsSubmit, {
                 originalJournalID: selectedTransaction.Journal_ID,
                 correctedData: correctionForm
             });

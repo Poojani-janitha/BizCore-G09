@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+// import { DollarSign, Calculator, Send, Download, CheckCircle, AlertCircle, Edit2, Save, X } from 'lucide-react';
+import { generateEmployees, EMP_KEY } from '../../storeContext/employeesData';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 import { Calculator, Send, Download, CheckCircle, AlertCircle, Edit2, Save, X, Eye, Printer, FileText, History } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -117,6 +120,7 @@ export default function Payroll() {
   const [monthlyHistory, setMonthlyHistory] = useState([]);
   const [modalMonth, setModalMonth] = useState('');
 
+  const API_BASE = API_ENDPOINTS.hr.root;
 
 
   // Helper to calculate daily tea cost (Replicating AttendancePage logic)

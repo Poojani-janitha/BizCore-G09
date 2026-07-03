@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { FileText, Download, Printer } from 'react-feather';
 import { generatePDF } from '../../../services/reportGenerator';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const CurrentStockReport = () => {
     const [reportData, setReportData] = useState([]);
 
     useEffect(() => {
         // We use the view 'v_current_stock' from your DB dump
-        axios.get('http://localhost:5000/api/inventory/reports/current-stock')
+        axios.get(API_ENDPOINTS.inventory.reports.currentStock)
             .then(res => setReportData(res.data.data));
     }, []);
 

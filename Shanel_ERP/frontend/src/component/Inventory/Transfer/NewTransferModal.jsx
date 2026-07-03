@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
     const [products, setProducts] = useState([]);
@@ -13,7 +14,7 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
 
     useEffect(() => {
         if (show) {
-            axios.get('http://localhost:5000/api/inventory/products').then(res => setProducts(res.data));
+            axios.get(API_ENDPOINTS.inventory.products).then(res => setProducts(res.data));
             const userId = localStorage.getItem('userId');
             
             if (editTransfer) {
@@ -34,7 +35,7 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
                         setSelectedProduct(product);
                     }
                     
-                    axios.get(`http://localhost:5000/api/inventory/product/${editTransfer.P_ID}/locations`)
+                    axios.get(API_ENDPOINTS.inventory.productLocations(editTransfer.P_ID))
                         .then(res => setLocationInventory(res.data || {}))
                         .catch(err => console.log('Failed to fetch location inventory'));
                 }
@@ -65,7 +66,7 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
         setFormData({...formData, P_ID: productId});
         
         // Fetch inventory details for this product by location
-        axios.get(`http://localhost:5000/api/inventory/product/${productId}/locations`)
+        axios.get(API_ENDPOINTS.inventory.productLocations(productId))
             .then(res => {
                 setLocationInventory(res.data || {});
             })
@@ -88,10 +89,10 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
         try {
             if (isEditing && editTransfer) {
                 // Update existing transfer
-                await axios.put(`http://localhost:5000/api/inventory/transfers/${editTransfer.ST_ID}`, formData);
+                await axios.put(API_ENDPOINTS.inventory.transfers.byId(editTransfer.ST_ID), formData);
             } else {
                 // Create new transfer
-                await axios.post('http://localhost:5000/api/inventory/transfers/create', formData);
+                await axios.post(API_ENDPOINTS.inventory.transfers.create, formData);
             }
             refreshData();
             onHide();

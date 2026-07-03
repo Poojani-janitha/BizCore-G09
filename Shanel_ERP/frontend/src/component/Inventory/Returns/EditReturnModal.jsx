@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, Alert } from 'react-bootstrap';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const EditReturnModal = ({ show, onHide, returnItem, refresh }) => {
     const [formData, setFormData] = useState({
@@ -51,7 +52,7 @@ const EditReturnModal = ({ show, onHide, returnItem, refresh }) => {
 
         try {
             const response = await axios.put(
-                `http://localhost:5000/api/inventory/returns/${returnItem.RT_ID}`,
+                API_ENDPOINTS.inventory.returns.byId(returnItem.RT_ID),
                 {
                     Qty: parseFloat(formData.Qty),
                     Reason: formData.Reason,

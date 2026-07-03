@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal, Button, Table, Badge } from 'react-bootstrap';
 import ProcessReturnModal from '../../component/Inventory/Returns/ProcessReturnModal';
 import EditReturnModal from '../../component/Inventory/Returns/EditReturnModal';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const ReturnsManagement = () => {
     const [returns, setReturns] = useState([]);
@@ -19,7 +20,7 @@ const ReturnsManagement = () => {
     const fetchReturns = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:5000/api/inventory/returns');
+            const res = await axios.get(API_ENDPOINTS.inventory.returns.root);
             if (res.data.success) {
                 setReturns(res.data.returns);
             }
@@ -44,7 +45,7 @@ const ReturnsManagement = () => {
     const handleDelete = async (RT_ID) => {
         if (window.confirm('Are you sure you want to delete this return? Inventory will be reversed if applicable.')) {
             try {
-                const response = await axios.delete(`http://localhost:5000/api/inventory/returns/${RT_ID}`);
+                const response = await axios.delete(API_ENDPOINTS.inventory.returns.byId(RT_ID));
                 if (response.data.success) {
                     fetchReturns();
                     alert('Return deleted successfully');
