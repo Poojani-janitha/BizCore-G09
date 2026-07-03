@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { getFullName } from '../../utils/auth';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const COLORS = ['#004445', '#2c7873', '#41b883', '#6ab04c', '#f9ca24', '#eb4d4b'];
 
@@ -78,10 +79,10 @@ const AdminHome = () => {
         const fetchAll = async () => {
             try {
                 const [invRes, finRes, salesRes, hrRes] = await Promise.allSettled([
-                    axios.get('http://localhost:5000/api/inventory/dashboard-stats'),
-                    axios.get('http://localhost:5000/api/finance/dashboard/stats'),
-                    axios.get('http://localhost:5000/api/sales/all'),
-                    axios.get('http://localhost:5000/api/hr/employees'),
+                    axios.get(API_ENDPOINTS.inventory.dashboardStats),
+                    axios.get(API_ENDPOINTS.financeDashboard.stats),
+                    axios.get(API_ENDPOINTS.sales.all),
+                    axios.get(API_ENDPOINTS.hr.employees),
                 ]);
                 if (invRes.status === 'fulfilled' && invRes.value.data.success) setInv(invRes.value.data);
                 if (finRes.status === 'fulfilled' && finRes.value.data.success) setFinance(finRes.value.data);

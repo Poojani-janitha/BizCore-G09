@@ -85,13 +85,11 @@ const AlertsPage = () => {
 
   const fetchOutOfStockProducts = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/inventory/products");
+      const res = await axios.get(API_ENDPOINTS.inventory.products);
       if (Array.isArray(res.data)) {
-        // Filter products with stock count <= 0
         const outOfStock = res.data
           .filter(p => parseFloat(p.stockCount || 0) <= 0)
           .sort((a, b) => a.name.localeCompare(b.name));
-
         setOutOfStockProducts(outOfStock);
       }
     } catch (err) {

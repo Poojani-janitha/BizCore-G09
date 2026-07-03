@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ShoppingCart, FileText, DollarSign, Clock, ChevronRight, TrendingUp, ArrowUpRight } from 'react-feather';
 import { useNavigate } from 'react-router-dom';
 import { getFullName } from '../../utils/auth';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const KPICard = ({ title, value, subtitle, icon, color, trend, trendVal }) => (
     <div className="col-xl-4 col-md-6">
@@ -58,7 +59,7 @@ const CashierHome = () => {
     }, []);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/sales/all')
+        axios.get(API_ENDPOINTS.sales.all)
             .then(res => { if (res.data.success) setSales(res.data.data || []); })
             .catch(console.error)
             .finally(() => setLoading(false));
