@@ -1,9 +1,19 @@
 import React, { useState } from 'react';
-import { Plus, Download, ChevronDown } from 'react-feather';
+import { Plus, Download, ChevronDown, PlusCircle, Truck } from 'react-feather';
 import { generatePDF } from '../../../services/reportGenerator';
+import { useTranslation } from 'react-i18next';
 
-const ProductHeader = ({ title, onAddClick, products = [] }) => {
+const ProductHeader = ({
+    title,
+    onAddClick,
+    onUpdateQtyClick,
+    showUpdateQty = false,
+    onProductionStockClick,
+    showProductionStock = false,
+    products = []
+}) => {
     const [showExportMenu, setShowExportMenu] = useState(false);
+    const { t } = useTranslation();
 
     // Prepare data for export
     const getPreparedData = () => {
@@ -118,7 +128,6 @@ const ProductHeader = ({ title, onAddClick, products = [] }) => {
 
     return (
         <div className='d-flex justify-content-between align-items-center mb-3'>
-            {title && <h6 className='fw-bold text-dark mb-0'>{title}</h6>}
             <div className='d-flex gap-2 ms-auto' style={{ position: 'relative' }}>
                 {/* Export Dropdown */}
                 <div style={{ position: 'relative' }}>
@@ -127,7 +136,7 @@ const ProductHeader = ({ title, onAddClick, products = [] }) => {
                         onClick={() => setShowExportMenu(!showExportMenu)}
                         title='Export products data'
                     >
-                        <Download size={14}/> Export
+                        <Download size={14}/> {t('inventory.actions.export')}
                         <ChevronDown size={14} style={{ 
                             transform: showExportMenu ? 'rotate(180deg)' : 'rotate(0deg)',
                             transition: 'transform 0.2s'
@@ -176,8 +185,24 @@ const ProductHeader = ({ title, onAddClick, products = [] }) => {
                 <button
                     className='btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm'
                     onClick={onAddClick}>
-                    <Plus size={14}/> Add New Product
+                    <Plus size={14}/> {t('inventory.actions.add_new')}
                 </button>
+                {showUpdateQty && (
+                    <button
+                        className='btn btn-success btn-sm d-flex align-items-center gap-2 px-3 shadow-sm'
+                        onClick={onUpdateQtyClick}
+                    >
+                        <PlusCircle size={14}/> {t('inventory.actions.update_qty')}
+                    </button>
+                )}
+                {showProductionStock && (
+                    <button
+                        className='btn btn-outline-dark btn-sm d-flex align-items-center gap-2 px-3 shadow-sm'
+                        onClick={onProductionStockClick}
+                    >
+                        <Truck size={14}/> {t('inventory.actions.add_production_stock')}
+                    </button>
+                )}
             </div>
         </div>
     );

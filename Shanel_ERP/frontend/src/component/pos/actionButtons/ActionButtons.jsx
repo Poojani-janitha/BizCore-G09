@@ -1,65 +1,65 @@
 import React from 'react'
-import { Plus, X, Printer, CreditCard, Pause } from 'lucide-react'
+import { Save, Printer, Pause, FilePlus, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next';
 
 const ActionButtons = ({ setAction }) => {
+    const { t } = useTranslation();
 
-  const handleAction = (actionType) => {
-    setAction(actionType);
-    console.log("Selected Action:", actionType);
-  };
-  return (
-    <div className='d-flex flex-column h-100'>
-      <h6 className='mb-3 fw-semibold text-primary'>Action </h6>
-      <div className='row g-2 flex-grow-1'>
+    const handleAction = (actionType) => {
+        setAction(actionType);
+    };
 
-        <div className='col-6'>
-          <button className='btn btn-success text-white w-100 h-100 d-flex flex-column align-items-center justify-content-center action-btn' style={{ minHeight: '60px' }} onClick={() => handleAction('proceedToPayment')}>
+    return (
+        <div className='d-flex flex-column h-100'>
+            <h6 className="mb-3 fw-bold text-primary text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '1px' }}>{t('actionButtons.title')}</h6>
 
-            <CreditCard size={18} className='mb-1' />
-            <div className='small '>Proceed to Payment</div>
-          </button>
+            <div className="row g-2 flex-grow-1">
+                <div className="col-3">
+                    <button
+                        className="btn btn-success w-100 h-100 d-flex flex-column align-items-center justify-content-center shadow-sm border-0 py-2"
+                        style={{ borderRadius: '10px', background: '#10b981' }}
+                        onClick={() => handleAction('printAndSave')}
+                    >
+                        <Save size={20} className="mb-1" />
+                        <span className="fw-bold" style={{ fontSize: '0.7rem' }}>{t('actionButtons.save')}</span>
+                    </button>
+                </div>
+
+                <div className="col-3">
+                    <button
+                        className="btn btn-secondary w-100 h-100 d-flex flex-column align-items-center justify-content-center shadow-sm border-0 py-2"
+                        style={{ borderRadius: '10px', background: '#4b5563' }}
+                        onClick={() => handleAction('print')}
+                    >
+                        <Printer size={20} className="mb-1" />
+                        <span className="fw-bold" style={{ fontSize: '0.7rem' }}>{t('actionButtons.print')}</span>
+                    </button>
+                </div>
+
+                <div className="col-3">
+                    <button
+                        className="btn btn-warning text-white w-100 h-100 d-flex flex-column align-items-center justify-content-center shadow-sm border-0 py-2"
+                        style={{ borderRadius: '10px', background: '#f59e0b' }}
+                        onClick={() => handleAction('holdInvoice')}
+                    >
+                        <Pause size={20} className="mb-1" />
+                        <span className="fw-bold" style={{ fontSize: '0.7rem' }}>{t('actionButtons.hold')}</span>
+                    </button>
+                </div>
+
+                <div className="col-3">
+                    <button
+                        className="btn btn-danger w-100 h-100 d-flex flex-column align-items-center justify-content-center shadow-sm border-0 py-2"
+                        style={{ borderRadius: '10px', background: '#ef4444' }}
+                        onClick={() => handleAction('clear')}
+                    >
+                        <Trash2 size={20} className="mb-1" />
+                        <span className="fw-bold" style={{ fontSize: '0.7rem' }}>{t('actionButtons.clear')}</span>
+                    </button>
+                </div>
+            </div>
         </div>
-        
-        <div className='col-6'>
-          <button className='btn btn-secondary text-white w-100 h-100 d-flex flex-column align-items-center justify-content-center action-btn' style={{ minHeight: '60px' }} onClick={() => handleAction('printInvoice')}>
-            <Printer size={18} className='mb-1' />
-            <div className='small '>Print Invoice</div>
-          </button>
-        </div>
-
-        <div className='col-6'>
-          <button className='btn btn-danger text-white w-100 h-100 d-flex flex-column align-items-center justify-content-center action-btn' style={{ minHeight: '60px' }} onClick={() => handleAction('clear')}>
-            <X size={18} className='mb-1' />
-            <div className='small '>Clear</div>
-          </button>
-        </div>
-
-        <div className='col-6'>
-          <button className='btn btn-warning text-white w-100 h-100 d-flex flex-column align-items-center justify-content-center action-btn' style={{ minHeight: '60px' }} onClick={() => handleAction('holdInvoice')}>
-            <Pause size={18} className='mb-1' />
-            <div className='small '>Hold Invoice</div>
-          </button>
-        </div>
-
-        <div className='col-6'>
-          <button className='btn btn-info text-white w-100 h-100 d-flex flex-column align-items-center justify-content-center action-btn' style={{ minHeight: '60px' }} onClick={() => handleAction('print')}>
-            <Pause size={18} className='mb-1' />
-            <div className='small '>Print</div>
-
-          </button>
-        </div>
-
-          <div className='col-6'>
-          <button className='btn btn-dark text-white w-100 h-100 d-flex flex-column align-items-center justify-content-center action-btn' style={{ minHeight: '60px' }} onClick={() => handleAction('print')}>
-            <Pause size={18} className='mb-1' />
-            <div className='small '>Print</div>
-
-          </button>
-        </div>
-
-      </div>
-    </div>
-  )
+    )
 }
 
 export default ActionButtons

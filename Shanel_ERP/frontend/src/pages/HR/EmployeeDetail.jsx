@@ -1,43 +1,67 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { generateEmployees, EMP_KEY } from '../../storeContext/employeesData';
+import axios from 'axios';
+//viewing and editing an individual employee's profile.
+const API_BASE = 'http://localhost:5000/api/hr';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [employee, setEmployee] = useState(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const stored = localStorage.getItem(EMP_KEY);
-    let list = [];
-    if (stored) {
-      try { list = JSON.parse(stored); } catch { list = generateEmployees(); }
-    } else {
-      list = generateEmployees();
-      localStorage.setItem(EMP_KEY, JSON.stringify(list));
-    }
-
-    const found = list.find(e => String(e.id) === String(id));
-    setEmployee(found || null);
+    const loadEmployee = async () => {
+      try {
+        setError('');
+        const response = await axios.get(`${API_BASE}/employees/${id}`);
+        const emp = response?.data?.data;
+        if (!emp) {
+          setEmployee(null);
+          return;
+        }
+        setEmployee({
+          id: String(emp.Employee_ID),
+          name: emp.Full_Name || '',
+          role: emp.Role || '',
+          email: emp.Email || '',
+          phone: emp.Contact_Phone || '',
+          department: emp.Department || '',
+        });
+      } catch (err) {
+        console.error('loadEmployee error:', err);
+        setError(err?.response?.data?.message || 'Failed to load employee');
+        setEmployee(null);
+      }
+    };
+    loadEmployee();
   }, [id]);
 
   const handleChange = (field, value) => setEmployee(prev => ({ ...prev, [field]: value }));
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!employee) return;
-    const stored = localStorage.getItem(EMP_KEY);
-    let list = stored ? JSON.parse(stored) : generateEmployees();
-    const idx = list.findIndex(e => String(e.id) === String(employee.id));
-    if (idx >= 0) list[idx] = employee; else list.push(employee);
-    localStorage.setItem(EMP_KEY, JSON.stringify(list));
-    navigate('/hr/employees');
+    try {
+      await axios.put(`${API_BASE}/employees/${employee.id}`, {
+        Full_Name: employee.name?.trim() || '',
+        Role: employee.role || '',
+        Email: employee.email?.trim() || null,
+        Contact_Phone: employee.phone?.trim() || '',
+        Department: employee.department || 'HR',
+      });
+      navigate('/hr/employees');
+    } catch (err) {
+      console.error('save employee error:', err);
+      setError(err?.response?.data?.message || 'Failed to save employee');
+    }
   };
 
-  if (!employee) return <div className="p-4">Employee not found.</div>;
+  if (!employee) return <div className="p-4">{error || 'Employee not found.'}</div>;
 
   return (
     <div className="p-4" style={{ backgroundColor: '#faf9f6', minHeight: '10vh' }}>
       <h2 className="mb-4">Edit Profile - {employee.name}</h2>
+      {error && <div className="alert alert-danger py-2">{error}</div>}
       <div className="row">
         <div className="col-md-6">
           <div className="mb-3">
@@ -46,7 +70,12 @@ const EmployeeDetail = () => {
           </div>
           <div className="mb-3">
             <label className="form-label">Role</label>
-            <input className="form-control" value={employee.role} onChange={e => handleChange('role', e.target.value)} />
+            <select className="form-select" value={employee.role} onChange={e => handleChange('role', e.target.value)}>
+              <option value="Staff">Staff</option>
+              <option value="Cashier">Cashier</option>
+              <option value="Staff (Production)">Staff (Production)</option>
+              <option value="Manager">Manager</option>
+            </select>
           </div>
           <div className="mb-3">
             <label className="form-label">Email</label>

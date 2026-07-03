@@ -11,6 +11,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '/api')
       }
+    },
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173
     }
   }
 })

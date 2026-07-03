@@ -7,6 +7,14 @@ const AccountChart = require('../../models/finance/AccountChart');
 const BankAccount = require('../../models/finance/BankAccount');
 const { ACCOUNTS, PAYMENT_METHODS, EXPENSE_CATEGORY_ACCOUNTS } = require('../../constants/Accounting/AccConstants');
 
+// Helper: Get today's date in local timezone as YYYY-MM-DD
+function getLocalDateString() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 
 class ExpenseController {
 
@@ -24,7 +32,16 @@ class ExpenseController {
                 bankAccountId,
                 paidTo,
                 description,
-                receiptNo
+                receiptNo,
+                // Bank fields
+                bankName,
+                depositSlipNo,
+                depositedBy,
+                depositDate,
+                // Cheque fields
+                chequeNo,
+                chequeBank,
+                chequeDate
             } = req.body;
 
             // Validate required fields
@@ -45,37 +62,56 @@ class ExpenseController {
             }
 
             // Get the expense account based on category
-            const expenseAccountCode = EXPENSE_CATEGORY_ACCOUNTS[expenseCategory];
-            if (!expenseAccountCode) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Invalid expense category: ${expenseCategory}`
+            let expenseAccountCode = EXPENSE_CATEGORY_ACCOUNTS[expenseCategory];
+            let expenseAccount;
+
+            if (expenseAccountCode) {
+                expenseAccount = await AccountChart.findOne({
+                    where: { Account_Code: expenseAccountCode },
+                    transaction
+                });
+            } else {
+                // Try dynamic lookup by account name if not found in hardcoded map
+                expenseAccount = await AccountChart.findOne({
+                    where: { 
+                        Account_Name: expenseCategory,
+                        Account_Type: 'Expense',
+                        Is_Active: true
+                    },
+                    transaction
                 });
             }
 
-            const expenseAccount = await AccountChart.findOne({
-                where: { Account_Code: expenseAccountCode }
-            });
             if (!expenseAccount) {
                 return res.status(400).json({
                     success: false,
-                    message: `Expense account (${expenseAccountCode}) not found in ACCOUNT_CHART. Please create it first.`
+                    message: `Expense account/category '${expenseCategory}' not found in ACCOUNT_CHART. Please create it first.`
                 });
             }
 
-            // Get the credit account (payment source) based on payment method
-            const creditAccount = await this.getCreditAccount(paymentMethod);
+            const creditAccount = await this.getCreditAccount(paymentMethod, transaction);
+
+            // Build detailed description with payment method info
+            let detailedDescription = description || `${expenseCategory} expense`;
+            if (paymentMethod === 'Bank' && bankName) {
+                detailedDescription += ` | Bank: ${bankName}, Slip: ${depositSlipNo || 'N/A'}, By: ${depositedBy || 'N/A'}, Date: ${depositDate || 'N/A'}`;
+            } else if (paymentMethod === 'Cheque' && chequeNo) {
+                detailedDescription += ` | Cheque: ${chequeNo}, Bank: ${chequeBank || 'N/A'}, Date: ${chequeDate || 'N/A'}`;
+            }
+
+            const allowedCategories = ['Salary', 'Rent', 'Utilities', 'Raw_Materials', 'Transport', 'Maintenance', 'Marketing', 'Office_Supplies', 'Other'];
+            const dbCategory = allowedCategories.includes(expenseCategory) ? expenseCategory : 'Other';
 
             // Create the expense record
             const expense = await Expense.create({
                 Expense_Date: expenseDate,
-                Expense_Category: expenseCategory,
+                Expense_Category: dbCategory,
                 Expense_Subcategory: expenseSubcategory || null,
                 Amount: expenseAmount,
                 Payment_Method: paymentMethod,
                 Bank_Account_ID: bankAccountId || null,
                 Paid_To: paidTo || null,
-                Description: description || null,
+                Description: detailedDescription,
                 Receipt_No: receiptNo || null,
                 Account_ID: expenseAccount.Account_ID,
                 Status: 'Paid',
@@ -91,7 +127,8 @@ class ExpenseController {
                 creditAccount,
                 expenseAmount,
                 paymentMethod,
-                transaction
+                transaction,
+                expenseCategory
             );
 
             await transaction.commit();
@@ -130,13 +167,15 @@ class ExpenseController {
 
 
     // ─── CREATE JOURNAL ENTRY FOR EXPENSE ─────────────────────────────────────
-    async createExpenseJournalEntry(expense, expenseAccount, creditAccount, amount, paymentMethod, transaction) {
+    async createExpenseJournalEntry(expense, expenseAccount, creditAccount, amount, paymentMethod, transaction, originalCategory) {
 
         // Generate journal number
         const journalNumber = await this.generateJournalNumber('EXP-JE');
 
         // Prepare description
-        const description = `${paymentMethod} expense - ${expense.Expense_Category}${expense.Paid_To ? ` to ${expense.Paid_To}` : ''} - ${expense.Description || ''}`;
+        const paymentMethodLabel = paymentMethod === 'Bank' ? 'Bank Payment' : paymentMethod;
+        const categoryLabel = originalCategory || expense.Expense_Category;
+        const description = `${paymentMethodLabel} - ${categoryLabel}${expense.Paid_To ? ` to ${expense.Paid_To}` : ''} - ${expense.Description || ''}`;
 
         // Create journal entry
         const journalEntry = await JournalEntry.create({
@@ -150,7 +189,7 @@ class ExpenseController {
             Total_Credit: amount,
             Status: 'Posted',
             Posted_By: null,
-            Posted_Date: new Date(),
+            Posted_Date: getLocalDateString(),
             Created_By: null
         }, { transaction });
 
@@ -166,7 +205,7 @@ class ExpenseController {
             Line_Number: 1,
             Debit_Amount: amount,
             Credit_Amount: 0,
-            Description: `${expense.Expense_Category} expense${expense.Paid_To ? ` - paid to ${expense.Paid_To}` : ''}`
+            Description: `${categoryLabel} expense${expense.Paid_To ? ` - paid to ${expense.Paid_To}` : ''}`
         });
 
         // Line 2: CREDIT - Cash/Bank/Cheque Account (decreases asset)
@@ -176,7 +215,9 @@ class ExpenseController {
             Line_Number: 2,
             Debit_Amount: 0,
             Credit_Amount: amount,
-            Description: `${paymentMethod} payment for ${expense.Expense_Category} expense`
+            Description: `${paymentMethodLabel} for ${categoryLabel} expense${
+                expense.Description.includes('|') ? ` (${expense.Description.split('|').slice(1).join('|').trim()})` : ''
+            }`
         });
 
         // Insert all journal lines
@@ -443,12 +484,11 @@ class ExpenseController {
 
 
     // ─── HELPER: Get credit account based on payment method ───────────────────
-    async getCreditAccount(paymentMethod) {
+    async getCreditAccount(paymentMethod, transaction) {
         const creditAccountMap = {
             'Cash': ACCOUNTS.CASH_IN_HAND,
             'Bank': ACCOUNTS.BANK_ACCOUNT_BOC,
-            'Cheque': ACCOUNTS.CHEQUES_IN_HAND,
-            'Credit_Card': ACCOUNTS.BANK_ACCOUNT_BOC
+            'Cheque': ACCOUNTS.CHEQUES_IN_HAND
         };
 
         const accountCode = creditAccountMap[paymentMethod];
@@ -457,7 +497,8 @@ class ExpenseController {
         }
 
         const account = await AccountChart.findOne({
-            where: { Account_Code: accountCode }
+            where: { Account_Code: accountCode },
+            transaction
         });
 
         if (!account) {
@@ -471,7 +512,8 @@ class ExpenseController {
     // ─── HELPER: Update account balance ───────────────────────────────────────
     async updateAccountBalance(accountId, debitAmount, creditAmount, transaction) {
         const account = await AccountChart.findOne({
-            where: { Account_ID: accountId }
+            where: { Account_ID: accountId },
+            transaction
         });
 
         if (!account) {

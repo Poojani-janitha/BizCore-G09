@@ -9,9 +9,14 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
     const [errors, setErrors] = useState({});
     const [existingBatches, setExistingBatches] = useState([]);
 
+    const isIsharaProduct = (product) => {
+        const flag = product.isIsharaProduct ?? product.Is_Ishara_Product;
+        return flag === true || flag === 1 || flag === '1' || flag === 'true';
+    };
+
     useEffect(() => {
         axios.get('http://localhost:5000/api/inventory/products').then(res => {
-            setProducts(res.data.filter(p => p.type === 'Company'));
+            setProducts(res.data.filter(p => p.type === 'Company' && !isIsharaProduct(p)));
         });
         // Fetch existing batches for duplicate check
         axios.get('http://localhost:5000/api/production/stock-overview').then(res => {

@@ -2,19 +2,21 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Box, Activity, ShoppingCart, RefreshCcw, AlertCircle, Users, Download, ChevronDown } from 'react-feather';
 import { generatePDF } from '../../../services/reportGenerator';
+import { useTranslation } from 'react-i18next';
 
 const InventoryReports = () => {
     const [selectedReport, setSelectedReport] = useState(null);
     const [reportData, setReportData] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const { t } = useTranslation();
 
     const reportCards = [
-        { title: "Current Stock", desc: "Real-time inventory", icon: <Box size={20} className="text-success"/>, key: "current-stock", endpoint: "/api/inventory/reports/current-stock", borderColor: "border-success" },
-        { title: "Production", desc: "Daily production output", icon: <Activity size={20} className="text-primary"/>, key: "daily-production", endpoint: "/api/inventory/reports/production", borderColor: "border-primary" },
-        { title: "Purchase", desc: "Supplier purchases", icon: <ShoppingCart size={20} className="text-info"/>, key: "purchases", endpoint: "/api/inventory/reports/purchases", borderColor: "border-info" },
-        { title: "Stock Transfer", desc: "Stock movements", icon: <RefreshCcw size={20} className="text-warning"/>, key: "transfers", endpoint: "/api/inventory/reports/transfers", borderColor: "border-warning" },
-        { title: "Expiry", desc: "Items nearing expiry", icon: <AlertCircle size={20} className="text-danger"/>, key: "expiry", endpoint: "/api/inventory/reports/expiry", borderColor: "border-danger" },
-        { title: "Supplier Spend", desc: "Purchase by supplier", icon: <Users size={20} className="text-secondary"/>, key: "supplier-purchases", endpoint: "/api/inventory/reports/supplier-purchases", borderColor: "border-secondary" },
+        { title: t('inventory.pages.reports.cards.current_stock'), desc: t('inventory.pages.reports.cards.current_stock_desc'), icon: <Box size={20} className="text-success"/>, key: "current-stock", endpoint: "/api/inventory/reports/current-stock", borderColor: "border-success" },
+        { title: t('inventory.pages.reports.cards.production'), desc: t('inventory.pages.reports.cards.production_desc'), icon: <Activity size={20} className="text-primary"/>, key: "daily-production", endpoint: "/api/inventory/reports/production", borderColor: "border-primary" },
+        { title: t('inventory.pages.reports.cards.purchase'), desc: t('inventory.pages.reports.cards.purchase_desc'), icon: <ShoppingCart size={20} className="text-info"/>, key: "purchases", endpoint: "/api/inventory/reports/purchases", borderColor: "border-info" },
+        { title: t('inventory.pages.reports.cards.transfers'), desc: t('inventory.pages.reports.cards.transfers_desc'), icon: <RefreshCcw size={20} className="text-warning"/>, key: "transfers", endpoint: "/api/inventory/reports/transfers", borderColor: "border-warning" },
+        { title: t('inventory.pages.reports.cards.expiry'), desc: t('inventory.pages.reports.cards.expiry_desc'), icon: <AlertCircle size={20} className="text-danger"/>, key: "expiry", endpoint: "/api/inventory/reports/expiry", borderColor: "border-danger" },
+        { title: t('inventory.pages.reports.cards.supplier_spend'), desc: t('inventory.pages.reports.cards.supplier_spend_desc'), icon: <Users size={20} className="text-secondary"/>, key: "supplier-purchases", endpoint: "/api/inventory/reports/supplier-purchases", borderColor: "border-secondary" },
     ];
 
     const loadReport = async (report) => {
@@ -38,11 +40,11 @@ const InventoryReports = () => {
 
     const getTableColumns = (reportKey) => {
         const columnMap = {
-            'current-stock': ['P_Code', 'P_Name', 'productionStock', 'salesStock', 'Total_Stock'],
-            'daily-production': ['P_Code', 'P_Name', 'Batch_No', 'Actual_Qty', 'Production_Date', 'Cost_Per_Unit', 'Status'],
+            'current-stock': ['P_Code', 'P_Name', 'Base_Unit', 'productionStock', 'salesStock', 'Total_Stock'],
+            'daily-production': ['P_Code', 'P_Name', 'Base_Unit', 'Batch_No', 'Actual_Qty', 'Production_Date', 'Cost_Per_Unit', 'Status'],
             'purchases': ['PO_No', 'Supplier', 'PO_Date', 'Total_Amount', 'Payment_Status', 'Status'],
-            'transfers': ['ST_ID', 'P_Name', 'From_Location', 'To_Location', 'Qty', 'Transfer_Date', 'Status'],
-            'expiry': ['P_Code', 'P_Name', 'Batch_No', 'Exp_Date', 'Days_Left'],
+            'transfers': ['ST_ID', 'P_Name', 'Base_Unit', 'From_Location', 'To_Location', 'Qty', 'Transfer_Date', 'Status'],
+            'expiry': ['P_Code', 'P_Name', 'Base_Unit', 'Batch_No', 'Exp_Date', 'Days_Left'],
             'supplier-purchases': ['S_Code', 'S_Name', 'Total_Orders', 'Total_Spent']
         };
         return columnMap[reportKey] || [];
@@ -57,8 +59,6 @@ const InventoryReports = () => {
 
     return (
         <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
-            <h6 className='fw-bold text-dark mb-0 d-print-none'>Inventory Reports</h6>
-            <p className='text-muted small mb-4 d-print-none'>Click any report card to view data</p>
 
             {/* Report Cards Grid - Hide on print */}
             <div className="row g-3 mb-5 d-print-none">
@@ -87,9 +87,9 @@ const InventoryReports = () => {
             {selectedReport && (
                 <>
                 <div className="d-flex justify-content-between align-items-center mb-2">
-                    <h6 className="fw-bold text-dark mb-0">{selectedReport.title} Report</h6>
+                    <h6 className="fw-bold text-dark mb-0">{selectedReport.title} {t('inventory.pages.reports.report_suffix')}</h6>
                     <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm d-print-none" onClick={handleExportPDF}>
-                        <Download size={14}/> Export PDF
+                        <Download size={14}/> {t('inventory.pages.reports.btn_export')}
                     </button>
                 </div>
                 <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
@@ -102,7 +102,7 @@ const InventoryReports = () => {
                         </div>
                     ) : reportData.length === 0 ? (
                         <div className="text-center p-5 text-muted">
-                            <p>No data available for this report</p>
+                            <p>{t('inventory.pages.reports.no_data')}</p>
                         </div>
                     ) : (
                         <div className="table-responsive">

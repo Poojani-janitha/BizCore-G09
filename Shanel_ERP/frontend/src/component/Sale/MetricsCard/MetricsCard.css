@@ -1,0 +1,36 @@
+/**
+ * MetricsCard.css - Styling for MetricsCard component
+ */
+
+.transition-all {
+    transition: all 0.3s ease;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.bg-primary-subtle {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.bg-success-subtle {
+    background-color: rgba(25, 135, 84, 0.1);
+}
+
+.bg-danger-subtle {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.bg-warning-subtle {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.bg-info-subtle {
+    background-color: rgba(23, 162, 184, 0.1);
+}
