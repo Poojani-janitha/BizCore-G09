@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { API_ENDPOINTS } from '../../../config/apiEndpoints';
+import { useTranslation } from 'react-i18next'
 
-const InformationBox = ({ customerData, selectedProduct, location, setLocation, setError, cartItems }) => {
-
+const InformationBox = ({ customerData, selectedProduct, location, setLocation, setError, cartItems , information, setInformation}) => {
+    const { t } = useTranslation();
     const [availableStock, setAvailableStock] = useState(null);
 
     const toNumber = (value) => parseFloat(value) || 0;
@@ -19,6 +20,12 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation, 
                 const totalQty = toNumber(res.data.totalQty);
 
                 setAvailableStock({ shop: shopQty, production: productionQty, total: totalQty });
+                setInformation(availableStock => ({
+                    ...availableStock,
+                    shop: shopQty,
+                    production: productionQty,
+                    total: totalQty
+                }));
             }
         }
         catch (error) {
@@ -58,13 +65,13 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation, 
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
                 {/* Customer Phone */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>Customer Phone:</span>
+                    <span style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>{t('informationBox.customerPhone')}:</span>
                     <span style={{ fontSize: '12px', color: '#333', fontWeight: '600' }}>{customerData?.phone1 || customerData?.Phone || 'N/A'}</span>
                 </div>
 
                 {/* Outstanding Balance */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>Outstanding Balance:</span>
+                    <span style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>{t('informationBox.outstandingBalance')}:</span>
                     <span style={{ fontSize: '12px', color: '#d9534f', fontWeight: '600' }}>Rs. {toNumber(customerData?.current_balance ?? customerData?.Current_Balance).toFixed(2)}</span>
                 </div>
 
@@ -72,7 +79,7 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation, 
                 {/* Selected Product Name */}
                 {selectedProduct?.p_name && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>Product:</span>
+                        <span style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>{t('informationBox.product')}:</span>
                         <span style={{ fontSize: '12px', color: '#333', fontWeight: '600' }}>{selectedProduct.p_name}</span>
                     </div>
                 )}
@@ -81,7 +88,7 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation, 
                 <div style={{ 
                      display: 'flex', alignItems: 'center', gap: '6px'
                 }}>
-                    <span style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>Shop Qty:</span>
+                    <span style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>{t('informationBox.shopQty')}:</span>
                     <span style={{ fontSize: '12px', color: '#1976d2', fontWeight: '700' }}>{availableStock?.shop || '0'}</span>
                 </div>
 
@@ -89,7 +96,7 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation, 
                 <div style={{ 
                     display: 'flex', alignItems: 'center', gap: '6px'
                 }}>
-                    <span style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>Production Qty:</span>
+                    <span style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>{t('informationBox.productionQty')}:</span>
                     <span style={{ fontSize: '12px', color: '#7b1fa2', fontWeight: '700' }}>{availableStock?.production || '0'}</span>
                 </div>
 
@@ -97,7 +104,7 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation, 
                 <div style={{ 
                      display: 'flex', alignItems: 'center', gap: '6px'
                 }}>
-                    <span style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>Total Stock:</span>
+                    <span style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>{t('informationBox.totalStock')}:</span>
                     <span style={{ fontSize: '12px', color: '#333', fontWeight: '700' }}>{availableStock?.total || '0'}</span>
                 </div>
             </div>
@@ -135,7 +142,7 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation, 
                             userSelect: 'none'
                         }}
                     >
-                        Shop
+                        {t('informationBox.shop')}
                     </label>
                 </div>
 
@@ -171,7 +178,7 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation, 
                             userSelect: 'none'
                         }}
                     >
-                        Production
+                        {t('informationBox.production')}
                     </label>
                 </div>
 

@@ -20,7 +20,7 @@ const ProductionReport = () => {
             item.P_Name,
             item.Batch_No,
             item.Target_Qty,
-            item.Actual_Qty,
+            `${item.Actual_Qty} ${item.Base_Unit || ''}`,
             `${item.Efficiency}%`
         ]);
         generatePDF("Daily Production Report", columns, data, "Production_Report");
@@ -63,7 +63,7 @@ const ProductionReport = () => {
                                     </td>
                                     <td className="text-muted">{item.Batch_No}</td>
                                     <td className="fw-bold text-primary">{item.Target_Qty}</td>
-                                    <td className="fw-bold text-success">{item.Actual_Qty}</td>
+                                    <td className="fw-bold text-success">{item.Actual_Qty} {item.Base_Unit}</td>
                                     <td>
                                         <div className="d-flex align-items-center gap-2">
                                             <div className="progress flex-grow-1" style={{ height: '6px' }}>

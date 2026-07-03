@@ -2,6 +2,10 @@ const express = require("express");
 const path = require("path");
 require('dotenv').config();
 
+if (!process.env.JWT_SECRET || !process.env.REFRESH_TOKEN_SECRET) {
+    throw new Error("Authentication secrets (JWT_SECRET or REFRESH_TOKEN_SECRET) are not configured. Add them to backend/.env as described in AUTH_SETUP.md.");
+}
+
 /** Load Sequelize models & associations before routes so HR/inventory use one shared registry */
 require('./models');
 
@@ -28,11 +32,11 @@ const databaseCon = require('./config/db');
 const seedBanks = require('./scripts/seedBanks');
 const seedProducts = require('./scripts/seedProducts');
 const hrRoutes = require('./routes/hr/hrRoutes');
+const userRoutes = require('./routes/user/userRoutes');
+const authMiddleware = require('./middleware/authMiddleware');
 
 const app = express();
 applyMiddleware(app);
-
-
 
 // ─── STATIC FILE SERVING (for product images) ─────────────────────────────────
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -52,7 +56,7 @@ app.use('/api/banks', bankRoutes);
 
 
 //Customer routes
-app.use('/api/customer',customerRoutes);
+app.use('/api/customer', customerRoutes);
 
 // HR routes
 app.use('/api/hr', hrRoutes);
@@ -72,6 +76,9 @@ app.use('/api/supplier-payments', supplierPaymentRoutes);
 //Supplier routes
 
 
+
+//user authentication routes
+app.use('/api/users', userRoutes);
 
 //sales management routes
 

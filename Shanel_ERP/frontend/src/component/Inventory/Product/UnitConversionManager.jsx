@@ -255,50 +255,56 @@ const UnitConversionManager = ({ baseUnit, setBaseUnit, units, setUnits }) => {
                             </select>
                         )}
                     </div>
-                    <div className="col-4">
-                        <div className="input-group input-group-sm">
-                            <span className="input-group-text small">1 unit =</span>
-                            <input
-                                type="number"
-                                className="form-control form-control-sm bg-white border"
-                                placeholder="Qty"
-                                value={newUnit.conversionRate}
-                                onChange={(e) => setNewUnit({ ...newUnit, conversionRate: e.target.value })}
-                                onKeyPress={handleKeyPress}
-                                step="0.01"
-                                min="0.01"
-                            />
-                            <span className="input-group-text small text-muted">{baseUnit || 'unit'}</span>
+                    {!showNewAlternativeUnit && (
+                        <div className="col-4">
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span className="small text-muted" style={{ minWidth: '60px' }}>1 unit =</span>
+                                    <input
+                                        type="number"
+                                        className="form-control form-control-sm bg-white border"
+                                        placeholder="Qty"
+                                        value={newUnit.conversionRate}
+                                        onChange={(e) => setNewUnit({ ...newUnit, conversionRate: e.target.value })}
+                                        onKeyPress={handleKeyPress}
+                                        step="0.01"
+                                        min="0.01"
+                                        style={{ flex: 1 }}
+                                        disabled={!newUnit.unitName}
+                                        title={!newUnit.unitName ? "Select a unit first" : ""}
+                                    />
+                                </div>
+                                <small className="text-muted" style={{ fontSize: '11px', marginLeft: '60px' }}>
+                                    {baseUnit || 'unit'}
+                                </small>
+                            </div>
                         </div>
-                    </div>
+                    )}
                     <div className="col-2">
                         {showNewAlternativeUnit ? (
                             <div className="d-flex gap-1">
-                                {newAlternativeUnitName.trim() ? (
-                                    <>
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm btn-success flex-grow-1"
-                                            onClick={addNewAlternativeUnit}
-                                            title="Use this new unit"
-                                            style={{ fontSize: '13px' }}
-                                        >
-                                            Use
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm btn-outline-secondary"
-                                            onClick={() => {
-                                                setShowNewAlternativeUnit(false);
-                                                setNewAlternativeUnitName('');
-                                            }}
-                                            title="Cancel"
-                                            style={{ fontSize: '13px' }}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </>
-                                ) : null}
+                                <button
+                                    type="button"
+                                    className="btn btn-sm btn-success flex-grow-1"
+                                    onClick={addNewAlternativeUnit}
+                                    title="Use this new unit"
+                                    style={{ fontSize: '13px' }}
+                                    disabled={!newAlternativeUnitName.trim()}
+                                >
+                                    Use
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-secondary"
+                                    onClick={() => {
+                                        setShowNewAlternativeUnit(false);
+                                        setNewAlternativeUnitName('');
+                                    }}
+                                    title="Cancel"
+                                    style={{ fontSize: '13px' }}
+                                >
+                                    Cancel
+                                </button>
                             </div>
                         ) : (
                             <button

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Plus, AlertTriangle, ShieldOff, Archive, Package, Edit2, Trash2 } from 'react-feather';
+import { useTranslation } from 'react-i18next';
 import AdjustmentModal from '../../component/Inventory/Adjustment/AdjustmentModal';
 import EditAdjustmentModal from '../../component/Inventory/Adjustment/EditAdjustmentModal';
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
@@ -11,6 +12,8 @@ const StockAdjustment = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedAdjustment, setSelectedAdjustment] = useState(null);
     const [cardTotals, setCardTotals] = useState({ Expired: 0, Damage: 0, Theft: 0 });
+    const { t, i18n } = useTranslation();
+    const isSinhala = i18n.language?.startsWith('si');
 
     const fetchLogs = () => {
         axios.get(API_ENDPOINTS.inventory.adjustments.root).then(res => {
@@ -53,19 +56,18 @@ const StockAdjustment = () => {
 
     return (
         <div className='p-4 bg-light min-vh-100' style={{ fontSize: '13px' }}>
-            <div className="d-flex justify-content-between align-items-center mb-3">
-                <h6 className='fw-bold text-dark mb-0'>Stock Adjustment</h6>
+            <div className="d-flex justify-content-end align-items-center mb-3">
                 <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm" onClick={() => setShowModal(true)}>
-                    <Plus size={14}/> New Adjustment
+                    <Plus size={14}/> {t('inventory.pages.adjustments.btn_new')}
                 </button>
             </div>
 
             {/* Metric Cards */}
             <div className="row g-3 mb-4">
-                <AdjustmentCard title="Expired" value={cardTotals.Expired.toFixed(2)} icon={<Archive size={20} className="text-danger"/>} borderColor="border-danger" label="Units expired" />
-                <AdjustmentCard title="Damaged" value={cardTotals.Damage.toFixed(2)} icon={<AlertTriangle size={20} className="text-warning"/>} borderColor="border-warning" label="Units damaged" />
-                <AdjustmentCard title="Stolen" value={cardTotals.Theft.toFixed(2)} icon={<ShieldOff size={20} className="text-info"/>} borderColor="border-info" label="Units stolen" />
-                <AdjustmentCard title="Total Adjustments" value={logs.length} icon={<Package size={20} className="text-primary"/>} borderColor="border-primary" label="All adjustment logs" />
+                <AdjustmentCard title={t('inventory.pages.adjustments.metric_expired')} value={cardTotals.Expired.toFixed(2)} icon={<Archive size={20} className="text-danger"/>} borderColor="border-danger" label={t('inventory.pages.adjustments.metric_expired_label')} />
+                <AdjustmentCard title={t('inventory.pages.adjustments.metric_damaged')} value={cardTotals.Damage.toFixed(2)} icon={<AlertTriangle size={20} className="text-warning"/>} borderColor="border-warning" label={t('inventory.pages.adjustments.metric_damaged_label')} />
+                <AdjustmentCard title={t('inventory.pages.adjustments.metric_stolen')} value={cardTotals.Theft.toFixed(2)} icon={<ShieldOff size={20} className="text-info"/>} borderColor="border-info" label={t('inventory.pages.adjustments.metric_stolen_label')} />
+                <AdjustmentCard title={t('inventory.pages.adjustments.metric_total')} value={logs.length} icon={<Package size={20} className="text-primary"/>} borderColor="border-primary" label={t('inventory.pages.adjustments.metric_total_label')} />
             </div>
 
             <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
@@ -73,13 +75,13 @@ const StockAdjustment = () => {
                     <table className="table align-middle mb-0" style={{ minWidth: '900px' }}>
                         <thead>
                             <tr style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
-                                <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '12%' }}>Date</th>
-                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '18%' }}>Item</th>
-                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '20%' }}>Reason</th>
-                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '12%' }}>Quantity</th>
-                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '18%' }}>Stock Change</th>
-                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '10%' }}>Status</th>
-                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '10%' }}>Actions</th>
+                                <th className='text-uppercase py-3 ps-4' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '12%' }}>{t('inventory.pages.adjustments.col_date')}</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '18%' }}>{t('inventory.pages.adjustments.col_item')}</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '20%' }}>{t('inventory.pages.adjustments.col_reason')}</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '12%' }}>{t('inventory.pages.adjustments.col_quantity')}</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '18%' }}>{t('inventory.pages.adjustments.col_stock_change')}</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '10%' }}>{t('inventory.pages.adjustments.col_status')}</th>
+                                <th className='text-uppercase py-3' style={{ color:'#fff', fontSize:'0.75rem', fontWeight:700, letterSpacing:'0.08em', background:'transparent', borderBottom:'2px solid rgba(255,255,255,0.15)', width: '10%' }}>{t('inventory.pages.adjustments.col_actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -87,7 +89,7 @@ const StockAdjustment = () => {
                                 <tr key={log.Adjustment_ID}>
                                     <td className='ps-4'>{log.Adjustment_Date}</td>
                                     <td>
-                                        <div className="fw-bold">{log.Product?.P_Name}</div>
+                                        <div className="fw-bold">{(isSinhala && log.Product?.P_Name_Sinhala) ? log.Product?.P_Name_Sinhala : log.Product?.P_Name}</div>
                                         <small className="text-muted">{log.Product?.P_Code}</small>
                                     </td>
                                     <td>
@@ -96,16 +98,17 @@ const StockAdjustment = () => {
                                         <span className="badge bg-light text-dark border" style={{ fontSize: '10px' }}>{log.Adjustment_Type}</span>
                                     </td>
                                     <td className={log.Difference < 0 ? 'text-danger fw-bold' : 'text-success fw-bold'}>
-                                        {Math.abs(log.Difference)}
+                                        {Math.abs(log.Difference)} {log.Product?.Base_Unit || 'units'}
                                     </td>
                                     <td>
                                         <div title={`Before: ${log.System_Qty} → After: ${log.Physical_Qty}`}>
                                             <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#6c757d' }}>{parseFloat(log.System_Qty || 0).toFixed(2)}</span>
                                             <span className="mx-2" style={{ fontSize: '13px', fontWeight: 'bold', color: '#495057' }}>→</span>
                                             <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#0d6efd' }}>{parseFloat(log.Physical_Qty || 0).toFixed(2)}</span>
+                                            <span className="ms-2" style={{ fontSize: '12px', color: '#6c757d' }}>{log.Product?.Base_Unit || 'units'}</span>
                                         </div>
                                     </td>
-                                    <td><span className="badge bg-success-subtle text-success">Approved</span></td>
+                                    <td><span className="badge bg-success-subtle text-success">{t('inventory.pages.adjustments.badge_approved')}</span></td>
                                     <td>
                                         <button 
                                             className="btn btn-sm btn-light border-0 me-2"

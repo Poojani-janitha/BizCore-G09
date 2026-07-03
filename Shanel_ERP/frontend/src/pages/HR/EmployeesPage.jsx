@@ -1,84 +1,3 @@
-// import React, { useState, useEffect, useRef } from 'react';
-// import { useNavigate } from 'react-router-dom';
-// import { generateEmployees, EMP_KEY } from '../../storeContext/employeesData';
-
-// const EmployeesPage = () => {
-//   const navigate = useNavigate();
-//   const [employees, setEmployees] = useState([]);
-//   const dragItem = useRef();
-//   const dragOverItem = useRef();
-
-//   useEffect(() => {
-//     const stored = localStorage.getItem(EMP_KEY);
-//     if (stored) {
-//       try { setEmployees(JSON.parse(stored)); } catch { setEmployees(generateEmployees()); }
-//     } else {
-//       const gen = generateEmployees();
-//       setEmployees(gen);
-//       localStorage.setItem(EMP_KEY, JSON.stringify(gen));
-//     }
-//     // no selected panel in this layout
-//   }, []);
-
-//   return (
-//     <div style={{
-//       minHeight: '100vh',
-//       background: '#f5f6fa',
-//       padding: '28px 32px',
-//       fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
-//     }}>
-//       <div style={{ marginBottom: '18px' }}>
-//         <h1 style={{
-//           margin: 0,
-//           fontSize: '22px',
-//           fontWeight: 700,
-//           color: '#1a1a2e'
-//         }}>
-//           <span style={{
-//             background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
-//             WebkitBackgroundClip: 'text',
-//             WebkitTextFillColor: 'transparent',
-//           }}>Employees</span>
-//         </h1>
-//       </div>
-
-//       <div className="mb-2 text-muted">Tip: drag cards to rearrange employee order.</div>
-//       <div className="row g-3">
-//         {employees.map((emp, index) => (
-//           <div className="col-sm-6 col-md-4" key={emp.id}
-//             onDragEnter={() => (dragOverItem.current = index)}>
-//             <div
-//               className="card"
-//               draggable
-//               onDragStart={(e) => { dragItem.current = index; e.dataTransfer.effectAllowed = 'move'; }}
-//               onDragOver={(e) => e.preventDefault()}
-//               onDragEnd={() => {
-//                 const _employees = [...employees];
-//                 const draggedItemContent = _employees.splice(dragItem.current, 1)[0];
-//                 _employees.splice(dragOverItem.current, 0, draggedItemContent);
-//                 dragItem.current = null;
-//                 dragOverItem.current = null;
-//                 setEmployees(_employees);
-//                 try { localStorage.setItem(EMP_KEY, JSON.stringify(_employees)); } catch {}
-//               }}
-//               style={{ cursor: 'grab' }}
-//               onClick={() => navigate(`/hr/employees/${emp.id}`)}
-//             >
-//               <div className="card-body">
-//                 <h5 className="card-title mb-1">{emp.name}</h5>
-//                 <p className="mb-0"><small className="text-muted">{emp.role}</small></p>
-//                 <p className="mb-0"><small className="text-muted">{emp.email}</small></p>
-//               </div>
-//             </div>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default EmployeesPage;
-
 
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
@@ -86,6 +5,10 @@ import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const API_BASE = API_ENDPOINTS.hr.root;
 
+/**
+ * Converts a backend Employee record to a frontend-friendly object.
+ * Normalizes status and adds a 'raw' reference for deep access.
+ */
 const mapEmployeeFromApi = (emp) => ({
   id: String(emp.Employee_ID),
   name: emp.Full_Name || '',
@@ -96,7 +19,7 @@ const mapEmployeeFromApi = (emp) => ({
   image: emp.Photo_Path || '',
   employeeCode: emp.Employee_Code || '',
   salaryCategory: emp.Salary_Category || '',
-  status: emp.Status || 'Active',
+  status: emp.Status ? (emp.Status.charAt(0).toUpperCase() + emp.Status.slice(1)) : 'Active',
   raw: emp,
 });
 
@@ -104,7 +27,7 @@ const defaultAddForm = {
   Full_Name: '', Name_With_Initials: '', NIC: '', Date_Of_Birth: '', Gender: '', Marital_Status: '',
   Contact_Phone: '', Contact_Phone_2: '', Email: '', City: '', Department: 'HR', Role: 'Staff',
   Salary_Category: 'Monthly_Fixed', Employee_Type: 'Permanent', Hire_Date: '', Confirmation_Date: '',
-  Status: 'Active', EPF_Eligible: 'Yes', ETF_Eligible: 'Yes', EPF_Number: '', Bank_Name: '',
+  Status: 'Active', EPF_Eligible: 'Yes', ETF_Eligible: 'Yes', EPF_Number: '', ETF_Number: '', Bank_Name: '',
   Bank_Account_No: '', Bank_Branch: '', Bank_Account_Name: '', Permanent_Address: '',
   Current_Address: '', Emergency_Contact_Name: '', Emergency_Contact_Phone: '',
   Emergency_Contact_Relationship: '', Notes: '', image: ''
@@ -120,6 +43,7 @@ const EmployeesPage = () => {
   const [addForm, setAddForm] = useState(defaultAddForm);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [errors, setErrors] = useState({});
   const dragItem = useRef();
   const dragOverItem = useRef();
   const fileInputRef = useRef();
@@ -129,11 +53,15 @@ const EmployeesPage = () => {
     window.dispatchEvent(new Event('employees-updated'));
   };
 
+  /**
+ * Data Fetcher: Loads the full list of employees from the backend.
+ * Filters for 'Active' by default but can be extended.
+ */
   const fetchEmployees = async () => {
     try {
       setIsLoading(true);
       setError('');
-      const response = await axios.get(`${API_BASE}/employees`);
+      const response = await axios.get(`${API_BASE}/employees`, { params: { status: 'Active', _t: Date.now() } });
       const list = Array.isArray(response?.data?.data)
         ? response.data.data.map(mapEmployeeFromApi)
         : [];
@@ -146,6 +74,9 @@ const EmployeesPage = () => {
     }
   };
 
+  /**
+ * Photo Handler: Manages local preview and state updates for employee profile images.
+ */
   const handleImageChange = (empId, e) => {
     e?.stopPropagation();
     const file = e?.target?.files?.[0];
@@ -188,7 +119,7 @@ const EmployeesPage = () => {
   const startEdit = (emp, e) => {
     e.stopPropagation();
     setEditingId(emp.id);
-    setEditForm({ name: emp.name, role: emp.role, email: emp.email || '', phone: emp.phone || '', department: emp.department || '', image: emp.image || '' });
+    setEditForm({ name: emp.name, role: emp.role, email: emp.email || '', phone: emp.phone || '', department: emp.department || '', image: emp.image || '', etfNumber: emp.raw?.ETF_Number || '' });
   };
 
   const cancelEdit = (e) => {
@@ -207,6 +138,7 @@ const EmployeesPage = () => {
           Email: editForm.email?.trim() || null,
           Contact_Phone: editForm.phone?.trim() || '',
           Department: editForm.department || 'HR',
+          ETF_Number: editForm.etfNumber || null,
         };
         await axios.put(`${API_BASE}/employees/${editingId}`, payload);
         await fetchEmployees();
@@ -221,15 +153,73 @@ const EmployeesPage = () => {
   const updateEditField = (field, value) => {
     setEditForm(prev => ({ ...prev, [field]: value }));
   };
-
+  //updates the data and clears error messages.
   const updateAddFormField = (field, value) => {
     setAddForm(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   };
 
+  /**
+ * Validator: Performs frontend checks (Required fields, Email format, NIC format) before submission.
+ */
+  const validateForm = () => {
+    const newErrors = {};
+    const { Full_Name, Contact_Phone, Email, NIC, EPF_Eligible, EPF_Number, Hire_Date } = addForm;
+
+    if (!Full_Name?.trim()) {
+      newErrors.Full_Name = 'Required';
+    } else if (Full_Name.trim().length < 3) {
+      newErrors.Full_Name = 'Min 3 characters';
+    }
+
+    if (!Contact_Phone?.trim()) {
+      newErrors.Contact_Phone = 'Required';
+    } else if (!/^\+?[\d\s-]{10,}$/.test(Contact_Phone.trim())) {
+      newErrors.Contact_Phone = 'Invalid format';
+    }
+
+    if (Email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(Email.trim())) {
+      newErrors.Email = 'Invalid email';
+    }
+
+    if (!NIC?.trim()) {
+      newErrors.NIC = 'Required';
+    } else {
+      const nic = NIC.trim();
+      if (!/^\d{9}[vVxX]$/.test(nic) && !/^\d{12}$/.test(nic)) {
+        newErrors.NIC = 'Invalid format';
+      }
+    }
+
+    if (!Hire_Date) {
+      newErrors.Hire_Date = 'Required';
+    }
+
+    if (EPF_Eligible === 'Yes' && !EPF_Number?.trim()) {
+      newErrors.EPF_Number = 'Required if eligible';
+    }
+
+    if (addForm.ETF_Eligible === 'Yes' && !addForm.ETF_Number?.trim()) {
+      newErrors.ETF_Number = 'Required if eligible';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  /**
+ * Add Employee: Sends the new employee data to the backend.
+ * Automatically handles the conversion of 'Hire Date' and UI reset on success.
+ */
   const addEmployee = (e) => {
     e?.stopPropagation();
-    if (!addForm.Full_Name?.trim() || !addForm.Contact_Phone?.trim()) {
-      alert('Full Name and Contact Phone are required');
+    if (!validateForm()) {
       return;
     }
 
@@ -237,7 +227,7 @@ const EmployeesPage = () => {
       try {
         const now = new Date();
         const hireDate = addForm.Hire_Date || now.toISOString().slice(0, 10);
-        
+
         const payload = {
           ...addForm,
           Full_Name: addForm.Full_Name.trim(),
@@ -251,10 +241,10 @@ const EmployeesPage = () => {
         setShowAddForm(false);
       } catch (err) {
         console.error('addEmployee error:', err);
-        
+
         // Build error message with validation details
         let errorMsg = err?.response?.data?.message || 'Failed to add employee';
-        
+
         // Add validation errors if present
         if (err?.response?.data?.validationErrors && Array.isArray(err.response.data.validationErrors)) {
           const validationDetails = err.response.data.validationErrors
@@ -262,7 +252,7 @@ const EmployeesPage = () => {
             .join('\n');
           errorMsg = `${errorMsg}\n\n${validationDetails}`;
         }
-        
+
         alert(errorMsg);
       }
     })();
@@ -271,8 +261,12 @@ const EmployeesPage = () => {
   const cancelAdd = () => {
     setShowAddForm(false);
     setAddForm(defaultAddForm);
+    setErrors({});
   };
 
+  /**
+ * Deactivation: Marks an employee as "Inactive" via the backend API.
+ */
   const deleteEmployee = (emp, e) => {
     e?.stopPropagation();
     const confirmed = window.confirm(`Delete employee "${emp.name}"?`);
@@ -280,7 +274,9 @@ const EmployeesPage = () => {
     (async () => {
       try {
         await axios.delete(`${API_BASE}/employees/${emp.id}`);
-        const updated = employees.filter(item => String(item.id) !== String(emp.id));
+        const updated = employees.map(item =>
+          String(item.id) === String(emp.id) ? { ...item, status: 'Inactive', raw: { ...item.raw, Status: 'Inactive' } } : item
+        );
         persistEmployees(updated);
         if (String(editingId) === String(emp.id)) {
           setEditingId(null);
@@ -289,6 +285,24 @@ const EmployeesPage = () => {
       } catch (err) {
         console.error('deleteEmployee error:', err);
         alert(err?.response?.data?.message || 'Failed to delete employee');
+      }
+    })();
+  };
+
+  const activateEmployee = (emp, e) => {
+    e?.stopPropagation();
+    const confirmed = window.confirm(`Activate employee "${emp.name}"?`);
+    if (!confirmed) return;
+    (async () => {
+      try {
+        await axios.patch(`${API_BASE}/employees/${emp.id}/status`, { Status: 'Active' });
+        const updated = employees.map(item =>
+          String(item.id) === String(emp.id) ? { ...item, status: 'Active', raw: { ...item.raw, Status: 'Active' } } : item
+        );
+        persistEmployees(updated);
+      } catch (err) {
+        console.error('activateEmployee error:', err);
+        alert(err?.response?.data?.message || 'Failed to activate employee');
       }
     })();
   };
@@ -323,7 +337,7 @@ const EmployeesPage = () => {
           letterSpacing: '-0.5px',
         }}>
           <span style={{
-            background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
+            background: 'linear-gradient(135deg, #0d9488, #0f172a)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>Employees</span>
@@ -361,9 +375,21 @@ const EmployeesPage = () => {
           }}
         />
         <button
-          className="btn btn-success btn-sm"
           onClick={() => setShowAddForm(!showAddForm)}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: '#0d9488',
+            color: '#fff',
+            border: 'none',
+            padding: '8px 20px',
+            borderRadius: '10px',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(13,148,136,0.2)'
+          }}
         >
           ➕ Add Employee
         </button>
@@ -381,16 +407,20 @@ const EmployeesPage = () => {
           <h5 style={{ margin: '0 0 16px 0', color: '#1a1a2e', fontSize: '15px' }}>Add New Employee</h5>
           <div className="row g-2">
             <div className="col-12 col-md-6">
-              <label className="form-label small mb-0">Full Name *</label>
-              <input className="form-control form-control-sm" placeholder="Full name" value={addForm.Full_Name} onChange={e => updateAddFormField('Full_Name', e.target.value)} />
+              <label className="form-label small mb-0" style={{ color: errors.Full_Name ? '#dc2626' : 'inherit' }}>
+                Full Name * {errors.Full_Name && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Full_Name})</span>}
+              </label>
+              <input className="form-control form-control-sm" style={{ borderColor: errors.Full_Name ? '#dc2626' : '#ced4da' }} placeholder="Full name" value={addForm.Full_Name} onChange={e => updateAddFormField('Full_Name', e.target.value)} />
             </div>
             <div className="col-12 col-md-6">
               <label className="form-label small mb-0">Name With Initials</label>
               <input className="form-control form-control-sm" placeholder="e.g. J. Doe" value={addForm.Name_With_Initials} onChange={e => updateAddFormField('Name_With_Initials', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
-              <label className="form-label small mb-0">NIC</label>
-              <input className="form-control form-control-sm" placeholder="NIC number" value={addForm.NIC} onChange={e => updateAddFormField('NIC', e.target.value)} />
+              <label className="form-label small mb-0" style={{ color: errors.NIC ? '#dc2626' : 'inherit' }}>
+                NIC * {errors.NIC && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.NIC})</span>}
+              </label>
+              <input className="form-control form-control-sm" style={{ borderColor: errors.NIC ? '#dc2626' : '#ced4da' }} placeholder="NIC number" value={addForm.NIC} onChange={e => updateAddFormField('NIC', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Date Of Birth</label>
@@ -416,16 +446,20 @@ const EmployeesPage = () => {
               </select>
             </div>
             <div className="col-12 col-md-4">
-              <label className="form-label small mb-0">Contact Phone *</label>
-              <input className="form-control form-control-sm" placeholder="+94-71-555-1234" value={addForm.Contact_Phone} onChange={e => updateAddFormField('Contact_Phone', e.target.value)} />
+              <label className="form-label small mb-0" style={{ color: errors.Contact_Phone ? '#dc2626' : 'inherit' }}>
+                Contact Phone * {errors.Contact_Phone && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Contact_Phone})</span>}
+              </label>
+              <input className="form-control form-control-sm" style={{ borderColor: errors.Contact_Phone ? '#dc2626' : '#ced4da' }} placeholder="+94-71-555-1234" value={addForm.Contact_Phone} onChange={e => updateAddFormField('Contact_Phone', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Contact Phone 2</label>
               <input className="form-control form-control-sm" placeholder="Alternative phone" value={addForm.Contact_Phone_2} onChange={e => updateAddFormField('Contact_Phone_2', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
-              <label className="form-label small mb-0">Email</label>
-              <input type="email" className="form-control form-control-sm" placeholder="email@example.com" value={addForm.Email} onChange={e => updateAddFormField('Email', e.target.value)} />
+              <label className="form-label small mb-0" style={{ color: errors.Email ? '#dc2626' : 'inherit' }}>
+                Email {errors.Email && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Email})</span>}
+              </label>
+              <input type="email" className="form-control form-control-sm" style={{ borderColor: errors.Email ? '#dc2626' : '#ced4da' }} placeholder="email@example.com" value={addForm.Email} onChange={e => updateAddFormField('Email', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">City</label>
@@ -437,19 +471,29 @@ const EmployeesPage = () => {
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Role</label>
-              <input className="form-control form-control-sm" placeholder="e.g. Staff, Manager" value={addForm.Role} onChange={e => updateAddFormField('Role', e.target.value)} />
+              <select className="form-select form-select-sm" value={addForm.Role} onChange={e => updateAddFormField('Role', e.target.value)}>
+                <option value="Staff">Staff</option>
+                <option value="Cashier">Cashier</option>
+                <option value="Staff (Production)">Staff (Production)</option>
+                <option value="Manager">Manager</option>
+              </select>
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Salary Category</label>
-              <input className="form-control form-control-sm" placeholder="e.g. Monthly_Fixed" value={addForm.Salary_Category} onChange={e => updateAddFormField('Salary_Category', e.target.value)} />
+              <select className="form-select form-select-sm" value={addForm.Salary_Category} onChange={e => updateAddFormField('Salary_Category', e.target.value)}>
+                <option value="Monthly_Fixed">Monthly Fixed</option>
+                <option value="Production_Based">Production Based</option>
+              </select>
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Employee Type</label>
               <input className="form-control form-control-sm" placeholder="e.g. Permanent" value={addForm.Employee_Type} onChange={e => updateAddFormField('Employee_Type', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
-              <label className="form-label small mb-0">Hire Date</label>
-              <input type="date" className="form-control form-control-sm" value={addForm.Hire_Date} onChange={e => updateAddFormField('Hire_Date', e.target.value)} />
+              <label className="form-label small mb-0" style={{ color: errors.Hire_Date ? '#dc2626' : 'inherit' }}>
+                Hire Date * {errors.Hire_Date && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Hire_Date})</span>}
+              </label>
+              <input type="date" className="form-control form-control-sm" style={{ borderColor: errors.Hire_Date ? '#dc2626' : '#ced4da' }} value={addForm.Hire_Date} onChange={e => updateAddFormField('Hire_Date', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Confirmation Date</label>
@@ -479,12 +523,33 @@ const EmployeesPage = () => {
               </select>
             </div>
             <div className="col-12 col-md-4">
-              <label className="form-label small mb-0">EPF Number</label>
-              <input className="form-control form-control-sm" placeholder="EPF Number" value={addForm.EPF_Number} onChange={e => updateAddFormField('EPF_Number', e.target.value)} />
+              <label className="form-label small mb-0" style={{ color: errors.EPF_Number ? '#dc2626' : 'inherit' }}>
+                EPF Number {errors.EPF_Number && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.EPF_Number})</span>}
+              </label>
+              <input className="form-control form-control-sm" style={{ borderColor: errors.EPF_Number ? '#dc2626' : '#ced4da' }} placeholder="EPF Number" value={addForm.EPF_Number} onChange={e => updateAddFormField('EPF_Number', e.target.value)} />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label small mb-0" style={{ color: errors.ETF_Number ? '#dc2626' : 'inherit' }}>
+                ETF Number {errors.ETF_Number && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.ETF_Number})</span>}
+              </label>
+              <input className="form-control form-control-sm" style={{ borderColor: errors.ETF_Number ? '#dc2626' : '#ced4da' }} placeholder="ETF Number" value={addForm.ETF_Number} onChange={e => updateAddFormField('ETF_Number', e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Bank Name</label>
-              <input className="form-control form-control-sm" placeholder="Bank Name" value={addForm.Bank_Name} onChange={e => updateAddFormField('Bank_Name', e.target.value)} />
+              <select className="form-select form-select-sm" value={addForm.Bank_Name} onChange={e => updateAddFormField('Bank_Name', e.target.value)}>
+                <option value="">Select Bank</option>
+                <option value="Bank of Ceylon">Bank of Ceylon</option>
+                <option value="People's Bank">People's Bank</option>
+                <option value="Commercial Bank">Commercial Bank</option>
+                <option value="Hatton National Bank">Hatton National Bank</option>
+                <option value="Sampath Bank">Sampath Bank</option>
+                <option value="Seylan Bank">Seylan Bank</option>
+                <option value="Nations Trust Bank">Nations Trust Bank</option>
+                <option value="DFCC Bank">DFCC Bank</option>
+                <option value="Pan Asia Bank">Pan Asia Bank</option>
+                <option value="Union Bank">Union Bank</option>
+                <option value="NDB Bank">NDB Bank</option>
+              </select>
             </div>
             <div className="col-12 col-md-4">
               <label className="form-label small mb-0">Bank Account No</label>
@@ -524,7 +589,7 @@ const EmployeesPage = () => {
             </div>
           </div>
           <div className="d-flex gap-2 mt-3">
-            <button className="btn btn-primary btn-sm" onClick={addEmployee} disabled={!addForm.Full_Name?.trim() || !addForm.Contact_Phone?.trim()}>Save Employee</button>
+            <button className="btn btn-primary btn-sm" onClick={addEmployee}>Save Employee</button>
             <button className="btn btn-secondary btn-sm" onClick={cancelAdd}>Cancel</button>
           </div>
         </div>
@@ -564,13 +629,16 @@ const EmployeesPage = () => {
                   _employees.splice(dragOverItem.current, 0, draggedItemContent);
                   dragItem.current = null;
                   dragOverItem.current = null;
-                  try { persistEmployees(_employees); } catch {}
+                  try { persistEmployees(_employees); } catch { }
                 }}
                 style={{
                   cursor: searchTerm ? 'default' : 'grab',
                   minHeight: '170px',
                   border: '1px solid #e8e8e8',
                   boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                  opacity: emp.status === 'Inactive' ? 0.6 : 1,
+                  filter: emp.status === 'Inactive' ? 'grayscale(0.5)' : 'none',
+                  background: emp.status === 'Inactive' ? '#f1f5f9' : '#fff'
                 }}
               >
                 <div className="card-body d-flex flex-column align-items-center text-center pt-3 pb-2">
@@ -583,7 +651,7 @@ const EmployeesPage = () => {
                       borderRadius: '50%',
                       overflow: 'hidden',
                       flexShrink: 0,
-                      background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                      background: 'linear-gradient(135deg, rgb(13, 148, 136), rgb(15, 23, 42))',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -609,6 +677,19 @@ const EmployeesPage = () => {
                     <h5 className="card-title mb-1" style={{ fontSize: '18px' }}>{emp.name}</h5>
                     <p className="mb-0"><small className="text-muted" style={{ fontSize: '12px' }}>{emp.role}</small></p>
                     <p className="mb-0"><small className="text-muted" style={{ fontSize: '12px' }}>{emp.email}</small></p>
+                    <div className="d-flex justify-content-center align-items-center gap-2 mt-1 mb-2">
+                      <span style={{
+                        fontSize: '10px',
+                        fontWeight: 900,
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        background: emp.status === 'Inactive' ? '#fee2e2' : '#ecfdf5',
+                        color: emp.status === 'Inactive' ? '#dc2626' : '#059669',
+                        textTransform: 'uppercase'
+                      }}>
+                        {emp.status}
+                      </span>
+                    </div>
                     <div className="d-flex justify-content-center gap-2 mt-2">
                       <button
                         className="btn btn-outline-secondary btn-sm py-0 px-2"
@@ -616,8 +697,18 @@ const EmployeesPage = () => {
                       >
                         View
                       </button>
-                      <button className="btn btn-outline-primary btn-sm py-0 px-2" onClick={e => startEdit(emp, e)}>Edit</button>
-                      <button className="btn btn-outline-danger btn-sm py-0 px-2" onClick={e => deleteEmployee(emp, e)}>Delete</button>
+                      <button
+                        className="btn btn-outline-primary btn-sm py-0 px-2"
+                        onClick={e => startEdit(emp, e)}
+                        disabled={emp.status === 'Inactive'}
+                      >
+                        Edit
+                      </button>
+                      {emp.status === 'Inactive' ? (
+                        <button className="btn btn-outline-success btn-sm py-0 px-2" onClick={e => activateEmployee(emp, e)}>Activate</button>
+                      ) : (
+                        <button className="btn btn-outline-danger btn-sm py-0 px-2" onClick={e => deleteEmployee(emp, e)}>Delete</button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -638,7 +729,7 @@ const EmployeesPage = () => {
                     padding: '16px',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                     border: '1px solid #e8e8e8',
-                  zIndex: 10,
+                    zIndex: 10,
                   }}
                 >
                   <div className="mb-2">
@@ -647,7 +738,12 @@ const EmployeesPage = () => {
                   </div>
                   <div className="mb-2">
                     <label className="form-label small mb-0">Role</label>
-                    <input className="form-control form-control-sm" value={editForm.role} onChange={e => updateEditField('role', e.target.value)} />
+                    <select className="form-select form-select-sm" value={editForm.role} onChange={e => updateEditField('role', e.target.value)}>
+                      <option value="Staff">Staff</option>
+                      <option value="Cashier">Cashier</option>
+                      <option value="Staff (Production)">Staff (Production)</option>
+                      <option value="Manager">Manager</option>
+                    </select>
                   </div>
                   <div className="mb-2">
                     <label className="form-label small mb-0">Email</label>
@@ -662,11 +758,15 @@ const EmployeesPage = () => {
                     <input className="form-control form-control-sm" value={editForm.department} onChange={e => updateEditField('department', e.target.value)} />
                   </div>
                   <div className="mb-2">
+                    <label className="form-label small mb-0">ETF Number</label>
+                    <input className="form-control form-control-sm" value={editForm.etfNumber} onChange={e => updateEditField('etfNumber', e.target.value)} />
+                  </div>
+                  <div className="mb-2">
                     <label className="form-label small mb-0">Profile photo</label>
                     <div onClick={e => triggerImagePick(emp.id, e)} style={{ cursor: 'pointer', display: 'inline-block' }} title="Click to change">
                       <div style={{
                         width: 64, height: 64, borderRadius: '50%', overflow: 'hidden',
-                        background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'linear-gradient(135deg, rgb(13, 148, 136), rgb(15, 23, 42))', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         color: '#fff', fontSize: '20px', fontWeight: 700, border: '2px solid #e8e8e8',
                       }}>
                         {editForm.image ? (
@@ -717,6 +817,7 @@ const EmployeesPage = () => {
               padding: '20px'
             }}
           >
+            {/*Display employee details.*/}
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h4 style={{ margin: 0 }}>Employee Details</h4>
               <button className="btn btn-sm btn-outline-secondary" onClick={() => setViewingEmployee(null)}>Close</button>
@@ -745,6 +846,7 @@ const EmployeesPage = () => {
               <div className="col-12 col-md-6"><strong>EPF Eligible:</strong> {renderDetailValue(viewingEmployee.raw?.EPF_Eligible)}</div>
               <div className="col-12 col-md-6"><strong>ETF Eligible:</strong> {renderDetailValue(viewingEmployee.raw?.ETF_Eligible)}</div>
               <div className="col-12 col-md-6"><strong>EPF Number:</strong> {renderDetailValue(viewingEmployee.raw?.EPF_Number)}</div>
+              <div className="col-12 col-md-6"><strong>ETF Number:</strong> {renderDetailValue(viewingEmployee.raw?.ETF_Number)}</div>
               <div className="col-12 col-md-6"><strong>Bank Name:</strong> {renderDetailValue(viewingEmployee.raw?.Bank_Name)}</div>
               <div className="col-12 col-md-6"><strong>Bank Account No:</strong> {renderDetailValue(viewingEmployee.raw?.Bank_Account_No)}</div>
               <div className="col-12 col-md-6"><strong>Bank Branch:</strong> {renderDetailValue(viewingEmployee.raw?.Bank_Branch)}</div>

@@ -4,8 +4,10 @@ const Production = require('./inventory/Production');
 const Inventory = require('./inventory/Inventory');
 const StockTransfer = require('./inventory/StockTransfer');
 const StockAdjustment = require('./inventory/StockAdjustment');
+const StockMovement = require('./inventory/StockMovement');
 const UnitConversion = require('./inventory/UnitConversion');
 const ProductReturn = require('./inventory/ProductReturn');
+const Supplier = require('./supplier/Supplier');
 
 // ===== BANK MODELS =====
 const Bank = require('./Bank/Bank');
@@ -18,8 +20,7 @@ const InventoryAssociations = require('./inventory/InventoryAssosiation');
 InventoryAssociations();
 
 // ===== BANK ASSOCIATIONS =====
-const BankAssociations = require('./Bank/associations');
-BankAssociations;
+require('./Bank/associations');
 
 
 //===== SALES MODELS =====
@@ -35,6 +36,13 @@ SaleAssociations();
 
 // ===== USER MODELS =====
 const User = require('./user/User');
+const Module = require('./user/Module');
+const UserModuleAccess = require('./user/UserModuleAccess');
+const UserToken = require('./user/UserToken');
+
+// ===== USER ASSOCIATIONS =====
+const setupUserAssociations = require('./user/associations');
+setupUserAssociations();
 
 // ===== HR MODELS =====
 const Employee = require('./hr/Employee');
@@ -51,8 +59,6 @@ const AdvanceRepayment = require('./hr/AdvanceRepayment');
 // ===== CUSTOMER MODELS =====
 const Customer = require('./customer/customer');
 
-// ===== SUPPLIER MODELS =====
-const Supplier = require('./supplier/Supplier');
 const SupplierTransaction = require('./supplier/SupplierTransaction');
 
 /// ===== CUSTOMER ASSOCIATIONS =====
@@ -75,8 +81,10 @@ module.exports = {
     Inventory,
     StockTransfer,
     StockAdjustment,
+    StockMovement,
     UnitConversion,
     ProductReturn,
+    Supplier,
     Customer,
     Sale,
     SaleItem,
@@ -84,6 +92,9 @@ module.exports = {
     CreditTranscation,
     SalesSummaryDaily,
     User,
+    Module,
+    UserModuleAccess,
+    UserToken,
     Employee,
     EmployeeLeave,
     EmployeeDocument,
@@ -100,7 +111,6 @@ module.exports = {
     JournalEntryLine,
     Expense,
     Income,
-    Supplier,
     SupplierTransaction,
     Bank,
     Branch

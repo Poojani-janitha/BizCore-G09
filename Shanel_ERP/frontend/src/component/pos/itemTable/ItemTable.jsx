@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Plus, Trash2, Package } from 'lucide-react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import './itemTable.css';
 import Portal from './Portal';
 import { API_ENDPOINTS } from '../../../config/apiEndpoints';
@@ -20,7 +21,8 @@ const EMPTY_ITEM = {
 
 const toNumber = (value) => parseFloat(value) || 0;
 
-const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, location, selectedProduct, setSelectedProduct, error, setError }) => {
+const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, location, selectedProduct, setSelectedProduct, error, setError,  setInformation }) => {
+    const { t } = useTranslation();
     const inputRowBg = '#f8faf9';
     const [query, setQuery] = useState('');
     const [allUnits, setAllUnits] = useState([]);// All available units for the selected product
@@ -28,6 +30,12 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
     const [tempItem, setTempItem] = useState(EMPTY_ITEM);// Temporary state for the item being added to the cart
     const [availableQuantity, setAvailableQuantity] = useState(null); // Available quantity for the selected product
     const searchInputRef = useRef(null);
+
+    const getCartBaseQtyForProduct = (productId, excludeItemId = null) => {
+        return cartItems
+            .filter(item => item.p_id === productId && item.id !== excludeItemId)
+            .reduce((sum, item) => sum + (toNumber(item.quntity) * (item.conversionFactor || 1)), 0);
+    };
 
     // Fetch all units for the selected product
     useEffect(() => {
@@ -43,11 +51,12 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                 if (res.data.success) {
                     const units = res.data.units || [];
                     setAllUnits(units);
-                    
+
                     // If no unit is selected yet, find and set the base unit (Priority: Is_Base_Unit flag, then Conversion factor 1)
                     if (!tempItem.p_unit && units.length > 0) {
                         const baseUnit = units.find(u => (typeof u === 'object' && (u.Is_Base_Unit || u.Unit_Conversion == 1))) || units[0];
                         const unitName = typeof baseUnit === 'string' ? baseUnit : baseUnit.Unit_Name;
+                        setTempItem(prev => ({ ...prev, base_unit_name: unitName }));
                         handleUnitChange(unitName);
                     }
                 }
@@ -82,6 +91,8 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
     const calculateLineTotal = (item) => calculateLineSubtotal(item) + calculateLineTaxAmount(item);
 
 
+
+    //run calculation when tempItem changes to update the computed fields (subtotal, tax amount, total) in real-time as the user inputs data for the item being added to the cart. This ensures that the user sees accurate calculations based on their current inputs before they add the item to the cart.
     const currentEntryTaxAmount = useMemo(() => calculateLineTaxAmount(tempItem), [tempItem]);
     const currentEntryTotal = useMemo(() => calculateLineTotal(tempItem), [tempItem]);
 
@@ -91,6 +102,9 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         setQuery(value);
         if (!value.trim()) {
             setSearchResults([]);
+            // Reset inputs when search is cleared
+           // setTempItem((prev) => ({ ...prev, discount: 0, quntity: 1, tax: 0, free: 0 }));
+           setTempItem(EMPTY_ITEM);
             return;
         }
 
@@ -140,7 +154,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
     const selectProduct = (product) => {
         setTempItem((prev) => ({
             ...prev,
-            discount_allowed: product.p_type === 'Company' ? true : false,
+            discount_allowed: product.p_type === 'Company' && priceLevel === 'Wholesale' ? true : false,
             p_id: product.p_id,
             p_code: product.p_code,
             p_name: product.p_name,
@@ -172,7 +186,6 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
             return;
         }
 
-
         // Check if there is any error related to quantity
         if (error?.field === 'quantity' || (error?.message && error.message.includes('available'))) {
             console.warn('Cannot add item: quantity error exists');
@@ -180,18 +193,40 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         }
 
         // Check for duplicates (same product ID AND same unit)
-        const isDuplicate = cartItems.some(item => 
+        const isDuplicate = cartItems.some(item =>
             item.p_id === tempItem.p_id && item.p_unit === tempItem.p_unit
         );
 
         if (isDuplicate) {
-            setError({ 
-                field: 'general', 
-                message: `Item "${tempItem.p_name}" (${tempItem.p_unit}) is already in the cart. Please update the existing quantity instead.` 
+            setError({
+                field: 'general',
+                message: `Item "${tempItem.p_name}" (${tempItem.p_unit}) is already in the cart. Please update the existing quantity instead.`
             });
             return;
         }
 
+        // NEW: Check total stock consumption across all units of this product in BASE UNIT
+        const newItemQtyInBaseUnit = toNumber(tempItem.quntity) * (tempItem.conversionFactor || 1);
+        
+        // Calculate total quantity already in cart for this product (in base unit)
+        const totalInCartBaseUnit = getCartBaseQtyForProduct(tempItem.p_id);
+
+        // Total would be if we add this item
+        const totalAfterAdd = totalInCartBaseUnit + newItemQtyInBaseUnit;
+
+        // Check against available quantity
+        if (availableQuantity !== null && totalAfterAdd > availableQuantity) {
+            const remainingQty = Math.max(0, availableQuantity - totalInCartBaseUnit);
+            const baseUnitName = tempItem.base_unit_name || 'base unit';
+           
+            setError({
+                field: 'general',
+                message: totalInCartBaseUnit > 0
+                    ? `Your cart already has ${totalInCartBaseUnit} ${baseUnitName} of ${tempItem.p_name}. You entered ${tempItem.quntity} ${tempItem.p_unit} (${newItemQtyInBaseUnit} ${baseUnitName}), but only ${remainingQty} ${baseUnitName} is still available in ${location}.`
+                    : `Only ${availableQuantity} ${baseUnitName} available in ${location}. You entered ${tempItem.quntity} ${tempItem.p_unit} (${newItemQtyInBaseUnit} ${baseUnitName}).`
+            });
+            return;
+        }
 
         const newItem = {
             ...hydrateComputedFields(tempItem),
@@ -203,10 +238,12 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         setQuery('');
         setAvailableQuantity(null);
         setError(null);
+        setSelectedProduct(null); // Clear currently selected product so InformationBox resets
+        setInformation({}); // Clear information state passed to InformationBox
     };
 
     // Function to update a specific field of an item in the cart based on user input. When the user changes a value (like quantity, price, discount, etc.) for an item in the cart, this function updates that field and recalculates the subtotal, tax amount, and total for that item to ensure that the cart reflects the most current and accurate information.
-    const updateCartItem = (index, field, value) => {
+     const updateCartItem = (index, field, value) => {
         const updatedCart = [...cartItems];
         const item = updatedCart[index];
 
@@ -214,9 +251,17 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
             const numQty = toNumber(value);
             const conversionFactor = item.conversionFactor || 1;
             const convertedQty = numQty * conversionFactor;
+            const otherCartBaseQty = getCartBaseQtyForProduct(item.p_id, item.id);
+            const remainingQty = availableQuantity !== null ? Math.max(0, availableQuantity - otherCartBaseQty) : null;
 
-            if (availableQuantity !== null && item.p_id === (tempItem.p_id || selectedProduct?.p_id) && convertedQty > availableQuantity) {
-                setError({ field: 'general', message: `Only ${availableQuantity} units available in ${location} stock` });
+            if (remainingQty !== null && item.p_id === (tempItem.p_id || selectedProduct?.p_id) && convertedQty > remainingQty) {
+                const baseUnitName = item.base_unit_name || tempItem.base_unit_name || 'base unit';
+                setError({
+                    field: 'general',
+                    message: otherCartBaseQty > 0
+                        ? `Your cart already has ${otherCartBaseQty} ${baseUnitName} of ${item.p_name}. You entered ${numQty} ${item.p_unit} (${convertedQty} ${baseUnitName}), but only ${remainingQty} ${baseUnitName} is still available in ${location}.`
+                        : `Only ${availableQuantity} ${baseUnitName} available in ${location}. You entered ${numQty} ${item.p_unit} (${convertedQty} ${baseUnitName}).`
+                });
                 // Reset to 0 to prevent bypassing validation
                 updatedCart[index][field] = 0;
             } else {
@@ -291,34 +336,72 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         console.log('Available quantity updated:', availableQuantity);
     }, [availableQuantity]);
 
+    // Update price when priceLevel changes if an item is selected
+    useEffect(() => {
+        if (tempItem.p_id && tempItem.base_unit_price) {
+            // Fetch the full product details to get both retail and wholesale prices
+            const fetchProductPrices = async () => {
+                try {
+                    const res = await axios.get(`http://localhost:5000/api/sales/search?q=${tempItem.p_code}`);
+                    if (res.data.success && res.data.products.length > 0) {
+                        const product = res.data.products[0];
+                        const newPrice = priceLevel === "Retail" ? toNumber(product.retail_price) : toNumber(product.wholesale_price);
+                        // Also update discount_allowed based on new price level
+                        const newDiscountAllowed = product.p_type === 'Company' && priceLevel === 'Wholesale' ? true : false;
+                        setTempItem((prev) => ({
+                            ...prev,
+                            base_unit_price: newPrice,
+                            unit_price: newPrice * (prev.conversionFactor || 1),
+                            discount_allowed: newDiscountAllowed,
+                            discount: 0  // Reset discount to 0 when price level changes
+                        }));
+                    }
+                } catch (err) {
+                    console.error('Error fetching product prices:', err);
+                }
+            };
+            
+            fetchProductPrices();
+        }
+    }, [priceLevel]);
+
 
     //set error when user input quntity more than available quntity in stock and also when user change the product selection reset the error
     const handleQtyChange = (qty) => {
         const numQty = toNumber(qty);
-        setTempItem((prev) => ({ ...prev, quntity: numQty }));
 
-        const conversionFactor = tempItem.conversionFactor || 1;
-        const convertedQty = numQty * conversionFactor; // Convert to base unit quantity for comparison
+        setTempItem((prev) => {
+            const conversionFactor = prev.conversionFactor || 1;
+            const convertedQty = numQty * conversionFactor; // Convert to base unit quantity for comparison
+            const alreadyInCartBaseQty = getCartBaseQtyForProduct(prev.p_id || selectedProduct?.p_id);
+            const remainingQty = availableQuantity !== null ? Math.max(0, availableQuantity - alreadyInCartBaseQty) : null;
 
-        console.log('Qty Change Details:', {
-            inputQty: qty,
-            numQty,
-            conversionFactor,
-            convertedQty,
-            availableQuantity,
-            hasError: availableQuantity !== null && convertedQty > availableQuantity
-        });
+            console.log('Qty Change Details:', {
+                inputQty: qty,
+                numQty,
+                conversionFactor,
+                convertedQty,
+                availableQuantity,
+                alreadyInCartBaseQty,
+                hasError: availableQuantity !== null && convertedQty > availableQuantity
+            });
 
-        if (availableQuantity !== null && convertedQty > availableQuantity) {
-            setError({ field: 'general', message: `Only ${availableQuantity} units available in ${location} stock` });
-            // Reset quantity to 0 to block the 'Add' button permanently until a valid qty is entered
-            setTempItem((prev) => ({ ...prev, quntity: 0 }));
-        }
-        else {
-            if (error?.message?.includes('available in')) {
-                setError({ field: null, message: null });
+            if (remainingQty !== null && convertedQty > remainingQty) {
+                const baseUnitName = prev.base_unit_name || 'base unit';
+                setError({
+                    field: 'general',
+                    message: alreadyInCartBaseQty > 0
+                        ? `Your cart already has ${alreadyInCartBaseQty} ${baseUnitName} of ${prev.p_name || 'this item'}. You entered ${numQty} ${prev.p_unit || 'unit'} (${convertedQty} ${baseUnitName}), but only ${remainingQty} ${baseUnitName} is still available in ${location}.`
+                        : `Only ${availableQuantity} ${baseUnitName} available in ${location}. You entered ${numQty} ${prev.p_unit || 'unit'} (${convertedQty} ${baseUnitName}).`
+                });
+                return { ...prev, quntity: 0 };
+            } else {
+                if (error?.message?.includes('available')) {
+                    setError({ field: null, message: null });
+                }
+                return { ...prev, quntity: numQty };
             }
-        }
+        });
 
     };
 
@@ -327,7 +410,15 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
     //display error  when 
     const handleOnFocusDiscount = () => {
         if (!tempItem.discount_allowed) {
-            setError({ field: 'general', message: 'Discount not allowed for this product' });
+            setTempItem((prev) => ({ ...prev, discount: 0 }));
+            setError({ field: 'general', message: 'Discount not allowed for this product, Discount only for Company and price level is Wholesale' });
+        }
+    };
+
+    //display error when user tries to edit discount on cart item if discount is not allowed
+    const handleOnFocusCartItemDiscount = (item) => {
+        if (!item.discount_allowed) {
+            setError({ field: 'general', message: 'Discount not allowed for this product, Discount only for Company and price level is Wholesale' });
         }
     };
 
@@ -339,7 +430,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
             {/* put toggle button here to  indicate this is a resale or wholesale */}
 
             <div className='card-header bg-white py-2' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h6 className='mb-0 fw-bold'><Package size={18} className='me-2 text-primary' /> Sales Items</h6>
+                <h6 className='mb-0 fw-bold'><Package size={18} className='me-2 text-primary' /> {t('itemTable.title')}</h6>
 
                 {/* Retail/Wholesale Toggle Button */}
                 <div style={{
@@ -374,7 +465,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                             }
                         }}
                     >
-                        🛍️ Retail
+                        🛍️ {t('itemTable.retail')}
                     </button>
                     <button
                         onClick={() => setPriceLevel('Wholesale')}
@@ -400,7 +491,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                             }
                         }}
                     >
-                        📦 Wholesale
+                        📦 {t('itemTable.wholesale')}
                     </button>
                 </div>
             </div>
@@ -413,16 +504,16 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                     <thead className='bg-light text-secondary small text-uppercase'>
                         <tr>
                             <th className='text-center' style={{ width: '40px' }}>#</th>
-                            <th style={{ width: '110px' }}>Item Code</th>
-                            <th style={{ width: 'auto' }}>Description</th>
-                            <th style={{ width: '100px' }}>Unit</th>
-                            <th className='text-end' style={{ width: '90px' }}>Price</th>
-                            <th className='text-end' style={{ width: '70px' }}>Dis%</th>
-                            <th className='text-end' style={{ width: '70px' }}>Tax%</th>
-                            <th className='text-center' style={{ width: '80px' }}>Qty</th>
-                            <th className='text-center' style={{ width: '70px' }}>Free</th>
-                            <th className='text-end' style={{ width: '100px' }}>Total</th>
-                            <th className='text-center' style={{ width: '50px' }}>Action</th>
+                            <th style={{ width: '110px' }}>{t('itemTable.itemCode')}</th>
+                            <th style={{ width: 'auto' }}>{t('itemTable.description')}</th>
+                            <th style={{ width: '100px' }}>{t('itemTable.unit')}</th>
+                            <th className='text-end' style={{ width: '90px' }}>{t('itemTable.price')}</th>
+                            <th className='text-end' style={{ width: '70px' }}>{t('itemTable.discount')}</th>
+                            <th className='text-end' style={{ width: '70px' }}>{t('itemTable.tax')}</th>
+                            <th className='text-center' style={{ width: '80px' }}>{t('itemTable.qty')}</th>
+                            <th className='text-center' style={{ width: '70px' }}>{t('itemTable.free')}</th>
+                            <th className='text-end' style={{ width: '100px' }}>{t('itemTable.total')}</th>
+                            <th className='text-center' style={{ width: '50px' }}>{t('itemTable.action')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -436,7 +527,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                                 <input
                                     ref={searchInputRef}
                                     className='form-control form-control-sm'
-                                    placeholder='Search item...'
+                                    placeholder={t('itemTable.searchPlaceholder')}
                                     value={query}
                                     onChange={(e) => handleSearch(e.target.value)}
                                     style={{ width: '100%' }}
@@ -476,25 +567,26 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                             </td>
                             <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.unit_price} onChange={(e) => setTempItem({ ...tempItem, unit_price: e.target.value })} readOnly /></td>
 
-                            <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.discount} onChange={(e) => setTempItem({ ...tempItem, discount: e.target.value })} onFocus={handleOnFocusDiscount} /></td>
+                            <td><input type='number' min='0' className='form-control form-control-sm text-end' value={tempItem.discount} onChange={(e) => setTempItem({ ...tempItem, discount: Math.max(0, parseFloat(e.target.value) || 0) })} onFocus={handleOnFocusDiscount} readOnly={!tempItem.discount_allowed} /></td>
                             <td><input type='number' className='form-control form-control-sm text-end' value={tempItem.tax} onChange={(e) => setTempItem({ ...tempItem, tax: e.target.value })} readOnly /></td>
                             <td>
                                 <input
                                     type='number'
+                                    min='0'
                                     className='form-control form-control-sm text-center fw-bold'
                                     value={tempItem.quntity}
-                                    onChange={(e) => handleQtyChange(e.target.value)}
+                                    onChange={(e) => handleQtyChange(Math.max(0, parseFloat(e.target.value) || 0).toString())}
                                     style={error?.field === 'quantity' ? { borderColor: '#dc3545', borderWidth: '2px' } : {}}
                                 />
                             </td>
-                            <td><input type='number' className='form-control form-control-sm text-center' value={tempItem.free} onChange={(e) => setTempItem({ ...tempItem, free: e.target.value })} /></td>
+                            <td><input type='number' min='0' className='form-control form-control-sm text-center' value={tempItem.free} onChange={(e) => setTempItem({ ...tempItem, free: Math.max(0, parseFloat(e.target.value) || 0) })} /></td>
                             <td className='text-end fw-bold text-primary'>{currentEntryTotal.toFixed(2)}</td>
                             <td className='text-center'>
-                                <button 
-                                    onClick={addItem} 
+                                <button
+                                    onClick={addItem}
                                     className='btn btn-primary btn-sm'
-                                    disabled={!tempItem.p_code || !tempItem.p_unit || (error?.message?.includes('available in'))}
-                                    title={error?.message?.includes('available in') ? error.message : "Add to cart"}
+                                    disabled={!tempItem.p_code || !tempItem.p_unit || (error?.field === 'general' && error?.message?.toLowerCase().includes('available'))}
+                                    title={error?.message || "Add to cart"}
                                 >
                                     <Plus size={16} />
                                 </button>
@@ -510,10 +602,10 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                                 <td className='fw-medium small'>{item.p_name}</td>
                                 <td className='small'>{item.p_unit}</td>
                                 <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.unit_price} onChange={(e) => updateCartItem(index, 'unit_price', e.target.value)} readOnly /></td>
-                                <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.discount} onChange={(e) => updateCartItem(index, 'discount', e.target.value)} /></td>
+                                <td><input type='number' min='0' className='form-control form-control-sm border-0 text-end p-0' value={item.discount} onChange={(e) => updateCartItem(index, 'discount', Math.max(0, parseFloat(e.target.value) || 0))} onFocus={() => handleOnFocusCartItemDiscount(item)} readOnly={!item.discount_allowed} /></td>
                                 <td><input type='number' className='form-control form-control-sm border-0 text-end p-0' value={item.tax} onChange={(e) => updateCartItem(index, 'tax', e.target.value)} readOnly /></td>
-                                <td><input type='number' className='form-control form-control-sm border-0 text-center fw-bold text-success p-0' value={item.quntity} onChange={(e) => updateCartItem(index, 'quntity', e.target.value)} /></td>
-                                <td><input type='number' className='form-control form-control-sm border-0 text-center p-0' value={item.free} onChange={(e) => updateCartItem(index, 'free', e.target.value)} /></td>
+                                <td><input type='number' min='0' className='form-control form-control-sm border-0 text-center fw-bold text-success p-0' value={item.quntity} onChange={(e) => updateCartItem(index, 'quntity', Math.max(0, parseFloat(e.target.value) || 0))} /></td>
+                                <td><input type='number' min='0' className='form-control form-control-sm border-0 text-center p-0' value={item.free} onChange={(e) => updateCartItem(index, 'free', Math.max(0, parseFloat(e.target.value) || 0))} /></td>
                                 <td className='text-end fw-bold small'>{toNumber(item.total).toFixed(2)}</td>
                                 <td className='text-center'>
                                     <button onClick={() => setCartItems(cartItems.filter((i) => i.id !== item.id))} className='btn btn-link text-danger p-0 border-0'><Trash2 size={16} /></button>
@@ -530,3 +622,36 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
 };
 
 export default ItemTable;
+
+
+// {
+//   // Product Identification
+//   p_id: '12345',                    // Product ID from database
+//   p_code: 'PROD-001',               // Product code
+//   p_name: 'Milk (1L)',              // Product name
+  
+//   // Unit & Conversion
+//   p_unit: 'Litre',                  // Selected unit (e.g., Litre, Packet)
+//   conversionFactor: 1.5,            // Unit conversion ratio relative to base unit
+  
+//   // Pricing
+//   base_unit_price: 200.00,          // Original price at base unit
+//   unit_price: 300.00,               // Calculated price at selected unit
+  
+//   // Quantity & Discounts
+//   quntity: 5,                       // Ordered quantity
+//   free: 1,                          // Free items (promotional)
+//   discount: 10,                     // Discount % (only for Wholesale Company)
+//   discount_allowed: true,           // Permission flag (Company + Wholesale)
+  
+//   // Tax
+//   tax: 15,                          // Tax % (read-only)
+  
+//   // Computed/Calculated Fields
+//   subTotal: 1350.00,                // (Qty - Free) × Unit Price × (1 - Discount%)
+//   taxAmount: 202.50,                // SubTotal × Tax%
+//   total: 1552.50,                   // SubTotal + Tax Amount
+  
+//   // Line Item Identifier
+//   id: 1715478523456                 // Timestamp-based unique ID for cart
+// }

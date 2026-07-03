@@ -240,9 +240,10 @@ const getSaleItemsBySaleId = async (req,res) => {
  * Search sales by multiple criteria (customer name, date, invoice no)
  */
 const searchSales = async (req, res) => {
-    try{
-        const {query, startDate, endDate, paymentStatus, location} = req.query;
-        const where = {Status: 'Active'}; // Only search active sales
+    try {
+        const { query, startDate, endDate, paymentStatus, location, productType, page = 1, limit = 20 } = req.query;
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+        const where = { Status: 'Active' }; // Only search active sales
 
         // Text search
         if (query && query.trim()) {
@@ -261,17 +262,28 @@ const searchSales = async (req, res) => {
             where.Payment_Status = paymentStatus;
         }
 
-
-        // Date range filter
-        if(startDate && endDate){
-            where.Sale_Date = {
-                [Op.between]: [new Date(startDate), new Date(endDate)]
-            }
+        // Product Type filter (Assume P_Type exists in database)
+        if (productType && ['Company', 'Other'].includes(productType)) {
+            where.P_Type = productType;
         }
 
-        const sales = await Sale.findAll({ 
+        // Date range filter
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            where.Sale_Date = {
+                [Op.between]: [start, end]
+            };
+        } else if (startDate) {
+            where.Sale_Date = { [Op.gte]: new Date(startDate) };
+        } else if (endDate) {
+            where.Sale_Date = { [Op.lte]: new Date(endDate) };
+        }
+
+        const { count, rows } = await Sale.findAndCountAll({
             where,
-            include:[
+            include: [
                 {
                     model: Customer,
                     as: 'Customer',
@@ -281,31 +293,37 @@ const searchSales = async (req, res) => {
                     model: SaleItem,
                     as: 'SaleItems',
                     attributes: ['Sale_Item_Id', 'P_ID', 'Quantity', 'Unit_Price', 'Line_Total']
-                },{
-                    model:Payment,
-                    as:'Payments',
+                }, {
+                    model: Payment,
+                    as: 'Payments',
                     attributes: ['Pay_ID', 'Payment_Method', 'Payment_Amount', 'Payment_Date']
                 }
             ],
-            order: [['Sale_Date', 'DESC']],
+            order: [['Sale_Date', 'DESC'], ['Sale_Time', 'DESC']],
+            limit: parseInt(limit),
+            offset: offset,
             subQuery: false // Important for correct pagination with includes
-         });
-       
+        });
 
-         console.log("**Debug - Search Sales Result Count:", sales.length); // Debug log
+        console.log("**Debug - Search Sales Result Count:", count); // Debug log
 
-         return res.status(200).json({
-            success:true, 
-            data:sales, 
-            count: sales.length,
-            message:'Sales search results fetched successfully'
-         });
-              
-    }catch(error){
+        return res.status(200).json({
+            success: true,
+            data: rows,
+            pagination: {
+                total: count,
+                page: parseInt(page),
+                pages: Math.ceil(count / parseInt(limit)),
+                limit: parseInt(limit)
+            },
+            message: 'Sales search results fetched successfully'
+        });
+
+    } catch (error) {
         console.error("Error searching sales:", error);
         return res.status(500).json({
-            success:false, 
-            message:'Failed to search sales', 
+            success: false,
+            message: 'Failed to search sales',
             error: error.message
         });
     }
@@ -374,11 +392,20 @@ const getTopSellingProducts = async (req, res) => {
             raw:true // Get raw result for easier access to aggregated fields
          });
 
+         const formattedProducts = topProducts.map(p => ({
+            P_ID: p.P_ID,
+            Product_Name: p['Product.P_Name'],
+            Product_Code: p['Product.P_Code'],
+            totalQuantity: parseFloat(p.totalQuantity) || 0,
+            totalRevenue: parseFloat(p.totalRevenue) || 0,
+            salesCount: parseInt(p.salesCount) || 0
+         }));
+
          return res.status(200).json({
             success:true, 
             period,
-            data:topProducts,
-            count: topProducts.length,
+            data:formattedProducts,
+            count: formattedProducts.length,
             message:'Top selling products fetched successfully'
          });
 
@@ -770,6 +797,43 @@ const getSalesPerformanceMetrics = async (req, res) => {
     }
 }
 
+/**
+ * Get sales breakdown by location (for charts)
+ */
+const getLocationSalesBreakdown = async (req, res) => {
+    try {
+        const breakdown = await Sale.findAll({
+            attributes: [
+                'Location',
+                [Sequelize.fn('COUNT', Sequelize.col('Sale_Id')), 'count'],
+                [Sequelize.fn('SUM', Sequelize.col('Total_Amount')), 'totalSales']
+            ],
+            where: { Status: 'Active' },
+            group: ['Location'],
+            raw: true
+        });
+
+        const formattedData = breakdown.map(item => ({
+            Location: item.Location,
+            count: parseInt(item.count) || 0,
+            totalSales: parseFloat(item.totalSales) || 0
+        }));
+
+        return res.status(200).json({
+            success: true,
+            data: formattedData,
+            message: 'Location sales breakdown fetched successfully'
+        });
+    } catch (error) {
+        console.error("Error fetching location sales breakdown:", error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch location sales breakdown',
+            error: error.message
+        });
+    }
+}
+
 // ============================================================================
 // SECTION 3: ADVANCED SEARCH & FILTERING
 // ============================================================================
@@ -1145,7 +1209,8 @@ module.exports = {
     getCompanyItemSalesReport,
     getOtherItemSalesReport,
     getLocationWiseSalesReport,
-    getSalesPerformanceMetrics
+    getSalesPerformanceMetrics,
+    getLocationSalesBreakdown
 };
 
  

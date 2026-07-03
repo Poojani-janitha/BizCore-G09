@@ -1,7 +1,10 @@
 import React from 'react'
 import { Search, Filter } from 'react-feather';
+import { useTranslation } from 'react-i18next';
 
 const ProductFilters = ({ onSearchChange, onTypeChange, onActiveToggle }) => {
+  const { t } = useTranslation();
+  
   return (
     <div className='card border-0 shadow-sm p-3 mb-4'>
         <div className='row g-3 align-items-center'>
@@ -12,7 +15,7 @@ const ProductFilters = ({ onSearchChange, onTypeChange, onActiveToggle }) => {
                     <input 
                         type="text"
                         className='form-control border-0 bg-transparent shadow-none py-2'
-                        placeholder='Search by product name or barcode...'
+                        placeholder={t('inventory.filters.search_placeholder', 'Search by product name or barcode...')}
                         onChange={(e) => onSearchChange(e.target.value)} />
                 </div>
             </div>
@@ -23,7 +26,7 @@ const ProductFilters = ({ onSearchChange, onTypeChange, onActiveToggle }) => {
             <div className='col-md-5 text-end'>
                 <div className='form-check form-switch d-inline-block'>
                     <input className='form-check-input' type="checkbox" id='activeOnly'  onChange={(e) => onActiveToggle(e.target.checked)} style={{cursor: 'pointer'}}/>
-                    <label className='form-check-label small fw-medium' htmlFor='activeOnly' style={{ cursor: 'pointer'}}>In Stock Only</label>
+                    <label className='form-check-label small fw-medium' htmlFor='activeOnly' style={{ cursor: 'pointer'}}>{t('inventory.filters.active_only', 'In Stock Only')}</label>
                 </div>
             </div>
         </div>

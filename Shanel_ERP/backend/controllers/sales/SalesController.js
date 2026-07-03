@@ -1,5 +1,5 @@
 const sequelize = require('../../config/db');
-const { Product, UnitConversion, Sale,Inventory, Customer,Payment,SaleItem, CreditTranscation } = require('../../models/index');
+const { Product, UnitConversion, Sale, Inventory, Customer, Payment, SaleItem, CreditTranscation, StockMovement } = require('../../models/index');
 const { Op, where } = require('sequelize');
 
 const searchProducts = async (req, res) => {
@@ -280,6 +280,12 @@ const postSalesData = async (req, res) => {
     const t = await sequelize.transaction();
     try {
         const { customer: customerReq, items, invoiceDetails, paymentDetails, action, saleType, priceLevel, location } = req.body;
+        const createdBy = req.user?.sub;
+
+        if (!createdBy) {
+            await t.rollback();
+            return res.status(401).json({ success: false, message: 'Authenticated user id is required' });
+        }
 
 
         const resolvedSaleType = saleType || invoiceDetails?.saleType || 'Retail';
@@ -328,7 +334,7 @@ const postSalesData = async (req, res) => {
 
             Price_Level: resolvedPriceLevel,
             Subtotal: parseFloat(invoiceDetails.subTotal || 0),
-            Discount_Percentage: 0,
+            Discount_Percentage: parseFloat(invoiceDetails.discountPercentage || 0),
             Discount_Amount: parseFloat(invoiceDetails.discountAmount || 0),
             Tax_Rate: 0,
             Tax_Amount: parseFloat(invoiceDetails.taxTotal || 0),
@@ -429,6 +435,11 @@ const postSalesData = async (req, res) => {
             const unitConversion = parseFloat(unit?.Unit_Conversion ?? item.conversionFactor ?? 1);
             const baseUnitQty = qty * unitConversion;
 
+            // Calculate line discount amount from quantity, price, and discount percentage
+            const unitPrice = parseFloat(item.unit_price || 0);
+            const discountPercentage = parseFloat(item.discount || 0);
+            const lineDiscountAmount = (qty * unitPrice) * (discountPercentage / 100);
+
             // Prepare SaleItem record
             const saleItem = {
                 Sale_ID: sale.Sale_Id,
@@ -436,10 +447,10 @@ const postSalesData = async (req, res) => {
                 U_ID: unit?.U_ID ?? 1,
                 Quantity: qty,
                 Base_Unit_Qty: baseUnitQty,
-                Unit_Price: parseFloat(item.unit_price || 0),
+                Unit_Price: unitPrice,
                 Price_Level_Used: resolvedPriceLevel,
-                Line_Discount_Percentage: parseFloat(item.discount || 0),
-                Line_Discount_Amount: parseFloat(item.discountAmount || 0),
+                Line_Discount_Percentage: discountPercentage,
+                Line_Discount_Amount: lineDiscountAmount,
                 Line_Subtotal: parseFloat(item.subTotal || 0),
                 Line_Tax_Rate: parseFloat(item.tax || 0),
                 Line_Tax_Amount: parseFloat(item.taxAmount || 0),
@@ -471,6 +482,24 @@ const postSalesData = async (req, res) => {
                 by: baseUnitQty, 
                 transaction: t 
             });
+
+            const updatedQtyAfterSale = currentQty - baseUnitQty;
+
+            await StockMovement.create({
+                P_ID: item.p_id,
+                PR_ID: item.pr_id || null,
+                Location: saleItem.Location_Taken_From,
+                Movement_Type: 'Sale',
+                Qty_In: 0,
+                Qty_Out: baseUnitQty,
+                Balance_After: updatedQtyAfterSale,
+                Ref_Type: 'Sales',
+                Ref_ID: sale.Sale_Id,
+                Move_Date: saleDate,
+                Move_Time: saleTime,
+                Notes: `Sale invoice ${sale.Invoice_No} - ${item.p_name || item.p_code || 'Item'}`,
+                Created_By: createdBy
+            }, { transaction: t });
 
 
 

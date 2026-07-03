@@ -8,6 +8,7 @@ import ProductViewModal from '../../component/Inventory/Product/ProductViewModal
 import { X } from 'react-feather';
 import { useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
+import { useTranslation } from 'react-i18next';
 
 // Utility function for stock status
 const getStockStatus = (stockCount, minStock) => {
@@ -20,6 +21,7 @@ const getStockStatus = (stockCount, minStock) => {
 
 const ProductPage = ({ typeFilter, pageTitle }) => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     //Filtering status
     const [searchTerm, setSearchTerm] = useState('');
@@ -359,9 +361,9 @@ const ProductPage = ({ typeFilter, pageTitle }) => {
             {typeFilter === 'Company' && (
                 <div className='  rounded-3 p-2 mb-3 d-flex flex-wrap gap-2'>
                     {[
-                        { key: 'all', label: 'All', count: companySourceCounts.all },
-                        { key: 'shanel', label: 'Shanel Products', count: companySourceCounts.shanel },
-                        { key: 'ishara', label: 'Ishara Products', count: companySourceCounts.ishara }
+                        { key: 'all', label: t('inventory.filters.all', 'All'), count: companySourceCounts.all },
+                        { key: 'shanel', label: t('inventory.filters.shanel', 'Shanel Products'), count: companySourceCounts.shanel },
+                        { key: 'ishara', label: t('inventory.filters.ishara', 'Ishara Products'), count: companySourceCounts.ishara }
                     ].map(filter => (
                         <button
                             key={filter.key}

@@ -15,7 +15,23 @@ exports.processReturn = async (req, res) => {
             throw new Error("Quantity mismatch: Good + Bad must equal Total Return Qty");
         }
 
-        // 2. Handle Good Items (Restock = 1)
+        // 2. Get the location from the original sale
+        let saleLocation = 'Shop'; // Default fallback
+        if (Return_Type === 'Customer') {
+            const sale = await sequelize.query(
+                `SELECT Location FROM sales WHERE Sale_ID = ?`,
+                {
+                    replacements: [Ref_ID],
+                    type: sequelize.QueryTypes.SELECT,
+                    transaction: t
+                }
+            );
+            if (sale && sale.length > 0 && sale[0].Location) {
+                saleLocation = sale[0].Location;
+            }
+        }
+
+        // 3. Handle Good Items (Restock = 1)
         if (parseFloat(Good_Qty) > 0) {
             await ProductReturn.create({
                 P_ID, Return_Type, Ref_ID, Reason, Reason_Details,
@@ -27,16 +43,16 @@ exports.processReturn = async (req, res) => {
                 Status: 'Completed'
             }, { transaction: t });
 
-            // Update Physical Stock
+            // Update Physical Stock in the SAME location where it was sold
             const [inventory] = await Inventory.findOrCreate({
-                where: { P_ID, Location: 'Shop' },
+                where: { P_ID, Location: saleLocation },
                 defaults: { Qty: 0 },
                 transaction: t
             });
             await inventory.update({ Qty: parseFloat(inventory.Qty) + parseFloat(Good_Qty) }, { transaction: t });
         }
 
-        // 3. Handle Bad Items (Restock = 0)
+        // 4. Handle Bad Items (Restock = 0)
         if (parseFloat(Bad_Qty) > 0) {
             await ProductReturn.create({
                 P_ID, Return_Type, Ref_ID, Reason, Reason_Details,
@@ -63,7 +79,7 @@ exports.getReturnLogs = async (req, res) => {
         const returns = await sequelize.query(
             `SELECT pr.RT_ID, pr.P_ID, pr.Return_Type, pr.Ref_ID, pr.Qty, pr.Reason, 
                     pr.Reason_Details, pr.Return_Date, pr.Refund_Amount, pr.Restock, pr.Status,
-                    p.P_Name, p.P_Code, p.Base_Unit,
+                    p.P_Name, p.P_Name_Sinhala, p.P_Code, p.Base_Unit,
                     s.Sale_ID, s.Invoice_No, s.Sale_Date, s.Total_Amount,
                     c.C_ID, c.C_Name, c.Phone1, c.Email
              FROM product_return pr
@@ -138,7 +154,7 @@ exports.getInvoiceDetails = async (req, res) => {
         const items = await sequelize.query(
             `SELECT si.Sale_Item_ID, si.Sale_ID, si.P_ID, si.U_ID, si.Quantity, 
                     si.Base_Unit_Qty, si.Unit_Price, si.Created_At,
-                    p.P_Name, p.Base_Unit, p.Retail_Price, p.Wholesale_Price,
+                    p.P_Name, p.P_Name_Sinhala, p.Base_Unit, p.Retail_Price, p.Wholesale_Price,
                     uc.Unit_Name, uc.Unit_Conversion
              FROM sale_item si
              JOIN product p ON si.P_ID = p.P_ID
@@ -159,6 +175,7 @@ exports.getInvoiceDetails = async (req, res) => {
             Sale_Item_Id: item.Sale_Item_ID,
             P_ID: item.P_ID,
             P_Name: item.P_Name,
+            P_Name_Sinhala: item.P_Name_Sinhala,
             Base_Unit: item.Base_Unit,
             Quantity_Sold: item.Quantity,
             Base_Unit_Qty_Sold: item.Base_Unit_Qty,
@@ -192,11 +209,29 @@ exports.updateReturn = async (req, res) => {
         const newQty = parseFloat(Qty);
         const P_ID = existingReturn.P_ID;
         const oldRestock = existingReturn.Restock;
+        const Return_Type = existingReturn.Return_Type;
+        const Ref_ID = existingReturn.Ref_ID;
+
+        // Get the location from the original sale
+        let saleLocation = 'Shop'; // Default fallback
+        if (Return_Type === 'Customer') {
+            const sale = await sequelize.query(
+                `SELECT Location FROM sales WHERE Sale_ID = ?`,
+                {
+                    replacements: [Ref_ID],
+                    type: sequelize.QueryTypes.SELECT,
+                    transaction: t
+                }
+            );
+            if (sale && sale.length > 0 && sale[0].Location) {
+                saleLocation = sale[0].Location;
+            }
+        }
 
         // If quantity or restock status changed, update inventory
         if (oldQty !== newQty || oldRestock !== Restock) {
             const inventory = await Inventory.findOne({ 
-                where: { P_ID, Location: 'Shop' }, 
+                where: { P_ID, Location: saleLocation }, 
                 transaction: t 
             });
 
@@ -252,13 +287,30 @@ exports.deleteReturn = async (req, res) => {
 
         const P_ID = returnRecord.P_ID;
         const qty = parseFloat(returnRecord.Qty);
-        const restock = returnRecord.Restock;
+        const Return_Type = returnRecord.Return_Type;
+        const Ref_ID = returnRecord.Ref_ID;
 
-        // If it was a good item (Restock = 1), reverse the inventory
-        if (restock === 1) {
-            const inventory = await Inventory.findOne({ 
-                where: { P_ID, Location: 'Shop' }, 
-                transaction: t 
+        // If this was a good return (restocked), reverse the inventory update
+        if (returnRecord.Restock === 1) {
+            // Get the location from the original sale
+            let saleLocation = 'Shop'; // Default fallback
+            if (Return_Type === 'Customer') {
+                const sale = await sequelize.query(
+                    `SELECT Location FROM sales WHERE Sale_ID = ?`,
+                    {
+                        replacements: [Ref_ID],
+                        type: sequelize.QueryTypes.SELECT,
+                        transaction: t
+                    }
+                );
+                if (sale && sale.length > 0 && sale[0].Location) {
+                    saleLocation = sale[0].Location;
+                }
+            }
+
+            const inventory = await Inventory.findOne({
+                where: { P_ID, Location: saleLocation },
+                transaction: t
             });
 
             if (inventory) {

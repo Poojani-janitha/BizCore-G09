@@ -4,7 +4,7 @@ import {
     Home, ShoppingCart, Package, DollarSign, Users,
     ChevronRight, ChevronDown, Box, Archive, Menu,
     LogOut, Truck, Settings, FileText, RefreshCw,
-    Sliders, CornerUpLeft, BarChart2, Bell, PieChart
+    Sliders, CornerUpLeft, BarChart2, Bell, PieChart, Shield, AlertCircle
 } from 'react-feather';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -12,14 +12,16 @@ const SlideBar = () => {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [headerHover, setHeaderHover] = useState(false);
     const [openMenus, setOpenMenus] = useState({});
+    const [permittedMenus, setPermittedMenus] = useState([]);
     const location = useLocation();
 
     const menuConfig = [
-        { label: 'Home', icon: <Home size={18} />, to: '/home' },
+        { label: 'Home', icon: <Home size={18} />, to: '/home' }, // Public or always available
         {
             label: 'Inventory',
             icon: <Package size={18} />,
             to: '/inventory',
+            moduleKey: 'inventory',
             subItems: [
                 { label: 'Dashboard', to: '/inventory', icon: <BarChart2 size={14} /> },
                 { label: 'Company Items', to: '/inventory/company-items', icon: <Package size={14} /> },
@@ -34,21 +36,42 @@ const SlideBar = () => {
                 { label: 'Alerts', to: '/inventory/alerts', icon: <Bell size={14} /> },
             ]
         },
-        { label: 'POS', icon: <ShoppingCart size={18} />, to: '/POS' },
+        { label: 'POS', icon: <ShoppingCart size={18} />, to: '/POS', moduleKey: 'pos' },
+        {
+            label: 'Sales',
+            icon: <BarChart2 size={18} />,
+            to: '/sales',
+            moduleKey: 'sales',
+            subItems: [
+                { label: 'Dashboard', to: '/sales', icon: <PieChart size={14} /> },
+                { label: 'Performance', to: '/sales/performance', icon: <BarChart2 size={14} /> },
+                { label: 'History', to: '/sales/history', icon: <FileText size={14} /> },
+                { label: 'Payment Collection', to: '/sales/collection', icon: <AlertCircle size={14} /> },
+                { label: 'Company Items Report', to: '/sales/reports/company', icon: <FileText size={14} /> },
+                { label: 'Other Items Report', to: '/sales/reports/other', icon: <FileText size={14} /> },
+                { label: 'Location Report', to: '/sales/reports/location', icon: <BarChart2 size={14} /> },
+                { label: 'Reports', to: '/sales/reports', icon: <BarChart2 size={14} /> },
+            ]
+        },
         {
             label: 'HR',
             icon: <Users size={18} />,
             to: '/hr',
+            moduleKey: 'hr',
             subItems: [
+                { label: 'Dashboard', to: '/hr', icon: <BarChart2 size={14} /> },
                 { label: 'Employees', to: '/hr/employees', icon: <Users size={14} /> },
                 { label: 'Attendance', to: '/hr/attendance', icon: <FileText size={14} /> },
+                { label: 'Leaves', to: '/hr/leave', icon: <Archive size={14} /> },
                 { label: 'Payroll', to: '/hr/payroll', icon: <DollarSign size={14} /> },
+                { label: 'Reports', to: '/hr/reports', icon: <BarChart2 size={14} /> },
             ]
         },
         {
             label: 'Finance & Accounting',
             icon: <DollarSign size={18} />,
             to: '/finance',
+            moduleKey: 'finance',
             subItems: [
                 { label: 'Overview', to: '/finance', icon: <PieChart size={14} /> },
                 { label: 'General Ledger', to: '/finance/general-ledger', icon: <FileText size={14} /> },
@@ -58,6 +81,12 @@ const SlideBar = () => {
                 { label: 'Reports', to: '/finance/reports', icon: <BarChart2 size={14} /> },
             ]
         },
+        {
+            label: 'User Management',
+            icon: <Shield size={18} />,
+            to: '/user-management',
+            moduleKey: 'user_management'
+        }
     ];
 
     const colors = {
@@ -70,15 +99,28 @@ const SlideBar = () => {
     };
 
     useEffect(() => {
+        // Get permissions from localStorage
+        const userModules = JSON.parse(localStorage.getItem('modules') || '[]');
+        
+        // Filter menu config
+        const filtered = menuConfig.filter(item => {
+            if (!item.moduleKey) return true; // Always show if no moduleKey (like Home)
+            return userModules.includes(item.moduleKey);
+        });
+        
+        setPermittedMenus(filtered);
+    }, []);
+
+    useEffect(() => {
         const currentPath = location.pathname;
         const newOpenMenus = {};
-        menuConfig.forEach(item => {
+        permittedMenus.forEach(item => {
             if (item.subItems && currentPath.startsWith(item.to)) {
                 newOpenMenus[item.label] = true;
             }
         });
         setOpenMenus(newOpenMenus);
-    }, [location.pathname]);
+    }, [location.pathname, permittedMenus]);
 
     const toggleSubMenu = (label) => {
         if (isCollapsed) setIsCollapsed(false);
@@ -119,7 +161,7 @@ const SlideBar = () => {
             {/* Scrollable Menu Area */}
             <div className="flex-grow-1 sidebar-scroll-area" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
                 <ul className="nav flex-column py-3 px-2">
-                    {menuConfig.map((item, index) => (
+                    {permittedMenus.map((item, index) => (
                         <li key={`${item.label}-${item.to}-${index}`} className='nav-item mb-1'>
                             {item.subItems ? (
                                 <>
@@ -129,7 +171,10 @@ const SlideBar = () => {
                                             backgroundColor: (isActive || openMenus[item.label]) ? colors.itemHover : 'transparent',
                                             color: (isActive || openMenus[item.label]) ? colors.textPrimary : colors.textMuted
                                         })}
-                                        onClick={() => toggleSubMenu(item.label)}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            toggleSubMenu(item.label);
+                                        }}
                                     >
                                         <div className="d-flex align-items-center gap-3">
                                             {item.icon}

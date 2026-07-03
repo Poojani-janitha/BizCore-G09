@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getBanks, getBranches } from '../../../services/bankService';
 import { calculatePayment } from '../../../utils/paymentCalculator';
 
 const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, customerData }) => {
-
+    const { t } = useTranslation();
     const toNumber = (value) => parseFloat(value) || 0;
 
     const [payments, setPayments] = useState({
@@ -120,11 +121,11 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
             <div className="row g-4">
                 {/* Column 1: Payments */}
                 <div className="col-md-4 border-end">
-                    <h6 className="text-uppercase fw-bold text-primary mb-3" style={{ fontSize: '0.75rem', letterSpacing: '1px' }}>Payment Details</h6>
+                    <h6 className="text-uppercase fw-bold text-primary mb-3" style={{ fontSize: '0.75rem', letterSpacing: '1px' }}>{t('paymentMethod.paymentDetails')}</h6>
 
                     <div className="mb-3">
-                        <label className="form-label small fw-bold text-muted mb-1 text-uppercase">Cash Tendered</label>
-                        <input type="number" className="form-control form-control-sm fw-bold border-success shadow-sm"
+                        <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.cashTendered')}</label>
+                        <input min='0' type="number" className="form-control form-control-sm fw-bold border-success shadow-sm"
                             style={{ background: '#f0fff4', fontSize: '1rem' }}
                             value={payments.cashTendered} onChange={(e) => setPayments({ ...payments, cashTendered: e.target.value })}
                             placeholder="0.00" />
@@ -132,12 +133,12 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
 
                     <div className="row g-2 mb-2">
                         <div className="col-6">
-                            <label className="form-label small fw-bold text-muted mb-1 text-uppercase">Applied</label>
-                            <input type="number" className="form-control form-control-sm fw-bold border-warning shadow-sm"
+                            <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.applied')}</label>
+                            <input min='0' type="number" className="form-control form-control-sm fw-bold border-warning shadow-sm"
                                 style={{ background: '#fffbeb', fontSize: '0.9rem' }}
                                 value={payments.applied} onChange={(e) => setPayments({ ...payments, applied: e.target.value })} />
                             <span style={{ fontSize: '0.65rem', color: '#666', fontStyle: 'italic', display: 'block', marginTop: '2px', lineHeight: '1' }}>
-                                :internally: {(() => {
+                                internally: {(() => {
                                     let internalApplied = toNumber(payments.applied);
                                     const cashTendered = toNumber(payments.cashTendered);
                                     const tb = toNumber(totalDue);
@@ -150,7 +151,7 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
                             </span>
                         </div>
                         <div className="col-6">
-                            <label className="form-label small fw-bold text-muted mb-1 text-uppercase">Change</label>
+                            <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.change')}</label>
                             <input type="text" className="form-control form-control-sm fw-bold text-danger bg-white shadow-sm"
                                 value={paymentStatus.change.toFixed(2)} readOnly />
                         </div>
@@ -158,14 +159,14 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
 
                     <div className="row g-2 mb-3">
                         <div className="col-6">
-                            <label className="form-label small fw-bold text-muted mb-1 text-uppercase">Cheque</label>
-                            <input type="number" className="form-control form-control-sm fw-bold border-primary shadow-sm"
+                            <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.cheque')}</label>
+                            <input min='0' type="number" className="form-control form-control-sm fw-bold border-primary shadow-sm"
                                 style={{ background: '#eff6ff' }}
                                 value={payments.cheque} onChange={(e) => setPayments({ ...payments, cheque: e.target.value })} />
                         </div>
                         <div className="col-6">
-                            <label className="form-label small fw-bold text-muted mb-1 text-uppercase">Bank Trf</label>
-                            <input type="number" className="form-control form-control-sm fw-bold border-info shadow-sm"
+                            <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.bankTransfer')}</label>
+                            <input min='0' type="number" className="form-control form-control-sm fw-bold border-info shadow-sm"
                                 style={{ background: '#ecfeff' }}
                                 value={payments.bankTrf} onChange={(e) => setPayments({ ...payments, bankTrf: e.target.value })} />
                         </div>
@@ -173,7 +174,7 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
 
                     <div className="p-2 rounded bg-white border shadow-sm mt-2" style={{ borderColor: '#6366f1' }}>
                         <div className="d-flex justify-content-between align-items-center">
-                            <label className="small fw-bold text-uppercase mb-0" style={{ fontSize: '0.65rem', color: '#4338ca' }}>Credit Amount</label>
+                            <label className="small fw-bold text-uppercase mb-0" style={{ fontSize: '0.65rem', color: '#4338ca' }}>{t('paymentMethod.creditAmount')}</label>
                             <input type="text" className="form-control form-control-sm fw-bold text-end border-0 p-0"
                                 style={{ background: 'transparent', width: '100px', fontSize: '0.95rem', color: '#4338ca' }}
                                 value={paymentStatus.credit.toFixed(2)} readOnly />
@@ -183,22 +184,22 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
 
                 {/* Column 2: References */}
                 <div className="col-md-4 border-end">
-                    <h6 className="text-uppercase fw-bold text-primary mb-3" style={{ fontSize: '0.75rem', letterSpacing: '1px' }}>References</h6>
+                    <h6 className="text-uppercase fw-bold text-primary mb-3" style={{ fontSize: '0.75rem', letterSpacing: '1px' }}>{t('paymentMethod.references')}</h6>
 
                     <div className="mb-3">
-                        <label className="form-label small fw-bold text-muted mb-1 text-uppercase">Cheque No</label>
+                        <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.chequeNo')}</label>
                         <input type="text" className="form-control form-control-sm shadow-sm"
                             value={references.chequeNo} onChange={(e) => setReferences({ ...references, chequeNo: e.target.value })} />
                     </div>
 
                     <div className="mb-3">
-                        <label className="form-label small fw-bold text-muted mb-1 text-uppercase">Bank Ref</label>
+                        <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.bankRef')}</label>
                         <input type="text" className="form-control form-control-sm shadow-sm"
                             value={references.bankRef} onChange={(e) => setReferences({ ...references, bankRef: e.target.value })} />
                     </div>
 
                     <div className="mb-3">
-                        <label className="form-label small fw-bold text-muted mb-1 text-uppercase">Credit Ref</label>
+                        <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.creditRef')}</label>
                         <input type="text" className="form-control form-control-sm shadow-sm"
                             value={references.creditRef} onChange={(e) => setReferences({ ...references, creditRef: e.target.value })} />
                     </div>
@@ -206,33 +207,33 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
 
                 {/* Column 3: Details */}
                 <div className="col-md-4">
-                    <h6 className="text-uppercase fw-bold text-primary mb-3" style={{ fontSize: '0.75rem', letterSpacing: '1px' }}>Other Details</h6>
+                    <h6 className="text-uppercase fw-bold text-primary mb-3" style={{ fontSize: '0.75rem', letterSpacing: '1px' }}>{t('paymentMethod.otherDetails')}</h6>
 
                     <div className="mb-3">
-                        <label className="form-label small fw-bold text-muted mb-1 text-uppercase">Cheque Date</label>
+                        <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.chequeDate')}</label>
                         <input type="date" className="form-control form-control-sm shadow-sm"
                             value={references.chequeDate} onChange={(e) => setReferences({ ...references, chequeDate: e.target.value })} />
                     </div>
 
                     <div className="row g-2 mb-3">
                         <div className="col-6">
-                            <label className="form-label small fw-bold text-muted mb-1 text-uppercase">Bank</label>
+                            <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.bank')}</label>
                             <select className="form-select form-select-sm shadow-sm" value={references.cheque_bank} onChange={(e) => handleBankChange(e.target.value)}>
-                                <option value="">Select Bank</option>
+                                <option value="">{t('paymentMethod.selectBank')}</option>
                                 {bankList.map(bank => <option key={bank.bank_id} value={bank.bank_name}>{bank.bank_name}</option>)}
                             </select>
                         </div>
                         <div className="col-6">
-                            <label className="form-label small fw-bold text-muted mb-1 text-uppercase">Branch</label>
+                            <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.branch')}</label>
                             <select className="form-select form-select-sm shadow-sm" value={references.cheque_branch} onChange={(e) => setReferences({ ...references, cheque_branch: e.target.value })} disabled={!references.cheque_bank}>
-                                <option value="">Select Branch</option>
+                                <option value="">{t('paymentMethod.selectBranch')}</option>
                                 {branchList.map(branch => <option key={branch.branch_id} value={branch.branch_name}>{branch.branch_name}</option>)}
                             </select>
                         </div>
                     </div>
 
                     <div className="mb-3">
-                        <label className="form-label small fw-bold text-muted mb-1 text-uppercase">Delivered By</label>
+                        <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.deliveredBy')}</label>
                         <input type="text" className="form-control form-control-sm shadow-sm"
                             value={references.cheque_delivered_by} onChange={(e) => setReferences({ ...references, cheque_delivered_by: e.target.value })} />
                     </div>
@@ -240,10 +241,10 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
                     <div className="d-flex align-items-center justify-content-between mt-3 p-2 rounded bg-light border border-dashed" style={{ borderStyle: 'dashed' }}>
                         <div className="form-check form-switch m-0">
                             <input className="form-check-input" type="checkbox" checked={keepBalance} onChange={(e) => setKeepBalance(e.target.checked)} />
-                            <label className="form-check-label fw-bold text-primary small ms-1">Keep Balance</label>
+                            <label className="form-check-label fw-bold text-primary small ms-1">{t('paymentMethod.keepBalance')}</label>
                         </div>
                         <div className="d-flex align-items-center gap-2">
-                            <span className="small fw-bold text-muted text-uppercase" style={{ fontSize: '0.65rem' }}>Overpayment</span>
+                            <span className="small fw-bold text-muted text-uppercase" style={{ fontSize: '0.65rem' }}>{t('paymentMethod.overpayment')}</span>
                             <input
                                 type="text"
                                 className="form-control form-control-sm fw-bold text-end border-0 bg-white"

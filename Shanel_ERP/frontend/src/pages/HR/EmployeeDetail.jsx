@@ -4,6 +4,8 @@ import axios from 'axios';
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const API_BASE = API_ENDPOINTS.hr.root;
+//viewing and editing an individual employee's profile.
+// const API_BASE = 'http://localhost:5000/api/hr';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -71,7 +73,12 @@ const EmployeeDetail = () => {
           </div>
           <div className="mb-3">
             <label className="form-label">Role</label>
-            <input className="form-control" value={employee.role} onChange={e => handleChange('role', e.target.value)} />
+            <select className="form-select" value={employee.role} onChange={e => handleChange('role', e.target.value)}>
+              <option value="Staff">Staff</option>
+              <option value="Cashier">Cashier</option>
+              <option value="Staff (Production)">Staff (Production)</option>
+              <option value="Manager">Manager</option>
+            </select>
           </div>
           <div className="mb-3">
             <label className="form-label">Email</label>

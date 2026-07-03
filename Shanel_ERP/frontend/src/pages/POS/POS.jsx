@@ -17,7 +17,7 @@ import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 // Create a walk-in customer object
 const WALKIN_CUSTOMER = {
-  c_id: 4,
+  c_id: 20,
   customer_code: 'WALKIN',
   c_name: 'Walk-in Customer',
   phone1: 'N/A',
@@ -26,6 +26,8 @@ const WALKIN_CUSTOMER = {
   credit_allowed: false,
   credit_status: 'NOT_ALLOWED'
 };
+
+const toNumber = (value) => parseFloat(value) || 0;
 
 const POS = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -38,7 +40,7 @@ const POS = () => {
   const [loading, setLoading] = useState(false);//for display resent sales component after payment, also can be used for loading state in future
   const [holdInvoices, setHoldInvoices] = useState([]);//for storing multiple hold invoice data in local storage
   const [isHoldOpen, setIsHoldOpen] = useState(false);
-
+  const[information, setInformation] = useState({});//for storing product information to display in InformationBox component
   const [priceLevel, setPriceLevel] = useState('Retail'); // Toggle between Retail and Wholesale
   const [location, setLocation] = useState('Shop'); // toggle between  shop and production
   const [selectedProduct, setSelectedProduct] = useState(null); // Store the currently selected product for which we want to show information in InformationBox
@@ -154,6 +156,56 @@ const POS = () => {
     }
   }, [successMessage, error]);
 
+  const validateCartStockBeforeSave = useCallback(async () => {
+    const groupedItems = cartItems.reduce((groups, item) => {
+      if (!item?.p_id) {
+        return groups;
+      }
+
+      if (!groups[item.p_id]) {
+        groups[item.p_id] = {
+          p_name: item.p_name,
+          base_unit_name: item.base_unit_name || item.p_unit || 'base unit',
+          totalBaseQty: 0,
+        };
+      }
+
+      groups[item.p_id].totalBaseQty += toNumber(item.quntity) * (item.conversionFactor || 1);
+      return groups;
+    }, {});
+
+    for (const [productId, productInfo] of Object.entries(groupedItems)) {
+      const res = await axios.get(API_ENDPOINTS.sales.productQuantity(productId));
+
+      if (!res.data?.success) {
+        continue;
+      }
+
+      const shopQty = toNumber(res.data.shopQty);
+      const productionQty = toNumber(res.data.productionQty);
+      const totalQty = toNumber(res.data.totalQty);
+
+      let availableQty = 0;
+      if (location === 'Shop') {
+        availableQty = shopQty;
+      } else if (location === 'Production') {
+        availableQty = productionQty;
+      } else {
+        availableQty = totalQty;
+      }
+
+      if (productInfo.totalBaseQty > availableQty) {
+        setError({
+          field: 'general',
+          message: `All ${productInfo.p_name} you ordered is ${productInfo.totalBaseQty} in base unit but there is only ${availableQty} ${productInfo.base_unit_name} in the ${location} location.`
+        });
+        return false;
+      }
+    }
+
+    return true;
+  }, [cartItems, location, setError]);
+
   const sendData = useCallback(async () => {
 
     if (!action) {
@@ -221,8 +273,39 @@ const POS = () => {
         return;
       }
 
-      try {
-        const response = await axios.post(API_ENDPOINTS.sales.root, {
+      const isStockValid = await validateCartStockBeforeSave();
+      if (!isStockValid) {
+        setAction({});
+        return;
+      }
+
+      const accessToken = localStorage.getItem('token');
+      if (!accessToken) {
+        setError({ field: 'general', message: 'You are not logged in. Please sign in again before saving the sale.' });
+        setAction({});
+        return;
+      }
+
+      const refreshAccessToken = async () => {
+        const refreshToken = localStorage.getItem('refresh_token');
+        if (!refreshToken) {
+          return null;
+        }
+
+        const refreshResponse = await axios.post(`${API_ENDPOINTS.root}/users/refresh`, {
+          refresh_token: refreshToken
+        });
+
+        if (refreshResponse.data?.success && refreshResponse.data.access_token) {
+          localStorage.setItem('token', refreshResponse.data.access_token);
+          return refreshResponse.data.access_token;
+        }
+
+        return null;
+      };
+
+      const submitSale = async (token) => {
+        return axios.post(API_ENDPOINTS.sales.root, {
           customer: customerData,
           items: cartItems,
           invoiceDetails: { ...invoiceData, invoiceNo: invoiceNo },
@@ -231,7 +314,31 @@ const POS = () => {
           saleType: priceLevel === 'Retail' ? 'Retail' : 'Wholesale',
           location: location,
           action: action
+        }, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         });
+      };
+
+    
+
+      try {
+        let response;
+        try {
+          response = await submitSale(accessToken);
+        } catch (saleError) {
+          const status = saleError?.response?.status;
+          if (status === 401) {
+            const freshToken = await refreshAccessToken();
+            if (!freshToken) {
+              throw saleError;
+            }
+            response = await submitSale(freshToken);
+          } else {
+            throw saleError;
+          }
+        }
 
 
         // Attempt print, but don't let it block the form reset
@@ -276,6 +383,7 @@ const POS = () => {
       handlePrint();
       setAction({});
 
+
     }
     else if (action === 'clear') {
       setInvoiceData({});
@@ -285,8 +393,9 @@ const POS = () => {
       setError({ field: null, message: null });
       setSuccessMessage(null);
       setAction({});
+      setInformation({}); // Clear information box data
     }
-  }, [action, handlePrint, cartItems, invoiceNo, WALKIN_CUSTOMER, invoiceData, paymentData, priceLevel, location, resetFormAfterSale]);
+  }, [action, handlePrint, cartItems, invoiceNo, WALKIN_CUSTOMER, invoiceData, paymentData, priceLevel, location, resetFormAfterSale, validateCartStockBeforeSave]);
 
 
   // Trigger sendData when action changes
@@ -638,6 +747,7 @@ const POS = () => {
           setLocation={setLocation}
           location={location}
           setError={setError}
+          setSuccessMessage={setSuccessMessage}
           WALKIN_CUSTOMER={WALKIN_CUSTOMER}
         />
 
@@ -656,6 +766,7 @@ const POS = () => {
           setSelectedProduct={setSelectedProduct}
           error={error}
           setError={setError}
+          setInformation={setInformation}
         />
 
         {/* Information Box - Horizontal Line Below Cart */}
@@ -669,6 +780,8 @@ const POS = () => {
               location={location}
               setLocation={setLocation}
               cartItems={cartItems}
+              information={information}
+              setInformation={setInformation}
             />
           </div>
         </div>

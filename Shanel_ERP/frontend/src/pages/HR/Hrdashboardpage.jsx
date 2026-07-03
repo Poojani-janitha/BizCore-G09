@@ -1,59 +1,4 @@
-// import React from 'react';
-// import HrStatsCard from '../../component/HR/Dashboard/HrStatsCard';
-// import QuickActions from '../../component/HR/Dashboard/Quickactions';
 
-// const Hrdashboardpage = () => {
-//   const stats = [
-//     { title: 'Total Employees', value: '22', subtitle: '2 monthly salaried', icon: '👥', color: 'blue' },
-//     { title: 'Present Today', value: '19', subtitle: 'Fingerprint verified', icon: '✅', color: 'green' },
-//     { title: 'On Leave', value: '2', subtitle: 'Approved leaves', icon: '📋', color: 'amber' },
-//     { title: 'Pending Leaves', value: '1', subtitle: 'Awaiting approval', icon: '⏳', color: 'red' },
-//     { title: 'Bonus Eligible', value: '14', subtitle: '20+ days this month', icon: '🏆', color: 'purple' },
-//   ];
-
-//   return (
-//     <div style={{
-//       minHeight: '100vh',
-//       background: '#f5f6fa',
-//       padding: '28px 32px',
-//       fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
-//     }}>
-//       {/* Header */}
-//       <div style={{ marginBottom: '28px' }}>
-//         <h1 style={{
-//           margin: 0,
-//           fontSize: '26px',
-//           fontWeight: 800,
-//           color: '#1a1a2e',
-//           letterSpacing: '-0.5px',
-//         }}>
-//           <span style={{
-//             background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
-//             WebkitBackgroundClip: 'text',
-//             WebkitTextFillColor: 'transparent',
-//           }}>HR Dashboard</span>
-//         </h1>
-//         <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-//           February 2026 · Payroll cycle ends on 10th
-//         </p>
-//       </div>
-
-//       {/* Stats Row */}
-//       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginBottom: '22px' }}>
-//         {stats.map((s, i) => <HrStatsCard key={i} {...s} />)}
-//       </div>
-
-//       {/* Quick Actions */}
-//       <div style={{ marginBottom: '22px' }}>
-//         <QuickActions />
-//       </div>
-
-//       {/* (Simplified) Other HR widgets can be added here */}
-//     </div>
-//   );
-// };
-
-// export default Hrdashboardpage;
 
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
@@ -65,9 +10,10 @@ const API_BASE = API_ENDPOINTS.hr.root;
 
 const Hrdashboardpage = () => {
   const today = new Date().toISOString().split('T')[0];
-  
+
   const [employees, setEmployees] = useState([]);
   const [attendances, setAttendances] = useState([]);
+  const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const getMonthStart = (dateStr) => {
@@ -76,6 +22,9 @@ const Hrdashboardpage = () => {
     return d.toISOString().split('T')[0];
   };
 
+  /**
+ * Helper: Returns the last day of the month for a given date.
+ */
   const getMonthEnd = (dateStr) => {
     const d = new Date(dateStr);
     d.setMonth(d.getMonth() + 1);
@@ -83,19 +32,25 @@ const Hrdashboardpage = () => {
     return d.toISOString().split('T')[0];
   };
 
+  /**
+ * Data Fetcher: Loads Employees and current month's Attendance data.
+ * This drives the stats and trends shown on the dashboard.
+ */
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       const startOfMonth = getMonthStart(today);
       const endOfMonth = getMonthEnd(today);
-      
-      const [empRes, attRes] = await Promise.all([
-        axios.get(`${API_BASE}/employees`),
-        axios.get(`${API_BASE}/attendance`, { params: { from: startOfMonth, to: endOfMonth } })
+
+      const [empRes, attRes, leaveRes] = await Promise.all([
+        axios.get(`${API_BASE}/employees`, { params: { status: 'Active' } }),
+        axios.get(`${API_BASE}/attendance`, { params: { from: startOfMonth, to: endOfMonth } }),
+        axios.get(`${API_BASE}/leaves`, { params: { from: today, to: today } })
       ]);
-      
+
       setEmployees(empRes.data?.data || []);
       setAttendances(attRes.data?.data || []);
+      setLeaves(leaveRes.data?.data || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -105,6 +60,9 @@ const Hrdashboardpage = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    // Auto-refresh every 5 minutes to stay updated daily/hourly
+    const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, [today]);
 
   const totalEmployees = employees.length || 1;
@@ -112,9 +70,14 @@ const Hrdashboardpage = () => {
   const todaySummary = useMemo(() => {
     const todayAtt = attendances.filter(a => a.Attendance_Date === today);
     const present = todayAtt.filter(a => String(a.Status).toLowerCase() === 'present').length;
-    const leave = todayAtt.filter(a => String(a.Status).toLowerCase() === 'leave').length;
-    return { present, leave };
-  }, [attendances, today]);
+
+    // Count approved leaves for today from the leaves API
+    const leave = leaves.filter(l => l.Status === 'Approved').length;
+    // Count pending leaves for today
+    const pending = leaves.filter(l => l.Status === 'Pending').length;
+
+    return { present, leave, pending };
+  }, [attendances, leaves, today]);
 
   const bonusEligible = useMemo(() => {
     const presentDaysByEmp = {};
@@ -123,12 +86,16 @@ const Hrdashboardpage = () => {
         presentDaysByEmp[a.Employee_ID] = (presentDaysByEmp[a.Employee_ID] || 0) + 1;
       }
     });
-    return employees.filter(e => (presentDaysByEmp[e.Employee_ID] || 0) > 25).length;
+    return employees.filter(e => (presentDaysByEmp[e.Employee_ID] || 0) > 19).length;
   }, [attendances, employees]);
 
+  /**
+ * TREND CALCULATOR: Computes a day-by-day attendance percentage for the current week.
+ * Used for the visual bar chart.
+ */
   const attendanceTrend = useMemo(() => {
     const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    
+
     const toDateKey = (dateObj) => {
       const year = dateObj.getFullYear();
       const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -146,11 +113,11 @@ const Hrdashboardpage = () => {
       const date = new Date(monday);
       date.setDate(monday.getDate() + index);
       const dateKey = toDateKey(date);
-      
+
       const dayAtt = attendances.filter(a => a.Attendance_Date === dateKey);
       const present = dayAtt.filter(a => String(a.Status).toLowerCase() === 'present').length;
       const percent = totalEmployees > 0 ? Math.round((present / totalEmployees) * 100) : 0;
-      
+
       return { day, present, percent, dateKey };
     });
   }, [attendances, totalEmployees]);
@@ -158,8 +125,9 @@ const Hrdashboardpage = () => {
   const stats = [
     { title: 'Total Employees', value: String(totalEmployees), subtitle: 'Active employees', icon: '👥', color: 'blue' },
     { title: 'Present Today', value: String(todaySummary.present), subtitle: 'From attendance updates', icon: '✅', color: 'green' },
-    { title: 'On Leave', value: String(todaySummary.leave), subtitle: 'From attendance updates', icon: '📋', color: 'amber' },
-    { title: 'Bonus Eligible', value: String(bonusEligible), subtitle: '26+ present days this month', icon: '🏆', color: 'purple' },
+    { title: 'On Leave', value: String(todaySummary.leave), subtitle: 'Approved leaves today', icon: '📋', color: 'amber' },
+    { title: 'Pending Leaves', value: String(todaySummary.pending), subtitle: 'Awaiting approval', icon: '⏳', color: 'red' },
+    { title: 'Bonus Eligible', value: String(bonusEligible), subtitle: '20+ present days this month', icon: '🏆', color: 'purple' },
   ];
 
   return (
@@ -179,13 +147,13 @@ const Hrdashboardpage = () => {
           letterSpacing: '-0.5px',
         }}>
           <span style={{
-            background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
+            background: 'linear-gradient(135deg, #0d9488, #0f172a)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>HR Dashboard</span>
         </h1>
         <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-          February 2026 · Payroll cycle ends on 10th
+          {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric', day: 'numeric' })} · Daily Updates Enabled
         </p>
       </div>
 

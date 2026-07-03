@@ -8,7 +8,7 @@ const SalaryStructure = sequelize.define(
         Salary_ID: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
         Employee_ID: { type: DataTypes.INTEGER, allowNull: false },
         Salary_Type: {
-            type: DataTypes.ENUM('Monthly_Fixed', 'Daily_Rate', 'Production_Based', 'Hybrid'),
+            type: DataTypes.ENUM('Monthly_Fixed', 'Production_Based'),
             allowNull: false
         },
         Monthly_Base_Salary: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0.0 },

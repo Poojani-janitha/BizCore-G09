@@ -39,6 +39,8 @@ const Payroll = sequelize.define(
         Email_Sent_To_Bank: { type: DataTypes.BOOLEAN, defaultValue: false },
         Email_Sent_Date: { type: DataTypes.DATE, allowNull: true },
         Notes: { type: DataTypes.TEXT, allowNull: true },
+        Other_Deductions_Reason: { type: DataTypes.TEXT, allowNull: true },
+        Other_Allowances_Reason: { type: DataTypes.TEXT, allowNull: true },
         Generated_By: { type: DataTypes.INTEGER, allowNull: true },
         Approved_By: { type: DataTypes.INTEGER, allowNull: true }
     },

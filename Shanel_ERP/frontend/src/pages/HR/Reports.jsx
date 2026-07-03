@@ -6,14 +6,30 @@ import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const Reports = () => {
   const today = new Date().toISOString().split('T')[0];
-  const [activeReport, setActiveReport] = useState(null); // 'employees' | 'daily' | 'monthly' | 'leave' | 'payments'
+  const [activeReport, setActiveReport] = useState(null); // 'employees' | 'daily' | 'monthly' | 'leave' | 'payments' | 'individual'
   const [dailyDate, setDailyDate] = useState(today);
   const [month, setMonth] = useState(today.slice(0, 7)); // YYYY-MM
   const [leaveDate, setLeaveDate] = useState(today);
   const [paymentMonth, setPaymentMonth] = useState(today.slice(0, 7)); // YYYY-MM
   const [employeeSearch, setEmployeeSearch] = useState('');
   const [dailySearch, setDailySearch] = useState('');
+  const [selectedEmp, setSelectedEmp] = useState(null);
+  const [individualData, setIndividualData] = useState({ 
+    rows: [], 
+    summary: { present: 0, leave: 0, absent: 0, ot: 0, tea: 0 } 
+  });
+  const [triggerRefresh, setTriggerRefresh] = useState(0);
 
+  // Force re-fetches data by incrementing a trigger state
+  const handleRefresh = () => setTriggerRefresh(prev => prev + 1);
+
+  // Normalizes a date string to YYYY-MM-DD format
+  const normDate = (d) => d ? String(d).split('T')[0] : '';
+
+  /**
+   * PDF Generator: Uses jsPDF and autoTable to create structured reports.
+   * Handles specialized table layouts for Employee Details, Attendance (Daily/Monthly), Leaves, and Payments.
+   */
   const savePdf = (reportId) => {
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -25,6 +41,7 @@ const Reports = () => {
       monthly: `Monthly Attendance Report - ${month}`,
       leave: `Leave Report - ${leaveDate}`,
       payments: `Monthly Payment Report - ${paymentMonth}`,
+      individual: `Individual Attendance Report - ${selectedEmp?.name || ''} - ${month}`,
     };
 
     const fileSafe = (s) => String(s).replace(/[\\/:*?"<>|]+/g, '-');
@@ -41,8 +58,8 @@ const Reports = () => {
     if (reportId === 'employees') {
       autoTable(doc, {
         startY: 80,
-        head: [['ID', 'Employee', 'Role', 'Email', 'Phone']],
-        body: employeeDetails.map(e => [e.id, e.name, e.role || '—', e.email || '—', e.phone || '—']),
+        head: [['ID', 'Employee', 'Role', 'Salary Cat', 'Bank Name', 'Branch', 'Email', 'Phone']],
+        body: employeeDetails.map(e => [e.id, e.name, e.role || '—', e.salaryCategory || '—', e.bankName || '—', e.bankBranch || '—', e.email || '—', e.phone || '—']),
         styles: { fontSize: 9, cellPadding: 6 },
         headStyles: { fillColor: [248, 250, 252], textColor: [30, 64, 175] },
       });
@@ -52,13 +69,13 @@ const Reports = () => {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       doc.text(
-        `Present: ${daily.summary.present}   Leave: ${daily.summary.leave}   Absent: ${daily.summary.absent}   OT Hours: ${daily.summary.totalOtHours.toFixed(2)}   Tea Cost: ${money(daily.summary.totalTeaCost)}`,
+        `Present: ${daily.summary.present}   Leave: ${daily.summary.leave}   Absent: ${daily.summary.absent}   OT Hours: ${daily.summary.totalOtHours.toFixed(2)}`,
         marginX,
         78
       );
       autoTable(doc, {
         startY: 95,
-        head: [['ID', 'Employee', 'Role', 'Status', 'Time In', 'Time Out', 'OT', 'Tea Cost']],
+        head: [['ID', 'Employee', 'Role', 'Status', 'Time In', 'Time Out', 'OT']],
         body: daily.rows.map(r => [
           r.id,
           r.name,
@@ -67,7 +84,6 @@ const Reports = () => {
           r.timeIn || '—',
           r.timeOut || '—',
           Number(r.otHours || 0).toFixed(2),
-          r.teaCost ? money(r.teaCost) : '—',
         ]),
         styles: { fontSize: 9, cellPadding: 6 },
         headStyles: { fillColor: [248, 250, 252], textColor: [30, 64, 175] },
@@ -78,13 +94,13 @@ const Reports = () => {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       doc.text(
-        `OT Hours: ${monthly.summary.totalOtHours.toFixed(2)}   Tea Cost: ${money(monthly.summary.totalTeaCost)}   Bonus Eligible: ${monthly.hasWholeMonth ? monthly.summary.bonusEligible : 0}`,
+        `Monthly Attendance Report - ${month}`,
         marginX,
         78
       );
       autoTable(doc, {
         startY: 95,
-        head: [['ID', 'Employee', 'Role', 'Present', 'Leave', 'Absent', 'OT Hours', 'Tea Cost']],
+        head: [['ID', 'Employee', 'Role', 'Present', 'Leave', 'Absent', 'OT Hours']],
         body: monthly.rows.map(r => [
           r.id,
           r.name,
@@ -92,8 +108,7 @@ const Reports = () => {
           r.presentDays,
           r.leaveDays,
           r.absentDays,
-          Number(r.otHours || 0).toFixed(2),
-          r.teaCost ? money(r.teaCost) : '—',
+          r.isCashier ? Number(r.otHours || 0).toFixed(2) : '—',
         ]),
         styles: { fontSize: 9, cellPadding: 6 },
         headStyles: { fillColor: [248, 250, 252], textColor: [30, 64, 175] },
@@ -135,9 +150,42 @@ const Reports = () => {
       });
     }
 
+    if (reportId === 'individual' && selectedEmp) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(
+        `Employee: ${selectedEmp.name} (${selectedEmp.role || '—'})   Month: ${month}`,
+        marginX,
+        78
+      );
+      doc.text(
+        `Present: ${individualData.summary.present}   Leave: ${individualData.summary.leave}   Absent: ${individualData.summary.absent}   OT: ${Number(individualData.summary.ot || 0).toFixed(2)}`,
+        marginX,
+        92
+      );
+      autoTable(doc, {
+        startY: 105,
+        head: [['Date', 'Day', 'Status', 'In', 'Out', 'OT']],
+        body: individualData.rows.map(r => [
+          r.date,
+          r.day,
+          r.status.toUpperCase(),
+          r.timeIn,
+          r.timeOut,
+          r.isCashier ? Number(r.ot || 0).toFixed(2) : '—',
+        ]),
+        styles: { fontSize: 8, cellPadding: 4 },
+        headStyles: { fillColor: [248, 250, 252], textColor: [30, 64, 175] },
+      });
+    }
+
     doc.save(`${fileSafe(title)}.pdf`);
   };
 
+  /**
+   * Print Helper: Creates a hidden iframe to render a specific report section for printing.
+   * Injects custom CSS for print-friendly styling.
+   */
   const printSection = (sectionId, title, mode = 'print') => {
     const el = document.getElementById(sectionId);
     if (!el) return;
@@ -166,7 +214,6 @@ const Reports = () => {
       </html>
     `;
 
-    // Use a hidden iframe to avoid popup/document.write restrictions.
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.right = '0';
@@ -193,13 +240,11 @@ const Reports = () => {
       try { document.body.removeChild(iframe); } catch { /* ignore */ }
     };
 
-    // Wait for layout/fonts then print.
     setTimeout(() => {
       try {
         frameWindow.focus();
         frameWindow.print();
       } finally {
-        // Remove iframe after the dialog opens.
         setTimeout(cleanup, 500);
       }
     }, 100);
@@ -214,49 +259,69 @@ const Reports = () => {
 
   const API_BASE = API_ENDPOINTS.hr.root;
 
-  useEffect(() => {
+  /**
+ * MAIN DATA FETCHER (Reports):
+ * Orchestrates API calls based on the active report type.
+ * Aggregates raw Attendance and Leave data to compute statuses (Present/Absent/Leave) for the UI.
+ * Implements specialized logic for 'Monthly' and 'Individual' tracking.
+ */
+useEffect(() => {
+    // Fetches the necessary data for the currently active report type
     const fetchData = async () => {
       try {
         setLoading(true);
         if (activeReport === 'employees') {
-          const res = await axios.get(`${API_BASE}/employees`);
+          const res = await axios.get(`${API_BASE}/employees`, { params: { status: 'Active', _t: Date.now() } });
           const emps = Array.isArray(res.data.data) ? res.data.data.map(e => ({
             id: e.Employee_ID,
             name: e.Full_Name,
             role: e.Role,
             email: e.Email,
-            phone: e.Contact_Phone_1
+            phone: e.Contact_Phone_1,
+            salaryCategory: e.Salary_Category,
+            bankName: e.Bank_Name,
+            bankBranch: e.Bank_Branch
           })) : [];
           setEmployees(emps);
         } else if (activeReport === 'daily') {
-          const [empRes, attRes] = await Promise.all([
-            axios.get(`${API_BASE}/employees`),
-            axios.get(`${API_BASE}/attendance`, { params: { from: dailyDate, to: dailyDate } })
+          const [empRes, attRes, leaveRes] = await Promise.all([
+            axios.get(`${API_BASE}/employees`, { params: { status: 'Active', _t: Date.now() } }),
+            axios.get(`${API_BASE}/attendance`, { params: { from: dailyDate, to: dailyDate, _t: Date.now() } }),
+            axios.get(`${API_BASE}/leaves`, { params: { from: dailyDate, to: dailyDate, _t: Date.now() } })
           ]);
           const emps = Array.isArray(empRes.data.data) ? empRes.data.data : [];
           const attRecords = Array.isArray(attRes.data.data) ? attRes.data.data : [];
-          const attMap = Object.fromEntries(attRecords.map(r => [r.Employee_ID, r]));
+          const leaves = Array.isArray(leaveRes.data.data) ? leaveRes.data.data : [];
+          const attMap = Object.fromEntries(attRecords.map(r => [String(r.Employee_ID), r]));
+          const leaveMap = Object.fromEntries(leaves.filter(l => l.Status === 'Approved').map(l => [String(l.Employee_ID), l]));
           
           const rows = emps.map(e => {
-            const rec = attMap[e.Employee_ID] || {};
+            const rec = attMap[String(e.Employee_ID)] || {};
+            const leave = leaveMap[String(e.Employee_ID)];
+            
+            let status = (rec.Status || 'absent').toLowerCase();
+            if (!rec.Status && leave) status = 'leave';
+
+            const isCashier = String(e.Role || '').toLowerCase().includes('cashier');
+            const otHours = isCashier ? Number(rec.Overtime_Hours || 0) : 0;
+
             return {
               id: e.Employee_ID,
               name: e.Full_Name,
               role: e.Role,
-              status: rec.Status || 'absent',
-              timeIn: rec.Time_In || '',
-              timeOut: rec.Time_Out || '',
-              otHours: Number(rec.OT_Hours || 0),
-              teaCost: Number(rec.Tea_Cost_LKR || 0)
+              status: status,
+              timeIn: rec.Check_In_Time || '—',
+              timeOut: rec.Check_Out_Time || '—',
+              otHours: otHours,
+              isCashier
             };
           });
 
           const summary = rows.reduce((acc, r) => {
             acc[r.status] = (acc[r.status] || 0) + 1;
             acc.totalOtHours += r.otHours;
-            acc.totalTeaCost += r.teaCost;
             return acc;
-          }, { present: 0, leave: 0, absent: 0, totalOtHours: 0, totalTeaCost: 0 });
+          }, { present: 0, leave: 0, absent: 0, totalOtHours: 0 });
 
           setDailyData({ rows, summary });
         } else if (activeReport === 'monthly') {
@@ -269,44 +334,72 @@ const Reports = () => {
           const from = `${month}-01`;
           const to = `${month}-${String(daysInMonth).padStart(2, '0')}`;
           
-          const [empRes, attRes] = await Promise.all([
-            axios.get(`${API_BASE}/employees`),
-            axios.get(`${API_BASE}/attendance`, { params: { from, to } })
+          const [empRes, attRes, leaveRes] = await Promise.all([
+            axios.get(`${API_BASE}/employees`, { params: { status: 'Active', _t: Date.now() } }),
+            axios.get(`${API_BASE}/attendance`, { params: { from, to, _t: Date.now() } }),
+            axios.get(`${API_BASE}/leaves`, { params: { from, to, _t: Date.now() } })
           ]);
           
           const emps = Array.isArray(empRes.data.data) ? empRes.data.data : [];
           const attRecords = Array.isArray(attRes.data.data) ? attRes.data.data : [];
+          const leaves = Array.isArray(leaveRes.data.data) ? leaveRes.data.data.filter(l => l.Status === 'Approved') : [];
           
-          const perEmp = emps.map(e => ({
-            id: e.Employee_ID,
-            name: e.Full_Name,
-            role: e.Role,
-            presentDays: 0, leaveDays: 0, absentDays: daysInMonth,
-            otHours: 0, teaCost: 0
-          }));
-          const perEmpMap = Object.fromEntries(perEmp.map(r => [r.id, r]));
-          const summary = { present: 0, leave: 0, absent: 0, totalOtHours: 0, totalTeaCost: 0, bonusEligible: 0 };
-          
-          attRecords.forEach(rec => {
-            const row = perEmpMap[rec.Employee_ID];
-            if (!row) return;
-            const status = rec.Status || 'absent';
-            if (status === 'present') { row.presentDays += 1; row.absentDays -= 1; summary.present++; }
-            else if (status === 'leave') { row.leaveDays += 1; row.absentDays -= 1; summary.leave++; }
-            else { summary.absent++; }
+          const perEmp = emps.map(e => {
+            const employeeAtt = attRecords.filter(r => String(r.Employee_ID) === String(e.Employee_ID));
+            const employeeLeaves = leaves.filter(l => String(l.Employee_ID) === String(e.Employee_ID));
             
-            row.otHours += Number(rec.OT_Hours || 0);
-            row.teaCost += Number(rec.Tea_Cost_LKR || 0);
-            summary.totalOtHours += Number(rec.OT_Hours || 0);
-            summary.totalTeaCost += Number(rec.Tea_Cost_LKR || 0);
+            const isCashier = String(e.Role || '').toLowerCase().includes('cashier');
+            let presentDays = 0, leaveDays = 0, absentDays = 0, otHours = 0;
+            const attByDate = Object.fromEntries(employeeAtt.map(a => [normDate(a.Attendance_Date), a]));
+            
+            for (let d = 1; d <= daysInMonth; d++) {
+              const dateStr = `${month}-${String(d).padStart(2, '0')}`;
+              const att = attByDate[dateStr];
+              const attStatus = (att?.Status || '').toLowerCase();
+              
+              if (att) {
+                if (attStatus === 'present') {
+                  presentDays++;
+                  if (isCashier) otHours += Number(att.Overtime_Hours || 0);
+                } else if (attStatus === 'leave') {
+                  leaveDays++;
+                } else {
+                  absentDays++;
+                }
+              } else {
+                const isOnLeave = employeeLeaves.some(l => {
+                  const start = new Date(l.Start_Date);
+                  const end = new Date(l.End_Date);
+                  const current = new Date(dateStr);
+                  return current >= start && current <= end;
+                });
+                if (isOnLeave) leaveDays++;
+                else absentDays++;
+              }
+            }
+            
+            return {
+              id: e.Employee_ID,
+              name: e.Full_Name,
+              role: e.Role,
+              presentDays, leaveDays, absentDays, otHours, isCashier
+            };
           });
+
+          const summary = perEmp.reduce((acc, r) => {
+            acc.present += r.presentDays;
+            acc.leave += r.leaveDays;
+            acc.absent += r.absentDays;
+            acc.totalOtHours += r.otHours;
+            return acc;
+          }, { present: 0, leave: 0, absent: 0, totalOtHours: 0, bonusEligible: 0 });
           
           summary.bonusEligible = perEmp.filter(r => r.presentDays >= 25).length;
           setMonthlyData({ daysInMonth, hasWholeMonth: true, rows: perEmp, summary });
         } else if (activeReport === 'leave') {
           const [empRes, leaveRes] = await Promise.all([
-            axios.get(`${API_BASE}/employees`),
-            axios.get(`${API_BASE}/leaves`, { params: { from: leaveDate, to: leaveDate } })
+            axios.get(`${API_BASE}/employees`, { params: { status: 'Active', _t: Date.now() } }),
+            axios.get(`${API_BASE}/leaves`, { params: { from: leaveDate, to: leaveDate, _t: Date.now() } })
           ]);
           const emps = Array.isArray(empRes.data.data) ? empRes.data.data : [];
           const empMap = Object.fromEntries(emps.map(e => [e.Employee_ID, e]));
@@ -326,7 +419,7 @@ const Reports = () => {
           setLeaveReportData({ rows });
         } else if (activeReport === 'payments') {
           const [yearStr, monthStr] = paymentMonth.split('-');
-          const payRes = await axios.get(`${API_BASE}/payroll`, { params: { month: monthStr, year: yearStr }});
+          const payRes = await axios.get(`${API_BASE}/payroll`, { params: { month: monthStr, year: yearStr, _t: Date.now() }});
           const dbPayrolls = Array.isArray(payRes.data.data) ? payRes.data.data : [];
           
           const rows = dbPayrolls.map(r => ({
@@ -346,6 +439,74 @@ const Reports = () => {
             return acc;
           }, { gross: 0, deductions: 0, net: 0 });
           setPaymentReportData({ rows, totals });
+        } else if (activeReport === 'individual') {
+          if (employees.length === 0) {
+            const res = await axios.get(`${API_BASE}/employees`, { params: { status: 'Active', _t: Date.now() } });
+            const emps = Array.isArray(res.data.data) ? res.data.data.map(e => ({
+              id: e.Employee_ID,
+              name: e.Full_Name,
+              role: e.Role,
+              email: e.Email,
+              phone: e.Contact_Phone_1
+            })) : [];
+            setEmployees(emps);
+          }
+          if (!selectedEmp) return;
+          const [yearStr, monthStr] = month.split('-');
+          const year = Number(yearStr);
+          const monthNum = Number(monthStr);
+          const daysInMonth = new Date(year, monthNum, 0).getDate();
+          
+          const from = `${month}-01`;
+          const to = `${month}-${String(daysInMonth).padStart(2, '0')}`;
+          
+          const [attRes, leaveRes] = await Promise.all([
+            axios.get(`${API_BASE}/attendance`, { params: { from, to, employeeId: selectedEmp.id, _t: Date.now() } }),
+            axios.get(`${API_BASE}/leaves`, { params: { from, to, employeeId: selectedEmp.id, _t: Date.now() } })
+          ]);
+          
+          const attRecords = Array.isArray(attRes.data.data) ? attRes.data.data : [];
+          const attMap = Object.fromEntries(attRecords.map(r => [normDate(r.Attendance_Date), r]));
+          const leaves = Array.isArray(leaveRes.data.data) ? leaveRes.data.data.filter(l => l.Status === 'Approved') : [];
+          
+          const rows = [];
+          const isCashier = String(selectedEmp.role || '').toLowerCase().includes('cashier');
+          let present = 0, leave = 0, absent = 0, ot = 0;
+          
+          for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${month}-${String(d).padStart(2, '0')}`;
+            const rec = attMap[dateStr] || {};
+            const dayName = new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' });
+            
+            let status = (rec.Status || 'absent').toLowerCase();
+            if (!rec.Status) {
+              const isOnLeave = leaves.some(l => {
+                const start = new Date(normDate(l.Start_Date));
+                const end = new Date(normDate(l.End_Date));
+                const current = new Date(dateStr);
+                return current >= start && current <= end;
+              });
+              if (isOnLeave) status = 'leave';
+            }
+
+            if (status === 'present') {
+              present++;
+              if (isCashier) ot += Number(rec.Overtime_Hours || 0);
+            }
+            else if (status === 'leave') leave++;
+            else absent++;
+            
+            rows.push({
+              date: dateStr,
+              day: dayName,
+              status,
+              timeIn: rec.Check_In_Time || '—',
+              timeOut: rec.Check_Out_Time || '—',
+              ot: isCashier ? Number(rec.Overtime_Hours || 0) : 0,
+              isCashier
+            });
+          }
+          setIndividualData({ rows, summary: { present, leave, absent, ot } });
         }
       } catch (err) {
         console.error('Failed to load report data:', err);
@@ -354,8 +515,9 @@ const Reports = () => {
       }
     };
     if (activeReport) fetchData();
-  }, [activeReport, dailyDate, month, leaveDate, paymentMonth]);
+  }, [activeReport, dailyDate, month, leaveDate, paymentMonth, selectedEmp, triggerRefresh]);
 
+  // Filters the employee list based on the search input
   const employeeDetails = useMemo(() => {
     if (!employeeSearch.trim()) return employees;
     const q = employeeSearch.toLowerCase();
@@ -364,10 +526,13 @@ const Reports = () => {
       String(e.name || '').toLowerCase().includes(q) ||
       String(e.role || '').toLowerCase().includes(q) ||
       String(e.email || '').toLowerCase().includes(q) ||
-      String(e.phone || '').toLowerCase().includes(q)
+      String(e.phone || '').toLowerCase().includes(q) ||
+      String(e.salaryCategory || '').toLowerCase().includes(q) ||
+      String(e.bankName || '').toLowerCase().includes(q)
     );
   }, [employees, employeeSearch]);
 
+  // Processes and filters daily attendance records for the table
   const daily = useMemo(() => {
     const filtered = !dailySearch.trim()
       ? dailyData.rows
@@ -386,6 +551,7 @@ const Reports = () => {
   const leaveReport = leaveReportData;
   const paymentReport = paymentReportData;
 
+  // Small component to display a summary statistic card
   const Stat = ({ title, value, subtitle, color }) => (
     <div style={{
       background: '#fff',
@@ -416,7 +582,7 @@ const Reports = () => {
       <div style={{ marginBottom: '18px' }}>
         <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 800, letterSpacing: '-0.5px' }}>
           <span style={{
-            background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
+            background: 'linear-gradient(135deg, #0d9488, #0f172a)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>
@@ -428,7 +594,6 @@ const Reports = () => {
         </p>
       </div>
 
-      {/* Report chooser */}
       {activeReport === null && (
         <div style={{
           background: '#fff',
@@ -443,11 +608,11 @@ const Reports = () => {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
             {[
-              { id: 'employees', label: 'Employee Details', color: '#3b82f6', bg: 'rgba(59,130,246,0.10)' },
-              { id: 'daily', label: 'Daily Attendance', color: '#22c55e', bg: 'rgba(34,197,94,0.10)' },
-              { id: 'monthly', label: 'Monthly Attendance', color: '#1d4ed8', bg: 'rgba(29,78,216,0.10)' },
-              { id: 'leave', label: 'Leave Report', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-              { id: 'payments', label: 'Monthly Payments', color: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
+              { id: 'employees', label: 'Employee Details', color: '#0d9488', bg: '#f0fdfa' },
+              { id: 'daily', label: 'Daily Attendance', color: '#059669', bg: '#ecfdf5' },
+              { id: 'monthly', label: 'Monthly Attendance', color: '#0d9488', bg: '#f0fdfa' },
+              { id: 'leave', label: 'Leave Report', color: '#ea580c', bg: '#fff7ed' },
+              { id: 'payments', label: 'Monthly Payments', color: '#8b5cf6', bg: '#f5f3ff' },
             ].map(r => (
               <button
                 key={r.id}
@@ -503,7 +668,6 @@ const Reports = () => {
         </div>
       )}
 
-      {/* Employee Details Report */}
       {activeReport === 'employees' && (
       <div id="employee-details-report" style={{
         background: '#fff',
@@ -538,13 +702,29 @@ const Reports = () => {
               }}
             />
             <button
-              onClick={() => savePdf('employees')}
+              onClick={handleRefresh}
               style={{
                 padding: '8px 14px',
                 borderRadius: '10px',
-                border: '1px solid rgba(59,130,246,0.25)',
-                background: 'rgba(59,130,246,0.10)',
-                color: '#1d4ed8',
+                border: '1px solid rgba(13, 148, 136, 0.25)',
+                background: 'rgba(13, 148, 136, 0.10)',
+                color: '#0d9488',
+                fontWeight: 800,
+                fontSize: '14px',
+                cursor: 'pointer',
+                marginRight: '10px',
+              }}
+            >
+              🔄 Refresh
+            </button>
+            <button
+              onClick={() => savePdf('employees')}
+              style={{
+                padding: '8px 14px',
+                borderRadius: '12px',
+                border: '1px solid #ccfbf1',
+                background: '#f0fdfa',
+                color: '#0d9488',
                 fontWeight: 800,
                 fontSize: '14px',
                 cursor: 'pointer',
@@ -572,26 +752,34 @@ const Reports = () => {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '60px 1fr 140px 240px 170px',
+          gridTemplateColumns: '50px 1.8fr 1.2fr 1.4fr 1.2fr 2fr',
           background: '#f8fafc',
           borderBottom: '2px solid #e8e8e8',
           padding: '12px 20px',
           gap: '12px',
           alignItems: 'center',
         }}>
-          {['ID', 'Employee', 'Role', 'Email', 'Phone'].map(h => (
-            <div key={h} style={{
+          {[
+            { label: 'ID', align: 'center' },
+            { label: 'Name', align: 'left' },
+            { label: 'Role', align: 'left' },
+            { label: 'Salary Cat.', align: 'center' },
+            { label: 'Phone', align: 'center' },
+            { label: 'Email', align: 'left' }
+          ].map(h => (
+            <div key={h.label} style={{
               fontSize: '11px',
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
-              color: '#1e40af',
-              background: 'rgba(59,130,246,0.12)',
+              color: '#0d9488',
+              background: '#f0fdfa',
               padding: '8px 10px',
               borderRadius: '8px',
-              border: '1px solid rgba(59,130,246,0.3)',
+              border: '1px solid #ccfbf1',
+              textAlign: h.align
             }}>
-              {h}
+              {h.label}
             </div>
           ))}
         </div>
@@ -603,7 +791,7 @@ const Reports = () => {
               key={e.id}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '60px 1fr 140px 240px 170px',
+                gridTemplateColumns: '50px 1.8fr 1.2fr 1.4fr 1.2fr 2fr',
                 padding: '12px 20px',
                 gap: '12px',
                 alignItems: 'center',
@@ -611,21 +799,37 @@ const Reports = () => {
                 borderBottom: '1px solid #f1f5f9',
               }}
             >
-              <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 800 }}>{e.id}</div>
+              <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 800, textAlign: 'center' }}>{e.id}</div>
               <div style={{ fontSize: '13px', fontWeight: 800, color: '#1a1a2e' }}>{e.name}</div>
               <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700 }}>{e.role || '—'}</div>
-              <div style={{ fontSize: '12px', color: '#475569', fontWeight: 700 }}>{e.email || '—'}</div>
-              <div style={{ fontSize: '12px', color: '#475569', fontWeight: 700 }}>{e.phone || '—'}</div>
+              <div style={{ fontSize: '12px', color: '#0d9488', fontWeight: 800, textAlign: 'center' }}>{e.salaryCategory || '—'}</div>
+              <div style={{ fontSize: '12px', color: '#475569', fontWeight: 700, textAlign: 'center' }}>{e.phone || '—'}</div>
+              <div style={{ fontSize: '11px', color: '#475569', fontWeight: 700 }}>{e.email || '—'}</div>
             </div>
           );
         })}
       </div>
       )}
 
-      {/* Daily Reports */}
       {activeReport === 'daily' && (
       <>
       <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', margin: '0 0 10px 0' }}>
+        <button
+          onClick={handleRefresh}
+          style={{
+            padding: '8px 14px',
+            borderRadius: '10px',
+            border: '1px solid rgba(13, 148, 136, 0.25)',
+            background: 'rgba(13, 148, 136, 0.10)',
+            color: '#0d9488',
+            fontWeight: 800,
+            fontSize: '14px',
+            cursor: 'pointer',
+            marginRight: '10px',
+          }}
+        >
+          🔄 Refresh
+        </button>
         <button
           onClick={() => savePdf('daily')}
           style={{
@@ -705,8 +909,7 @@ const Reports = () => {
           <Stat title="Present" value={daily.summary.present} subtitle="Employees present" color="#22c55e" />
           <Stat title="On Leave" value={daily.summary.leave} subtitle="Employees on leave" color="#f59e0b" />
           <Stat title="Absent" value={daily.summary.absent} subtitle="Employees absent" color="#ef4444" />
-          <Stat title="Total OT Hours" value={daily.summary.totalOtHours.toFixed(2)} subtitle="After 4:00 PM" color="#3b82f6" />
-          <Stat title="Tea Cost (Rs)" value={daily.summary.totalTeaCost} subtitle="Eligible present employees" color="#16a34a" />
+          <Stat title="Total OT Hours" value={daily.summary.totalOtHours.toFixed(2)} subtitle="Cashier OT only" color="#3b82f6" />
         </div>
       </div>
 
@@ -720,24 +923,24 @@ const Reports = () => {
       }}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '60px 1fr 140px 120px 110px 110px 100px 120px',
+          gridTemplateColumns: '60px 1.5fr 1fr 120px 110px 110px 100px',
           background: '#f8fafc',
           borderBottom: '2px solid #e8e8e8',
           padding: '12px 20px',
           gap: '12px',
           alignItems: 'center',
         }}>
-          {['ID', 'Employee', 'Role', 'Status', 'Time In', 'Time Out', 'OT', 'Tea Cost'].map(h => (
+          {['ID', 'Employee', 'Role', 'Status', 'Time In', 'Time Out', 'OT'].map(h => (
             <div key={h} style={{
               fontSize: '11px',
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
-              color: '#1e40af',
-              background: 'rgba(59,130,246,0.12)',
+              color: '#0d9488',
+              background: '#f0fdfa',
               padding: '8px 10px',
               borderRadius: '8px',
-              border: '1px solid rgba(59,130,246,0.3)',
+              border: '1px solid #ccfbf1',
             }}>
               {h}
             </div>
@@ -751,7 +954,7 @@ const Reports = () => {
               key={r.id}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '60px 1fr 140px 120px 110px 110px 100px 120px',
+                gridTemplateColumns: '60px 1.5fr 1fr 120px 110px 110px 100px',
                 padding: '12px 20px',
                 gap: '12px',
                 alignItems: 'center',
@@ -771,10 +974,7 @@ const Reports = () => {
               </div>
               <div style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>{r.timeIn || '—'}</div>
               <div style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>{r.timeOut || '—'}</div>
-              <div style={{ fontSize: '12px', color: '#475569', fontWeight: 800 }}>{Number(r.otHours || 0).toFixed(2)}</div>
-              <div style={{ fontSize: '12px', color: r.teaCost ? '#16a34a' : '#94a3b8', fontWeight: 800 }}>
-                {r.teaCost ? `Rs ${r.teaCost}` : '—'}
-              </div>
+              <div style={{ fontSize: '12px', color: '#475569', fontWeight: 800 }}>{r.isCashier ? Number(r.otHours || 0).toFixed(2) : '—'}</div>
             </div>
           );
         })}
@@ -783,10 +983,25 @@ const Reports = () => {
       </>
       )}
 
-      {/* Monthly Reports */}
       {activeReport === 'monthly' && (
       <>
       <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', margin: '0 0 10px 0' }}>
+        <button
+          onClick={handleRefresh}
+          style={{
+            padding: '8px 14px',
+            borderRadius: '10px',
+            border: '1px solid rgba(13, 148, 136, 0.25)',
+            background: 'rgba(13, 148, 136, 0.10)',
+            color: '#0d9488',
+            fontWeight: 800,
+            fontSize: '14px',
+            cursor: 'pointer',
+            marginRight: '10px',
+          }}
+        >
+          🔄 Refresh
+        </button>
         <button
           onClick={() => savePdf('monthly')}
           style={{
@@ -854,16 +1069,12 @@ const Reports = () => {
               padding: '6px 10px',
               borderRadius: '10px',
             }}>
-              {monthly.hasWholeMonth ? 'Month attendance complete' : 'Month not complete (Bonus shows 0)'}
+              {monthly.hasWholeMonth ? 'Month attendance complete' : 'Month not complete'}
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '12px' }}>
-          <Stat title="Total OT Hours" value={monthly.summary.totalOtHours.toFixed(2)} subtitle="Sum for the month" color="#3b82f6" />
-          <Stat title="Tea Cost (Rs)" value={monthly.summary.totalTeaCost} subtitle="Sum for the month" color="#16a34a" />
-          <Stat title="Bonus Eligible" value={monthly.hasWholeMonth ? monthly.summary.bonusEligible : 0} subtitle="26+ present days" color="#a855f7" />
-        </div>
+
       </div>
 
       <div style={{
@@ -875,14 +1086,14 @@ const Reports = () => {
       }}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '60px 1fr 140px 120px 120px 120px 120px 140px',
+          gridTemplateColumns: '60px 1.2fr 1.2fr 100px 100px 100px 100px 80px',
           background: '#f8fafc',
           borderBottom: '2px solid #e8e8e8',
           padding: '12px 20px',
           gap: '12px',
           alignItems: 'center',
         }}>
-          {['ID', 'Employee', 'Role', 'Present', 'Leave', 'Absent', 'OT Hours', 'Tea Cost (Rs)'].map(h => (
+          {['ID', 'Employee', 'Role', 'Present', 'Leave', 'Absent', 'OT', 'Action'].map((h, i) => (
             <div key={h} style={{
               fontSize: '11px',
               fontWeight: 700,
@@ -893,6 +1104,7 @@ const Reports = () => {
               padding: '8px 10px',
               borderRadius: '8px',
               border: '1px solid rgba(59,130,246,0.3)',
+              textAlign: i >= 3 ? 'center' : 'left',
             }}>
               {h}
             </div>
@@ -907,7 +1119,7 @@ const Reports = () => {
               key={r.id}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '60px 1fr 140px 120px 120px 120px 120px 140px',
+                gridTemplateColumns: '60px 1.2fr 1.2fr 100px 100px 100px 100px 80px',
                 padding: '12px 20px',
                 gap: '12px',
                 alignItems: 'center',
@@ -934,12 +1146,29 @@ const Reports = () => {
                 )}
               </div>
               <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{r.role || '—'}</div>
-              <div style={{ fontSize: '12px', color: '#16a34a', fontWeight: 900 }}>{r.presentDays}</div>
-              <div style={{ fontSize: '12px', color: '#b45309', fontWeight: 900 }}>{r.leaveDays}</div>
-              <div style={{ fontSize: '12px', color: '#dc2626', fontWeight: 900 }}>{r.absentDays}</div>
-              <div style={{ fontSize: '12px', color: '#334155', fontWeight: 900 }}>{r.otHours.toFixed(2)}</div>
-              <div style={{ fontSize: '12px', color: r.teaCost ? '#16a34a' : '#94a3b8', fontWeight: 900 }}>
-                {r.teaCost ? `Rs ${r.teaCost}` : '—'}
+              <div style={{ fontSize: '12px', color: '#16a34a', fontWeight: 900, textAlign: 'center' }}>{r.presentDays}</div>
+              <div style={{ fontSize: '12px', color: '#b45309', fontWeight: 900, textAlign: 'center' }}>{r.leaveDays}</div>
+              <div style={{ fontSize: '12px', color: '#dc2626', fontWeight: 900, textAlign: 'center' }}>{r.absentDays}</div>
+              <div style={{ fontSize: '12px', color: '#334155', fontWeight: 900, textAlign: 'center' }}>{r.isCashier ? r.otHours.toFixed(2) : '—'}</div>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <button
+                  onClick={() => {
+                    setSelectedEmp(r);
+                    setActiveReport('individual');
+                  }}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid #0d9488',
+                    background: '#f0fdfa',
+                    color: '#0d9488',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  View
+                </button>
               </div>
             </div>
           );
@@ -969,6 +1198,22 @@ const Reports = () => {
               outline: 'none',
             }}
           />
+          <button
+            onClick={handleRefresh}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '10px',
+              border: '1px solid rgba(13, 148, 136, 0.25)',
+              background: 'rgba(13, 148, 136, 0.10)',
+              color: '#0d9488',
+              fontWeight: 800,
+              fontSize: '14px',
+              cursor: 'pointer',
+              marginRight: '10px',
+            }}
+          >
+            🔄 Refresh
+          </button>
           <button
             onClick={() => savePdf('leave')}
             style={{
@@ -1012,15 +1257,22 @@ const Reports = () => {
       }}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '60px 1fr 140px 220px 160px 1.2fr',
+          gridTemplateColumns: '60px 1.5fr 1fr 1.8fr 1.2fr 1.5fr',
           background: '#f8fafc',
           borderBottom: '2px solid #e8e8e8',
           padding: '12px 20px',
           gap: '12px',
           alignItems: 'center',
         }}>
-          {['ID', 'Employee', 'Role', 'Email', 'Phone', 'Reason'].map(h => (
-            <div key={h} style={{
+          {[
+            { label: 'ID', align: 'center' },
+            { label: 'Employee', align: 'left' },
+            { label: 'Role', align: 'left' },
+            { label: 'Email', align: 'left' },
+            { label: 'Phone', align: 'center' },
+            { label: 'Reason', align: 'left' }
+          ].map(h => (
+            <div key={h.label} style={{
               fontSize: '11px',
               fontWeight: 700,
               textTransform: 'uppercase',
@@ -1030,8 +1282,9 @@ const Reports = () => {
               padding: '8px 10px',
               borderRadius: '8px',
               border: '1px solid rgba(59,130,246,0.3)',
+              textAlign: h.align
             }}>
-              {h}
+              {h.label}
             </div>
           ))}
         </div>
@@ -1048,7 +1301,7 @@ const Reports = () => {
                 key={r.id}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '60px 1fr 140px 220px 160px 1.2fr',
+                  gridTemplateColumns: '60px 1.5fr 1fr 1.8fr 1.2fr 1.5fr',
                   padding: '12px 20px',
                   gap: '12px',
                   alignItems: 'center',
@@ -1056,12 +1309,12 @@ const Reports = () => {
                   borderBottom: '1px solid #f1f5f9',
                 }}
               >
-                <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 800 }}>{r.id}</div>
-                <div style={{ fontSize: '13px', fontWeight: 800, color: '#1a1a2e' }}>{r.name}</div>
-                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700 }}>{r.role || '—'}</div>
-                <div style={{ fontSize: '12px', color: '#475569', fontWeight: 700 }}>{r.email || '—'}</div>
-                <div style={{ fontSize: '12px', color: '#475569', fontWeight: 700 }}>{r.phone || '—'}</div>
-                <div style={{ fontSize: '12px', color: '#334155', fontWeight: 700 }}>{r.reason || '—'}</div>
+                <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 800, textAlign: 'center' }}>{r.id}</div>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#1a1a2e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
+                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.role || '—'}</div>
+                <div style={{ fontSize: '12px', color: '#475569', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.email || '—'}</div>
+                <div style={{ fontSize: '12px', color: '#475569', fontWeight: 700, textAlign: 'center' }}>{r.phone || '—'}</div>
+                <div style={{ fontSize: '12px', color: '#334155', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.reason || '—'}</div>
               </div>
             );
           })
@@ -1090,6 +1343,22 @@ const Reports = () => {
               outline: 'none',
             }}
           />
+          <button
+            onClick={handleRefresh}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '10px',
+              border: '1px solid rgba(13, 148, 136, 0.25)',
+              background: 'rgba(13, 148, 136, 0.10)',
+              color: '#0d9488',
+              fontWeight: 800,
+              fontSize: '14px',
+              cursor: 'pointer',
+              marginRight: '10px',
+            }}
+          >
+            🔄 Refresh
+          </button>
           <button
             onClick={() => savePdf('payments')}
             style={{
@@ -1196,6 +1465,196 @@ const Reports = () => {
             );
           })
         )}
+      </div>
+      </>
+      )}
+
+      {activeReport === 'individual' && (
+      <>
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', margin: '0 0 10px 0' }}>
+        <button
+          onClick={handleRefresh}
+          style={{
+            padding: '8px 14px',
+            borderRadius: '10px',
+            border: '1px solid rgba(13, 148, 136, 0.25)',
+            background: 'rgba(13, 148, 136, 0.10)',
+            color: '#0d9488',
+            fontWeight: 800,
+            fontSize: '14px',
+            cursor: 'pointer',
+            marginRight: '10px',
+          }}
+        >
+          🔄 Refresh
+        </button>
+        <button
+          onClick={() => savePdf('individual')}
+          style={{
+            padding: '8px 14px',
+            borderRadius: '10px',
+            border: '1px solid rgba(8,145,178,0.25)',
+            background: 'rgba(8,145,178,0.10)',
+            color: '#0891b2',
+            fontWeight: 800,
+            fontSize: '14px',
+            cursor: 'pointer',
+            marginRight: '10px',
+          }}
+        >
+          Save PDF
+        </button>
+        <button
+          onClick={() => printSection('individual-report', `Individual Attendance - ${selectedEmp?.name} - ${month}`, 'print')}
+          style={{
+            padding: '8px 14px',
+            borderRadius: '10px',
+            border: '1px solid rgba(100,116,139,0.25)',
+            background: 'rgba(100,116,139,0.10)',
+            color: '#334155',
+            fontWeight: 800,
+            fontSize: '14px',
+            cursor: 'pointer',
+          }}
+        >
+          Print
+        </button>
+      </div>
+      <div id="individual-report">
+      <div style={{
+        background: '#fff',
+        borderRadius: '12px',
+        border: '1px solid #e8e8e8',
+        padding: '16px 20px',
+        marginBottom: '14px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+      }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 800, color: '#1a1a2e' }}>Individual Attendance Report</div>
+          <div className="no-print" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '13px', fontWeight: 700, color: '#374151' }}>Month:</label>
+            <input
+              type="month"
+              value={month}
+              onChange={e => setMonth(e.target.value)}
+              style={{
+                padding: '7px 12px',
+                borderRadius: '8px',
+                border: '1px solid #d1d5db',
+                fontSize: '13px',
+                color: '#1a1a2e',
+                outline: 'none',
+              }}
+            />
+            <label style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginLeft: '10px' }}>Employee:</label>
+            <select
+              value={selectedEmp?.id || ''}
+              onChange={e => {
+                const emp = employees.find(emp => String(emp.id) === e.target.value);
+                setSelectedEmp(emp);
+              }}
+              style={{
+                padding: '7px 12px',
+                borderRadius: '8px',
+                border: '1px solid #d1d5db',
+                fontSize: '13px',
+                color: '#1a1a2e',
+                outline: 'none',
+              }}
+            >
+              <option value="">Select Employee</option>
+              {employees.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {selectedEmp && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '12px' }}>
+            <Stat title="Employee" value={selectedEmp.name} subtitle={selectedEmp.role} color="#1e40af" />
+            <Stat title="Present Days" value={individualData.summary.present || 0} subtitle="Total for month" color="#16a34a" />
+            <Stat title="Leave/Absent" value={`${individualData.summary.leave || 0} / ${individualData.summary.absent || 0}`} subtitle="Days" color="#dc2626" />
+            <Stat title="Total OT" value={(individualData.summary.ot || 0).toFixed(2)} subtitle="Hours" color="#3b82f6" />
+          </div>
+        )}
+      </div>
+
+      <div style={{
+        background: '#fff',
+        borderRadius: '12px',
+        border: '1px solid #e8e8e8',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '120px 80px 100px 1fr 1fr 100px',
+          background: '#f8fafc',
+          borderBottom: '2px solid #e8e8e8',
+          padding: '12px 20px',
+          gap: '12px',
+          alignItems: 'center',
+        }}>
+          {[
+            { label: 'Date', align: 'center' },
+            { label: 'Day', align: 'center' },
+            { label: 'Status', align: 'center' },
+            { label: 'In', align: 'center' },
+            { label: 'Out', align: 'center' },
+            { label: 'OT', align: 'center' }
+          ].map(h => (
+            <div key={h.label} style={{
+              fontSize: '11px',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: '#1e40af',
+              background: 'rgba(59,130,246,0.12)',
+              padding: '8px 10px',
+              borderRadius: '8px',
+              border: '1px solid rgba(59,130,246,0.3)',
+              textAlign: h.align
+            }}>
+              {h.label}
+            </div>
+          ))}
+        </div>
+
+        {individualData.rows.map((r, idx) => {
+          const rowBg = idx % 2 === 0 ? '#fff' : '#fafbfc';
+          const isWeekend = r.day === 'Sat' || r.day === 'Sun';
+          return (
+            <div
+              key={r.date}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '120px 80px 100px 1fr 1fr 100px',
+                padding: '10px 20px',
+                gap: '12px',
+                alignItems: 'center',
+                background: isWeekend ? '#fefce8' : rowBg,
+                borderBottom: '1px solid #f1f5f9',
+              }}
+            >
+              <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, textAlign: 'center' }}>{r.date}</div>
+              <div style={{ fontSize: '12px', color: isWeekend ? '#b45309' : '#64748b', fontWeight: 600, textAlign: 'center' }}>{r.day}</div>
+              <div style={{ 
+                fontSize: '11px', 
+                fontWeight: 900, 
+                color: r.status === 'present' ? '#16a34a' : r.status === 'leave' ? '#b45309' : '#dc2626',
+                textTransform: 'uppercase',
+                textAlign: 'center'
+              }}>
+                {r.status}
+              </div>
+              <div style={{ fontSize: '12px', color: '#1a1a2e', textAlign: 'center' }}>{r.timeIn}</div>
+              <div style={{ fontSize: '12px', color: '#1a1a2e', textAlign: 'center' }}>{r.timeOut}</div>
+              <div style={{ fontSize: '12px', color: '#334155', fontWeight: 700, textAlign: 'center' }}>{r.isCashier && r.ot > 0 ? r.ot.toFixed(2) : '—'}</div>
+            </div>
+          );
+        })}
+      </div>
       </div>
       </>
       )}

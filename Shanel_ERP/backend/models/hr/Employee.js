@@ -18,7 +18,7 @@ const Employee = sequelize.define(
         },
         Contact_Phone: { type: DataTypes.STRING(20), allowNull: false },
         Contact_Phone_2: { type: DataTypes.STRING(20), allowNull: true },
-        Email: { type: DataTypes.STRING(100), allowNull: true },
+        Email: { type: DataTypes.STRING(100), unique: true, allowNull: true },
         Permanent_Address: { type: DataTypes.TEXT, allowNull: true },
         Current_Address: { type: DataTypes.TEXT, allowNull: true },
         City: { type: DataTypes.STRING(100), allowNull: true },
@@ -33,7 +33,7 @@ const Employee = sequelize.define(
         },
         Role: { type: DataTypes.STRING(100), allowNull: false },
         Salary_Category: {
-            type: DataTypes.ENUM('Monthly_Fixed', 'Daily_Rate', 'Production_Based', 'Hybrid'),
+            type: DataTypes.ENUM('Monthly_Fixed', 'Production_Based'),
             allowNull: false
         },
         Working_Hours_Start: { type: DataTypes.TIME, defaultValue: '08:00:00' },
@@ -41,12 +41,13 @@ const Employee = sequelize.define(
         EPF_Eligible: { type: DataTypes.BOOLEAN, defaultValue: false },
         ETF_Eligible: { type: DataTypes.BOOLEAN, defaultValue: false },
         EPF_Number: { type: DataTypes.STRING(50), allowNull: true },
+        ETF_Number: { type: DataTypes.STRING(50), allowNull: true },
         Bank_Name: { type: DataTypes.STRING(100), allowNull: true },
         Bank_Account_No: { type: DataTypes.STRING(50), allowNull: true },
         Bank_Branch: { type: DataTypes.STRING(100), allowNull: true },
         Bank_Account_Name: { type: DataTypes.STRING(200), allowNull: true },
         Status: {
-            type: DataTypes.ENUM('Active', 'On_Leave', 'Suspended', 'Resigned', 'Terminated'),
+            type: DataTypes.STRING(50),
             defaultValue: 'Active'
         },
         Resignation_Date: { type: DataTypes.DATEONLY, allowNull: true },
