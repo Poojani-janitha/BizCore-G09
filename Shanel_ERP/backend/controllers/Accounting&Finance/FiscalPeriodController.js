@@ -4,6 +4,8 @@ const AccountChart = require('../../models/finance/AccountChart');
 const JournalEntryLine = require('../../models/finance/JournalEntryLine');
 const JournalEntry = require('../../models/finance/JournalEntry');
 const databaseCon = require('../../config/db');
+const bcrypt = require('bcrypt');
+const User = require('../../models/user/User');
 
 class FiscalPeriodController {
     // Get all fiscal periods
@@ -404,6 +406,132 @@ class FiscalPeriodController {
         await journalEntry.save({ transaction });
 
         console.log(`✅ Created closing journal entry ${journalNumber} with ${closingLines.length} lines.`);
+    }
+
+    // Authenticate delete request and retrieve all transactions for the period
+    async authenticateDelete(req, res) {
+        try {
+            const { id } = req.params;
+            const { password } = req.body;
+
+            if (!password) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Admin password is required'
+                });
+            }
+
+            const period = await FiscalPeriod.findByPk(id);
+            if (!period) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Period not found'
+                });
+            }
+
+            if (period.Status === 'OPEN') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cannot delete an OPEN fiscal period. You must close the period first.'
+                });
+            }
+
+            // Find admin user
+            const adminUser = await User.findOne({ where: { Username: 'admin' } });
+            if (!adminUser) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Admin user not found'
+                });
+            }
+
+            // Compare password
+            const isValid = await bcrypt.compare(password, adminUser.Password_Hash);
+            if (!isValid) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Invalid admin password'
+                });
+            }
+
+            // Retrieve all journal entries in the period
+            const entries = await JournalEntry.findAll({
+                where: {
+                    Entry_Date: {
+                        [Op.between]: [period.Start_Date, period.End_Date]
+                    },
+                    Status: 'Posted'
+                },
+                include: [{
+                    model: JournalEntryLine,
+                    as: 'Lines',
+                    include: [{
+                        model: AccountChart,
+                        as: 'Account',
+                        attributes: ['Account_Name', 'Account_Code']
+                    }]
+                }],
+                order: [['Entry_Date', 'ASC'], ['Journal_No', 'ASC']]
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: 'Authentication successful',
+                data: {
+                    periodName: period.Period_Name,
+                    startDate: period.Start_Date,
+                    endDate: period.End_Date,
+                    transactions: entries
+                }
+            });
+
+        } catch (error) {
+            console.error('Error authenticating period delete:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
+
+    // Delete a fiscal period
+    async deletePeriod(req, res) {
+        const transaction = await databaseCon.transaction();
+        try {
+            const { id } = req.params;
+            const period = await FiscalPeriod.findByPk(id, { transaction });
+            if (!period) {
+                await transaction.rollback();
+                return res.status(404).json({
+                    success: false,
+                    message: 'Period not found'
+                });
+            }
+
+            if (period.Status === 'OPEN') {
+                await transaction.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cannot delete an OPEN fiscal period. You must close the period first.'
+                });
+            }
+
+            // Delete the period itself
+            await period.destroy({ transaction });
+
+            await transaction.commit();
+            return res.status(200).json({
+                success: true,
+                message: 'Fiscal period deleted successfully.'
+            });
+        } catch (error) {
+            await transaction.rollback();
+            console.error('Error deleting fiscal period:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
     }
 }
 

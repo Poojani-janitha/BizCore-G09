@@ -19,12 +19,18 @@ class ChartOfAccountsController {
                 order: [['Account_Code', 'ASC']]
             });
 
-            // 2. Fetch all balances using aggregation for performance
+            // 2. Fetch all balances using aggregation for performance, only including Posted entries
             const balances = await JournalEntryLine.findAll({
                 attributes: [
                     'Account_ID',
                     [Sequelize.fn('SUM', Sequelize.literal('Debit_Amount - Credit_Amount')), 'Net_Balance']
                 ],
+                include: [{
+                    model: JournalEntry,
+                    as: 'JournalEntry',
+                    where: { Status: 'Posted' },
+                    attributes: []
+                }],
                 group: ['Account_ID']
             });
 

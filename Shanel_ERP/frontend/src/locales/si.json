@@ -560,7 +560,7 @@
     },
     "fiscal": {
       "current_period": "වත්මන් කාලසීමාව",
-      "fiscal_year": "මූල්‍ය වර්ෂය",
+      "fiscal_year": "මූල්‍ය කාලසීමාව",
       "system_status": "පද්ධති තත්ත්වය",
       "ready_posting": "පළ කිරීමට සූදානම්",
       "closed": "වසා ඇත",

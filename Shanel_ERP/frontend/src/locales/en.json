@@ -566,7 +566,7 @@
     },
     "fiscal": {
       "current_period": "Current Period",
-      "fiscal_year": "Fiscal Year",
+      "fiscal_year": "Fiscal Period",
       "system_status": "System Status",
       "ready_posting": "Ready for Posting",
       "closed": "Closed",

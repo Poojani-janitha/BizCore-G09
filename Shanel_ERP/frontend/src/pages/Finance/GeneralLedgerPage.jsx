@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText, Box, Calendar, Layers,
-  PlusCircle, Loader, RefreshCw, AlertCircle, ChevronDown, CheckCircle, Lock, Shield
+  PlusCircle, Loader, RefreshCw, AlertCircle, ChevronDown, CheckCircle, Lock, Shield, X
 } from 'react-feather';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
@@ -25,12 +25,20 @@ const GeneralLedgerPage = () => {
   
   // Modal state
   const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
+  const [isDeleteAuthModalOpen, setIsDeleteAuthModalOpen] = useState(false);
+  const [deleteAuthPassword, setDeleteAuthPassword] = useState('');
+  const [periodToDelete, setPeriodToDelete] = useState(null);
+  const [deleteAuthError, setDeleteAuthError] = useState(null);
+  const [deleteAuthLoading, setDeleteAuthLoading] = useState(false);
+
+  // Journal entries date filters
+  const [jeStart, setJeStart] = useState('');
+  const [jeEnd, setJeEnd] = useState('');
 
   const tabs = [
     { id: 'chart_of_accounts', label: t('finance.tabs.chart_of_accounts'), icon: (color) => <Box size={18} color={color} /> },
     { id: 'journal_entries', label: t('finance.tabs.journal_entries'), icon: (color) => <FileText size={18} color={color} /> },
     { id: 'fiscal_periods', label: t('finance.tabs.fiscal_periods'), icon: (color) => <Calendar size={18} color={color} /> },
-    { id: 'subledger_integration', label: t('finance.tabs.subledger'), icon: (color) => <Layers size={18} color={color} /> }
   ];
 
   useEffect(() => {
@@ -42,12 +50,23 @@ const GeneralLedgerPage = () => {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    if (activeTab === 'journal_entries') {
+      fetchJournalEntries(1, true);
+    }
+  }, [jeStart, jeEnd]);
+
   const fetchJournalEntries = async (pageNum, reset = false) => {
     try {
       if (reset) setLoadingEntries(true);
       else setLoadingMore(true);
       
-      const res = await axios.get(`http://localhost:5000/api/journal-entries?page=${pageNum}&limit=10`);
+      let url = `http://localhost:5000/api/journal-entries?page=${pageNum}&limit=10`;
+      if (jeStart && jeEnd) {
+        url += `&startDate=${jeStart}&endDate=${jeEnd}`;
+      }
+      
+      const res = await axios.get(url);
       if (res.data.success) {
         if (reset) {
           setJournalEntries(res.data.data);
@@ -108,6 +127,66 @@ const GeneralLedgerPage = () => {
     }
   };
 
+  const handlePeriodDelete = (period) => {
+    if (period.Status === 'OPEN') {
+      alert("Cannot delete an OPEN fiscal period. You must close the period first.");
+      return;
+    }
+    setPeriodToDelete(period);
+    setIsDeleteAuthModalOpen(true);
+    setDeleteAuthPassword('');
+    setDeleteAuthError(null);
+  };
+
+  const handleDeleteSubmit = async (e) => {
+    e.preventDefault();
+    setDeleteAuthLoading(true);
+    setDeleteAuthError(null);
+
+    try {
+      // 1. Authenticate with password
+      const res = await axios.post(`http://localhost:5000/api/fiscal-periods/${periodToDelete.Period_ID}/authenticate-delete`, { 
+        password: deleteAuthPassword 
+      });
+      
+      if (res.data.success) {
+        const { periodName, startDate, endDate, transactions } = res.data.data;
+        
+        // Close authentication modal cleanly
+        setIsDeleteAuthModalOpen(false);
+        setDeleteAuthPassword('');
+
+        // 2. Automatically generate and download PDF of all transactions in this period
+        const { downloadPeriodTransactionsPDF } = await import('../../utils/reportGenerators');
+        downloadPeriodTransactionsPDF({
+          periodName,
+          startDate,
+          endDate,
+          transactions
+        });
+
+        // 3. Confirm deletion
+        setTimeout(async () => {
+          const confirmed = window.confirm(`Transactions report downloaded successfully.\n\nAre you sure you want to permanently DELETE the fiscal period "${periodName}"?\nThis action is irreversible and will delete the period record.`);
+          
+          if (confirmed) {
+            // 4. Send DELETE request to DB
+            const deleteRes = await axios.delete(`http://localhost:5000/api/fiscal-periods/${periodToDelete.Period_ID}`);
+            if (deleteRes.data.success) {
+              alert(`✅ Fiscal period "${periodName}" deleted successfully.`);
+              fetchFiscalPeriods(); // Reload periods list
+            }
+          }
+        }, 300); // Small timeout to allow browser download to initiate cleanly
+      }
+    } catch (err) {
+      console.error('Error authenticating delete:', err);
+      setDeleteAuthError(err.response?.data?.message || 'Authentication failed');
+    } finally {
+      setDeleteAuthLoading(false);
+    }
+  };
+
   const handleSeeMore = () => {
     if (!loadingMore && hasMore) {
       fetchJournalEntries(page + 1);
@@ -118,6 +197,39 @@ const GeneralLedgerPage = () => {
 
   const renderJournalEntries = () => (
     <div className="w-full pt-4 flex flex-col gap-4">
+      {/* Date Search Filter */}
+      <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">From Date:</span>
+          <input
+            type="date"
+            value={jeStart}
+            onChange={(e) => setJeStart(e.target.value)}
+            className="text-xs border border-gray-200 rounded-lg px-3 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">To Date:</span>
+          <input
+            type="date"
+            value={jeEnd}
+            onChange={(e) => setJeEnd(e.target.value)}
+            className="text-xs border border-gray-200 rounded-lg px-3 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white"
+          />
+        </div>
+        {(jeStart || jeEnd) && (
+          <button
+            onClick={() => {
+              setJeStart('');
+              setJeEnd('');
+            }}
+            className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg font-bold text-xs transition"
+          >
+            Clear Filters
+          </button>
+        )}
+      </div>
+
       {error && activeTab === 'journal_entries' && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex justify-between items-center mb-4">
           <div className="flex items-center gap-2 text-sm font-medium">
@@ -254,12 +366,19 @@ const GeneralLedgerPage = () => {
                           {row.Status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right flex items-center justify-end gap-3">
                         <button 
                           onClick={() => handleStatusChange(row.Period_ID, row.Status)}
                           className="text-orange-600 font-bold hover:text-orange-700 transition"
                         >
                           {t('finance.fiscal.change_status')}
+                        </button>
+                        <span className="text-gray-300">|</span>
+                        <button 
+                          onClick={() => handlePeriodDelete(row)}
+                          className="text-red-600 font-bold hover:text-red-700 transition"
+                        >
+                          Delete
                         </button>
                       </td>
                     </tr>
@@ -327,14 +446,6 @@ const GeneralLedgerPage = () => {
         {activeTab === 'journal_entries' && renderJournalEntries()}
         {activeTab === 'fiscal_periods' && renderFiscalPeriods()}
         {activeTab === 'chart_of_accounts' && <ChartOfAccountsPage />}
-        {activeTab === 'subledger_integration' && (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-            <Layers size={64} strokeWidth={1} className="mb-4 opacity-20" />
-            <h3 className="text-xl font-bold text-gray-500">{t('finance.subledger.title')}</h3>
-            <p className="max-w-xs text-center mt-2">{t('finance.subledger.description')}</p>
-            <span className="mt-4 px-4 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase tracking-widest">{t('finance.subledger.coming_soon')}</span>
-          </div>
-        )}
       </div>
 
       {/* Modal */}
@@ -343,6 +454,83 @@ const GeneralLedgerPage = () => {
         onClose={() => setIsPeriodModalOpen(false)} 
         onRefresh={fetchFiscalPeriods} 
       />
+
+      {/* Password Authentication Modal for Period Deletion */}
+      {isDeleteAuthModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            
+            {/* Modal Header */}
+            <div className="bg-red-950 p-5 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white">
+                  <Shield size={20} />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">Confirm Deletion</h2>
+                  <p className="text-red-200 text-[10px]">Administrative Authentication Required</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setIsDeleteAuthModalOpen(false);
+                  setDeleteAuthPassword('');
+                  setDeleteAuthError(null);
+                }} 
+                className="text-red-200 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleDeleteSubmit} className="p-6 flex flex-col gap-4">
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Deleting the fiscal period <strong>"{periodToDelete?.Period_Name}"</strong> requires admin password verification.
+              </p>
+
+              {deleteAuthError && (
+                <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-medium flex items-center gap-2">
+                  <AlertCircle size={14} /> {deleteAuthError}
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest ml-1">Admin Password</label>
+                <input 
+                  type="password" 
+                  placeholder="Enter admin password..."
+                  required
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                  value={deleteAuthPassword}
+                  onChange={(e) => setDeleteAuthPassword(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2 mt-2">
+                <button 
+                  type="submit" 
+                  disabled={deleteAuthLoading}
+                  className="w-full py-3 bg-red-700 hover:bg-red-800 text-white rounded-xl font-bold shadow-lg shadow-red-200 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                >
+                  {deleteAuthLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <CheckCircle size={16} />}
+                  Authenticate & Delete
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setIsDeleteAuthModalOpen(false);
+                    setDeleteAuthPassword('');
+                    setDeleteAuthError(null);
+                  }}
+                  className="w-full py-2 text-gray-400 font-semibold hover:text-gray-600 transition-colors text-xs text-center"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
