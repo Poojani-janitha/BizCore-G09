@@ -23,7 +23,8 @@ const EmployeeLeave = sequelize.define(
         Approved_By: { type: DataTypes.INTEGER, allowNull: true },
         Approved_Date: { type: DataTypes.DATEONLY, allowNull: true },
         Rejection_Reason: { type: DataTypes.TEXT, allowNull: true },
-        Notes: { type: DataTypes.TEXT, allowNull: true }
+        Notes: { type: DataTypes.TEXT, allowNull: true },
+        Document_Path: { type: DataTypes.STRING, allowNull: true }
     },
     {
         tableName: 'EMPLOYEE_LEAVE',

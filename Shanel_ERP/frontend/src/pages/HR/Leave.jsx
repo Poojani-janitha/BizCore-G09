@@ -15,6 +15,7 @@ const Leave = () => {
 
   // Add Leave Modal State
   const [showModal, setShowModal] = useState(false);
+  const [leaveFile, setLeaveFile] = useState(null);
   const [formData, setFormData] = useState({
     Employee_ID: '',
     Leave_Type: 'Casual',
@@ -66,7 +67,8 @@ const Leave = () => {
         endDate: l.End_Date,
         totalDays: l.Total_Days,
         appliedDate: l.Applied_Date,
-        department: emp.Department || '—'
+        department: emp.Department || '—',
+        documentPath: l.Document_Path
       };
     });
 
@@ -93,13 +95,19 @@ const Leave = () => {
       const end = new Date(formData.End_Date);
       const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
-      const payload = {
-        ...formData,
-        Total_Days: totalDays,
-        Applied_Date: today
-      };
+      const payload = new FormData();
+      Object.keys(formData).forEach(key => {
+        payload.append(key, formData[key]);
+      });
+      payload.append('Total_Days', totalDays);
+      payload.append('Applied_Date', today);
+      if (leaveFile) {
+        payload.append('Document', leaveFile);
+      }
 
-      await axios.post(`${API_BASE}/leaves`, payload);
+      await axios.post(`${API_BASE}/leaves`, payload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       alert('Leave request submitted successfully!');
       setShowModal(false);
       setFormData({
@@ -109,6 +117,7 @@ const Leave = () => {
         End_Date: today,
         Reason: ''
       });
+      setLeaveFile(null);
       fetchData();
     } catch (error) {
       console.error('Error adding leave:', error);
@@ -315,36 +324,43 @@ const Leave = () => {
                 }}>
                   {emp.leaveReason || <span style={{ color: '#94a3b8' }}>No reason provided</span>}
                 </div>
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
-                  {emp.leaveStatus === 'Pending' ? (
-                    <>
-                      <button
-                        onClick={() => updateLeaveStatus(emp.leaveId, 'approve')}
-                        style={{
-                          padding: '5px 10px', background: '#10b981', color: '#fff', border: 'none',
-                          borderRadius: '6px', cursor: 'pointer', fontSize: '10px', fontWeight: 800,
-                          boxShadow: '0 2px 4px rgba(16,185,129,0.2)', transition: 'all 0.2s'
-                        }}
-                      >APPROVE</button>
-                      <button
-                        onClick={() => updateLeaveStatus(emp.leaveId, 'reject')}
-                        style={{
-                          padding: '5px 10px', background: '#ef4444', color: '#fff', border: 'none',
-                          borderRadius: '6px', cursor: 'pointer', fontSize: '10px', fontWeight: 800,
-                          boxShadow: '0 2px 4px rgba(239,68,68,0.2)', transition: 'all 0.2s'
-                        }}
-                      >REJECT</button>
-                    </>
-                  ) : (
-                    <div style={{
-                      padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: 800, textAlign: 'center',
-                      textTransform: 'uppercase', minWidth: '80px',
-                      background: emp.leaveStatus === 'Approved' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
-                      color: emp.leaveStatus === 'Approved' ? '#059669' : '#dc2626',
-                      border: `1px solid ${emp.leaveStatus === 'Approved' ? '#10b981' : '#ef4444'}30`
-                    }}>
-                      {emp.leaveStatus}
-                    </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    {emp.leaveStatus === 'Pending' ? (
+                      <>
+                        <button
+                          onClick={() => updateLeaveStatus(emp.leaveId, 'approve')}
+                          style={{
+                            padding: '5px 10px', background: '#10b981', color: '#fff', border: 'none',
+                            borderRadius: '6px', cursor: 'pointer', fontSize: '10px', fontWeight: 800,
+                            boxShadow: '0 2px 4px rgba(16,185,129,0.2)', transition: 'all 0.2s'
+                          }}
+                        >APPROVE</button>
+                        <button
+                          onClick={() => updateLeaveStatus(emp.leaveId, 'reject')}
+                          style={{
+                            padding: '5px 10px', background: '#ef4444', color: '#fff', border: 'none',
+                            borderRadius: '6px', cursor: 'pointer', fontSize: '10px', fontWeight: 800,
+                            boxShadow: '0 2px 4px rgba(239,68,68,0.2)', transition: 'all 0.2s'
+                          }}
+                        >REJECT</button>
+                      </>
+                    ) : (
+                      <div style={{
+                        padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: 800, textAlign: 'center',
+                        textTransform: 'uppercase', minWidth: '80px',
+                        background: emp.leaveStatus === 'Approved' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+                        color: emp.leaveStatus === 'Approved' ? '#059669' : '#dc2626',
+                        border: `1px solid ${emp.leaveStatus === 'Approved' ? '#10b981' : '#ef4444'}30`
+                      }}>
+                        {emp.leaveStatus}
+                      </div>
+                    )}
+                  </div>
+                  {emp.documentPath && (
+                    <a href={`http://localhost:5000/uploads/hr-documents/${emp.documentPath}`} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#0d9488', textDecoration: 'underline', fontWeight: 600 }}>
+                      View Letter
+                    </a>
                   )}
                 </div>
               </div>
@@ -422,6 +438,16 @@ const Leave = () => {
                   onChange={e => setFormData({ ...formData, Reason: e.target.value })}
                   placeholder="Why is this employee taking leave?"
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none', height: '80px', resize: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#4b5563', marginBottom: '6px' }}>Upload Leave Letter</label>
+                <input
+                  type="file"
+                  onChange={e => setLeaveFile(e.target.files[0])}
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none', fontSize: '13px' }}
                 />
               </div>
 

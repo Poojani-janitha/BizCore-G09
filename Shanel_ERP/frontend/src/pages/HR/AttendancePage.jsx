@@ -6,12 +6,117 @@ import HrStatsCard from '../../component/HR/Dashboard/HrStatsCard';
 
 const API_BASE = 'http://localhost:5000/api/hr';
 
+const TimeInputAMPM = ({ value, onChange, disabled, placeholder }) => {
+  const [text, setText] = useState('');
+  const [ampm, setAmpm] = useState('AM');
+
+  useEffect(() => {
+    if (!value) {
+      setText('');
+      setAmpm('AM');
+      return;
+    }
+    const [h, m] = value.split(':');
+    let hInt = parseInt(h, 10);
+    const isPM = hInt >= 12;
+    setAmpm(isPM ? 'PM' : 'AM');
+    hInt = hInt % 12 || 12;
+    setText(`${String(hInt).padStart(2, '0')}:${m}`);
+  }, [value]);
+
+  const updateParent = (timeText, period) => {
+    if (!timeText.trim()) {
+      onChange('');
+      return;
+    }
+    let cleaned = timeText.replace(/[^\d:]/g, '');
+    if (!cleaned) {
+        setText('');
+        onChange('');
+        return;
+    }
+    
+    let h = 0, m = 0;
+    if (cleaned.includes(':')) {
+      const parts = cleaned.split(':');
+      h = parseInt(parts[0], 10) || 0;
+      m = parseInt(parts[1], 10) || 0;
+    } else if (cleaned.length <= 2) {
+      h = parseInt(cleaned, 10) || 0;
+    } else if (cleaned.length === 3) {
+      h = parseInt(cleaned.substring(0, 1), 10);
+      m = parseInt(cleaned.substring(1), 10);
+    } else if (cleaned.length >= 4) {
+      h = parseInt(cleaned.substring(0, 2), 10);
+      m = parseInt(cleaned.substring(2, 4), 10);
+    }
+
+    if (h > 12) h = 12;
+    if (m > 59) m = 59;
+
+    const formattedText = `${String(h || 12).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    setText(formattedText);
+
+    if (h === 12 && period === 'AM') h = 0;
+    else if (h < 12 && period === 'PM') h += 12;
+
+    onChange(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+  };
+
+  const handleBlur = () => {
+    updateParent(text, ampm);
+  };
+
+  return (
+    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+      <input
+        type="text"
+        value={text}
+        disabled={disabled}
+        onChange={e => setText(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
+        placeholder={placeholder ? placeholder.split(' ')[0] : "08:00"}
+        style={{
+          padding: '5px 8px', borderRadius: '6px',
+          border: '1px solid #d1d5db', fontSize: '12px',
+          background: disabled ? '#f1f5f9' : '#fff',
+          color: disabled ? '#94a3b8' : '#1a1a2e',
+          outline: 'none', width: '56px', textAlign: 'center'
+        }}
+      />
+      <select
+        value={ampm}
+        disabled={disabled || !text.trim()}
+        onChange={e => {
+            const newAmpm = e.target.value;
+            setAmpm(newAmpm);
+            if (text.trim()) {
+                updateParent(text, newAmpm);
+            }
+        }}
+        style={{
+          padding: '4px', borderRadius: '6px',
+          border: '1px solid #d1d5db', fontSize: '11px', fontWeight: 600,
+          background: disabled || !text.trim() ? '#f1f5f9' : '#f8fafc',
+          color: disabled || !text.trim() ? '#94a3b8' : '#475569',
+          outline: 'none', cursor: disabled || !text.trim() ? 'not-allowed' : 'pointer'
+        }}
+      >
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
+    </div>
+  );
+};
+
 //sets up the initial state and variables that the Attendance page needs to function
 const Attendance = () => {
   const today = new Date().toISOString().split('T')[0];
   const [employees, setEmployees] = useState([]);
   const [date, setDate] = useState(today);
   const [attendance, setAttendance] = useState({});
+  const latestAttendanceRef = React.useRef({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -66,6 +171,7 @@ const Attendance = () => {
           timeIn: row.Check_In_Time || '',
           timeOut: row.Check_Out_Time || '',
           otHours: Number(row.Overtime_Hours || 0),
+          cardsProduced: Number(row.Cards_Produced || 0),
         };
       }
     });
@@ -74,9 +180,15 @@ const Attendance = () => {
       Object.fromEntries(
         employeeList.map((emp) => [
           emp.id,
-          byEmployeeId[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 },
+          byEmployeeId[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0, cardsProduced: 0 },
         ])
       )
+    );
+    latestAttendanceRef.current = Object.fromEntries(
+      employeeList.map((emp) => [
+        emp.id,
+        byEmployeeId[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0, cardsProduced: 0 },
+      ])
     );
   };
 
@@ -136,10 +248,9 @@ const Attendance = () => {
   };
 
   /**
- * OT Calculator: For Cashiers, calculates overtime hours if they work past 5:00 PM.
+ * OT Calculator: Calculates overtime hours if they work past 5:00 PM.
  */
   const calculateOtHours = (timeIn, timeOut, role) => {
-    if (String(role || '').toLowerCase() !== 'cashier') return 0;
     if (!timeIn || !timeOut) return 0;
     const [outH, outM] = timeOut.split(':').map(Number);
     const outMinutes = outH * 60 + outM;
@@ -199,8 +310,8 @@ const Attendance = () => {
       }
     }
 
-    // OT only applies when Present, role is Cashier, and Time Out is after 5:00 PM.
-    if (next.status === 'present' && String(role || '').toLowerCase() === 'cashier') {
+    // OT only applies when Present and Time Out is after 5:00 PM.
+    if (next.status === 'present') {
       next.otHours = calculateOtHours(next.timeIn, next.timeOut, role);
     } else {
       next.otHours = 0;
@@ -213,17 +324,20 @@ const Attendance = () => {
     const empRole = employees.find(e => e.id === String(id))?.role || '';
     setAttendance(prev => {
       const current = prev[id] || {};
+      let newState;
       if (field !== 'status') {
         const updatedRecord = applyAttendanceRules({ ...current, [field]: value }, empRole);
-        return {
+        newState = {
           ...prev,
           [id]: updatedRecord,
         };
+      } else {
+        const nextStatus = value;
+        const next = applyAttendanceRules({ ...current, status: nextStatus }, empRole);
+        newState = { ...prev, [id]: next };
       }
-
-      const nextStatus = value;
-      const next = applyAttendanceRules({ ...current, status: nextStatus }, empRole);
-      return { ...prev, [id]: next };
+      latestAttendanceRef.current = newState;
+      return newState;
     });
   };
 
@@ -244,6 +358,7 @@ const Attendance = () => {
         };
         updated[emp.id] = applyAttendanceRules(updated[emp.id], emp.role);
       });
+      latestAttendanceRef.current = updated;
       return updated;
     });
   };
@@ -253,14 +368,20 @@ const Attendance = () => {
  * Recalculates total work hours and OT before sending.
  */
   const handleSubmit = async () => {
+    if (document.activeElement && document.activeElement.blur) {
+      document.activeElement.blur();
+    }
+
     try {
       const today = new Date().toISOString().split('T')[0];
       if (date > today) {
         alert('Cannot mark attendance for future dates');
         return;
       }
+      
+      const currentAttendance = latestAttendanceRef.current;
       const records = employees.map((emp) => {
-        const rec = attendance[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 };
+        const rec = currentAttendance[emp.id] || { status: 'absent', timeIn: '', timeOut: '', otHours: 0 };
         const totalHours = getWorkHours(rec.timeIn, rec.timeOut);
         return {
           Employee_ID: Number(emp.id),
@@ -273,7 +394,8 @@ const Attendance = () => {
           Late_Minutes: 0,
           Is_Overtime: Number(rec.otHours || 0) > 0,
           Overtime_Hours: Number(rec.otHours || 0),
-          Marked_By: 'Manual'
+          Marked_By: 'Manual',
+          Cards_Produced: rec.cardsProduced || 0
         };
       });
 
@@ -514,36 +636,20 @@ const Attendance = () => {
                 )}
               </div>
 
-              {/* Time In — placeholder only, no default value */}
-              <input
-                type="time"
+              {/* Time In — parsed AM/PM text box */}
+              <TimeInputAMPM
                 value={rec.timeIn}
                 disabled={rec.isOnLeave}
-                onChange={e => updateField(emp.id, 'timeIn', e.target.value)}
-                placeholder="--:--"
-                style={{
-                  padding: '5px 8px', borderRadius: '6px',
-                  border: '1px solid #d1d5db', fontSize: '12px',
-                  background: rec.isOnLeave ? '#f1f5f9' : '#fff',
-                  color: rec.isOnLeave ? '#94a3b8' : '#1a1a2e',
-                  outline: 'none', width: '90px',
-                }}
+                onChange={val => updateField(emp.id, 'timeIn', val)}
+                placeholder="08:00 AM"
               />
 
-              {/* Time Out — placeholder only, no default value */}
-              <input
-                type="time"
+              {/* Time Out — parsed AM/PM text box */}
+              <TimeInputAMPM
                 value={rec.timeOut}
                 disabled={!rec.timeIn || rec.isOnLeave}
-                onChange={e => updateField(emp.id, 'timeOut', e.target.value)}
-                placeholder="--:--"
-                style={{
-                  padding: '5px 8px', borderRadius: '6px',
-                  border: '1px solid #d1d5db', fontSize: '12px',
-                  background: (!rec.timeIn || rec.isOnLeave) ? '#f1f5f9' : '#fff',
-                  color: (!rec.timeIn || rec.isOnLeave) ? '#94a3b8' : '#1a1a2e',
-                  outline: 'none', width: '90px',
-                }}
+                onChange={val => updateField(emp.id, 'timeOut', val)}
+                placeholder="05:00 PM"
               />
 
               {/* OT Hours */}
@@ -551,14 +657,14 @@ const Attendance = () => {
                 type="number"
                 min="0"
                 value={rec.otHours}
-                disabled={String(emp.role || '').toLowerCase() !== 'cashier' || rec.isOnLeave}
+                disabled={rec.isOnLeave}
                 onChange={e => updateField(emp.id, 'otHours', Number(e.target.value))}
                 placeholder="0"
                 style={{
                   padding: '5px 8px', borderRadius: '6px',
                   border: '1px solid #d1d5db', fontSize: '12px',
-                  background: (String(emp.role || '').toLowerCase() !== 'cashier' || rec.isOnLeave) ? '#f1f5f9' : '#fff',
-                  color: (String(emp.role || '').toLowerCase() !== 'cashier' || rec.isOnLeave) ? '#94a3b8' : '#1a1a2e',
+                  background: rec.isOnLeave ? '#f1f5f9' : '#fff',
+                  color: rec.isOnLeave ? '#94a3b8' : '#1a1a2e',
                   outline: 'none', width: '60px',
                 }}
               />
