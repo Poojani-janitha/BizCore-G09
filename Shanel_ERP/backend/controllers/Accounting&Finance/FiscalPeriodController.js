@@ -85,6 +85,10 @@ class FiscalPeriodController {
                     });
                 }
 
+                // First, create the closing journal entries to transfer temporary balances to Retained Earnings
+                await this._createClosingJournalEntry(period, transaction);
+
+                // Then calculate balance brought forward for balance sheet accounts (which now includes the closing entries)
                 accountsUpdated = await this._calculateBalanceBroughtForward(period, transaction);
             }
 
@@ -180,6 +184,226 @@ class FiscalPeriodController {
 
         console.log(`✅ Balance Brought Forward updated for ${updatedCount} accounts (period: ${period.Period_Name})`);
         return updatedCount;
+    }
+
+    // ── Private: Create closing journal entry to transfer profit/loss to Retained Earnings ──
+    async _createClosingJournalEntry(period, transaction) {
+        // Delete existing closing entry for this period if any exists to allow clean re-closing / idempotency
+        const existingClosing = await JournalEntry.findOne({
+            where: {
+                Entry_Type: 'Closing',
+                Reference_Type: 'FiscalPeriod',
+                Reference_ID: period.Period_ID
+            },
+            transaction
+        });
+        if (existingClosing) {
+            await JournalEntryLine.destroy({
+                where: { Journal_ID: existingClosing.Journal_ID },
+                transaction
+            });
+            await existingClosing.destroy({ transaction });
+        }
+
+        // Fetch all active Revenue (4) and Expense (5) accounts
+        const tempAccounts = await AccountChart.findAll({
+            where: {
+                Type_ID: { [Op.in]: [4, 5] },
+                Is_Active: true
+            },
+            transaction
+        });
+
+        const tempAccountMap = {};
+        tempAccounts.forEach(acc => {
+            tempAccountMap[acc.Account_ID] = acc;
+        });
+
+        // Calculate net balance for each account during the closed period
+        const balances = await JournalEntryLine.findAll({
+            attributes: [
+                'Account_ID',
+                [Sequelize.fn('SUM', Sequelize.col('Debit_Amount')), 'Total_Debit'],
+                [Sequelize.fn('SUM', Sequelize.col('Credit_Amount')), 'Total_Credit']
+            ],
+            include: [{
+                model: JournalEntry,
+                as: 'JournalEntry',
+                attributes: [],
+                where: {
+                    Entry_Date: { [Op.between]: [period.Start_Date, period.End_Date] },
+                    Status: 'Posted',
+                    Entry_Type: { [Op.ne]: 'Closing' }
+                }
+            }],
+            where: {
+                Account_ID: {
+                    [Op.in]: tempAccounts.map(acc => acc.Account_ID)
+                }
+            },
+            group: ['Account_ID'],
+            raw: true,
+            transaction
+        });
+
+        // If there are no journal entries, there's nothing to close
+        if (balances.length === 0) {
+            console.log(`No balances to close for period ${period.Period_Name}.`);
+            return;
+        }
+
+        // Find the Retained Earnings account
+        let retainedEarningsAccount = await AccountChart.findOne({
+            where: { Account_Code: '3002' },
+            transaction
+        });
+        if (!retainedEarningsAccount) {
+            retainedEarningsAccount = await AccountChart.findOne({
+                where: { Account_Name: { [Op.like]: '%Retained Earnings%' } },
+                transaction
+            });
+        }
+        if (!retainedEarningsAccount) {
+            throw new Error('Retained Earnings account (Code: 3002) not found in the chart of accounts.');
+        }
+
+        // Generate Closing Journal Entry
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const dateStr = String(today.getDate()).padStart(2, '0');
+        const datePrefix = `CLS-${year}${month}${dateStr}`;
+
+        const lastEntry = await JournalEntry.findOne({
+            where: {
+                Journal_No: {
+                    [Op.like]: `${datePrefix}-%`
+                }
+            },
+            order: [['Journal_ID', 'DESC']],
+            attributes: ['Journal_No'],
+            transaction
+        });
+
+        let nextNum = '001';
+        if (lastEntry) {
+            const lastNumber = parseInt(lastEntry.Journal_No.split('-').pop(), 10);
+            nextNum = String(lastNumber + 1).padStart(3, '0');
+        }
+        const journalNumber = `${datePrefix}-${nextNum}`;
+
+        const journalEntry = await JournalEntry.create({
+            Journal_No: journalNumber,
+            Entry_Date: period.End_Date,
+            Entry_Type: 'Closing',
+            Reference_Type: 'FiscalPeriod',
+            Reference_ID: period.Period_ID,
+            Description: `Closing entry for fiscal period: ${period.Period_Name}`,
+            Total_Debit: 0,
+            Total_Credit: 0,
+            Status: 'Posted',
+            Posted_By: null,
+            Posted_Date: new Date(),
+            Created_By: null
+        }, { transaction });
+
+        let totalDebit = 0;
+        let totalCredit = 0;
+        let journalLineNumber = 1;
+        const closingLines = [];
+
+        balances.forEach(b => {
+            const acc = tempAccountMap[b.Account_ID];
+            if (!acc) return;
+
+            const totalDebitAmt = parseFloat(b.Total_Debit) || 0;
+            const totalCreditAmt = parseFloat(b.Total_Credit) || 0;
+
+            if (acc.Type_ID === 4) { // Revenue (Credit normal)
+                const netCredit = totalCreditAmt - totalDebitAmt;
+                if (netCredit > 0) {
+                    closingLines.push({
+                        Journal_ID: journalEntry.Journal_ID,
+                        Account_ID: acc.Account_ID,
+                        Line_Number: journalLineNumber++,
+                        Debit_Amount: netCredit,
+                        Credit_Amount: 0,
+                        Description: `Close revenue account ${acc.Account_Name} to Retained Earnings`
+                    });
+                    totalDebit += netCredit;
+                } else if (netCredit < 0) {
+                    closingLines.push({
+                        Journal_ID: journalEntry.Journal_ID,
+                        Account_ID: acc.Account_ID,
+                        Line_Number: journalLineNumber++,
+                        Debit_Amount: 0,
+                        Credit_Amount: Math.abs(netCredit),
+                        Description: `Close revenue account ${acc.Account_Name} to Retained Earnings`
+                    });
+                    totalCredit += Math.abs(netCredit);
+                }
+            } else if (acc.Type_ID === 5) { // Expense (Debit normal)
+                const netDebit = totalDebitAmt - totalCreditAmt;
+                if (netDebit > 0) {
+                    closingLines.push({
+                        Journal_ID: journalEntry.Journal_ID,
+                        Account_ID: acc.Account_ID,
+                        Line_Number: journalLineNumber++,
+                        Debit_Amount: 0,
+                        Credit_Amount: netDebit,
+                        Description: `Close expense account ${acc.Account_Name} to Retained Earnings`
+                    });
+                    totalCredit += netDebit;
+                } else if (netDebit < 0) {
+                    closingLines.push({
+                        Journal_ID: journalEntry.Journal_ID,
+                        Account_ID: acc.Account_ID,
+                        Line_Number: journalLineNumber++,
+                        Debit_Amount: Math.abs(netDebit),
+                        Credit_Amount: 0,
+                        Description: `Close expense account ${acc.Account_Name} to Retained Earnings`
+                    });
+                    totalDebit += Math.abs(netDebit);
+                }
+            }
+        });
+
+        const netProfitLoss = totalDebit - totalCredit;
+        if (netProfitLoss > 0) {
+            closingLines.push({
+                Journal_ID: journalEntry.Journal_ID,
+                Account_ID: retainedEarningsAccount.Account_ID,
+                Line_Number: journalLineNumber++,
+                Debit_Amount: 0,
+                Credit_Amount: netProfitLoss,
+                Description: `Transfer net profit for period ${period.Period_Name} to Retained Earnings`
+            });
+            totalCredit += netProfitLoss;
+        } else if (netProfitLoss < 0) {
+            closingLines.push({
+                Journal_ID: journalEntry.Journal_ID,
+                Account_ID: retainedEarningsAccount.Account_ID,
+                Line_Number: journalLineNumber++,
+                Debit_Amount: Math.abs(netProfitLoss),
+                Credit_Amount: 0,
+                Description: `Transfer net loss for period ${period.Period_Name} to Retained Earnings`
+            });
+            totalDebit += Math.abs(netProfitLoss);
+        }
+
+        if (closingLines.length === 0) {
+            await journalEntry.destroy({ transaction });
+            console.log(`No non-zero balances to close for period ${period.Period_Name}.`);
+            return;
+        }
+
+        await JournalEntryLine.bulkCreate(closingLines, { transaction });
+
+        journalEntry.Total_Debit = totalDebit;
+        journalEntry.Total_Credit = totalCredit;
+        await journalEntry.save({ transaction });
+
+        console.log(`✅ Created closing journal entry ${journalNumber} with ${closingLines.length} lines.`);
     }
 }
 
