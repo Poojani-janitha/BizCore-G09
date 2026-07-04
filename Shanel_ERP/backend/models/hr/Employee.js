@@ -59,7 +59,7 @@ const Employee = sequelize.define(
         Created_By: { type: DataTypes.INTEGER, allowNull: true }
     },
     {
-        tableName: 'EMPLOYEE',
+        tableName: 'employee',
         ...hrOpts,
         timestamps: true,
         createdAt: 'Created_At',
