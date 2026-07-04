@@ -1,5 +1,6 @@
 /**
- * SaleDetailsModal.css - Styling for SaleDetailsModal component
+ * SaleDetailsModal.css - Premium styling for SaleDetailsModal component
+ * Implements glassmorphism, Outfit/Inter typography, and premium card layouts
  */
 
 .modal-overlay {
@@ -8,67 +9,253 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(15, 23, 42, 0.45); /* Modern deep slate overlay */
+    backdrop-filter: blur(6px); /* Premium blurry backdrop */
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 9999;
     padding: 20px;
-    animation: fadeIn 0.3s ease;
+    animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+@keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .modal-content {
-    background-color: white;
-    border-radius: 1rem;
-    box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.3);
-    max-width: 800px;
+    background-color: #ffffff;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 30px 100px -20px rgba(15, 23, 42, 0.22);
+    max-width: 850px;
     width: 100%;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
-    animation: slideUp 0.3s ease;
+    overflow: hidden;
+    font-family: 'Outfit', 'Inter', sans-serif;
+    animation: modalSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes slideUp {
+@keyframes modalSlideUp {
     from {
-        transform: translateY(30px);
+        transform: translateY(24px) scale(0.98);
         opacity: 0;
     }
     to {
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
         opacity: 1;
     }
 }
 
 .modal-header {
-    border-radius: 1rem 1rem 0 0;
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 1.5rem 2rem;
 }
 
 .modal-body {
     flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    background-color: #f8fafc; /* Very light slate canvas */
 }
 
 .modal-footer {
-    border-radius: 0 0 1rem 1rem;
+    background: #ffffff;
+    border-top: 1px solid #f1f5f9;
+    padding: 1.25rem 2rem;
 }
 
-.table-responsive {
+/* Premium Information Cards */
+.info-card-premium {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.info-card-premium:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+}
+
+/* Metadata Grid */
+.metadata-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+}
+
+.metadata-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.metadata-icon-wrapper {
+    background-color: #f1f5f9;
+    color: #475569;
+    padding: 0.5rem;
     border-radius: 0.5rem;
-    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
+.metadata-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.metadata-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748b;
+    letter-spacing: 0.5px;
+}
+
+.metadata-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* Premium Tables */
+.table-responsive-custom {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.table-custom-premium {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.table-custom-premium th {
+    background-color: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+}
+
+.table-custom-premium td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.85rem;
+    color: #334155;
+    vertical-align: middle;
+}
+
+.table-custom-premium tr:last-child td {
+    border-bottom: 0;
+}
+
+/* Payment Indicator Cards */
+.payment-card-premium {
+    border-radius: 0.75rem;
+    padding: 1rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    transition: all 0.25s ease;
+}
+
+.payment-card-premium:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 12px -3px rgba(0, 0, 0, 0.05);
+}
+
+.payment-card-premium.cash { border-left-color: #10b981; }
+.payment-card-premium.cheque { border-left-color: #0ea5e9; }
+.payment-card-premium.bank { border-left-color: #eab308; }
+.payment-card-premium.credit { border-left-color: #f43f5e; }
+
+.payment-icon-circle {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.payment-card-premium.cash .payment-icon-circle { background-color: #ecfdf5; color: #10b981; }
+.payment-card-premium.cheque .payment-icon-circle { background-color: #f0f9ff; color: #0ea5e9; }
+.payment-card-premium.bank .payment-icon-circle { background-color: #fef9c3; color: #eab308; }
+.payment-card-premium.credit .payment-icon-circle { background-color: #fff1f2; color: #f43f5e; }
+
+/* Financial Highlight Box */
+.financial-summary-premium {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+.total-due-card-premium {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #ffffff;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.15);
+}
+
+.total-due-card-premium .summary-label {
+    color: #94a3b8;
+}
+
+.total-due-card-premium .summary-value {
+    color: #ffffff;
+}
+
+.summary-row-premium {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.45rem 0;
+    font-size: 0.85rem;
+}
+
+.summary-row-premium:not(:last-child) {
+    border-bottom: 1px dashed #f1f5f9;
+}
+
+.summary-row-premium .summary-label {
+    font-weight: 600;
+    color: #475569;
+}
+
+.summary-row-premium .summary-value {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+/* Animations and Responsive */
 @media (max-width: 768px) {
     .modal-content {
         max-width: 100%;
         max-height: 95vh;
+    }
+    .metadata-grid {
+        grid-template-columns: 1fr;
     }
 }

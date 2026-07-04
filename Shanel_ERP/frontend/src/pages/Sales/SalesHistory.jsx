@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { useReactToPrint } from "react-to-print";
+import { useTranslation } from "react-i18next";
+import BillTemplate from "../../component/pos/billTemplate/BillTemplate";
+import { fetchSaleDetails } from "../../services/salesManagementService";
 import RecentSalesTable from "../../component/Sale/recentSalesTable/RecentSalesTable";
 import { Search, Filter, Calendar, XCircle, Package, AlertCircle, Eye, Printer, RotateCcw } from "react-feather";
 
@@ -67,7 +71,8 @@ const VoidModal = ({ show, sale, onConfirm, onCancel }) => {
 
 // ─── Enhanced Sales History Table ─────────────────────────────────────────────
 // Extends RecentSalesTable with Void action
-const SalesHistoryTable = ({ externalData, externalLoading, title, pagination, onPageChange, onVoid }) => {
+const SalesHistoryTable = ({ externalData, externalLoading, title, pagination, onPageChange, onVoid, onPrint }) => {
+    const { t } = useTranslation();
     const [selectedSaleId, setSelectedSaleId] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [voidTarget, setVoidTarget] = useState(null);
@@ -99,7 +104,7 @@ const SalesHistoryTable = ({ externalData, externalLoading, title, pagination, o
                 <table className="table table-hover align-middle mb-0">
                     <thead className="bg-light">
                         <tr>
-                            {['Invoice #', 'Date', 'Customer', 'Type', 'Total', 'Balance', 'Status', 'Actions'].map(h => (
+                            {[t('sales.invoice_no'), t('sales.date'), t('sales.customer'), t('sales.type'), t('sales.total'), t('sales.balance'), t('sales.status'), t('sales.actions')].map(h => (
                                 <th key={h} className="py-3 text-uppercase small fw-bold text-muted" style={{ fontSize: '10px' }}>{h}</th>
                             ))}
                         </tr>
@@ -108,7 +113,7 @@ const SalesHistoryTable = ({ externalData, externalLoading, title, pagination, o
                         {loading ? (
                             <tr><td colSpan={8} className="text-center py-5"><div className="spinner-border spinner-border-sm text-primary" /></td></tr>
                         ) : sales.length === 0 ? (
-                            <tr><td colSpan={8} className="text-center py-5 text-muted small">No transactions found</td></tr>
+                            <tr><td colSpan={8} className="text-center py-5 text-muted small">{t('sales.no_transactions')}</td></tr>
                         ) : sales.map(sale => (
                             <tr key={sale.Sale_Id} style={sale.Status === 'Void' ? { opacity: 0.6, backgroundColor: '#f8f9fa' } : {}}>
                                 <td className="ps-4">
@@ -125,7 +130,7 @@ const SalesHistoryTable = ({ externalData, externalLoading, title, pagination, o
                                 </td>
                                 <td>
                                     <span className={`badge rounded-pill px-2 py-1 ${sale.Sale_Type === 'Wholesale' ? 'bg-primary-subtle text-primary' : 'bg-info-subtle text-info'}`} style={{ fontSize: '10px' }}>
-                                        {sale.Sale_Type}
+                                        {sale.Sale_Type === 'Wholesale' ? t('sales.wholesale') : t('sales.retail')}
                                     </span>
                                 </td>
                                 <td className="fw-bold text-dark small">Rs.{parseFloat(sale.Total_Amount).toLocaleString()}</td>
@@ -134,25 +139,29 @@ const SalesHistoryTable = ({ externalData, externalLoading, title, pagination, o
                                 </td>
                                 <td>
                                     <span className={`badge border rounded-pill px-3 py-2 ${getStatusBadge(sale.Payment_Status)}`} style={{ fontSize: '10px' }}>
-                                        {sale.Payment_Status?.replace('_', ' ')}
+                                        {sale.Payment_Status === 'Paid' ? t('sales.paid') : sale.Payment_Status === 'Unpaid' ? t('sales.unpaid') : sale.Payment_Status === 'Partially_Paid' ? t('sales.partially_paid') : sale.Payment_Status?.replace('_', ' ')}
                                     </span>
                                 </td>
                                 <td className="pe-4">
                                     <div className="btn-group shadow-sm rounded-3 overflow-hidden border bg-white">
                                         <button
                                             className="btn btn-sm btn-white px-2 border-end"
-                                            title="View Detail"
+                                            title={t('sales.view_detail')}
                                             onClick={() => { setSelectedSaleId(sale.Sale_Id); setShowModal(true); }}
                                         >
                                             <Eye size={15} className="text-primary" />
                                         </button>
-                                        <button className="btn btn-sm btn-white px-2 border-end" title="Print Invoice">
+                                        <button
+                                            className="btn btn-sm btn-white px-2 border-end"
+                                            title={t('sales.print_invoice')}
+                                            onClick={() => onPrint(sale.Sale_Id)}
+                                        >
                                             <Printer size={15} className="text-secondary" />
                                         </button>
                                         {canVoid && sale.Status !== 'Void' && (
                                             <button
                                                 className="btn btn-sm btn-white px-2"
-                                                title="Void Sale"
+                                                title={t('sales.void_sale')}
                                                 onClick={() => setVoidTarget(sale)}
                                             >
                                                 <RotateCcw size={15} className="text-danger" />
@@ -216,6 +225,7 @@ const SalesHistoryTable = ({ externalData, externalLoading, title, pagination, o
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const SalesHistory = () => {
+    const { t } = useTranslation();
     const [sales, setSales] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({ total: 0, page: 1, pages: 0, limit: 20 });
@@ -223,6 +233,41 @@ const SalesHistory = () => {
         query: '', startDate: '', endDate: '',
         paymentStatus: '', productType: '', saleType: '', status: '', page: 1
     });
+
+    // Printing states and hooks
+    const [printSale, setPrintSale] = useState(null);
+    const [printLoading, setPrintLoading] = useState(false);
+    const printRef = useRef(null);
+
+    const handlePrint = useReactToPrint({
+        contentRef: printRef,
+        documentTitle: printSale ? `Invoice_${printSale.Invoice_No}` : 'Invoice',
+        pageStyle: `@page { size: auto; margin: 0; }`,
+        onAfterPrint: () => setPrintSale(null)
+    });
+
+    useEffect(() => {
+        if (printSale) {
+            handlePrint();
+        }
+    }, [printSale]);
+
+    const handlePrintClick = async (saleId) => {
+        try {
+            setPrintLoading(true);
+            const response = await fetchSaleDetails(saleId);
+            if (response.success) {
+                setPrintSale(response.data);
+            } else {
+                alert('Failed to retrieve invoice details for printing');
+            }
+        } catch (error) {
+            console.error('Print fetch error:', error);
+            alert('Error fetching invoice details');
+        } finally {
+            setPrintLoading(false);
+        }
+    };
 
     const fetchFilteredSales = async () => {
         try {
@@ -266,57 +311,57 @@ const SalesHistory = () => {
             <div className="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
                 <div className="row g-3 align-items-end">
                     <div className="col-md-2">
-                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Search Invoice</label>
+                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.search_invoice')}</label>
                         <div className="input-group input-group-sm shadow-sm rounded-3 overflow-hidden border">
                             <span className="input-group-text bg-white border-0"><Search size={14} className="text-muted" /></span>
                             <input type="text" className="form-control border-0 ps-0" placeholder="INV-2026..." value={filters.query} onChange={e => setFilters({ ...filters, query: e.target.value, page: 1 })} />
                         </div>
                     </div>
                     <div className="col-md-2">
-                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>From Date</label>
+                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.from_date')}</label>
                         <div className="input-group input-group-sm shadow-sm rounded-3 overflow-hidden border">
                             <span className="input-group-text bg-white border-0"><Calendar size={14} className="text-muted" /></span>
                             <input type="date" className="form-control border-0 ps-0" value={filters.startDate} onChange={e => setFilters({ ...filters, startDate: e.target.value, page: 1 })} />
                         </div>
                     </div>
                     <div className="col-md-2">
-                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>To Date</label>
+                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.to_date')}</label>
                         <div className="input-group input-group-sm shadow-sm rounded-3 overflow-hidden border">
                             <span className="input-group-text bg-white border-0"><Calendar size={14} className="text-muted" /></span>
                             <input type="date" className="form-control border-0 ps-0" value={filters.endDate} onChange={e => setFilters({ ...filters, endDate: e.target.value, page: 1 })} />
                         </div>
                     </div>
                     <div className="col-md-2">
-                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Payment Status</label>
+                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.payment_status')}</label>
                         <div className="input-group input-group-sm shadow-sm rounded-3 overflow-hidden border">
                             <span className="input-group-text bg-white border-0"><Filter size={14} className="text-muted" /></span>
                             <select className="form-select border-0 ps-0" value={filters.paymentStatus} onChange={e => setFilters({ ...filters, paymentStatus: e.target.value, page: 1 })}>
-                                <option value="">All Statuses</option>
-                                <option value="Paid">Paid</option>
-                                <option value="Unpaid">Unpaid</option>
-                                <option value="Partially_Paid">Partially Paid</option>
+                                <option value="">{t('sales.all_statuses')}</option>
+                                <option value="Paid">{t('sales.paid')}</option>
+                                <option value="Unpaid">{t('sales.unpaid')}</option>
+                                <option value="Partially_Paid">{t('sales.partially_paid')}</option>
                             </select>
                         </div>
                     </div>
                     <div className="col-md-1">
-                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Type</label>
+                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.type')}</label>
                         <select className="form-select form-select-sm shadow-sm rounded-3 border" value={filters.saleType} onChange={e => setFilters({ ...filters, saleType: e.target.value, page: 1 })}>
-                            <option value="">All</option>
-                            <option value="Retail">Retail</option>
-                            <option value="Wholesale">Wholesale</option>
+                            <option value="">{t('sales.all')}</option>
+                            <option value="Retail">{t('sales.retail')}</option>
+                            <option value="Wholesale">{t('sales.wholesale')}</option>
                         </select>
                     </div>
                     <div className="col-md-1">
-                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Status</label>
+                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.status')}</label>
                         <select className="form-select form-select-sm shadow-sm rounded-3 border" value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value, page: 1 })}>
-                            <option value="">All</option>
-                            <option value="Active">Active</option>
-                            <option value="Void">Void</option>
+                            <option value="">{t('sales.all')}</option>
+                            <option value="Active">{t('sales.active')}</option>
+                            <option value="Void">{t('sales.void')}</option>
                         </select>
                     </div>
                     <div className="col-md-2 text-end">
                         <button className="btn btn-sm btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 border shadow-sm fw-bold rounded-3" onClick={handleReset} style={{ height: '31px' }}>
-                            <XCircle size={14} /> Reset Filters
+                            <XCircle size={14} /> {t('sales.reset_filters')}
                         </button>
                     </div>
                 </div>
@@ -325,12 +370,38 @@ const SalesHistory = () => {
             {/* Results Table */}
             <SalesHistoryTable
                 externalData={sales}
-                externalLoading={loading}
-                title={`${pagination.total} Transactions Found`}
+                externalLoading={loading || printLoading}
+                title={`${pagination.total} ${t('sales.transactions_found')}`}
                 pagination={pagination}
                 onPageChange={(p) => setFilters(prev => ({ ...prev, page: p }))}
                 onVoid={fetchFilteredSales}
+                onPrint={handlePrintClick}
             />
+
+            {/* Hidden printing layout */}
+            <div style={{ display: 'none' }}>
+                {printSale && (
+                    <BillTemplate
+                        ref={printRef}
+                        cartItems={(printSale.SaleItems || []).map(item => ({
+                            p_name: item.Product?.P_Name || 'Unknown Product',
+                            p_unit: item.UnitConversion?.Unit_Name || 'Packet',
+                            quntity: parseFloat(item.Quantity || 0),
+                            unit_price: parseFloat(item.Unit_Price || 0),
+                            discount: parseFloat(item.Line_Discount_Percentage || 0),
+                            total: parseFloat(item.Line_Total || 0)
+                        }))}
+                        invoiceData={{
+                            finalTotal: parseFloat(printSale.Total_Amount || 0) + parseFloat(printSale.Tax_Amount || 0) - parseFloat(printSale.Discount_Amount || 0),
+                            invoiceNo: printSale.Invoice_No
+                        }}
+                        customerData={{
+                            c_name: printSale.Customer?.C_Name || 'Walk-in Customer'
+                        }}
+                        invoiceNo={printSale.Invoice_No}
+                    />
+                )}
+            </div>
         </div>
     );
 };

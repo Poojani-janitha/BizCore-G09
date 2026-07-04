@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
     DollarSign, ShoppingBag, TrendingUp, Users,
     AlertCircle, CheckCircle, XCircle, Clock, ArrowUpRight,
@@ -30,6 +31,7 @@ const StatusBadge = ({ status }) => {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const SalesDashboard = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -82,7 +84,7 @@ const SalesDashboard = () => {
             <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '80vh', backgroundColor: '#f8fafc' }}>
                 <div className="text-center">
                     <div className="spinner-border text-primary mb-3" style={{ width: '3rem', height: '3rem' }} />
-                    <p className="text-muted small fw-bold text-uppercase tracking-wider">Loading Business Overview...</p>
+                    <p className="text-muted small fw-bold text-uppercase tracking-wider">{t('sales.dashboard.loading')}</p>
                 </div>
             </div>
         );
@@ -90,49 +92,49 @@ const SalesDashboard = () => {
 
     const cardData = [
         {
-            title: "Today's Sales",
+            title: t('sales.dashboard.todays_sales'),
             value: `Rs.${(data.today?.totalSales || 0).toLocaleString()}`,
-            label: "Value of active sales today",
+            label: t('sales.dashboard.todays_sales_desc'),
             icon: <DollarSign className="text-primary" size={20} />,
             color: "border-primary",
             onClick: () => navigate('/sales/history')
         },
         {
-            title: "Number of Sales",
+            title: t('sales.dashboard.number_of_sales'),
             value: data.today?.salesCount || '0',
-            label: "Invoices generated today",
+            label: t('sales.dashboard.number_of_sales_desc'),
             icon: <ShoppingBag className="text-info" size={20} />,
             color: "border-info",
             onClick: () => navigate('/sales/history')
         },
         {
-            title: "Gross Revenue",
+            title: t('sales.dashboard.gross_revenue'),
             value: `Rs.${(data.today?.grossRevenue || 0).toLocaleString()}`,
-            label: "Total gross sales today",
+            label: t('sales.dashboard.gross_revenue_desc'),
             icon: <TrendingUp className="text-success" size={20} />,
             color: "border-success",
             onClick: () => navigate('/sales/history')
         },
         {
-            title: "Outstanding Due",
+            title: t('sales.customer_list.outstanding_balance'),
             value: `Rs.${(data.outstanding?.totalDue || 0).toLocaleString()}`,
-            label: `Overdue: Rs.${(data.outstanding?.overdue || 0).toLocaleString()}`,
+            label: `${t('sales.overdue')}: Rs.${(data.outstanding?.overdue || 0).toLocaleString()}`,
             icon: <AlertCircle className="text-danger" size={20} />,
             color: "border-danger",
             onClick: () => navigate('/sales/due')
         },
         {
-            title: "Cheque Risks",
+            title: t('sales.dashboard.cheque_risks'),
             value: data.totalChequeAlerts || '0',
-            label: "Bounced & expiring",
+            label: t('sales.dashboard.cheque_risks_desc'),
             icon: <CreditCard className="text-warning" size={20} />,
             color: "border-warning",
             onClick: () => navigate('/sales/cheques')
         },
         {
-            title: "Due Sales",
+            title: t('sales.due_sales_title'),
             value: data.dueSalesCount || '0',
-            label: "Awaiting payment",
+            label: t('sales.dashboard.due_sales_desc'),
             icon: <Clock className="text-danger" size={20} />,
             color: "border-danger",
             onClick: () => navigate('/sales/due')
@@ -198,8 +200,8 @@ const SalesDashboard = () => {
                     <div className="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
                         <div className="d-flex justify-content-between align-items-center mb-3">
                             <div>
-                                <h6 className="fw-bold text-dark mb-0">Revenue Growth Trend</h6>
-                                <small className="text-muted">Period comparisons and sales absolute values</small>
+                                <h6 className="fw-bold text-dark mb-0">{t('sales.dashboard.revenue_growth_trend')}</h6>
+                                <small className="text-muted">{t('sales.dashboard.revenue_growth_trend_desc')}</small>
                             </div>
                             <div className="d-flex align-items-center gap-2">
                                 {data.trend.growthAbsolute !== 0 && (
@@ -255,7 +257,7 @@ const SalesDashboard = () => {
                                                 boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
                                                 padding: '12px'
                                             }}
-                                            formatter={v => [`Rs. ${v.toLocaleString()}`, 'Revenue']} 
+                                            formatter={v => [`Rs. ${v.toLocaleString()}`, t('sales.total')]} 
                                         />
                                         <Legend />
                                         <Area 
@@ -265,13 +267,13 @@ const SalesDashboard = () => {
                                             strokeWidth={3} 
                                             fillOpacity={1}
                                             fill="url(#salesTrendGradient)"
-                                            name="Revenue" 
+                                            name={t('sales.total')} 
                                             animationDuration={1500}
                                         />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div className="d-flex align-items-center justify-content-center h-100 text-muted small">No trend data for this period</div>
+                                <div className="d-flex align-items-center justify-content-center h-100 text-muted small">{t('sales.dashboard.no_trend_data')}</div>
                             )}
                         </div>
                     </div>
@@ -282,8 +284,8 @@ const SalesDashboard = () => {
                     <div className="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white d-flex flex-column">
                         <div className="pt-2 px-2">
                             <div>
-                                <h6 className="fw-bold text-dark mb-0">Top Products</h6>
-                                <small className="text-muted">Distribution by sales revenue</small>
+                                <h6 className="fw-bold text-dark mb-0">{t('sales.dashboard.top_products')}</h6>
+                                <small className="text-muted">{t('sales.dashboard.top_products_desc')}</small>
                             </div>
                         </div>
                         
@@ -314,7 +316,7 @@ const SalesDashboard = () => {
                                     </PieChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div className="d-flex align-items-center justify-content-center h-100 text-muted small">No product sales found</div>
+                                <div className="d-flex align-items-center justify-content-center h-100 text-muted small">{t('sales.dashboard.no_products_found')}</div>
                             )}
                         </div>
                     </div>
@@ -329,30 +331,30 @@ const SalesDashboard = () => {
                         <div className="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center border-bottom" style={{ borderColor: '#f1f5f9' }}>
                             <div className="d-flex align-items-center gap-2">
                                 <Users className="text-secondary" size={16} />
-                                <span className="fw-bold text-dark" style={{ fontSize: '13px' }}>Top Customers</span>
+                                <span className="fw-bold text-dark" style={{ fontSize: '13px' }}>{t('sales.dashboard.top_customers')}</span>
                             </div>
                             <button 
                                 className="btn btn-white btn-xs border text-muted px-2 py-1 rounded shadow-sm bg-white" 
                                 style={{ fontSize: '10px', fontWeight: 'bold' }}
                                 onClick={() => navigate('/sales/customers')}
                             >
-                                View All &gt;
+                                {t('sales.dashboard.view_all')} &gt;
                             </button>
                         </div>
                         <div className="card-body px-4 py-3">
                             {data.topCustomers.length === 0 ? (
-                                <p className="text-muted small text-center py-4">No top customers found</p>
+                                <p className="text-muted small text-center py-4">{t('sales.dashboard.no_customers_found')}</p>
                             ) : data.topCustomers.map((c, i) => (
                                 <div key={i} className="d-flex align-items-center gap-3 py-2 border-bottom" style={{ borderColor: '#f1f5f9' }}>
                                     <div className="fw-bold text-primary small" style={{ minWidth: 15 }}>{i + 1}</div>
                                     <div className="flex-grow-1 min-w-0">
                                         <div className="fw-bold text-dark small text-truncate">{c.name}</div>
-                                        <small className="text-muted" style={{ fontSize: '9px' }}>Last order: {c.lastPurchase ? new Date(c.lastPurchase).toLocaleDateString() : '—'}</small>
+                                        <small className="text-muted" style={{ fontSize: '9px' }}>{t('sales.dashboard.last_order')}: {c.lastPurchase ? new Date(c.lastPurchase).toLocaleDateString() : '—'}</small>
                                     </div>
                                     <div className="text-end">
                                         <div className="fw-bold text-dark small">Rs.{c.totalPurchases.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                                         {c.outstanding > 0 && (
-                                            <span className="badge bg-danger-subtle text-danger rounded-pill px-2 py-0" style={{ fontSize: '9px' }}>Rs.{c.outstanding.toLocaleString()} due</span>
+                                            <span className="badge bg-danger-subtle text-danger rounded-pill px-2 py-0" style={{ fontSize: '9px' }}>Rs.{c.outstanding.toLocaleString()} {t('sales.dashboard.due')}</span>
                                         )}
                                     </div>
                                 </div>
@@ -367,14 +369,14 @@ const SalesDashboard = () => {
                         <div className="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center border-bottom" style={{ borderColor: '#f1f5f9' }}>
                             <div className="d-flex align-items-center gap-2">
                                 <AlertCircle className="text-danger" size={16} />
-                                <span className="fw-bold text-dark" style={{ fontSize: '13px' }}>Cheque Risks (Expired & Expiring)</span>
+                                <span className="fw-bold text-dark" style={{ fontSize: '13px' }}>{t('sales.dashboard.cheque_risks_title')}</span>
                             </div>
                             <button 
                                 className="btn btn-white btn-xs border text-muted px-2 py-1 rounded shadow-sm bg-white" 
                                 style={{ fontSize: '10px', fontWeight: 'bold' }}
                                 onClick={() => navigate('/sales/cheques')}
                             >
-                                View All &gt;
+                                {t('sales.dashboard.view_all')} &gt;
                             </button>
                         </div>
                         <div className="card-body px-4 py-3">
@@ -382,7 +384,7 @@ const SalesDashboard = () => {
                             {[...data.cheques.bounced, ...data.cheques.expiring].length === 0 ? (
                                 <div className="text-center py-4 text-muted small">
                                     <CheckCircle size={24} className="text-success mb-2 opacity-50" />
-                                    <p className="mb-0">No risk cheques at this time</p>
+                                    <p className="mb-0">{t('sales.dashboard.no_risk_cheques')}</p>
                                 </div>
                             ) : [...data.cheques.bounced, ...data.cheques.expiring].slice(0, 5).map((ch, idx) => {
                                 const isBounced = ch.Cheque_Status === 'Bounced';
@@ -394,13 +396,13 @@ const SalesDashboard = () => {
                                         <div className="flex-grow-1 min-w-0">
                                             <div className="fw-bold text-dark small text-truncate">{ch.Cheque_No}</div>
                                             <small className="text-muted d-block text-truncate" style={{ fontSize: '9px' }}>
-                                                {ch.Customer?.C_Name || 'Customer'} · Due: {new Date(ch.Cheque_Date).toLocaleDateString()}
+                                                {ch.Customer?.C_Name || 'Customer'} · {t('sales.due_amount')}: {new Date(ch.Cheque_Date).toLocaleDateString()}
                                             </small>
                                         </div>
                                         <div className="text-end">
                                             <div className="fw-bold text-dark small">Rs.{parseFloat(ch.Amount).toLocaleString()}</div>
                                             <span className={`badge ${isBounced ? 'bg-danger text-white' : 'bg-warning text-dark'} rounded-pill`} style={{ fontSize: '8px' }}>
-                                                {isBounced ? 'Bounced' : 'Near Expire'}
+                                                {isBounced ? t('sales.bounced') : t('sales.dashboard.near_expire')}
                                             </span>
                                         </div>
                                     </div>
@@ -416,19 +418,19 @@ const SalesDashboard = () => {
                         <div className="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center border-bottom" style={{ borderColor: '#f1f5f9' }}>
                             <div className="d-flex align-items-center gap-2">
                                 <ShoppingBag className="text-secondary" size={16} />
-                                <span className="fw-bold text-dark" style={{ fontSize: '13px' }}>Recent Sales</span>
+                                <span className="fw-bold text-dark" style={{ fontSize: '13px' }}>{t('sales.dashboard.recent_sales')}</span>
                             </div>
                             <button 
                                 className="btn btn-white btn-xs border text-muted px-2 py-1 rounded shadow-sm bg-white" 
                                 style={{ fontSize: '10px', fontWeight: 'bold' }}
                                 onClick={() => navigate('/sales/history')}
                             >
-                                View All &gt;
+                                {t('sales.dashboard.view_all')} &gt;
                             </button>
                         </div>
                         <div className="card-body px-4 py-3">
                             {recentSales.length === 0 ? (
-                                <p className="text-muted small text-center py-4">No recent transactions found</p>
+                                <p className="text-muted small text-center py-4">{t('sales.no_transactions')}</p>
                             ) : recentSales.slice(0, 5).map((sale, idx) => (
                                 <div key={idx} className="d-flex align-items-center gap-3 py-2 border-bottom" style={{ borderColor: '#f1f5f9' }}>
                                     <div className="fw-bold text-primary small">{sale.Invoice_No}</div>
@@ -443,7 +445,7 @@ const SalesDashboard = () => {
                                             sale.Payment_Status === 'Partially_Paid' ? 'bg-warning-subtle text-warning' :
                                             'bg-danger-subtle text-danger'
                                         } rounded-pill`} style={{ fontSize: '8px' }}>
-                                            {sale.Payment_Status?.replace('_', ' ')}
+                                            {sale.Payment_Status === 'Paid' ? t('sales.paid') : sale.Payment_Status === 'Partially_Paid' ? t('sales.partially_paid') : t('sales.unpaid')}
                                         </span>
                                     </div>
                                 </div>

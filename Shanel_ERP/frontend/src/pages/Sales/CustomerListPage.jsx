@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
     Search, Filter, Plus, Eye, Edit2, Phone, Mail,
     User, CreditCard, CheckCircle, XCircle, AlertCircle,
@@ -9,6 +10,7 @@ import {
 
 // ─── Customer Form Modal ───────────────────────────────────────────────────────
 const CustomerFormModal = ({ show, onClose, customer, onSaved }) => {
+    const { t } = useTranslation();
     const isEdit = !!customer;
     const [form, setForm] = useState({
         customer_name: '', contact_person: '', customer_email: '',
@@ -60,8 +62,8 @@ const CustomerFormModal = ({ show, onClose, customer, onSaved }) => {
     };
 
     const handleSubmit = async () => {
-        if (!form.customer_name.trim()) { setError('Customer name is required'); return; }
-        if (!form.customer_phone1.trim()) { setError('Phone number is required'); return; }
+        if (!form.customer_name.trim()) { setError(t('sales.customer_list.required_name')); return; }
+        if (!form.customer_phone1.trim()) { setError(t('sales.customer_list.required_phone')); return; }
         setSaving(true); setError('');
         try {
             if (isEdit) {
@@ -87,9 +89,9 @@ const CustomerFormModal = ({ show, onClose, customer, onSaved }) => {
                     <div className="modal-header bg-white border-0 px-4 pt-4 pb-0">
                         <div>
                             <h6 className="modal-title fw-bold text-dark" style={{ fontSize: '14px' }}>
-                                {isEdit ? 'Edit Customer' : 'Add New Customer'}
+                                {isEdit ? t('sales.customer_list.edit_title') : t('sales.customer_list.add_title')}
                             </h6>
-                            <p className="text-muted small">Enter customer details below</p>
+                            <p className="text-muted small">{t('sales.customer_list.subtitle')}</p>
                         </div>
                         <button type="button" className="btn-close shadow-none" onClick={onClose}></button>
                     </div>
@@ -99,81 +101,81 @@ const CustomerFormModal = ({ show, onClose, customer, onSaved }) => {
                         )}
                         <div className="row g-2">
                             <div className="col-md-6 mb-2">
-                                <label className="form-label mb-1 small fw-semibold text-muted">Customer Name *</label>
+                                <label className="form-label mb-1 small fw-semibold text-muted">{t('customerForm.customerName')} *</label>
                                 <input className="form-control form-control-sm bg-light border-0 py-2 shadow-none" value={form.customer_name} onChange={e => handleChange('customer_name', e.target.value)} placeholder="Full name" />
                             </div>
                             <div className="col-md-6 mb-2">
-                                <label className="form-label mb-1 small fw-semibold text-muted">Contact Person</label>
+                                <label className="form-label mb-1 small fw-semibold text-muted">{t('sales.customer_list.contact_person')}</label>
                                 <input className="form-control form-control-sm bg-light border-0 py-2 shadow-none" value={form.contact_person} onChange={e => handleChange('contact_person', e.target.value)} placeholder="Contact person" />
                             </div>
                             <div className="col-md-6 mb-2">
-                                <label className="form-label mb-1 small fw-semibold text-muted">Phone 1 *</label>
+                                <label className="form-label mb-1 small fw-semibold text-muted">{t('customerForm.phone1')} *</label>
                                 <input className="form-control form-control-sm bg-light border-0 py-2 shadow-none" value={form.customer_phone1} onChange={e => handleChange('customer_phone1', e.target.value)} placeholder="+94 xx xxx xxxx" />
                             </div>
                             <div className="col-md-6 mb-2">
-                                <label className="form-label mb-1 small fw-semibold text-muted">Phone 2</label>
+                                <label className="form-label mb-1 small fw-semibold text-muted">{t('sales.customer_list.phone2')}</label>
                                 <input className="form-control form-control-sm bg-light border-0 py-2 shadow-none" value={form.customer_phone2} onChange={e => handleChange('customer_phone2', e.target.value)} placeholder="Optional" />
                             </div>
                             <div className="col-md-6 mb-2">
-                                <label className="form-label mb-1 small fw-semibold text-muted">Email</label>
+                                <label className="form-label mb-1 small fw-semibold text-muted">{t('customerForm.email')}</label>
                                 <input type="email" className="form-control form-control-sm bg-light border-0 py-2 shadow-none" value={form.customer_email} onChange={e => handleChange('customer_email', e.target.value)} placeholder="email@example.com" />
                             </div>
                             <div className="col-md-6 mb-2">
-                                <label className="form-label mb-1 small fw-semibold text-muted">City</label>
+                                <label className="form-label mb-1 small fw-semibold text-muted">{t('sales.customer_list.city')}</label>
                                 <input className="form-control form-control-sm bg-light border-0 py-2 shadow-none" value={form.customer_city} onChange={e => handleChange('customer_city', e.target.value)} placeholder="City" />
                             </div>
                             <div className="col-12 mb-2">
-                                <label className="form-label mb-1 small fw-semibold text-muted">Address</label>
+                                <label className="form-label mb-1 small fw-semibold text-muted">{t('customerForm.address')}</label>
                                 <textarea className="form-control form-control-sm bg-light border-0 py-2 shadow-none" rows={2} value={form.customer_address} onChange={e => handleChange('customer_address', e.target.value)} placeholder="Full address" />
                             </div>
                             <div className="col-md-4 mb-2">
-                                <label className="form-label mb-1 small fw-semibold text-muted">Customer Type</label>
+                                <label className="form-label mb-1 small fw-semibold text-muted">{t('customerForm.customerType')}</label>
                                 <select className="form-select form-select-sm bg-light border-0 py-2 shadow-none" value={form.customer_type} onChange={e => handleChange('customer_type', e.target.value)}>
-                                    <option value="Retail">Retail</option>
-                                    <option value="Wholesale">Wholesale</option>
+                                    <option value="Retail">{t('sales.retail')}</option>
+                                    <option value="Wholesale">{t('sales.wholesale')}</option>
                                 </select>
                             </div>
                             <div className="col-md-4 mb-2">
-                                <label className="form-label mb-1 small fw-semibold text-muted">Price Level</label>
+                                <label className="form-label mb-1 small fw-semibold text-muted">{t('customerForm.priceLevel')}</label>
                                 <select className="form-select form-select-sm bg-light border-0 py-2 shadow-none" value={form.price_level} onChange={e => handleChange('price_level', e.target.value)}>
-                                    <option value="Retail">Retail</option>
-                                    <option value="Wholesale">Wholesale</option>
+                                    <option value="Retail">{t('sales.retail')}</option>
+                                    <option value="Wholesale">{t('sales.wholesale')}</option>
                                 </select>
                             </div>
                             <div className="col-md-4 mb-2">
-                                <label className="form-label mb-1 small fw-semibold text-muted">Status</label>
+                                <label className="form-label mb-1 small fw-semibold text-muted">{t('sales.status')}</label>
                                 <select className="form-select form-select-sm bg-light border-0 py-2 shadow-none" value={form.status} onChange={e => handleChange('status', e.target.value)}>
-                                    <option value="Active">Active</option>
-                                    <option value="Inactive">Inactive</option>
+                                    <option value="Active">{t('sales.active')}</option>
+                                    <option value="Inactive">{t('finance.fiscal.inactive')}</option>
                                     <option value="Blocked">Blocked</option>
                                 </select>
                             </div>
                             <div className="col-md-4 mb-2">
-                                <label className="form-label mb-1 small fw-semibold text-muted">Payment Terms</label>
+                                <label className="form-label mb-1 small fw-semibold text-muted">{t('sales.customer_list.payment_terms')}</label>
                                 <input className="form-control form-control-sm bg-light border-0 py-2 shadow-none" value={form.payment_terms} onChange={e => handleChange('payment_terms', e.target.value)} placeholder="e.g. Net 30" />
                             </div>
                             <div className="col-md-4 mb-2">
-                                <label className="form-label mb-1 small fw-semibold text-muted">Credit Allowed</label>
+                                <label className="form-label mb-1 small fw-semibold text-muted">{t('sales.customer_list.credit_allowed')}</label>
                                 <div className="form-check form-switch mt-2">
                                     <input className="form-check-input" type="checkbox" checked={form.credit_allowed} onChange={e => handleChange('credit_allowed', e.target.checked)} id="creditAllowed" />
-                                    <label className="form-check-label small text-muted" htmlFor="creditAllowed">{form.credit_allowed ? 'Yes' : 'No'}</label>
+                                    <label className="form-check-label small text-muted" htmlFor="creditAllowed">{form.credit_allowed ? t('inventory.dashboard.alerts_widget.badge_active').replace('Active', 'Yes') : t('finance.fiscal.closed').replace('Closed', 'No')}</label>
                                 </div>
                             </div>
                             <div className="col-md-4 mb-2">
-                                <label className="form-label mb-1 small fw-semibold text-muted">Credit Limit (Rs.)</label>
+                                <label className="form-label mb-1 small fw-semibold text-muted">{t('sales.customer_list.credit_limit')}</label>
                                 <input type="number" className="form-control form-control-sm bg-light border-0 py-2 shadow-none" value={form.credit_limit} disabled={!form.credit_allowed} onChange={e => handleChange('credit_limit', parseFloat(e.target.value) || 0)} min={0} />
                             </div>
                             <div className="col-12 mb-2">
-                                <label className="form-label mb-1 small fw-semibold text-muted">Notes</label>
+                                <label className="form-label mb-1 small fw-semibold text-muted">{t('customerForm.notes')}</label>
                                 <textarea className="form-control form-control-sm bg-light border-0 py-2 shadow-none" rows={2} value={form.notes} onChange={e => handleChange('notes', e.target.value)} placeholder="Internal notes..." />
                             </div>
                         </div>
                     </div>
                     <div className="modal-footer border-0 p-4 pt-2">
-                        <button className="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm fw-bold me-auto" onClick={onClose}>Cancel</button>
+                        <button className="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm fw-bold me-auto" onClick={onClose}>{t('customerForm.cancel')}</button>
                         <button className="btn btn-dark px-3 py-2 rounded-3 shadow-sm fw-bold" onClick={handleSubmit} disabled={saving}>
                             {saving ? <span className="spinner-border spinner-border-sm me-2" /> : null}
-                            {isEdit ? 'Save Changes' : 'Add Customer'}
+                            {isEdit ? t('sales.customer_list.save_changes') : t('customerForm.save')}
                         </button>
                     </div>
                 </div>
@@ -184,21 +186,23 @@ const CustomerFormModal = ({ show, onClose, customer, onSaved }) => {
 
 // ─── Status Badge ────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
+    const { t } = useTranslation();
     const config = {
-        Active: { cls: 'bg-success-subtle text-success border-success-subtle', icon: <CheckCircle size={10} /> },
-        Inactive: { cls: 'bg-secondary-subtle text-secondary border-secondary-subtle', icon: <XCircle size={10} /> },
-        Blocked: { cls: 'bg-danger-subtle text-danger border-danger-subtle', icon: <AlertCircle size={10} /> }
+        Active: { cls: 'bg-success-subtle text-success border-success-subtle', icon: <CheckCircle size={10} />, label: t('sales.active') },
+        Inactive: { cls: 'bg-secondary-subtle text-secondary border-secondary-subtle', icon: <XCircle size={10} />, label: t('finance.fiscal.inactive') },
+        Blocked: { cls: 'bg-danger-subtle text-danger border-danger-subtle', icon: <AlertCircle size={10} />, label: 'Blocked' }
     };
-    const c = config[status] || config.Active;
+    const c = config[status] || { cls: 'bg-secondary-subtle text-secondary border-secondary-subtle', icon: <AlertCircle size={10} />, label: status };
     return (
         <span className={`badge border rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1 ${c.cls}`} style={{ fontSize: '10px' }}>
-            {c.icon} {status}
+            {c.icon} {c.label}
         </span>
     );
 };
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const CustomerListPage = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -248,7 +252,7 @@ const CustomerListPage = () => {
             if (res.data.success) {
                 setNotification({ 
                     type: 'success', 
-                    message: `Customer status updated to ${newStatus} successfully!` 
+                    message: t('sales.customer_list.update_success')
                 });
                 fetchCustomers();
                 setTimeout(() => setNotification(null), 4000);
@@ -287,17 +291,17 @@ const CustomerListPage = () => {
                     onClick={() => { setEditCustomer(null); setShowModal(true); }}
                     id="add-customer-btn"
                 >
-                    <Plus size={14} /> Add Customer
+                    <Plus size={14} /> {t('sales.customer_list.add_title')}
                 </button>
             </div>
 
             {/* Summary Tiles (Styled exactly like SalesMetricCard in SalesStock page) */}
             <div className="row g-3 mb-4">
                 {[
-                    { label: 'Total Customers', value: pagination.total, color: 'primary', icon: <User size={20} className="text-primary" />, description: 'Registered customer profiles' },
-                    { label: 'Outstanding Balance', value: `Rs.${totalOutstanding.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: 'danger', icon: <AlertCircle size={20} className="text-danger" />, description: 'Consolidated unpaid credit' },
-                    { label: 'Active Accounts', value: customers.filter(c => c.Status === 'Active').length, color: 'success', icon: <CheckCircle size={20} className="text-success" />, description: 'Currently active profiles' },
-                    { label: 'Credit Enabled', value: customers.filter(c => c.Credit_Allowed).length, color: 'warning', icon: <CreditCard size={20} className="text-warning" />, description: 'Allowed credit sales' },
+                    { label: t('sales.customer_list.total_customers'), value: pagination.total, color: 'primary', icon: <User size={20} className="text-primary" />, description: t('sales.customer_list.desc_total') },
+                    { label: t('sales.customer_list.outstanding_balance'), value: `Rs.${totalOutstanding.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: 'danger', icon: <AlertCircle size={20} className="text-danger" />, description: t('sales.customer_list.desc_outstanding') },
+                    { label: t('sales.customer_list.active_accounts'), value: customers.filter(c => c.Status === 'Active').length, color: 'success', icon: <CheckCircle size={20} className="text-success" />, description: t('sales.customer_list.desc_active') },
+                    { label: t('sales.customer_list.credit_enabled'), value: customers.filter(c => c.Credit_Allowed).length, color: 'warning', icon: <CreditCard size={20} className="text-warning" />, description: t('sales.customer_list.desc_credit') },
                 ].map((tile, i) => (
                     <div key={i} className="col-md-3">
                         <div className={`card border-0 border-top border-4 border-${tile.color} shadow-sm p-3 h-100 bg-white`}>
@@ -316,40 +320,40 @@ const CustomerListPage = () => {
             <div className="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
                 <div className="row g-3 align-items-end">
                     <div className="col-md-4">
-                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Search</label>
+                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.search')}</label>
                         <div className="input-group input-group-sm border rounded-3 overflow-hidden shadow-sm">
                             <span className="input-group-text bg-white border-0"><Search size={14} className="text-muted" /></span>
-                            <input type="text" className="form-control border-0 ps-0" placeholder="Name, phone, or code..." value={filters.q} onChange={e => handleFilter('q', e.target.value)} />
+                            <input type="text" className="form-control border-0 ps-0" placeholder={t('sales.customer_list.search_placeholder')} value={filters.q} onChange={e => handleFilter('q', e.target.value)} />
                         </div>
                     </div>
                     <div className="col-md-2">
-                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Type</label>
+                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.type')}</label>
                         <div className="input-group input-group-sm border rounded-3 overflow-hidden shadow-sm">
                             <span className="input-group-text bg-white border-0"><Filter size={14} className="text-muted" /></span>
                             <select className="form-select border-0" value={filters.type} onChange={e => handleFilter('type', e.target.value)}>
-                                <option value="">All Types</option>
-                                <option value="Retail">Retail</option>
-                                <option value="Wholesale">Wholesale</option>
+                                <option value="">{t('sales.customer_list.all_types')}</option>
+                                <option value="Retail">{t('sales.retail')}</option>
+                                <option value="Wholesale">{t('sales.wholesale')}</option>
                             </select>
                         </div>
                     </div>
                     <div className="col-md-2">
-                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Status</label>
+                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.status')}</label>
                         <select className="form-select form-select-sm border rounded-3 shadow-sm" value={filters.status} onChange={e => handleFilter('status', e.target.value)}>
-                            <option value="">All Statuses</option>
-                            <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
+                            <option value="">{t('sales.customer_list.all_statuses')}</option>
+                            <option value="Active">{t('sales.active')}</option>
+                            <option value="Inactive">{t('finance.fiscal.inactive')}</option>
                         </select>
                     </div>
                     <div className="col-md-2">
-                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Balance</label>
+                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.customer_list.outstanding_balance')}</label>
                         <select className="form-select form-select-sm border rounded-3 shadow-sm" value={filters.hasBalance} onChange={e => handleFilter('hasBalance', e.target.value)}>
-                            <option value="">All</option>
-                            <option value="true">Has Outstanding</option>
+                            <option value="">{t('sales.all')}</option>
+                            <option value="true">{t('sales.customer_list.has_outstanding')}</option>
                         </select>
                     </div>
                     <div className="col-md-2">
-                        <button className="btn btn-sm btn-outline-secondary w-100 rounded-3" onClick={handleReset}>Reset</button>
+                        <button className="btn btn-sm btn-outline-secondary w-100 rounded-3" onClick={handleReset}>{t('sales.customer_list.reset')}</button>
                     </div>
                 </div>
             </div>
@@ -357,13 +361,23 @@ const CustomerListPage = () => {
             {/* Table */}
             <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
                 <div className="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
-                    <h6 className="fw-bold text-dark mb-0">{pagination.total} Customers</h6>
+                    <h6 className="fw-bold text-dark mb-0">{pagination.total} {t('sales.customer_list.customers_count')}</h6>
                 </div>
                 <div className="table-responsive">
                     <table className="table table-hover align-middle mb-0">
                         <thead className="bg-light">
                             <tr>
-                                {['Code', 'Name', 'Type', 'Phone', 'Outstanding Balance', 'Total Purchases', 'Last Purchase', 'Status', 'Actions'].map(h => (
+                                {[
+                                    t('sales.customer_list.col_code'),
+                                    t('customerForm.customerName'),
+                                    t('sales.type'),
+                                    t('customerForm.phone1'),
+                                    t('sales.customer_list.outstanding_balance'),
+                                    t('sales.customer_list.col_purchases'),
+                                    t('sales.customer_list.col_last_purchase'),
+                                    t('sales.status'),
+                                    t('sales.actions')
+                                ].map(h => (
                                     <th key={h} className="py-3 text-uppercase small fw-bold text-muted" style={{ fontSize: '10px' }}>{h}</th>
                                 ))}
                             </tr>
@@ -372,7 +386,7 @@ const CustomerListPage = () => {
                             {loading ? (
                                 <tr><td colSpan={9} className="text-center py-5"><div className="spinner-border spinner-border-sm text-primary" /></td></tr>
                             ) : customers.length === 0 ? (
-                                <tr><td colSpan={9} className="text-center py-5 text-muted small">No customers found</td></tr>
+                                <tr><td colSpan={9} className="text-center py-5 text-muted small">{t('sales.customer_list.not_found')}</td></tr>
                             ) : customers.map(c => (
                                 <tr key={c.C_ID}>
                                     <td><span className="badge bg-secondary-subtle text-secondary rounded-pill px-2" style={{ fontSize: '10px' }}>{c.Customer_Code}</span></td>
@@ -382,7 +396,7 @@ const CustomerListPage = () => {
                                     </td>
                                     <td>
                                         <span className={`badge rounded-pill px-2 py-1 ${c.Customer_Type === 'Wholesale' ? 'bg-primary-subtle text-primary' : 'bg-info-subtle text-info'}`} style={{ fontSize: '10px' }}>
-                                            {c.Customer_Type}
+                                            {c.Customer_Type === 'Wholesale' ? t('sales.wholesale') : t('sales.retail')}
                                         </span>
                                     </td>
                                     <td className="text-muted small"><Phone size={12} className="me-1" />{c.Phone1}</td>
@@ -396,18 +410,18 @@ const CustomerListPage = () => {
                                     <td><StatusBadge status={c.Status} /></td>
                                     <td>
                                         <div className="btn-group shadow-sm border rounded-3 overflow-hidden">
-                                            <button className="btn btn-sm btn-white px-2 border-end" title="View Detail" onClick={() => navigate(`/sales/customers/${c.C_ID}`)}>
+                                            <button className="btn btn-sm btn-white px-2 border-end" title={t('sales.view_detail')} onClick={() => navigate(`/sales/customers/${c.C_ID}`)}>
                                                 <Eye size={14} className="text-primary" />
                                             </button>
-                                            <button className="btn btn-sm btn-white px-2" title="Edit" onClick={() => { setEditCustomer(c); setShowModal(true); }}>
+                                            <button className="btn btn-sm btn-white px-2" title={t('sales.edit')} onClick={() => { setEditCustomer(c); setShowModal(true); }}>
                                                 <Edit2 size={14} className="text-secondary" />
                                             </button>
                                             {c.Status === 'Active' ? (
-                                                <button className="btn btn-sm btn-white px-2 border-start" title="Set Inactive" onClick={() => handleToggleStatus(c.C_ID, 'Inactive')}>
+                                                <button className="btn btn-sm btn-white px-2 border-start" title={t('sales.customer_list.set_inactive')} onClick={() => handleToggleStatus(c.C_ID, 'Inactive')}>
                                                     <UserX size={14} className="text-danger" />
                                                 </button>
                                             ) : (
-                                                <button className="btn btn-sm btn-white px-2 border-start" title="Set Active" onClick={() => handleToggleStatus(c.C_ID, 'Active')}>
+                                                <button className="btn btn-sm btn-white px-2 border-start" title={t('sales.customer_list.set_active')} onClick={() => handleToggleStatus(c.C_ID, 'Active')}>
                                                     <UserCheck size={14} className="text-success" />
                                                 </button>
                                             )}
