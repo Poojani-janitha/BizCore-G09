@@ -83,6 +83,7 @@ const POS = () => {
   const handlePrint = useReactToPrint({
     contentRef: billPrintRef,
     documentTitle: `Invoice_${invoiceNo}`,
+    pageStyle: `@page { size: auto; margin: 0; }`,
     onAfterPrint: async () => {
       // After printing, reset form data for new transaction
       await resetFormAfterSale(invoiceNo);

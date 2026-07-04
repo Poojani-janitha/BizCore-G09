@@ -70,6 +70,13 @@ const Header = () => {
         if (path.includes('/finance/payments')) return t('header.payments', 'Payments');
         if (path.includes('/finance/reports')) return t('header.finance_reports', 'Finance Reports');
         if (path.includes('/finance/edit-transactions')) return t('header.edit_transactions', 'Transaction Correction');
+        if (path === '/sales') return 'Sales Dashboard';
+        if (path === '/sales/history') return 'Sales History';
+        if (path === '/sales/customers') return 'Customer List';
+        if (path.includes('/sales/customers/')) return 'Customer Detail';
+        if (path === '/sales/cheques') return 'Cheque Management';
+        if (path === '/sales/due') return 'Due Sales';
+        if (path === '/sales/reports') return 'Sales Reports';
         if (path === '/logout') return t('header.logout', 'Logout');
         return t('header.dashboard', 'Dashboard');
     };
