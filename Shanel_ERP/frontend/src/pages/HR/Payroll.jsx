@@ -12,31 +12,44 @@ import autoTable from 'jspdf-autotable';
  * Retrieves salary configuration (base, rates, bonus rules) based on employee role.
  */
 const getSalaryConfig = (role) => {
-  const configs = {
-    Cashier: {
+  const normalizedRole = String(role || '').trim().toLowerCase();
+  
+  if (normalizedRole === 'cashier') {
+    return {
       salaryType: 'Monthly Fixed',
       basicSalary: 35000,
       otRate: 100,
       bonusEligible: true,
       bonusThreshold: 20,
       bonusAmount: 2500,
-    },
-    Staff: {
+    };
+  } else if (normalizedRole === 'manager') {
+    return {
+      salaryType: 'Monthly Fixed',
+      basicSalary: 50000, // Default placeholder for manager
+      otRate: 0,
+      bonusEligible: true,
+      bonusThreshold: 20,
+      bonusAmount: 2500,
+    };
+  } else if (normalizedRole === 'staff (production)') {
+    return {
       salaryType: 'Card Based',
       cardRate: 75,
       bonusEligible: true,
       bonusThreshold: 20,
       bonusAmount: 2500,
-    },
-    'Staff (Production)': {
+    };
+  } else {
+    // Default to Staff
+    return {
       salaryType: 'Card Based',
       cardRate: 75,
       bonusEligible: true,
       bonusThreshold: 20,
       bonusAmount: 2500,
-    },
-  };
-  return configs[role] || configs.Staff;
+    };
+  }
 };
 
 // Calculate salary components
@@ -50,10 +63,19 @@ const calculateSalary = (config, role, stats, cardsMade = 0) => {
   let productionEarnings = 0;
   let overtimeEarnings = 0;
   let attendanceBonus = 0;
-  let teaAllowance = stats.totalTeaCost || 0;
-  if (String(role || '').toLowerCase() === 'cashier') {
+  
+  const roleLower = String(role || '').toLowerCase();
+  
+  let teaAllowance = stats.totalTeaAllowance || 0;
+  if (roleLower === 'cashier' || roleLower === 'manager') {
     teaAllowance = 0;
   }
+  
+  let teaOtPay = stats.totalTeaOt || 0;
+  if (roleLower === 'cashier' || roleLower === 'manager') {
+    teaOtPay = 0;
+  }
+
   const advanceDeduction = stats.advanceDeduction || 0;
   const epfDeduction = stats.epfDeduction || 0;
   const etfDeduction = stats.etfDeduction || 0;
@@ -62,9 +84,15 @@ const calculateSalary = (config, role, stats, cardsMade = 0) => {
 
   if (config.salaryType === 'Monthly Fixed') {
     basicSalary = config.basicSalary;
-    overtimeEarnings = stats.totalOtHours * (config.otRate || 0);
+    overtimeEarnings = (stats.totalOtHours * (config.otRate || 0)) + teaOtPay;
   } else if (config.salaryType === 'Card Based') {
     productionEarnings = (cardsMade || 0) * config.cardRate;
+    overtimeEarnings = (stats.totalOtHours * (config.otRate || 0)) + teaOtPay;
+  }
+
+  // Explicitly enforce Cashier Rs 100 / hr rule to OT Pay row
+  if (roleLower === 'cashier') {
+    overtimeEarnings = (stats.totalOtHours || 0) * 100;
   }
 
   if (config.bonusEligible && stats.daysWorked > config.bonusThreshold) {
@@ -112,7 +140,17 @@ export default function Payroll() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedEmpForView, setSelectedEmpForView] = useState(null);
   const [selectedEmpForAdj, setSelectedEmpForAdj] = useState(null);
-  const [adjData, setAdjData] = useState({ epf: 0, etf: 0, advance: 0, otherDeductions: 0, otherAllowances: 0, deductionReason: '', allowanceReason: '' });
+  const [adjData, setAdjData] = useState({
+    epf: '',
+    etf: '',
+    advance: '',
+    newDeductionAmount: '',
+    newDeductionReason: '',
+    newAllowanceAmount: '',
+    newAllowanceReason: '',
+    existingDeductions: [],
+    existingAllowances: []
+  });
   const [loading, setLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [monthlyHistory, setMonthlyHistory] = useState([]);
@@ -120,6 +158,56 @@ export default function Payroll() {
 
   const API_BASE = API_ENDPOINTS.hr.root;
 
+
+  // Helper to render dynamic breakdown of other allowances
+  const renderAllowancesBreakdown = (allowanceReason, otherAllowances) => {
+    try {
+      if (allowanceReason && allowanceReason.startsWith('[')) {
+        const list = JSON.parse(allowanceReason);
+        const validList = list.filter(item => parseFloat(item.amount) > 0);
+        if (validList.length > 0) {
+          return validList.map((item, idx) => (
+            <div key={`allw-tbl-${idx}`} style={{ fontSize: '10px', color: '#0d9488', fontWeight: 400, marginTop: '2px' }}>
+              + {item.reason || 'Allw'}: Rs. {parseFloat(item.amount || 0).toLocaleString()}
+            </div>
+          ));
+        }
+      }
+    } catch (e) {}
+    if (otherAllowances > 0) {
+      return (
+        <div style={{ fontSize: '10px', color: '#0d9488', fontWeight: 400, marginTop: '2px' }}>
+          + Allw: Rs. {(otherAllowances || 0).toLocaleString()}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Helper to render dynamic breakdown of other deductions
+  const renderDeductionsBreakdown = (deductionReason, totalDeductions) => {
+    try {
+      if (deductionReason && deductionReason.startsWith('[')) {
+        const list = JSON.parse(deductionReason);
+        const validList = list.filter(item => parseFloat(item.amount) > 0);
+        if (validList.length > 0) {
+          return validList.map((item, idx) => (
+            <div key={`ded-tbl-${idx}`} style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 400, marginTop: '2px' }}>
+              - {item.reason || 'Ded'}: Rs. {parseFloat(item.amount || 0).toLocaleString()}
+            </div>
+          ));
+        }
+      }
+    } catch (e) {}
+    if (totalDeductions > 0) {
+      return (
+        <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 400, marginTop: '2px' }}>
+          - Ded: Rs. {(totalDeductions || 0).toLocaleString()}
+        </div>
+      );
+    }
+    return null;
+  };
 
   // Helper to calculate daily tea cost (Replicating AttendancePage logic)
   /**
@@ -167,12 +255,19 @@ export default function Payroll() {
       const statsMap = {};
       attendances.forEach(att => {
         const id = att.Employee_ID;
-        if (!statsMap[id]) statsMap[id] = { daysWorked: 0, totalOtHours: 0, totalTeaCost: 0, totalCards: 0 };
+        if (!statsMap[id]) statsMap[id] = { daysWorked: 0, totalOtHours: 0, totalTeaAllowance: 0, totalTeaOt: 0, totalCards: 0 };
 
         if (att.Status === 'Present') {
           statsMap[id].daysWorked += 1;
           statsMap[id].totalOtHours += parseFloat(att.Overtime_Hours || 0);
-          statsMap[id].totalTeaCost += getDailyTeaCost(att, att.Employee?.Role);
+          
+          const dailyTea = getDailyTeaCost(att, att.Employee?.Role);
+          if (dailyTea === 60) {
+            statsMap[id].totalTeaAllowance += 60;
+          } else if (dailyTea === 450) {
+            statsMap[id].totalTeaOt += 450;
+          }
+          
           statsMap[id].totalCards += parseInt(att.Cards_Produced || 0);
         }
       });
@@ -183,13 +278,9 @@ export default function Payroll() {
         const empId = emp.Employee_ID;
         const dbRec = payrollMap[empId];
         const role = emp.Role || 'Staff';
-        const stats = statsMap[empId] || { daysWorked: 0, totalOtHours: 0, totalTeaCost: 0, totalCards: 0 };
+        const stats = statsMap[empId] || { daysWorked: 0, totalOtHours: 0, totalTeaAllowance: 0, totalTeaOt: 0, totalCards: 0 };
 
         const config = getSalaryConfig(role);
-        // Special case for Cashier OT rate if config doesn't have it (though it does)
-        if (String(role || '').toLowerCase() === 'cashier' && !config.otRate) {
-          config.otRate = 100;
-        }
 
         const salary = calculateSalary(config, role, {
           ...stats,
@@ -207,6 +298,7 @@ export default function Payroll() {
           employeeCode: emp.Employee_Code,
           employeeName: emp.Full_Name,
           employeeRole: emp.Role,
+          bankAccountNo: emp.Bank_Account_No,
           salaryType: config.salaryType,
           daysWorked: stats.daysWorked,
           totalCards: stats.totalCards,
@@ -479,14 +571,11 @@ export default function Payroll() {
       doc.text(`Shanel ERP - HR Management System`, 14, 35);
       doc.line(14, 40, 196, 40);
 
-      const tableColumn = ["Emp Code", "Name", "Role", "Gross Salary", "Deductions", "Net Payable"];
+      const tableColumn = ["Employee Name", "Net Salary", "Account Number"];
       const tableRows = filteredRecords.map(r => [
-        r.employeeCode,
         r.employeeName,
-        r.employeeRole,
-        `Rs. ${r.grossSalary.toLocaleString()}`,
-        `Rs. ${r.totalDeductions.toLocaleString()}`,
-        `Rs. ${r.netSalary.toLocaleString()}`
+        `Rs. ${r.netSalary.toLocaleString()}`,
+        r.bankAccountNo || 'N/A'
       ]);
 
       autoTable(doc, {
@@ -580,7 +669,14 @@ export default function Payroll() {
           cards: leaveMatch ? 0 : (match?.Cards_Produced ?? 0),
           status: leaveMatch ? 'Leave' : (match?.Status || 'Absent'),
           isLeave: !!leaveMatch,
-          hasTimeIn: !!match?.Check_In_Time
+          hasTimeIn: !!match?.Check_In_Time,
+          timeIn: match?.Check_In_Time || null,
+          timeOut: match?.Check_Out_Time || null,
+          totalHours: match?.Total_Hours || null,
+          isLate: match?.Is_Late || false,
+          lateMinutes: match?.Late_Minutes || 0,
+          isOvertime: match?.Is_Overtime || false,
+          overtimeHours: match?.Overtime_Hours || 0,
         });
       }
 
@@ -648,7 +744,14 @@ export default function Payroll() {
               cards: leaveMatch ? 0 : (match?.Cards_Produced ?? 0),
               status: leaveMatch ? 'Leave' : (match?.Status || 'Absent'),
               isLeave: !!leaveMatch,
-              hasTimeIn: !!match?.Check_In_Time
+              hasTimeIn: !!match?.Check_In_Time,
+              timeIn: match?.Check_In_Time || null,
+              timeOut: match?.Check_Out_Time || null,
+              totalHours: match?.Total_Hours || null,
+              isLate: match?.Is_Late || false,
+              lateMinutes: match?.Late_Minutes || 0,
+              isOvertime: match?.Is_Overtime || false,
+              overtimeHours: match?.Overtime_Hours || 0,
             });
           }
           setDailyCardsData(days);
@@ -668,7 +771,14 @@ export default function Payroll() {
         Attendance_Date: d.date,
         Status: d.status,
         Cards_Produced: d.cards,
-        Marked_By: 'Manual'
+        Marked_By: 'Manual',
+        Check_In_Time: d.timeIn,
+        Check_Out_Time: d.timeOut,
+        Total_Hours: d.totalHours,
+        Is_Late: d.isLate,
+        Late_Minutes: d.lateMinutes,
+        Is_Overtime: d.isOvertime,
+        Overtime_Hours: d.overtimeHours
       }));
 
       await axios.post(`${API_BASE}/attendance/bulk`, { records });
@@ -681,17 +791,46 @@ export default function Payroll() {
     }
   };
 
-  // Adjustments Modal Logic
   const openAdjModal = (record) => {
     setSelectedEmpForAdj(record);
+    let parsedDeductions = [];
+    try {
+      if (record.deductionReason && record.deductionReason.startsWith('[')) {
+        parsedDeductions = JSON.parse(record.deductionReason);
+        if (!Array.isArray(parsedDeductions)) parsedDeductions = [];
+      } else if (record.otherDeductions > 0 || record.deductionReason) {
+        parsedDeductions = [{ amount: record.otherDeductions ? String(record.otherDeductions) : '', reason: record.deductionReason || '' }];
+      }
+    } catch (e) {
+      parsedDeductions = [];
+    }
+    // Filter out completely empty items from existing deductions list
+    parsedDeductions = parsedDeductions.filter(item => item && (item.amount || item.reason));
+
+    let parsedAllowances = [];
+    try {
+      if (record.allowanceReason && record.allowanceReason.startsWith('[')) {
+        parsedAllowances = JSON.parse(record.allowanceReason);
+        if (!Array.isArray(parsedAllowances)) parsedAllowances = [];
+      } else if (record.otherAllowances > 0 || record.allowanceReason) {
+        parsedAllowances = [{ amount: record.otherAllowances ? String(record.otherAllowances) : '', reason: record.allowanceReason || '' }];
+      }
+    } catch (e) {
+      parsedAllowances = [];
+    }
+    // Filter out completely empty items from existing allowances list
+    parsedAllowances = parsedAllowances.filter(item => item && (item.amount || item.reason));
+
     setAdjData({
-      epf: record.epfDeduction,
-      etf: record.etfDeduction,
-      advance: record.advanceDeduction,
-      otherDeductions: record.otherDeductions,
-      otherAllowances: record.otherAllowances,
-      deductionReason: record.deductionReason,
-      allowanceReason: record.allowanceReason
+      epf: '',
+      etf: '',
+      advance: '',
+      newDeductionAmount: '',
+      newDeductionReason: '',
+      newAllowanceAmount: '',
+      newAllowanceReason: '',
+      existingDeductions: parsedDeductions,
+      existingAllowances: parsedAllowances
     });
     setShowAdjModal(true);
   };
@@ -699,15 +838,37 @@ export default function Payroll() {
   const saveAdjustments = async () => {
     try {
       setLoading(true);
+
+      const deductionsList = [...adjData.existingDeductions];
+      if (adjData.newDeductionAmount && parseFloat(adjData.newDeductionAmount) > 0) {
+        deductionsList.push({
+          amount: adjData.newDeductionAmount,
+          reason: adjData.newDeductionReason || 'Adjustment',
+          date: new Date().toISOString().split('T')[0]
+        });
+      }
+
+      const allowancesList = [...adjData.existingAllowances];
+      if (adjData.newAllowanceAmount && parseFloat(adjData.newAllowanceAmount) > 0) {
+        allowancesList.push({
+          amount: adjData.newAllowanceAmount,
+          reason: adjData.newAllowanceReason || 'Adjustment',
+          date: new Date().toISOString().split('T')[0]
+        });
+      }
+
+      const totalOtherDeductions = deductionsList.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+      const totalOtherAllowances = allowancesList.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+
       const updatedRecord = {
         ...selectedEmpForAdj,
-        epfDeduction: adjData.epf,
-        etfDeduction: adjData.etf,
-        advanceDeduction: adjData.advance,
-        otherDeductions: adjData.otherDeductions,
-        otherAllowances: adjData.otherAllowances,
-        deductionReason: adjData.deductionReason,
-        allowanceReason: adjData.allowanceReason
+        epfDeduction: adjData.epf === '' ? selectedEmpForAdj.epfDeduction : (parseFloat(adjData.epf) || 0),
+        etfDeduction: adjData.etf === '' ? selectedEmpForAdj.etfDeduction : (parseFloat(adjData.etf) || 0),
+        advanceDeduction: adjData.advance === '' ? selectedEmpForAdj.advanceDeduction : (parseFloat(adjData.advance) || 0),
+        otherDeductions: totalOtherDeductions,
+        otherAllowances: totalOtherAllowances,
+        deductionReason: JSON.stringify(deductionsList),
+        allowanceReason: JSON.stringify(allowancesList)
       };
 
       // Recalculate salary with new adjustments
@@ -733,16 +894,7 @@ export default function Payroll() {
     <div style={{ minHeight: '100vh', background: '#f5f6fa', padding: '28px 32px', fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif" }}>
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{
-            margin: 0,
-            fontSize: '26px',
-            fontWeight: 900,
-            background: 'linear-gradient(135deg, rgb(13, 148, 136), rgb(15, 23, 42))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            letterSpacing: '-0.02em'
-          }}>Payroll Management</h1>
-          <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>Calculate salaries for {selectedMonth}</p>
+
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button onClick={printPDF} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#64748b', transition: 'all 0.2s' }}>
@@ -857,11 +1009,8 @@ export default function Payroll() {
                   </td>
                   <td style={{ padding: '14px 20px', textAlign: 'right', fontSize: '15px', color: '#1e3a5f', fontWeight: 800 }}>
                     Rs. {(record.netSalary || 0).toLocaleString()}
-                    {record.totalDeductions > 0 && (
-                      <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 400, marginTop: '2px' }}>
-                        Ded: Rs. {(record.totalDeductions || 0).toLocaleString()}
-                      </div>
-                    )}
+                    {renderAllowancesBreakdown(record.allowanceReason, record.otherAllowances)}
+                    {renderDeductionsBreakdown(record.deductionReason, record.otherDeductions)}
                   </td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
                     <span style={{
@@ -1092,8 +1241,8 @@ export default function Payroll() {
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Advance Deduction (Rs.)</label>
                 <input
                   type="number"
-                  value={adjData.advance || ''}
-                  onChange={(e) => setAdjData({ ...adjData, advance: parseFloat(e.target.value) || 0 })}
+                  value={adjData.advance}
+                  onChange={(e) => setAdjData({ ...adjData, advance: e.target.value })}
                   style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
                 />
               </div>
@@ -1102,8 +1251,8 @@ export default function Payroll() {
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>EPF (Rs.)</label>
                   <input
                     type="number"
-                    value={adjData.epf || ''}
-                    onChange={(e) => setAdjData({ ...adjData, epf: parseFloat(e.target.value) || 0 })}
+                    value={adjData.epf}
+                    onChange={(e) => setAdjData({ ...adjData, epf: e.target.value })}
                     style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
                   />
                 </div>
@@ -1111,43 +1260,96 @@ export default function Payroll() {
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>ETF (Rs.)</label>
                   <input
                     type="number"
-                    value={adjData.etf || ''}
-                    onChange={(e) => setAdjData({ ...adjData, etf: parseFloat(e.target.value) || 0 })}
+                    value={adjData.etf}
+                    onChange={(e) => setAdjData({ ...adjData, etf: e.target.value })}
                     style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
                   />
                 </div>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Other Deductions (Rs.)</label>
-                <input
-                  type="number"
-                  value={adjData.otherDeductions || ''}
-                  onChange={(e) => setAdjData({ ...adjData, otherDeductions: parseFloat(e.target.value) || 0 })}
-                  style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
-                />
-                <input
-                  type="text"
-                  placeholder="Explain why this deduction is being made..."
-                  value={adjData.deductionReason}
-                  onChange={(e) => setAdjData({ ...adjData, deductionReason: e.target.value })}
-                  style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', marginTop: '6px', outline: 'none', background: '#f8fafc' }}
-                />
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Other Deductions Saved</label>
+                {adjData.existingDeductions.length === 0 ? (
+                  <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 8px 0' }}>No other deductions saved.</p>
+                ) : (
+                  <div style={{ maxHeight: '100px', overflowY: 'auto', background: '#f8fafc', padding: '8px', borderRadius: '8px', marginBottom: '8px', border: '1px solid #e2e8f0' }}>
+                    {adjData.existingDeductions.map((item, idx) => (
+                      <div key={`exist-ded-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', padding: '4px 0', borderBottom: idx < adjData.existingDeductions.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                        <span>
+                          {item.reason || 'Deduction'}: <strong>Rs. {parseFloat(item.amount || 0).toLocaleString()}</strong>
+                          {item.date && <span style={{ color: '#94a3b8', fontSize: '10px', marginLeft: '6px' }}>({item.date})</span>}
+                        </span>
+                        <button 
+                          onClick={() => {
+                            const newList = adjData.existingDeductions.filter((_, i) => i !== idx);
+                            setAdjData({ ...adjData, existingDeductions: newList });
+                          }}
+                          style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+                        >Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '4px', marginTop: '8px' }}>Add New Deduction</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="number"
+                    placeholder="Amount"
+                    value={adjData.newDeductionAmount}
+                    onChange={(e) => setAdjData({ ...adjData, newDeductionAmount: e.target.value })}
+                    style={{ width: '40%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Reason"
+                    value={adjData.newDeductionReason}
+                    onChange={(e) => setAdjData({ ...adjData, newDeductionReason: e.target.value })}
+                    style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                  />
+                </div>
               </div>
+
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Other Allowances (Rs.)</label>
-                <input
-                  type="number"
-                  value={adjData.otherAllowances || ''}
-                  onChange={(e) => setAdjData({ ...adjData, otherAllowances: parseFloat(e.target.value) || 0 })}
-                  style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
-                />
-                <input
-                  type="text"
-                  placeholder="Explain why this allowance is being given..."
-                  value={adjData.allowanceReason}
-                  onChange={(e) => setAdjData({ ...adjData, allowanceReason: e.target.value })}
-                  style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', marginTop: '6px', outline: 'none', background: '#f8fafc' }}
-                />
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Other Allowances Saved</label>
+                {adjData.existingAllowances.length === 0 ? (
+                  <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 8px 0' }}>No other allowances saved.</p>
+                ) : (
+                  <div style={{ maxHeight: '100px', overflowY: 'auto', background: '#f8fafc', padding: '8px', borderRadius: '8px', marginBottom: '8px', border: '1px solid #e2e8f0' }}>
+                    {adjData.existingAllowances.map((item, idx) => (
+                      <div key={`exist-allw-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', padding: '4px 0', borderBottom: idx < adjData.existingAllowances.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                        <span>
+                          {item.reason || 'Allowance'}: <strong>Rs. {parseFloat(item.amount || 0).toLocaleString()}</strong>
+                          {item.date && <span style={{ color: '#94a3b8', fontSize: '10px', marginLeft: '6px' }}>({item.date})</span>}
+                        </span>
+                        <button 
+                          onClick={() => {
+                            const newList = adjData.existingAllowances.filter((_, i) => i !== idx);
+                            setAdjData({ ...adjData, existingAllowances: newList });
+                          }}
+                          style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+                        >Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '4px', marginTop: '8px' }}>Add New Allowance</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="number"
+                    placeholder="Amount"
+                    value={adjData.newAllowanceAmount}
+                    onChange={(e) => setAdjData({ ...adjData, newAllowanceAmount: e.target.value })}
+                    style={{ width: '40%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Reason"
+                    value={adjData.newAllowanceReason}
+                    onChange={(e) => setAdjData({ ...adjData, newAllowanceReason: e.target.value })}
+                    style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -1278,7 +1480,20 @@ export default function Payroll() {
                         <span style={{ color: '#64748b' }}>Other Allowances</span>
                         <span style={{ fontWeight: 600 }}>Rs. {(selectedEmpForView?.otherAllowances || 0).toLocaleString()}</span>
                       </div>
-                      <p style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', margin: '4px 0 0 0' }}>Reason: {selectedEmpForView?.allowanceReason || 'No reason provided'}</p>
+                      {(() => {
+                        try {
+                          const list = JSON.parse(selectedEmpForView?.allowanceReason || '[]');
+                          if (Array.isArray(list) && list.length > 0) {
+                            return list.map((item, idx) => (
+                              <div key={`vw-allw-${idx}`} style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0 0', display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ fontStyle: 'italic' }}>• {item.reason || 'Allowance'}: Rs. {parseFloat(item.amount || 0).toLocaleString()}</span>
+                                {item.date && <span style={{ color: '#94a3b8', fontWeight: 600, fontSize: '10px' }}>{item.date}</span>}
+                              </div>
+                            ));
+                          }
+                        } catch (e) {}
+                        return <p style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', margin: '4px 0 0 0' }}>Reason: {selectedEmpForView?.allowanceReason || 'No reason provided'}</p>;
+                      })()}
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: 800, color: '#1e293b', borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '4px' }}>
@@ -1312,7 +1527,20 @@ export default function Payroll() {
                         <span style={{ color: '#64748b' }}>Other Deductions</span>
                         <span style={{ fontWeight: 600 }}>Rs. {(selectedEmpForView?.otherDeductions || 0).toLocaleString()}</span>
                       </div>
-                      <p style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', margin: '4px 0 0 0' }}>Reason: {selectedEmpForView?.deductionReason || 'No reason provided'}</p>
+                      {(() => {
+                        try {
+                          const list = JSON.parse(selectedEmpForView?.deductionReason || '[]');
+                          if (Array.isArray(list) && list.length > 0) {
+                            return list.map((item, idx) => (
+                              <div key={`vw-ded-${idx}`} style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0 0', display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ fontStyle: 'italic' }}>• {item.reason || 'Deduction'}: Rs. {parseFloat(item.amount || 0).toLocaleString()}</span>
+                                {item.date && <span style={{ color: '#94a3b8', fontWeight: 600, fontSize: '10px' }}>{item.date}</span>}
+                              </div>
+                            ));
+                          }
+                        } catch (e) {}
+                        return <p style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', margin: '4px 0 0 0' }}>Reason: {selectedEmpForView?.deductionReason || 'No reason provided'}</p>;
+                      })()}
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: 800, color: '#1e293b', borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '4px' }}>

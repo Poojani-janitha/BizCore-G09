@@ -139,22 +139,7 @@ const Hrdashboardpage = () => {
     }}>
       {/* Header */}
       <div style={{ marginBottom: '28px' }}>
-        <h1 style={{
-          margin: 0,
-          fontSize: '26px',
-          fontWeight: 800,
-          color: '#1a1a2e',
-          letterSpacing: '-0.5px',
-        }}>
-          <span style={{
-            background: 'linear-gradient(135deg, #0d9488, #0f172a)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}>HR Dashboard</span>
-        </h1>
-        <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-          {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric', day: 'numeric' })} · Daily Updates Enabled
-        </p>
+
       </div>
 
       {/* Stats Row */}
