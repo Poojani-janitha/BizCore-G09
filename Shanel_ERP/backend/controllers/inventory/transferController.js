@@ -37,7 +37,7 @@ const getTransferHistory = async (req, res) => {
 };
 
 const createTransfer = async (req, res) => {
-    const { P_ID, Qty, From_Location, To_Location, Transferred_By } = req.body;
+    const { P_ID, Qty, From_Location, To_Location, Transferred_By, Display_Qty, Display_Unit } = req.body;
     
     // Validate required fields
     if (!P_ID || !Qty || !From_Location || !To_Location) {
@@ -113,6 +113,8 @@ const createTransfer = async (req, res) => {
         const newTransfer = await StockTransfer.create({
             P_ID,
             Qty: parseFloat(Qty),
+            Display_Qty: Display_Qty !== undefined && Display_Qty !== null && Display_Qty !== '' ? parseFloat(Display_Qty) : parseFloat(Qty),
+            Display_Unit: Display_Unit || null,
             From_Location,
             To_Location,
             Transferred_By,
@@ -135,7 +137,7 @@ const createTransfer = async (req, res) => {
 
 const updateTransfer = async (req, res) => {
     const { ST_ID } = req.params;
-    const { P_ID, Qty, From_Location, To_Location, Transferred_By } = req.body;
+    const { P_ID, Qty, From_Location, To_Location, Transferred_By, Display_Qty, Display_Unit } = req.body;
     
     if (!ST_ID || !P_ID || !Qty || !From_Location || !To_Location) {
         return res.status(400).json({ success: false, message: 'Missing required fields' });
@@ -244,6 +246,8 @@ const updateTransfer = async (req, res) => {
         await existingTransfer.update({
             P_ID,
             Qty: newQty,
+            Display_Qty: Display_Qty !== undefined && Display_Qty !== null && Display_Qty !== '' ? parseFloat(Display_Qty) : newQty,
+            Display_Unit: Display_Unit || null,
             From_Location,
             To_Location,
             Transferred_By

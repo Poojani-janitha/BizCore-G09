@@ -10,7 +10,6 @@ import Reports from './pages/HR/Reports.jsx';
 import Header from './component/Header/Header';
 import ProductPage from './pages/Inventory/ProductPage.jsx';
 import ProductionStock from './pages/Inventory/ProductionStock.jsx';
-import SalesStock from './pages/Inventory/SalesStock.jsx';
 import StockTransfer from './pages/Inventory/StockTransfer.jsx';
 import StockAdjustment from './pages/Inventory/StockAdjustment.jsx';
 import ReturnsManagement from './pages/Inventory/ReturnsManagement.jsx';
@@ -84,9 +83,7 @@ const App = () => {
             <Route path="/inventory"                          element={<ProtectedRoute allowedRoles={['Admin','Manager']}><Inventory_Dashboard /></ProtectedRoute>} />
             <Route path="/inventory/company-items"            element={<ProtectedRoute allowedRoles={['Admin','Manager']}><ProductPage pageTitle="Company Items" typeFilter="Company" /></ProtectedRoute>} />
             <Route path="/inventory/other-items"              element={<ProtectedRoute allowedRoles={['Admin','Manager']}><ProductPage pageTitle="Other Items" typeFilter="Other" /></ProtectedRoute>} />
-            <Route path="/inventory/raw-materials"            element={<ProtectedRoute allowedRoles={['Admin','Manager']}><ProductPage pageTitle="Raw Materials" typeFilter="Raw" /></ProtectedRoute>} />
             <Route path="/inventory/production-stock"         element={<ProtectedRoute allowedRoles={['Admin','Manager']}><ProductionStock /></ProtectedRoute>} />
-            <Route path="/inventory/salesStock"               element={<ProtectedRoute allowedRoles={['Admin','Manager']}><SalesStock /></ProtectedRoute>} />
             <Route path="/inventory/stock-transfers"          element={<ProtectedRoute allowedRoles={['Admin','Manager']}><StockTransfer /></ProtectedRoute>} />
             <Route path="/inventory/stock-adjustments"        element={<ProtectedRoute allowedRoles={['Admin','Manager']}><StockAdjustment /></ProtectedRoute>} />
             <Route path="/inventory/returns"                  element={<ProtectedRoute allowedRoles={['Admin','Manager']}><ReturnsManagement /></ProtectedRoute>} />

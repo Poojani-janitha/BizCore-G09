@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
-import { Download, Printer, AlertTriangle } from 'react-feather';
+import { Download, Printer } from 'react-feather';
 import { generatePDF } from '../../../services/reportGenerator';
+import Pagination from '../../../component/common/Pagination';
 import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const ExpiryReport = () => {
     const [reportData, setReportData] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
 
     useEffect(() => {
         axios.get(API_ENDPOINTS.inventory.reports.expiry)
@@ -19,6 +22,11 @@ const ExpiryReport = () => {
         if (days <= 30) return { label: "Warning", class: "bg-warning-subtle text-warning" };
         return { label: "Good", class: "bg-success-subtle text-success" };
     };
+
+    const pagedData = useMemo(
+        () => reportData.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+        [reportData, currentPage, pageSize]
+    );
 
     const handleExportPDF = () => {
         const columns = ["Item ID", "Item Name", "Batch No", "Quantity", "Expiry Date", "Days Left", "Status"];
@@ -63,7 +71,7 @@ const ExpiryReport = () => {
                             </tr>
                         </thead>
                         <tbody style={{ fontSize: '13px' }}>
-                            {reportData.map((item, i) => {
+                            {pagedData.map((item, i) => {
                                 const status = getStatus(item.Days_Left);
                                 return (
                                     <tr key={i}>
@@ -85,6 +93,15 @@ const ExpiryReport = () => {
                             })}
                         </tbody>
                     </table>
+                </div>
+                <div className="px-3">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={reportData.length}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                    />
                 </div>
             </div>
         </div>

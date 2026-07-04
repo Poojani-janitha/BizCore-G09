@@ -48,9 +48,7 @@ const Header = () => {
         if (path.includes('/inventory/company-items')) return t('inventory.company_items', 'Company Items');
         if (path.includes('/inventory/other-items')) return t('inventory.other_items', 'Other Items');
         if (path.includes('/inventory/products')) return t('inventory.product_mgmt', 'Products Management');
-        if (path.includes('/inventory/raw-materials')) return t('inventory.raw_materials', 'Raw Materials');
         if (path.includes('/inventory/production-stock')) return t('inventory.production_stock', 'Production Stock');
-        if (path.includes('/inventory/salesStock')) return t('inventory.sales_stock', 'Sales Stock');
         if (path.includes('/inventory/stock-transfers')) return t('inventory.stock_transfer', 'Stock Transfer');
         if (path.includes('/inventory/stock-adjustments')) return t('inventory.stock_adjustments', 'Stock Adjustments');
         if (path.includes('/inventory/returns')) return t('inventory.returns', 'Returns Management');

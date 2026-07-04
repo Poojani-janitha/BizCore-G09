@@ -8,6 +8,8 @@ const StockTransfer = sequelize.define('StockTransfer', {
     From_Location: { type: DataTypes.ENUM('Production', 'Shop'), allowNull: false },
     To_Location: { type: DataTypes.ENUM('Production', 'Shop'), allowNull: false },
     Qty: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+    Display_Qty: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+    Display_Unit: { type: DataTypes.STRING(50), allowNull: true },
     Transfer_Date: { type: DataTypes.DATE, allowNull: true },
     Transfer_Time: { type: DataTypes.TIME, allowNull: true },
     Reason: { type: DataTypes.TEXT, allowNull: true },

@@ -113,12 +113,14 @@ export const generatePDF = (title, columns, data, fileName) => {
         // Draw row data
         columns.forEach((col, colIdx) => {
             const xPos = margin + colIdx * colWidth;
-            // Support both array rows (legacy) and object rows
             const value = Array.isArray(row) ? row[colIdx] : row[col];
+            const isIdColumn = col === 'ID' || col === 'Id' || col === 'id';
             let displayValue = '-';
 
             if (value !== null && value !== undefined) {
-                if (typeof value === 'number') {
+                if (isIdColumn) {
+                    displayValue = String(value).includes('.') ? String(Math.trunc(Number(value))) : String(value);
+                } else if (typeof value === 'number') {
                     if (col.includes('Amount') || col.includes('Spent') || col.includes('Price') || col.includes('Cost')) {
                         displayValue = value.toFixed(2);
                     } else if (col.includes('Days')) {
@@ -131,8 +133,7 @@ export const generatePDF = (title, columns, data, fileName) => {
                 }
             }
 
-            // Right align numbers
-            const isNumeric = typeof row[col] === 'number';
+            const isNumeric = !isIdColumn && typeof value === 'number';
             const align = isNumeric ? 'right' : 'left';
             const offset = isNumeric ? colWidth - 2 : 2;
 

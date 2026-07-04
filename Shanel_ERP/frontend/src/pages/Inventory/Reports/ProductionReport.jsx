@@ -1,17 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
-import { Download, Printer, Activity } from 'react-feather';
+import { Download, Printer } from 'react-feather';
 import { generatePDF } from '../../../services/reportGenerator';
+import Pagination from '../../../component/common/Pagination';
 import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const ProductionReport = () => {
     const [reportData, setReportData] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
 
     useEffect(() => {
         axios.get(API_ENDPOINTS.inventory.reports.production)
             .then(res => setReportData(res.data.data))
             .catch(err => console.error(err));
     }, []);
+
+    const pagedData = useMemo(
+        () => reportData.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+        [reportData, currentPage, pageSize]
+    );
 
     const handleExportPDF = () => {
         const columns = ["Date", "Item Name", "Batch", "Target", "Actual", "Efficiency %"];
@@ -54,7 +62,7 @@ const ProductionReport = () => {
                             </tr>
                         </thead>
                         <tbody style={{ fontSize: '13px' }}>
-                            {reportData.map((item, i) => (
+                            {pagedData.map((item, i) => (
                                 <tr key={i}>
                                     <td className='ps-4'>{item.Produced_Date}</td>
                                     <td>
@@ -67,9 +75,9 @@ const ProductionReport = () => {
                                     <td>
                                         <div className="d-flex align-items-center gap-2">
                                             <div className="progress flex-grow-1" style={{ height: '6px' }}>
-                                                <div 
-                                                    className={`progress-bar ${item.Efficiency >= 100 ? 'bg-success' : item.Efficiency >= 80 ? 'bg-info' : 'bg-warning'}`} 
-                                                    role="progressbar" 
+                                                <div
+                                                    className={`progress-bar ${item.Efficiency >= 100 ? 'bg-success' : item.Efficiency >= 80 ? 'bg-info' : 'bg-warning'}`}
+                                                    role="progressbar"
                                                     style={{ width: `${Math.min(item.Efficiency, 100)}%` }}
                                                 ></div>
                                             </div>
@@ -80,6 +88,15 @@ const ProductionReport = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+                <div className="px-3">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={reportData.length}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                    />
                 </div>
             </div>
         </div>
