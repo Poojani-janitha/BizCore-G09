@@ -5,16 +5,39 @@ const JournalEntryLine = require('../../models/finance/JournalEntryLine');
 const AccountChart = require('../../models/finance/AccountChart');
 
 class TransactionCorrectionController {
-    // Get all transactions for correction
+    // Get all transactions for correction (only in open fiscal periods)
     async getTransactionsForCorrection(req, res) {
         try {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 10;
             const offset = (page - 1) * limit;
 
+            // Fetch all open fiscal periods
+            const FiscalPeriod = require('../../models/finance/FiscalPeriod');
+            const openPeriods = await FiscalPeriod.findAll({
+                where: { Status: 'OPEN' }
+            });
+
+            if (openPeriods.length === 0) {
+                return res.status(200).json({
+                    success: true,
+                    data: [],
+                    total: 0,
+                    currentPage: page,
+                    totalPages: 0
+                });
+            }
+
+            const dateConditions = openPeriods.map(period => ({
+                Entry_Date: {
+                    [Op.between]: [period.Start_Date, period.End_Date]
+                }
+            }));
+
             const { count, rows } = await JournalEntry.findAndCountAll({
                 where: {
-                    Status: { [Op.ne]: 'Revised' } // Don't show already revised ones
+                    Status: { [Op.ne]: 'Revised' }, // Don't show already revised ones
+                    [Op.or]: dateConditions
                 },
                 include: [{
                     model: JournalEntryLine,
@@ -72,6 +95,34 @@ class TransactionCorrectionController {
 
             if (originalEntry.Status === 'Revised') {
                 throw new Error('This transaction has already been revised');
+            }
+
+            // Check if the original transaction belongs to an open fiscal period
+            const targetOriginalPeriod = await FiscalPeriod.findOne({
+                where: {
+                    Status: 'OPEN',
+                    Start_Date: { [Op.lte]: originalEntry.Entry_Date },
+                    End_Date: { [Op.gte]: originalEntry.Entry_Date }
+                },
+                transaction
+            });
+
+            if (!targetOriginalPeriod) {
+                throw new Error('Cannot correct a transaction belonging to a closed fiscal period');
+            }
+
+            // Check if the new corrected date belongs to an open fiscal period
+            const targetNewPeriod = await FiscalPeriod.findOne({
+                where: {
+                    Status: 'OPEN',
+                    Start_Date: { [Op.lte]: correctedData.Entry_Date },
+                    End_Date: { [Op.gte]: correctedData.Entry_Date }
+                },
+                transaction
+            });
+
+            if (!targetNewPeriod) {
+                throw new Error('Correction entry date must be within an open fiscal period');
             }
 
             // 2. Reverse balances of the old entry

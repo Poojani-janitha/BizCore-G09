@@ -75,7 +75,7 @@ class ExpenseController {
                 expenseAccount = await AccountChart.findOne({
                     where: { 
                         Account_Name: expenseCategory,
-                        Account_Type: 'Expense',
+                        Type_ID: 5,
                         Is_Active: true
                     },
                     transaction
@@ -437,7 +437,7 @@ class ExpenseController {
         try {
             const accounts = await AccountChart.findAll({
                 where: {
-                    Account_Type: 'Expense',
+                    Type_ID: 5,
                     Is_Active: true
                 },
                 attributes: ['Account_ID', 'Account_Code', 'Account_Name'],

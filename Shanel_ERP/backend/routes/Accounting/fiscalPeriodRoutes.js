@@ -5,5 +5,7 @@ const fiscalPeriodController = require('../../controllers/Accounting&Finance/Fis
 router.get('/', (req, res) => fiscalPeriodController.getAllPeriods(req, res));
 router.post('/', (req, res) => fiscalPeriodController.createPeriod(req, res));
 router.put('/:id/status', (req, res) => fiscalPeriodController.updateStatus(req, res));
+router.post('/:id/authenticate-delete', (req, res) => fiscalPeriodController.authenticateDelete(req, res));
+router.delete('/:id', (req, res) => fiscalPeriodController.deletePeriod(req, res));
 
 module.exports = router;

@@ -22,7 +22,7 @@ FiscalPeriod.init({
         allowNull: false
     },
     Status: {
-        type: Sequelize.ENUM('OPEN', 'CLOSED', 'LOCKED'),
+        type: Sequelize.ENUM('OPEN', 'CLOSED'),
         defaultValue: 'OPEN'
     },
     Is_Year_End: {

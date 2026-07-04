@@ -3,6 +3,7 @@ const Income = require('../../models/finance/Income');
 const Expense = require('../../models/finance/Expense');
 const AccountChart = require('../../models/finance/AccountChart');
 const JournalEntryLine = require('../../models/finance/JournalEntryLine');
+const JournalEntry = require('../../models/finance/JournalEntry');
 
 class FinanceReportController {
 
@@ -14,28 +15,46 @@ class FinanceReportController {
             const start = startDate || new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
             const end = endDate || now.toISOString().split('T')[0];
 
-            // Get all Revenue accounts with their journal line totals
+            // Get all Revenue accounts with their journal line totals (excluding closing entries)
             const revenueAccounts = await AccountChart.findAll({
-                where: { Account_Type: 'Revenue', Is_Active: true },
+                where: { Type_ID: 4, Is_Active: true },
                 include: [{
                     model: JournalEntryLine,
                     as: 'JournalLines',
                     attributes: ['Debit_Amount', 'Credit_Amount', 'Created_At'],
                     required: false,
-                    where: { Created_At: { [Op.between]: [start + ' 00:00:00', end + ' 23:59:59'] } }
+                    where: { Created_At: { [Op.between]: [start + ' 00:00:00', end + ' 23:59:59'] } },
+                    include: [{
+                        model: JournalEntry,
+                        as: 'JournalEntry',
+                        where: {
+                            Status: 'Posted',
+                            Entry_Type: { [Op.ne]: 'Closing' }
+                        },
+                        attributes: []
+                    }]
                 }],
                 order: [['Account_Code', 'ASC']]
             });
 
-            // Get ALL expense accounts - we'll split them by category
+            // Get ALL expense accounts - we'll split them by category (excluding closing entries)
             const expenseAccounts = await AccountChart.findAll({
-                where: { Account_Type: 'Expense', Is_Active: true },
+                where: { Type_ID: 5, Is_Active: true },
                 include: [{
                     model: JournalEntryLine,
                     as: 'JournalLines',
                     attributes: ['Debit_Amount', 'Credit_Amount', 'Created_At'],
                     required: false,
-                    where: { Created_At: { [Op.between]: [start + ' 00:00:00', end + ' 23:59:59'] } }
+                    where: { Created_At: { [Op.between]: [start + ' 00:00:00', end + ' 23:59:59'] } },
+                    include: [{
+                        model: JournalEntry,
+                        as: 'JournalEntry',
+                        where: {
+                            Status: 'Posted',
+                            Entry_Type: { [Op.ne]: 'Closing' }
+                        },
+                        attributes: []
+                    }]
                 }],
                 order: [['Account_Code', 'ASC']]
             });
@@ -140,15 +159,21 @@ class FinanceReportController {
             const date = asOfDate || new Date().toISOString().split('T')[0];
 
             const accounts = await AccountChart.findAll({
-                where: { Account_Type: { [Op.in]: ['Asset', 'Liability', 'Equity'] }, Is_Active: true },
+                where: { Type_ID: { [Op.in]: [1, 2, 3] }, Is_Active: true },
                 include: [{
                     model: JournalEntryLine,
                     as: 'JournalLines',
                     attributes: ['Debit_Amount', 'Credit_Amount'],
                     required: false,
-                    where: {
-                        Created_At: { [Op.lte]: date + ' 23:59:59' }
-                    }
+                    include: [{
+                        model: JournalEntry,
+                        as: 'JournalEntry',
+                        where: {
+                            Entry_Date: { [Op.lte]: date },
+                            Status: 'Posted'
+                        },
+                        attributes: []
+                    }]
                 }],
                 order: [['Account_Code', 'ASC']]
             });
@@ -207,6 +232,60 @@ class FinanceReportController {
                     }
                 }
             });
+
+            // Dynamically calculate and add unclosed Net Profit/Loss to Equity.
+            // We sum all Revenue (Type 4) and Expense (Type 5) journal lines up to date.
+            // Since closing entries for closed periods zero out the temporary accounts up to their closing dates,
+            // this sum represents exactly the net profit/loss of all unclosed transactions up to the balance sheet date.
+            const revenueLines = await JournalEntryLine.findAll({
+                include: [{
+                    model: JournalEntry,
+                    as: 'JournalEntry',
+                    where: {
+                        Entry_Date: { [Op.lte]: date },
+                        Status: 'Posted'
+                    },
+                    attributes: []
+                }],
+                where: {
+                    Account_ID: {
+                        [Op.in]: Sequelize.literal('(SELECT Account_ID FROM ACCOUNT_CHART WHERE Type_ID = 4 AND Is_Active = true)')
+                    }
+                }
+            });
+
+            const expenseLines = await JournalEntryLine.findAll({
+                include: [{
+                    model: JournalEntry,
+                    as: 'JournalEntry',
+                    where: {
+                        Entry_Date: { [Op.lte]: date },
+                        Status: 'Posted'
+                    },
+                    attributes: []
+                }],
+                where: {
+                    Account_ID: {
+                        [Op.in]: Sequelize.literal('(SELECT Account_ID FROM ACCOUNT_CHART WHERE Type_ID = 5 AND Is_Active = true)')
+                    }
+                }
+            });
+
+            const unclosedRevenue = revenueLines.reduce((sum, line) => 
+                sum + parseFloat(line.Credit_Amount || 0) - parseFloat(line.Debit_Amount || 0), 0);
+
+            const unclosedExpense = expenseLines.reduce((sum, line) => 
+                sum + parseFloat(line.Debit_Amount || 0) - parseFloat(line.Credit_Amount || 0), 0);
+
+            const unclosedNetProfit = unclosedRevenue - unclosedExpense;
+
+            if (unclosedNetProfit !== 0) {
+                data.equity.push({
+                    account_name: 'Retained Earnings (Current/Unclosed Period)',
+                    balance: unclosedNetProfit
+                });
+                data.totals.totalEquity += unclosedNetProfit;
+            }
 
             data.totals.totalAssets = data.totals.totalCurrentAssets + data.totals.totalNonCurrentAssets;
             data.totals.totalLiabilities = data.totals.totalCurrentLiabilities + data.totals.totalNonCurrentLiabilities;

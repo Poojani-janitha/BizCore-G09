@@ -168,28 +168,6 @@ const ReportsPage = () => {
       onDownload: () => bsData && downloadBalanceSheetPDF(bsData, bsDate),
       disabled: !bsData
     },
-    { 
-      id: 'cf', 
-      title: 'Cash Flow Statement',     
-      description: 'Cash inflows and outflows',      
-      period: 'Coming Soon',             
-      lastGenerated: '—',   
-      icon: <Activity   size={20} className="text-purple-600" />, 
-      iconBg: 'bg-purple-50',
-      onDownload: () => alert("Cash Flow report is coming soon!"),
-      disabled: true
-    },
-    { 
-      id: 'sr', 
-      title: 'Sales Report',            
-      description: 'Detailed sales analysis',        
-      period: 'Coming Soon',             
-      lastGenerated: '—',   
-      icon: <PieChart   size={20} className="text-orange-600" />, 
-      iconBg: 'bg-orange-50',
-      onDownload: () => alert("Sales report is coming soon!"),
-      disabled: true
-    },
   ];
 
   return (
@@ -203,7 +181,7 @@ const ReportsPage = () => {
         </div>
 
         {/* Report Type Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-3xl">
           {reportCards.map(card => (
             <ReportCard 
               key={card.id} 
