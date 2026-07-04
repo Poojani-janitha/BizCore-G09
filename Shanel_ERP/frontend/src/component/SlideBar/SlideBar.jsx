@@ -8,6 +8,7 @@ import {
     Sliders, CornerUpLeft, BarChart2, Bell, PieChart, Shield, AlertCircle
 } from 'react-feather';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const SlideBar = () => {
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -21,7 +22,7 @@ const SlideBar = () => {
     useEffect(() => {
         const fetchAlertCount = async () => {
             try {
-                const res = await axios.get('http://localhost:5000/api/inventory/dashboard-stats');
+                const res = await axios.get(API_ENDPOINTS.inventory.dashboardStats);
                 if (res.data.success && res.data.alerts) {
                     setAlertCount(res.data.alerts.length);
                 }
@@ -166,8 +167,8 @@ const SlideBar = () => {
 
                 <div style={{ opacity: (isCollapsed && headerHover) ? 0 : 1, transition: 'opacity 0.2s ease' }}>
                     <div className="d-flex align-items-center">
-                        <div style={{ height: '26px', width: '26px', border: `2px solid ${colors.activeAccent}`, borderRadius: '4px' }}></div>
-                        {!isCollapsed && <span className='fw-bold text-white ms-3' style={{ letterSpacing: '1px' }}>SHANEL</span>}
+                        {/* <div style={{ height: '26px', width: '26px', border: `2px solid ${colors.activeAccent}`, borderRadius: '4px' }}></div> */}
+                        {!isCollapsed && <span className='fw-bold text-white ms-0' style={{ letterSpacing: '1px' }}>SHANEL PRODUCTS</span>}
                     </div>
                 </div>
                 <div onClick={() => setIsCollapsed(!isCollapsed)} style={{ color: colors.textPrimary }}>
