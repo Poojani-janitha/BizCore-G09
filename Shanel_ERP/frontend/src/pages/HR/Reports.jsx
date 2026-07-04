@@ -24,6 +24,23 @@ const Reports = () => {
   // Force re-fetches data by incrementing a trigger state
   const handleRefresh = () => setTriggerRefresh(prev => prev + 1);
 
+  // Listen for payroll changes made on the Payroll page and auto-refresh
+  // the payments report if it's currently open and the month matches
+  useEffect(() => {
+    const handlePayrollUpdated = (e) => {
+      if (activeReport !== 'payments') return;
+      const [yearStr, monthStr] = paymentMonth.split('-');
+      const eventMonth = Number(e.detail?.month);
+      const eventYear  = Number(e.detail?.year);
+      if (eventMonth === Number(monthStr) && eventYear === Number(yearStr)) {
+        setTriggerRefresh(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener('payroll-updated', handlePayrollUpdated);
+    return () => window.removeEventListener('payroll-updated', handlePayrollUpdated);
+  }, [activeReport, paymentMonth]);
+
   // Normalizes a date string to YYYY-MM-DD format
   const normDate = (d) => d ? String(d).split('T')[0] : '';
 
@@ -420,19 +437,32 @@ useEffect(() => {
           setLeaveReportData({ rows });
         } else if (activeReport === 'payments') {
           const [yearStr, monthStr] = paymentMonth.split('-');
-          const payRes = await axios.get(`${API_BASE}/payroll`, { params: { month: monthStr, year: yearStr, _t: Date.now() }});
+          // Fetch both all active employees AND saved payroll records for the month
+          const [empRes, payRes] = await Promise.all([
+            axios.get(`${API_BASE}/employees`, { params: { status: 'Active', _t: Date.now() } }),
+            axios.get(`${API_BASE}/payroll`, { params: { month: monthStr, year: yearStr, _t: Date.now() } })
+          ]);
+          const allEmployees = Array.isArray(empRes.data.data) ? empRes.data.data : [];
           const dbPayrolls = Array.isArray(payRes.data.data) ? payRes.data.data : [];
-          
-          const rows = dbPayrolls.map(r => ({
-            id: r.Employee_ID,
-            employeeCode: `EMP-${String(r.Employee_ID).padStart(3, '0')}`,
-            employeeName: r.Employee?.Full_Name || 'Unknown',
-            employeeRole: r.Employee?.Role || '',
-            grossSalary: Number(r.Gross_Salary || 0),
-            totalDeductions: Number(r.Total_Deductions || 0),
-            netSalary: Number(r.Net_Salary || 0),
-            status: r.Payment_Status || 'Pending'
-          }));
+
+          // Build a map of payroll records keyed by Employee_ID for fast lookup
+          const payrollMap = Object.fromEntries(dbPayrolls.map(p => [String(p.Employee_ID), p]));
+
+          // Merge: every active employee gets a row; payroll data filled in if it exists
+          const rows = allEmployees.map(e => {
+            const p = payrollMap[String(e.Employee_ID)];
+            return {
+              id: e.Employee_ID,
+              employeeCode: e.Employee_Code || `EMP-${String(e.Employee_ID).padStart(3, '0')}`,
+              employeeName: e.Full_Name || '—',
+              employeeRole: e.Role || '—',
+              grossSalary: Number(p?.Gross_Salary || 0),
+              totalDeductions: Number(p?.Total_Deductions || 0),
+              netSalary: Number(p?.Net_Salary || 0),
+              status: p ? (p.Payment_Status || 'Pending') : 'Pending'
+            };
+          });
+
           const totals = rows.reduce((acc, r) => {
             acc.gross += r.grossSalary;
             acc.deductions += r.totalDeductions;
@@ -1422,7 +1452,7 @@ useEffect(() => {
 
         {paymentReport.rows.length === 0 ? (
           <div style={{ padding: '22px 20px', color: '#64748b', fontSize: '13px' }}>
-            No payroll records found. Open the Payroll page once to initialize payroll data.
+            No active employees found.
           </div>
         ) : (
           paymentReport.rows.map((r, idx) => {

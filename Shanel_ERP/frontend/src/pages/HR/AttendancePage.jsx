@@ -564,7 +564,9 @@ const Attendance = () => {
           if (rec.status === 'present' && !isExcludedFromTea && rec.timeIn && rec.timeOut && workedHours >= 4) {
             const [outH, outM] = rec.timeOut.split(':').map(Number);
             const outMinutes = outH * 60 + outM;
-            teaCost = outMinutes > (18 * 60) ? 'Rs 450' : 'Rs 60';
+            // If working past 5 PM → Rs 450 OT allowance only (replaces Rs 60, not added on top)
+            // If leaving at or before 5 PM → standard Rs 60 tea
+            teaCost = outMinutes > (17 * 60) ? 'Rs 450' : 'Rs 60';
           }
 
           const rowBg = index % 2 === 0 ? '#fff' : '#fafbfc';
