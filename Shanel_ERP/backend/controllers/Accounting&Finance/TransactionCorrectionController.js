@@ -3,6 +3,7 @@ const sequelize = require('../../config/db');
 const JournalEntry = require('../../models/finance/JournalEntry');
 const JournalEntryLine = require('../../models/finance/JournalEntryLine');
 const AccountChart = require('../../models/finance/AccountChart');
+const FiscalPeriod = require('../../models/finance/FiscalPeriod');
 
 class TransactionCorrectionController {
     // Get all transactions for correction (only in open fiscal periods)
@@ -13,7 +14,6 @@ class TransactionCorrectionController {
             const offset = (page - 1) * limit;
 
             // Fetch all open fiscal periods
-            const FiscalPeriod = require('../../models/finance/FiscalPeriod');
             const openPeriods = await FiscalPeriod.findAll({
                 where: { Status: 'OPEN' }
             });

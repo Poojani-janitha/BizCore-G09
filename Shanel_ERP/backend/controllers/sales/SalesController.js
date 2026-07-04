@@ -313,6 +313,12 @@ const postSalesData = async (req, res) => {
             return res.status(400).json({ success: false, message: "Cart cannot be empty" });
         }
 
+        const chequeAmountVal = parseFloat(paymentDetails?.Cheque_Amount || 0);
+        if (resolvedSaleType === 'Retail' && chequeAmountVal > 0) {
+            await t.rollback();
+            return res.status(400).json({ success: false, message: "Cheque payments are not allowed for Retail sales. Only Wholesale sales accept cheque payments." });
+        }
+
         const now = new Date();
         const saleDate = invoiceDetails?.invoiceDate || now.toISOString().split('T')[0];
         const saleTime = invoiceDetails?.invoiceTime || now.toTimeString().split(' ')[0];
@@ -552,9 +558,14 @@ const postSalesData = async (req, res) => {
         await SaleItem.bulkCreate(saleItemsData, { transaction: t });
 
         // Create Journal Entry
-        sale.Customer = customer;
+        const saleForAccounting = {
+            ...sale.toJSON(),
+            Sale_Id: sale.Sale_Id,
+            Sale_ID: sale.Sale_Id, // Satisfies other modules that access Sale_ID with uppercase D
+            Customer: customer
+        };
         await salesAccountController.createSaleJournalEntry(
-            sale,
+            saleForAccounting,
             totalCOGS,
             paymentDetails?.Payment_Method || 'Cash',
             t

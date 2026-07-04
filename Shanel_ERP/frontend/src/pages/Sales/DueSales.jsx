@@ -169,7 +169,7 @@ const DueSales = () => {
                                         <button
                                             className="btn btn-sm btn-primary px-3 rounded-3 fw-bold"
                                             style={{ fontSize: '11px' }}
-                                            onClick={() => navigate('/sales/collection')}
+                                            onClick={() => navigate('/finance/receive-payment', { state: { customerId: sale.Customer?.C_ID, paymentType: 'credit' } })}
                                             title={t('sales.add_payment')}
                                         >
                                             {t('sales.add_payment')}
