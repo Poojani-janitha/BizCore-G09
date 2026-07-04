@@ -1,6 +1,8 @@
 const sequelize = require('../../config/db');
 const { Product, UnitConversion, Sale, Inventory, Customer, Payment, SaleItem, CreditTranscation, StockMovement, Cheque, PaymentAllocation } = require('../../models/index');
 const { Op, where } = require('sequelize');
+const SalesAccountController = require('../Accounting&Finance/SalesAccountController');
+const salesAccountController = new SalesAccountController();
 
 const searchProducts = async (req, res) => {
 
@@ -451,7 +453,7 @@ const postSalesData = async (req, res) => {
         }, { transaction: t });
 
         // 4. Process Sale Items and Inventory
-        const saleItemsData = await Promise.all(items.map(async (item) => {
+        const processedItems = await Promise.all(items.map(async (item) => {
             const qty = parseFloat(item.quntity ?? item.quantity ?? 0);
             
             // Find correct unit for conversion
@@ -535,13 +537,28 @@ const postSalesData = async (req, res) => {
                 Created_By: createdBy
             }, { transaction: t });
 
+            // Fetch product cost price for COGS calculation
+            const product = await Product.findByPk(item.p_id, { transaction: t });
+            const costPrice = parseFloat(product?.Cost_Price || 0);
+            const itemCOGS = baseUnitQty * costPrice;
 
-
-            return saleItem;
+            return { saleItem, itemCOGS };
         }));
+
+        const saleItemsData = processedItems.map(p => p.saleItem);
+        const totalCOGS = processedItems.reduce((sum, p) => sum + p.itemCOGS, 0);
 
         // Bulk create SaleItems
         await SaleItem.bulkCreate(saleItemsData, { transaction: t });
+
+        // Create Journal Entry
+        sale.Customer = customer;
+        await salesAccountController.createSaleJournalEntry(
+            sale,
+            totalCOGS,
+            paymentDetails?.Payment_Method || 'Cash',
+            t
+        );
 
         // 5. Commit Transaction
         await t.commit();
