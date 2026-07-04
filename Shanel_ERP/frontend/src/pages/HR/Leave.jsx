@@ -32,7 +32,7 @@ const Leave = () => {
     try {
       setLoading(true);
       const [empRes, attRes, leaveRes] = await Promise.all([
-        axios.get(`${API_BASE}/employees`),
+        axios.get(`${API_BASE}/employees`, { params: { status: 'Active' } }),
         axios.get(`${API_BASE}/attendance`, { params: { from: date, to: date } }),
         axios.get(`${API_BASE}/leaves`, { params: { from: date, to: date } })
       ]);
