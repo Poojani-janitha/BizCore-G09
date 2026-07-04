@@ -37,6 +37,7 @@ const InfoRow = ({ icon, label, value }) => (
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const CustomerDetailPage = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const [data, setData] = useState(null);
@@ -111,7 +112,7 @@ const CustomerDetailPage = () => {
                     </button>
                     <button
                         className="btn btn-primary btn-sm px-3 fw-bold rounded-3 shadow-sm d-flex align-items-center gap-2"
-                        onClick={() => navigate('/sales/collection')}
+                        onClick={() => navigate('/finance/receive-payment', { state: { customerId: customer.C_ID, paymentType: 'credit' } })}
                     >
                         {t('sales.add_payment')}
                     </button>

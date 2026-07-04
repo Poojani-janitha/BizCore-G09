@@ -14,12 +14,29 @@ class JournalEntryController {
             const offset = (page - 1) * limit;
             const { startDate, endDate } = req.query;
 
+            const openPeriod = await FiscalPeriod.findOne({
+                where: { Status: 'OPEN' }
+            });
+
             const whereClause = {};
-            if (startDate && endDate) {
-                const { Op } = require('sequelize');
-                whereClause.Entry_Date = {
-                    [Op.between]: [startDate, endDate]
-                };
+            if (openPeriod) {
+                if (startDate && endDate) {
+                    const finalStart = startDate > openPeriod.Start_Date ? startDate : openPeriod.Start_Date;
+                    const finalEnd = endDate < openPeriod.End_Date ? endDate : openPeriod.End_Date;
+                    whereClause.Entry_Date = {
+                        [Op.between]: [finalStart, finalEnd]
+                    };
+                } else {
+                    whereClause.Entry_Date = {
+                        [Op.between]: [openPeriod.Start_Date, openPeriod.End_Date]
+                    };
+                }
+            } else {
+                if (startDate && endDate) {
+                    whereClause.Entry_Date = {
+                        [Op.between]: [startDate, endDate]
+                    };
+                }
             }
 
             const { count, rows } = await JournalEntry.findAndCountAll({

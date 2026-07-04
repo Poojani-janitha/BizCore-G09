@@ -1,6 +1,8 @@
 import axios from 'axios';
 import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const CustomerForm = ({ onClose }) => {
     const { t } = useTranslation();

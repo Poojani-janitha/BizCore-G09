@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import {
   Calendar, CheckCircle, DollarSign, FileText, Loader,
@@ -23,6 +23,7 @@ const DEFAULT_INCOME_CATEGORIES = [];
 
 const ReceivePaymentPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [paymentType, setPaymentType] = useState('general');
   const [formData, setFormData] = useState({
     customerName: '', amount: '', incomeCategory: 'Sales',
@@ -63,12 +64,30 @@ const ReceivePaymentPage = () => {
       try {
         setLoadingCustomers(true);
         const res = await axios.get(CUSTOMER_API);
-        if (res.data?.success) setCustomers(res.data.data || []);
+        if (res.data?.success) {
+          const customerList = res.data.data || [];
+          setCustomers(customerList);
+          
+          if (location.state) {
+            const { customerId, paymentType: redirectType } = location.state;
+            if (redirectType) {
+              setPaymentType(redirectType);
+              setFormData(prev => ({ ...prev, incomeCategory: redirectType === 'credit' ? 'Accounts Receivable' : 'Sales' }));
+            }
+            if (customerId) {
+              const cust = customerList.find(c => c.C_ID === customerId);
+              if (cust) {
+                setSelectedCustomer(cust);
+                setCustomerSearch(cust.C_Name);
+              }
+            }
+          }
+        }
       } catch (e) { console.error(e); }
       finally { setLoadingCustomers(false); }
     })();
     fetchCategories();
-  }, []);
+  }, [location.state]);
 
   const fetchCategories = async () => {
     try {
@@ -199,15 +218,13 @@ const ReceivePaymentPage = () => {
 
   const handleCreditSubmit = async () => {
     if (!selectedCustomer) { setAlert({ type: 'error', message: 'Please select a customer.' }); return; }
-    if (!formData.creditTransId) { setAlert({ type: 'error', message: 'Please select an invoice.' }); return; }
     const amount = parseFloat(formData.amount);
     if (isNaN(amount) || amount <= 0) { setAlert({ type: 'error', message: 'Amount must be positive.' }); return; }
     setSubmitting(true); setAlert(null);
     try {
       const payload = {
         customerId: selectedCustomer.C_ID, amount,
-        paymentMethod: formData.paymentMethod, referenceNo: formData.referenceNo,
-        creditTransId: formData.creditTransId,
+        paymentMethod: formData.paymentMethod,
         paymentDate: formData.date, notes: formData.description || null,
         bankName: formData.bankName, depositSlipNo: formData.depositSlipNo,
         depositedBy: formData.depositedBy, depositDate: formData.depositDate,
@@ -415,7 +432,7 @@ const ReceivePaymentPage = () => {
             </div>
           )}
 
-          {/* Row 2: Amount + Reference/Invoice */}
+          {/* Row 2: Amount + Reference */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
             <div>
               <label className={label}>Amount Received</label>
@@ -427,29 +444,10 @@ const ReceivePaymentPage = () => {
               </div>
             </div>
             <div>
-              <label className={label}>{paymentType === 'credit' ? 'Select Invoice' : 'Reference Number'}</label>
-              {paymentType === 'credit' ? (
-                !selectedCustomer ? <div className="w-full h-12 rounded-lg border border-gray-200 px-3 flex items-center text-gray-400 text-sm">Select a customer first</div>
-                : loadingInvoices ? <div className="w-full h-12 rounded-lg border border-gray-200 px-3 flex items-center text-gray-400 text-sm"><Loader size={14} className="animate-spin mr-2"/> Loading...</div>
-                : outstandingInvoices.length === 0 ? <div className="w-full h-12 rounded-lg border border-gray-200 px-3 flex items-center text-gray-400 text-sm">No outstanding invoices</div>
-                : <select value={formData.creditTransId} onChange={e => { const inv = outstandingInvoices.find(i => String(i.creditTransId) === e.target.value); handleSelectInvoice(inv); }}
-                    className="w-full h-12 rounded-lg border border-orange-300 px-3 outline-none focus:ring-2 focus:ring-orange-500 text-sm">
-                    <option value="">-- Select invoice --</option>
-                    {outstandingInvoices.map(inv => <option key={inv.creditTransId} value={inv.creditTransId}>{inv.referenceNo} — Due: Rs. {inv.remainingAmount.toFixed(2)}</option>)}
-                  </select>
-              ) : <input type="text" name="referenceNo" value={formData.referenceNo} onChange={handleChange} className={inp} placeholder="Reference number"/>}
+              <label className={label}>Reference Number (Optional)</label>
+              <input type="text" name="referenceNo" value={formData.referenceNo} onChange={handleChange} className={inp} placeholder="Reference number"/>
             </div>
           </div>
-
-          {/* Selected invoice details */}
-          {paymentType === 'credit' && selectedInvoice && (
-            <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 flex flex-wrap gap-4">
-              <span>Invoice: <strong>{selectedInvoice.referenceNo}</strong></span>
-              <span>Total: <strong>Rs. {selectedInvoice.totalAmount.toFixed(2)}</strong></span>
-              <span>Paid: <strong>Rs. {selectedInvoice.paidAmount.toFixed(2)}</strong></span>
-              <span className="text-orange-600">Remaining: <strong>Rs. {selectedInvoice.remainingAmount.toFixed(2)}</strong></span>
-            </div>
-          )}
 
           {/* Row 3: Category + Notes */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
