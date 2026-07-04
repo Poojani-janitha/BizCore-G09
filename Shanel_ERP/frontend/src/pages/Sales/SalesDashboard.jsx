@@ -108,14 +108,6 @@ const SalesDashboard = () => {
             onClick: () => navigate('/sales/history')
         },
         {
-            title: t('sales.dashboard.gross_revenue'),
-            value: `Rs.${(data.today?.grossRevenue || 0).toLocaleString()}`,
-            label: t('sales.dashboard.gross_revenue_desc'),
-            icon: <TrendingUp className="text-success" size={20} />,
-            color: "border-success",
-            onClick: () => navigate('/sales/history')
-        },
-        {
             title: t('sales.customer_list.outstanding_balance'),
             value: `Rs.${(data.outstanding?.totalDue || 0).toLocaleString()}`,
             label: `${t('sales.overdue')}: Rs.${(data.outstanding?.overdue || 0).toLocaleString()}`,
