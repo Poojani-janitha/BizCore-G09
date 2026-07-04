@@ -892,16 +892,7 @@ export default function Payroll() {
     <div style={{ minHeight: '100vh', background: '#f5f6fa', padding: '28px 32px', fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif" }}>
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{
-            margin: 0,
-            fontSize: '26px',
-            fontWeight: 900,
-            background: 'linear-gradient(135deg, rgb(13, 148, 136), rgb(15, 23, 42))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            letterSpacing: '-0.02em'
-          }}>Payroll Management</h1>
-          <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>Calculate salaries for {selectedMonth}</p>
+
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button onClick={printPDF} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#64748b', transition: 'all 0.2s' }}>

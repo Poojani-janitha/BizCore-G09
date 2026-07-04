@@ -579,18 +579,7 @@ useEffect(() => {
       fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
     }}>
       <div style={{ marginBottom: '18px' }}>
-        <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 800, letterSpacing: '-0.5px' }}>
-          <span style={{
-            background: 'linear-gradient(135deg, #0d9488, #0f172a)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}>
-            HR Reports
-          </span>
-        </h1>
-        <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-          Employee, attendance, leave, and payment reports
-        </p>
+
       </div>
 
       {activeReport === null && (
