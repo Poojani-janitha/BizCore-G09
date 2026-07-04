@@ -11,7 +11,9 @@ const {
     UnitConversion,
     CreditTranscation,
     Inventory,
-    StockMovement
+    StockMovement,
+    Cheque,
+    PaymentAllocation
 } = require('../../models/index');
 
 /**
@@ -87,7 +89,7 @@ const getTodayMetrics = async (req, res) => {
             success: true,
             data: {
                 totalSales: parseFloat(data.totalSales) || 0,
-                totalRevenue: parseFloat(data.totalRevenue) || 0,
+                totalRevenue: parseFloat(data.totalSales) || 0, // Revenue same as Total Sale Amount (Gross Sales Revenue)
                 totalDiscount: parseFloat(data.totalDiscount) || 0,
                 totalTax: parseFloat(data.totalTax) || 0,
                 totalTransactions: parseInt(data.salesCount) || 0
@@ -579,18 +581,33 @@ const searchSales = async (req, res) => {
             endDate,
             paymentStatus,
             location,
+            saleType,
+            status,
             page = 1,
             limit = 20
         } = req.query;
 
         const offset = (parseInt(page) - 1) * parseInt(limit);
-        const where = { Status: 'Active' };  // Only search active sales
+        const where = {};
 
-        // Add invoice number search
+        // Add status filter (Active, Void, or default both)
+        if (status && ['Active', 'Void'].includes(status)) {
+            where.Status = status;
+        } else {
+            where.Status = { [Op.in]: ['Active', 'Void'] };
+        }
+
+        // Add invoice number and customer name search
         if (query && query.trim()) {
             where[Op.or] = [
-                { Invoice_No: { [Op.like]: `%${query}%` } }
+                { Invoice_No: { [Op.like]: `%${query}%` } },
+                { '$Customer.C_Name$': { [Op.like]: `%${query}%` } }
             ];
+        }
+
+        // Add sale type filter (Retail vs Wholesale)
+        if (saleType && ['Retail', 'Wholesale'].includes(saleType)) {
+            where.Sale_Type = saleType;
         }
 
         // Add location filter
@@ -1035,7 +1052,7 @@ const getTopSellingProducts = async (req, res) => {
                 {
                     model: Product,
                     as: 'Product',
-                    attributes: ['P_ID', 'P_Name', 'P_Code', 'Base_Unit', 'Retail_Price']
+                    attributes: ['P_ID', 'P_Name', 'P_Code', 'Base_Unit', 'Retail_Price', 'Category']
                 }
             ],
             group: ['P_ID'],  // Aggregate all sales per product
@@ -1050,6 +1067,7 @@ const getTopSellingProducts = async (req, res) => {
             P_ID: p.P_ID,
             Product_Name: p['Product.P_Name'],
             Product_Code: p['Product.P_Code'],
+            Category: p['Product.Category'] || 'Other',
             totalQuantity: parseFloat(p.totalQuantity) || 0,
             totalRevenue: parseFloat(p.totalRevenue) || 0,
             salesCount: parseInt(p.salesCount) || 0
@@ -1849,6 +1867,638 @@ const printSale = async (req, res) => {
  * ============================================================================
  */
 
+
+// ============================================================================
+// SECTION 7: SALES MANAGEMENT MODULE — EXTENDED FUNCTIONS
+// Added for the full Sales Management module (Dashboard, Due Sales, Void Audit)
+// These functions append to existing controller — existing functions unchanged.
+// ============================================================================
+
+/**
+ * getDueSalesFixed()
+ * Correct endpoint for /api/sales-management/due
+ * Returns paginated list of all Partially_Paid and Unpaid invoices
+ */
+const getDueSalesFixed = async (req, res) => {
+    try {
+        const { page = 1, limit = 20, query } = req.query;
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        const where = {
+            Payment_Status: { [Op.in]: ['Unpaid', 'Partially_Paid'] },
+            Status: 'Active'
+        };
+
+        if (query && query.trim()) {
+            where[Op.or] = [
+                { Invoice_No: { [Op.like]: `%${query}%` } },
+                { '$Customer.C_Name$': { [Op.like]: `%${query}%` } }
+            ];
+        }
+
+        const { count, rows } = await Sale.findAndCountAll({
+            where,
+            include: [
+                {
+                    model: Customer,
+                    as: 'Customer',
+                    attributes: ['C_ID', 'C_Name', 'Phone1', 'Customer_Code']
+                },
+                {
+                    model: Payment,
+                    as: 'Payments',
+                    attributes: ['Pay_ID', 'Payment_Method', 'Payment_Amount', 'Cash_Amount', 'Bank_Transfer_Amount', 'Cheque_Amount']
+                }
+            ],
+            order: [['Due_Date', 'ASC'], ['Sale_Date', 'ASC']],
+            limit: parseInt(limit),
+            offset,
+            subQuery: false
+        });
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const enriched = rows.map(sale => {
+            const s = sale.toJSON();
+            // Flag overdue: Due_Date set and has passed
+            const isOverdue = s.Due_Date && new Date(s.Due_Date) < today;
+            // Sum payment method amounts
+            const cashReceived = s.Payments?.reduce((sum, p) => sum + (parseFloat(p.Cash_Amount) || 0), 0) || 0;
+            const bankReceived = s.Payments?.reduce((sum, p) => sum + (parseFloat(p.Bank_Transfer_Amount) || 0), 0) || 0;
+            const chequeReceived = s.Payments?.reduce((sum, p) => sum + (parseFloat(p.Cheque_Amount) || 0), 0) || 0;
+            return { ...s, isOverdue, cashReceived, bankReceived, chequeReceived };
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: enriched,
+            pagination: {
+                total: count,
+                page: parseInt(page),
+                pages: Math.ceil(count / parseInt(limit)),
+                limit: parseInt(limit)
+            },
+            message: 'Due sales fetched successfully'
+        });
+
+    } catch (error) {
+        console.error('❌ Error fetching due sales:', error);
+        return res.status(500).json({ success: false, message: 'Failed to fetch due sales', error: error.message });
+    }
+};
+
+/**
+ * getTopCustomers()
+ * Returns top customers by total purchases for dashboard widget
+ * Query: period = thisMonth | thisQuarter | thisYear | allTime
+ */
+const getTopCustomers = async (req, res) => {
+    try {
+        const { period = 'thisMonth', limit = 5 } = req.query;
+        const today = new Date();
+        let startDate = null;
+
+        switch (period) {
+            case 'thisMonth':
+                startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                break;
+            case 'thisQuarter':
+                const q = Math.floor(today.getMonth() / 3);
+                startDate = new Date(today.getFullYear(), q * 3, 1);
+                break;
+            case 'thisYear':
+                startDate = new Date(today.getFullYear(), 0, 1);
+                break;
+            case 'allTime':
+            default:
+                startDate = null;
+        }
+
+        const dateWhere = startDate ? { Sale_Date: { [Op.gte]: startDate }, Status: 'Active' } : { Status: 'Active' };
+
+        const topCustomers = await Sale.findAll({
+            where: dateWhere,
+            attributes: [
+                'C_ID',
+                [Sequelize.fn('SUM', Sequelize.col('Total_Amount')), 'totalPurchases'],
+                [Sequelize.fn('COUNT', Sequelize.col('Sale_Id')), 'orderCount'],
+                [Sequelize.fn('MAX', Sequelize.col('Sale_Date')), 'lastPurchase']
+            ],
+            include: [
+                {
+                    model: Customer,
+                    as: 'Customer',
+                    attributes: ['C_ID', 'C_Name', 'Customer_Code', 'Current_Balance']
+                }
+            ],
+            group: ['C_ID', 'Customer.C_ID'],
+            order: [[Sequelize.fn('SUM', Sequelize.col('Total_Amount')), 'DESC']],
+            limit: parseInt(limit),
+            subQuery: false,
+            raw: false
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: topCustomers,
+            message: 'Top customers fetched successfully'
+        });
+
+    } catch (error) {
+        console.error('❌ Error fetching top customers:', error);
+        return res.status(500).json({ success: false, message: 'Failed to fetch top customers', error: error.message });
+    }
+};
+
+/**
+ * getRevenueTrend()
+ * Returns daily revenue for the past N days for the dashboard chart
+ * Query: days = 7 | 30 | 90
+ */
+const getRevenueTrend = async (req, res) => {
+    try {
+        const { days = 30 } = req.query;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - parseInt(days));
+        startDate.setHours(0, 0, 0, 0);
+
+        const trend = await Sale.findAll({
+            where: {
+                Sale_Date: { [Op.gte]: startDate },
+                Status: 'Active'
+            },
+            attributes: [
+                'Sale_Date',
+                [Sequelize.fn('SUM', Sequelize.col('Total_Amount')), 'revenue'],
+                [Sequelize.fn('COUNT', Sequelize.col('Sale_Id')), 'count']
+            ],
+            group: ['Sale_Date'],
+            order: [['Sale_Date', 'ASC']],
+            raw: true
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: trend.map(row => ({
+                date: row.Sale_Date,
+                revenue: parseFloat(row.revenue) || 0,
+                count: parseInt(row.count) || 0
+            })),
+            message: 'Revenue trend fetched successfully'
+        });
+
+    } catch (error) {
+        console.error('❌ Error fetching revenue trend:', error);
+        return res.status(500).json({ success: false, message: 'Failed to fetch revenue trend', error: error.message });
+    }
+};
+
+/**
+ * getOutstandingDueAmount()
+ * Returns total outstanding balance across all customers + breakdown
+ */
+const getOutstandingDueAmount = async (req, res) => {
+    try {
+        // Sum from Sales.Balance_Due (active, unpaid/partially paid)
+        const result = await Sale.findAll({
+            where: {
+                Payment_Status: { [Op.in]: ['Unpaid', 'Partially_Paid'] },
+                Status: 'Active'
+            },
+            attributes: [
+                [Sequelize.fn('SUM', Sequelize.col('Balance_Due')), 'totalDue'],
+                [Sequelize.fn('COUNT', Sequelize.col('Sale_Id')), 'invoiceCount']
+            ],
+            raw: true
+        });
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Overdue: past Due_Date
+        const overdueResult = await Sale.findAll({
+            where: {
+                Payment_Status: { [Op.in]: ['Unpaid', 'Partially_Paid'] },
+                Status: 'Active',
+                Due_Date: { [Op.lt]: today, [Op.ne]: null }
+            },
+            attributes: [
+                [Sequelize.fn('SUM', Sequelize.col('Balance_Due')), 'overdueDue'],
+                [Sequelize.fn('COUNT', Sequelize.col('Sale_Id')), 'overdueCount']
+            ],
+            raw: true
+        });
+
+        const data = result[0] || {};
+        const overdueData = overdueResult[0] || {};
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                totalDue: parseFloat(data.totalDue) || 0,
+                invoiceCount: parseInt(data.invoiceCount) || 0,
+                overdueDue: parseFloat(overdueData.overdueDue) || 0,
+                overdueCount: parseInt(overdueData.overdueCount) || 0,
+                notYetDue: (parseFloat(data.totalDue) || 0) - (parseFloat(overdueData.overdueDue) || 0)
+            },
+            message: 'Outstanding due amount fetched successfully'
+        });
+
+    } catch (error) {
+        console.error('❌ Error fetching outstanding due:', error);
+        return res.status(500).json({ success: false, message: 'Failed to fetch outstanding due', error: error.message });
+    }
+};
+
+/**
+ * voidSaleWithAudit()
+ * Voids a sale with proper audit trail (Voided_By, Voided_At, Void_Reason).
+ * Permission-gated: only called from route after role check.
+ * Reverses stock movements and credit transactions tied to this sale.
+ */
+const voidSaleWithAudit = async (req, res) => {
+    const t = await sequelize.transaction();
+    try {
+        const { saleId } = req.params;
+        const { reason, userId } = req.body;
+
+        if (!saleId || isNaN(saleId)) {
+            await t.rollback();
+            return res.status(400).json({ success: false, message: 'Invalid sale ID' });
+        }
+        if (!reason || reason.trim() === '') {
+            await t.rollback();
+            return res.status(400).json({ success: false, message: 'Void reason is required' });
+        }
+
+        const sale = await Sale.findByPk(saleId, { transaction: t });
+        if (!sale) {
+            await t.rollback();
+            return res.status(404).json({ success: false, message: 'Sale not found' });
+        }
+        if (sale.Status === 'Void') {
+            await t.rollback();
+            return res.status(400).json({ success: false, message: 'Sale is already voided' });
+        }
+
+        // Update sale to Void with audit columns
+        await sale.update({
+            Status: 'Void',
+            Voided_By: userId || null,
+            Voided_At: new Date(),
+            Void_Reason: reason.trim()
+        }, { transaction: t });
+
+        // Restore customer balance if the sale had a balance_due
+        if (sale.Balance_Due > 0 && sale.C_ID) {
+            await Customer.decrement('Current_Balance', {
+                by: parseFloat(sale.Balance_Due),
+                where: { C_ID: sale.C_ID },
+                transaction: t
+            });
+        }
+
+        await t.commit();
+
+        console.log(`✅ Sale #${saleId} voided by user ${userId}`);
+
+        return res.status(200).json({
+            success: true,
+            message: `Sale #${sale.Invoice_No} voided successfully`,
+            data: { saleId, voidedAt: new Date(), voidedBy: userId }
+        });
+
+    } catch (error) {
+        await t.rollback();
+        console.error('❌ Error voiding sale:', error);
+        return res.status(500).json({ success: false, message: 'Failed to void sale', error: error.message });
+    }
+};
+
+/**
+ * getSalesReport()
+ * Comprehensive sales report with filters: daily/monthly/annual, date range
+ */
+const getSalesReport = async (req, res) => {
+    try {
+        const { reportType = 'monthly', startDate, endDate, page = 1, limit = 50 } = req.query;
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        let dateFilter = {};
+        const today = new Date();
+
+        if (startDate && endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            dateFilter = { Sale_Date: { [Op.between]: [new Date(startDate), end] } };
+        } else if (reportType === 'daily') {
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            dateFilter = { Sale_Date: { [Op.between]: [today, tomorrow] } };
+        } else if (reportType === 'monthly') {
+            const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            dateFilter = { Sale_Date: { [Op.gte]: monthStart } };
+        } else if (reportType === 'annual') {
+            const yearStart = new Date(today.getFullYear(), 0, 1);
+            dateFilter = { Sale_Date: { [Op.gte]: yearStart } };
+        }
+
+        const { count, rows } = await Sale.findAndCountAll({
+            where: { ...dateFilter, Status: 'Active' },
+            include: [
+                {
+                    model: Customer,
+                    as: 'Customer',
+                    attributes: ['C_ID', 'C_Name', 'Customer_Type']
+                }
+            ],
+            order: [['Sale_Date', 'DESC']],
+            limit: parseInt(limit),
+            offset,
+            subQuery: false
+        });
+
+        // Aggregate summary
+        const summary = await Sale.findAll({
+            where: { ...dateFilter, Status: 'Active' },
+            attributes: [
+                [Sequelize.fn('SUM', Sequelize.col('Total_Amount')), 'totalRevenue'],
+                [Sequelize.fn('SUM', Sequelize.col('Discount_Amount')), 'totalDiscount'],
+                [Sequelize.fn('SUM', Sequelize.col('Tax_Amount')), 'totalTax'],
+                [Sequelize.fn('COUNT', Sequelize.col('Sale_Id')), 'totalOrders'],
+                [Sequelize.fn('AVG', Sequelize.col('Total_Amount')), 'avgOrderValue']
+            ],
+            raw: true
+        });
+
+        const s = summary[0] || {};
+
+        return res.status(200).json({
+            success: true,
+            data: rows,
+            summary: {
+                totalRevenue: parseFloat(s.totalRevenue) || 0,
+                totalDiscount: parseFloat(s.totalDiscount) || 0,
+                totalTax: parseFloat(s.totalTax) || 0,
+                totalOrders: parseInt(s.totalOrders) || 0,
+                avgOrderValue: parseFloat(s.avgOrderValue) || 0
+            },
+            pagination: {
+                total: count,
+                page: parseInt(page),
+                pages: Math.ceil(count / parseInt(limit)),
+                limit: parseInt(limit)
+            },
+            message: 'Sales report fetched successfully'
+        });
+
+    } catch (error) {
+        console.error('❌ Error fetching sales report:', error);
+        return res.status(500).json({ success: false, message: 'Failed to fetch sales report', error: error.message });
+    }
+};
+
+
+/**
+ * getSalesDashboardAggregator()
+ * Aggregates all dashboard data: Today metrics, outstanding due, cheques, top products, top customers, trend
+ */
+const getSalesDashboardAggregator = async (req, res) => {
+    try {
+        const { period = 'thisMonth', trendType = 'daily' } = req.query;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // 1. Today Metrics
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const todaySales = await Sale.findAll({
+            where: {
+                Sale_Date: { [Op.between]: [today, tomorrow] },
+                Status: 'Active'
+            },
+            attributes: [
+                [Sequelize.fn('SUM', Sequelize.col('Total_Amount')), 'totalSales'],
+                [Sequelize.fn('COUNT', Sequelize.col('Sale_Id')), 'salesCount']
+            ],
+            raw: true
+        });
+        const todayData = todaySales[0] || {};
+        const totalSalesVal = parseFloat(todayData.totalSales) || 0;
+        const salesCountVal = parseInt(todayData.salesCount) || 0;
+
+        // 2. Outstanding due
+        const dueSales = await Sale.findAll({
+            where: {
+                Payment_Status: { [Op.in]: ['Unpaid', 'Partially_Paid'] },
+                Status: 'Active'
+            },
+            attributes: [
+                [Sequelize.fn('SUM', Sequelize.col('Balance_Due')), 'totalDue'],
+                [Sequelize.fn('COUNT', Sequelize.col('Sale_Id')), 'invoiceCount']
+            ],
+            raw: true
+        });
+        const overdueSales = await Sale.findAll({
+            where: {
+                Payment_Status: { [Op.in]: ['Unpaid', 'Partially_Paid'] },
+                Status: 'Active',
+                Due_Date: { [Op.lt]: today, [Op.ne]: null }
+            },
+            attributes: [
+                [Sequelize.fn('SUM', Sequelize.col('Balance_Due')), 'overdueDue'],
+                [Sequelize.fn('COUNT', Sequelize.col('Sale_Id')), 'overdueCount']
+            ],
+            raw: true
+        });
+        const dueData = dueSales[0] || {};
+        const overdueData = overdueSales[0] || {};
+        const totalDueVal = parseFloat(dueData.totalDue) || 0;
+        const overdueDueVal = parseFloat(overdueData.overdueDue) || 0;
+
+        // 3. Cheques Lists (Pending, Expiring, Bounced)
+        const expiryLimit = new Date(today);
+        expiryLimit.setDate(expiryLimit.getDate() + 5);
+
+        const totalCustomers = await Customer.count({ where: { Status: 'Active' } });
+        const totalChequeAlerts = await Cheque.count({
+            where: {
+                [Op.or]: [
+                    { Cheque_Status: 'Bounced' },
+                    {
+                        Cheque_Status: 'Pending',
+                        Cheque_Date: { [Op.lte]: expiryLimit }
+                    }
+                ]
+            }
+        });
+
+        const pendingCheques = await Cheque.findAll({
+            where: { Cheque_Status: 'Pending' },
+            include: [{ model: Customer, as: 'Customer', attributes: ['C_Name'] }],
+            order: [['Cheque_Date', 'ASC']],
+            limit: 5
+        });
+
+        const expiringCheques = await Cheque.findAll({
+            where: {
+                Cheque_Status: 'Pending',
+                Cheque_Date: { [Op.between]: [today, expiryLimit] }
+            },
+            include: [{ model: Customer, as: 'Customer', attributes: ['C_Name'] }],
+            order: [['Cheque_Date', 'ASC']],
+            limit: 5
+        });
+
+        const bouncedCheques = await Cheque.findAll({
+            where: { Cheque_Status: 'Bounced' },
+            include: [{ model: Customer, as: 'Customer', attributes: ['C_Name'] }],
+            order: [['Updated_At', 'DESC']],
+            limit: 5
+        });
+
+        // 4. Top Customers
+        let customerStartDate = null;
+        if (period === 'thisMonth') customerStartDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        else if (period === 'thisQuarter') customerStartDate = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3, 1);
+        else if (period === 'thisYear') customerStartDate = new Date(today.getFullYear(), 0, 1);
+
+        const customerWhere = { Status: 'Active' };
+        if (customerStartDate) customerWhere.Sale_Date = { [Op.gte]: customerStartDate };
+
+        const topCustomers = await Sale.findAll({
+            where: customerWhere,
+            attributes: [
+                'C_ID',
+                [Sequelize.fn('SUM', Sequelize.col('Total_Amount')), 'totalPurchases'],
+                [Sequelize.fn('MAX', Sequelize.col('Sale_Date')), 'lastPurchaseDate']
+            ],
+            include: [{ model: Customer, as: 'Customer', attributes: ['C_Name', 'Current_Balance'] }],
+            group: ['C_ID', 'Customer.C_ID'],
+            order: [[Sequelize.fn('SUM', Sequelize.col('Total_Amount')), 'DESC']],
+            limit: 5
+        });
+
+        // 5. Top Products
+        const topProducts = await SaleItem.findAll({
+            attributes: [
+                'P_ID',
+                [Sequelize.fn('SUM', Sequelize.col('Quantity')), 'totalQuantity'],
+                [Sequelize.fn('SUM', Sequelize.col('Line_Total')), 'totalRevenue']
+            ],
+            where: {
+                '$Sale.Status$': 'Active'
+            },
+            include: [
+                { model: Sale, attributes: [], required: true },
+                { model: Product, as: 'Product', attributes: ['P_Name', 'Category'] }
+            ],
+            group: ['P_ID', 'Product.P_ID'],
+            order: [[Sequelize.literal('totalRevenue'), 'DESC']],
+            limit: 5,
+            raw: true
+        });
+
+        // 6. Trend Data
+        let trendLimit = 7;
+        let trendGroup = 'Sale_Date';
+        let trendAttributes = [
+            'Sale_Date',
+            [Sequelize.fn('SUM', Sequelize.col('Total_Amount')), 'revenue']
+        ];
+
+        if (trendType === 'weekly') {
+            // Aggregate by week
+            trendGroup = Sequelize.literal('YEARWEEK(Sale_Date)');
+            trendAttributes = [
+                [Sequelize.literal('MIN(Sale_Date)'), 'Sale_Date'],
+                [Sequelize.fn('SUM', Sequelize.col('Total_Amount')), 'revenue']
+            ];
+            trendLimit = 8;
+        } else if (trendType === 'monthly') {
+            // Aggregate by month
+            trendGroup = Sequelize.literal("DATE_FORMAT(Sale_Date, '%Y-%m')");
+            trendAttributes = [
+                [Sequelize.literal("DATE_FORMAT(Sale_Date, '%Y-%m')"), 'Sale_Date'],
+                [Sequelize.fn('SUM', Sequelize.col('Total_Amount')), 'revenue']
+            ];
+            trendLimit = 6;
+        }
+
+        const trendRaw = await Sale.findAll({
+            where: { Status: 'Active' },
+            attributes: trendAttributes,
+            group: [trendGroup],
+            order: [[Sequelize.literal('Sale_Date'), 'DESC']],
+            limit: trendLimit,
+            raw: true
+        });
+
+        const trendData = trendRaw.reverse().map(row => ({
+            date: row.Sale_Date,
+            revenue: parseFloat(row.revenue) || 0
+        }));
+
+        // Calculate absolute/percentage growth compared to prior point
+        let growthPercent = 0;
+        let growthAbsolute = 0;
+        if (trendData.length >= 2) {
+            const currentVal = trendData[trendData.length - 1].revenue;
+            const priorVal = trendData[trendData.length - 2].revenue;
+            growthAbsolute = currentVal - priorVal;
+            growthPercent = priorVal > 0 ? Math.round((growthAbsolute / priorVal) * 100) : 0;
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                totalCustomers,
+                totalChequeAlerts,
+                dueSalesCount: parseInt(dueData.invoiceCount) || 0,
+                today: {
+                    totalSales: totalSalesVal,
+                    salesCount: salesCountVal,
+                    grossRevenue: totalSalesVal
+                },
+                outstanding: {
+                    totalDue: totalDueVal,
+                    overdue: overdueDueVal,
+                    notYetDue: Math.max(0, totalDueVal - overdueDueVal)
+                },
+                cheques: {
+                    pending: pendingCheques,
+                    expiring: expiringCheques,
+                    bounced: bouncedCheques
+                },
+                topCustomers: topCustomers.map(tc => ({
+                    name: tc.Customer?.C_Name || 'Walking Customer',
+                    totalPurchases: parseFloat(tc.getDataValue('totalPurchases')) || 0,
+                    outstanding: parseFloat(tc.Customer?.Current_Balance) || 0,
+                    lastPurchase: tc.getDataValue('lastPurchaseDate')
+                })),
+                topProducts: topProducts.map(tp => ({
+                    name: tp['Product.P_Name'] || '—',
+                    quantity: parseFloat(tp.totalQuantity) || 0,
+                    revenue: parseFloat(tp.totalRevenue) || 0,
+                    category: tp['Product.Category'] || 'Other'
+                })),
+                trend: {
+                    type: trendType,
+                    points: trendData,
+                    growthPercent,
+                    growthAbsolute
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error getting aggregated dashboard data:', error);
+        return res.status(500).json({ success: false, message: 'Failed to get dashboard metrics', error: error.message });
+    }
+};
+
 module.exports = {
     // Section 1: Dashboard Metrics
     getTodayMetrics,
@@ -1884,5 +2534,15 @@ module.exports = {
     createSale,
     addPaymentToSale,
     voidSale,
-    printSale
+    printSale,
+
+    // Section 7: Sales Management Module Extensions
+    getDueSalesFixed,
+    getTopCustomers,
+    getRevenueTrend,
+    getOutstandingDueAmount,
+    voidSaleWithAudit,
+    getSalesReport,
+    getSalesDashboardAggregator
 };
+

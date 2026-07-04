@@ -227,6 +227,20 @@ const saveCustomer = async (req,res) => {
             });
         }
 
+        // Check if customer with same name already exists
+        const existingCustomerName = await Customer.findOne({
+            where: {
+                C_Name: customer_name,
+                Status: { [Op.ne]: 'Inactive' }
+            }
+        });
+        if (existingCustomerName) {
+            return res.status(400).json({
+                success: false,
+                message: 'A customer with this name already exists'
+            });
+        }
+
         if (!customer_phone1) {
             return res.status(400).json({
                 success: false,
@@ -286,4 +300,253 @@ const saveCustomer = async (req,res) => {
 
 
 
-module.exports = { getAllCustomers, getCustomerById, searchCustomers ,saveCustomer};
+// ============================================================================
+// SALES MANAGEMENT MODULE — CUSTOMER CONTROLLER EXTENSIONS
+// Appended functions — existing functions above are untouched.
+// ============================================================================
+
+const { Op: CustomerOp } = require('sequelize');
+const { Sale, Payment, CreditTranscation } = require('../../models/index');
+
+/**
+ * getCustomersPaginated()
+ * GET /api/customer/paginated
+ * Full paginated + filterable customer list for the Customer List page
+ */
+const getCustomersPaginated = async (req, res) => {
+    try {
+        const { page = 1, limit = 20, q, type, status, hasBalance } = req.query;
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        const where = {};
+        if (status) {
+            where.Status = status;
+        } else {
+            where.Status = { [CustomerOp.ne]: 'Inactive' };
+        }
+        if (type) where.Customer_Type = type;
+        if (hasBalance === 'true') {
+            where.Current_Balance = { [CustomerOp.gt]: 0 };
+        }
+        if (q && q.trim()) {
+            where[CustomerOp.or] = [
+                { C_Name: { [CustomerOp.like]: `%${q}%` } },
+                { Phone1: { [CustomerOp.like]: `%${q}%` } },
+                { Customer_Code: { [CustomerOp.like]: `%${q}%` } }
+            ];
+        }
+
+        const { count, rows } = await Customer.findAndCountAll({
+            where,
+            attributes: [
+                'C_ID', 'Customer_Code', 'C_Name', 'Contact_Person',
+                'Phone1', 'Phone2', 'Email', 'Address', 'City',
+                'Customer_Type', 'Price_Level', 'Credit_Allowed',
+                'Credit_Limit', 'Current_Balance', 'Payment_Terms',
+                'Status', 'Last_Purchase_Date', 'Total_Purchases', 'Notes'
+            ],
+            order: [['C_Name', 'ASC']],
+            limit: parseInt(limit),
+            offset
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: rows,
+            pagination: {
+                total: count,
+                page: parseInt(page),
+                pages: Math.ceil(count / parseInt(limit)),
+                limit: parseInt(limit)
+            },
+            message: 'Customers fetched successfully'
+        });
+
+    } catch (error) {
+        console.error('getCustomersPaginated error:', error);
+        return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+/**
+ * getCustomerDetail()
+ * GET /api/customer/:id/detail (uses numeric C_ID)
+ * Full customer hub: info + recent sales history + balance
+ */
+const getCustomerDetail = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const customerId = parseInt(id);
+
+        if (isNaN(customerId)) {
+            return res.status(400).json({ success: false, message: 'Invalid customer ID' });
+        }
+
+        const customer = await Customer.findByPk(customerId, {
+            attributes: [
+                'C_ID', 'Customer_Code', 'C_Name', 'Contact_Person',
+                'Phone1', 'Phone2', 'Email', 'Address', 'City',
+                'Customer_Type', 'Price_Level', 'Credit_Allowed',
+                'Credit_Limit', 'Current_Balance', 'Payment_Terms',
+                'Preferred_Payment_Method', 'Status',
+                'Last_Purchase_Date', 'Total_Purchases', 'Notes', 'Created_At'
+            ]
+        });
+
+        if (!customer) {
+            return res.status(404).json({ success: false, message: 'Customer not found' });
+        }
+
+        // Recent sales for this customer (last 20)
+        const recentSales = await Sale.findAll({
+            where: { C_ID: customerId, Status: 'Active' },
+            attributes: [
+                'Sale_Id', 'Invoice_No', 'Sale_Date', 'Sale_Time',
+                'Sale_Type', 'Total_Amount', 'Paid_Amount', 'Balance_Due',
+                'Payment_Status', 'Status'
+            ],
+            include: [
+                {
+                    model: Payment,
+                    as: 'Payments',
+                    attributes: ['Pay_ID', 'Payment_Method', 'Payment_Amount', 'Payment_Date']
+                }
+            ],
+            order: [['Sale_Date', 'DESC'], ['Sale_Time', 'DESC']],
+            limit: 20
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                customer: customer.toJSON(),
+                recentSales
+            },
+            message: 'Customer detail fetched successfully'
+        });
+
+    } catch (error) {
+        console.error('getCustomerDetail error:', error);
+        return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+/**
+ * getCustomerStatement()
+ * GET /api/customer/:id/statement
+ * Chronological credit ledger (credit_transactions) for audit
+ */
+const getCustomerStatement = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { page = 1, limit = 30 } = req.query;
+        const customerId = parseInt(id);
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        if (isNaN(customerId)) {
+            return res.status(400).json({ success: false, message: 'Invalid customer ID' });
+        }
+
+        const { count, rows } = await CreditTranscation.findAndCountAll({
+            where: { Customer_ID: customerId },
+            order: [['Created_At', 'ASC']],
+            limit: parseInt(limit),
+            offset
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: rows,
+            pagination: {
+                total: count,
+                page: parseInt(page),
+                pages: Math.ceil(count / parseInt(limit)),
+                limit: parseInt(limit)
+            },
+            message: 'Customer statement fetched successfully'
+        });
+
+    } catch (error) {
+        console.error('getCustomerStatement error:', error);
+        return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+/**
+ * updateCustomer()
+ * PUT /api/customer/:id
+ * Edit customer info (non-balance fields only — balance is managed by service layer)
+ */
+const updateCustomer = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const customerId = parseInt(id);
+
+        if (isNaN(customerId)) {
+            return res.status(400).json({ success: false, message: 'Invalid customer ID' });
+        }
+
+        const customer = await Customer.findByPk(customerId);
+        if (!customer) {
+            return res.status(404).json({ success: false, message: 'Customer not found' });
+        }
+
+        const {
+            customer_name, contact_person, customer_email,
+            customer_phone1, customer_phone2, customer_address, customer_city,
+            customer_type, price_level, credit_allowed, credit_limit,
+            payment_terms, preferred_payment_method, status, notes
+        } = req.body;
+
+        // Check if customer with same name already exists (excluding current customer)
+        if (customer_name && customer_name.trim() !== customer.C_Name) {
+            const existingCustomerName = await Customer.findOne({
+                where: {
+                    C_Name: customer_name.trim(),
+                    C_ID: { [Op.ne]: customerId },
+                    Status: { [Op.ne]: 'Inactive' }
+                }
+            });
+            if (existingCustomerName) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'A customer with this name already exists'
+                });
+            }
+        }
+
+        // Enforce: if credit_allowed is false, credit_limit must be 0
+        const effectiveCreditAllowed = credit_allowed !== undefined ? credit_allowed : customer.Credit_Allowed;
+        const effectiveCreditLimit = effectiveCreditAllowed ? (credit_limit ?? customer.Credit_Limit) : 0;
+
+        await customer.update({
+            C_Name: customer_name || customer.C_Name,
+            Contact_Person: contact_person !== undefined ? contact_person : customer.Contact_Person,
+            Email: customer_email !== undefined ? customer_email : customer.Email,
+            Phone1: customer_phone1 || customer.Phone1,
+            Phone2: customer_phone2 !== undefined ? customer_phone2 : customer.Phone2,
+            Address: customer_address !== undefined ? customer_address : customer.Address,
+            City: customer_city !== undefined ? customer_city : customer.City,
+            Customer_Type: customer_type || customer.Customer_Type,
+            Price_Level: price_level || customer.Price_Level,
+            Credit_Allowed: effectiveCreditAllowed,
+            Credit_Limit: effectiveCreditLimit,
+            Payment_Terms: payment_terms !== undefined ? payment_terms : customer.Payment_Terms,
+            Preferred_Payment_Method: preferred_payment_method || customer.Preferred_Payment_Method,
+            Status: status || customer.Status,
+            Notes: notes !== undefined ? notes : customer.Notes
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Customer updated successfully',
+            data: customer
+        });
+
+    } catch (error) {
+        console.error('updateCustomer error:', error);
+        return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+module.exports = { getAllCustomers, getCustomerById, searchCustomers, saveCustomer, getCustomersPaginated, getCustomerDetail, getCustomerStatement, updateCustomer };

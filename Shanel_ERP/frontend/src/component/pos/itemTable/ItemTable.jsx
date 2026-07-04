@@ -324,7 +324,25 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         }
     }, [tempItem.p_id, selectedProduct?.p_id, location]);
 
+    // Global keydown listener to focus the product search input field when user starts typing/scanning
+    useEffect(() => {
+        const handleGlobalKeyDown = (e) => {
+            const activeEl = document.activeElement;
+            if (activeEl && ['input', 'textarea', 'select'].includes(activeEl.tagName.toLowerCase())) {
+                return;
+            }
 
+            // Capture only single printable characters, avoiding action/modifier keys
+            if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                if (searchInputRef.current) {
+                    searchInputRef.current.focus();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleGlobalKeyDown);
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    }, []);
 
     // Monitor error state changes
     useEffect(() => {
@@ -530,6 +548,14 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                                     placeholder={t('itemTable.searchPlaceholder')}
                                     value={query}
                                     onChange={(e) => handleSearch(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            if (searchResults.length > 0) {
+                                                selectProduct(searchResults[0]);
+                                            }
+                                        }
+                                    }}
                                     style={{ width: '100%' }}
                                 />
                                 {searchResults.length > 0 && (

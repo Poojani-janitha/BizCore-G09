@@ -29,6 +29,8 @@ const SaleItem = require('./sales/SalesItem');
 const Payment = require('./sales/Payment');
 const CreditTranscation = require('./customer/CreditTranscation');
 const SalesSummaryDaily = require('./sales/SalesSummaryDaily');
+const Cheque = require('./sales/Cheque');
+const PaymentAllocation = require('./sales/PaymentAllocation');
 
 // ===== SALES ASSOCIATIONS =====
 const SaleAssociations = require('./sales/SaleAssociation');
@@ -91,6 +93,8 @@ module.exports = {
     Payment,
     CreditTranscation,
     SalesSummaryDaily,
+    Cheque,
+    PaymentAllocation,
     User,
     Module,
     UserModuleAccess,
