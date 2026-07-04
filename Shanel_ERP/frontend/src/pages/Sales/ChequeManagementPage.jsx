@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import {
     CheckCircle, XCircle, Clock, AlertTriangle, AlertCircle,
     RefreshCw, ChevronLeft, ChevronRight, DollarSign,
@@ -8,14 +9,15 @@ import {
 
 // ─── Status Badge ────────────────────────────────────────────────────────────
 const StatusBadge = ({ status, expiringSoon, pastDue }) => {
+    const { t } = useTranslation();
     if (pastDue && status === 'Pending') return (
         <span className="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1" style={{ fontSize: '10px' }}>
-            <AlertCircle size={10} /> Past Due
+            <AlertCircle size={10} /> {t('sales.cheques.past_due')}
         </span>
     );
     if (expiringSoon) return (
         <span className="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1" style={{ fontSize: '10px' }}>
-            <AlertTriangle size={10} /> Expiring Soon
+            <AlertTriangle size={10} /> {t('sales.cheques.expiring_soon')}
         </span>
     );
     const map = {
@@ -24,22 +26,29 @@ const StatusBadge = ({ status, expiringSoon, pastDue }) => {
         Bounced: 'bg-danger-subtle text-danger border-danger-subtle',
         Expired: 'bg-secondary-subtle text-secondary border-secondary-subtle'
     };
+    const labelMap = {
+        Pending: t('sales.cheques.pending'),
+        Cleared: t('sales.cheques.cleared'),
+        Bounced: t('sales.cheques.bounced'),
+        Expired: t('sales.cheques.expired')
+    };
     return (
         <span className={`badge border rounded-pill px-2 py-1 ${map[status] || 'bg-secondary-subtle text-secondary'}`} style={{ fontSize: '10px' }}>
-            {status}
+            {labelMap[status] || status}
         </span>
     );
 };
 
 // ─── Confirm Dialog ───────────────────────────────────────────────────────────
 const ConfirmModal = ({ show, title, message, onConfirm, onCancel, requireReason = false, reasonLabel = 'Reason', confirmLabel = 'Confirm', confirmColor = 'danger' }) => {
+    const { t } = useTranslation();
     const [reason, setReason] = useState('');
     const [error, setError] = useState('');
 
     useEffect(() => { if (show) { setReason(''); setError(''); } }, [show]);
 
     const handleConfirm = () => {
-        if (requireReason && !reason.trim()) { setError(`${reasonLabel} is required`); return; }
+        if (requireReason && !reason.trim()) { setError(`${reasonLabel} ${t('sales.required_field') || 'is required'}`); return; }
         onConfirm(reason);
     };
 
@@ -62,14 +71,14 @@ const ConfirmModal = ({ show, title, message, onConfirm, onCancel, requireReason
                                     rows={3}
                                     value={reason}
                                     onChange={e => { setReason(e.target.value); setError(''); }}
-                                    placeholder={`Enter ${reasonLabel.toLowerCase()}...`}
+                                    placeholder={t('sales.cheques.bounce_reason')}
                                 />
                                 {error && <small className="text-danger">{error}</small>}
                             </>
                         )}
                     </div>
                     <div className="modal-footer border-0 pb-4 px-4 gap-2">
-                        <button className="btn btn-light btn-sm rounded-3 px-4" onClick={onCancel}>Cancel</button>
+                        <button className="btn btn-light btn-sm rounded-3 px-4" onClick={onCancel}>{t('customerForm.cancel') || 'Cancel'}</button>
                         <button className={`btn btn-${confirmColor} btn-sm rounded-3 px-4 fw-bold`} onClick={handleConfirm}>{confirmLabel}</button>
                     </div>
                 </div>
@@ -84,10 +93,10 @@ const getDaysToExpire = (chequeDateStr) => {
     today.setHours(0, 0, 0, 0);
     const chequeDate = new Date(chequeDateStr);
     chequeDate.setHours(0, 0, 0, 0);
-    
+
     const expiryDate = new Date(chequeDate);
     expiryDate.setDate(expiryDate.getDate() + 180);
-    
+
     const diffTime = expiryDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
@@ -95,6 +104,7 @@ const getDaysToExpire = (chequeDateStr) => {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const ChequeManagementPage = () => {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('Pending');
     const [cheques, setCheques] = useState([]);
     const [summary, setSummary] = useState({ pending: {}, expiringSoon: {}, bounced: {}, cleared: {}, expired: {} });
@@ -161,19 +171,34 @@ const ChequeManagementPage = () => {
         return daysA - daysB;
     });
 
+    const getTableHeaderLabel = (header) => {
+        const headerMappings = {
+            'Cheque #': t('sales.cheques.col_cheque_no'),
+            'Bank / Branch': t('sales.cheques.col_bank'),
+            'Customer': t('sales.customer_name'),
+            'Amount': t('sales.amount_col') || 'Amount',
+            'Cheque Date': t('sales.cheques.col_date'),
+            'Days to Expire': t('sales.cheques.col_days'),
+            'Linked Invoice(s)': t('sales.cheques.col_invoice'),
+            'Status': t('sales.status') || 'Status',
+            'Actions': t('actionButtons.title') || 'Actions'
+        };
+        return headerMappings[header] || header;
+    };
+
     return (
         <div className="container-fluid p-4" style={{ backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: "'Outfit', 'Inter', sans-serif" }}>
 
             {/* Summary Tiles (KPI cards matching Sales Dashboard / Customer List page border styles) */}
             <div className="row g-3 mb-4">
                 {[
-                    { label: 'Pending Cheques', value: summary.pending?.count || 0, color: 'warning', icon: <Clock size={20} className="text-warning" />, description: 'Waiting for clearance' },
-                    { label: 'Bounced Cheques', value: summary.bounced?.count || 0, color: 'danger', icon: <XCircle size={20} className="text-danger" />, description: 'Rejected cheques' },
-                    { label: 'Expiring Soon', value: summary.expiringSoon?.count || 0, color: 'warning', icon: <AlertTriangle size={20} style={{ color: '#fd7e14' }} />, description: 'Expiring in 5 days', customColor: '#fd7e14' },
-                    { label: 'Expired Cheques', value: summary.expired?.count || 0, color: 'danger', icon: <AlertCircle size={20} className="text-danger" />, description: 'Past 180 days limit' },
+                    { label: t('sales.cheques.pending_title'), value: summary.pending?.count || 0, color: 'warning', icon: <Clock size={20} className="text-warning" />, description: t('sales.cheques.pending_desc') },
+                    { label: t('sales.cheques.bounced_title'), value: summary.bounced?.count || 0, color: 'danger', icon: <XCircle size={20} className="text-danger" />, description: t('sales.cheques.bounced_desc') },
+                    { label: t('sales.cheques.expiring_title'), value: summary.expiringSoon?.count || 0, color: 'warning', icon: <AlertTriangle size={20} style={{ color: '#fd7e14' }} />, description: t('sales.cheques.expiring_desc'), customColor: '#fd7e14' },
+                    { label: t('sales.cheques.expired_title'), value: summary.expired?.count || 0, color: 'danger', icon: <AlertCircle size={20} className="text-danger" />, description: t('sales.cheques.expired_desc') },
                 ].map((tile, i) => (
                     <div key={i} className="col-md-3">
-                        <div 
+                        <div
                             className={`card border-0 border-top border-4 border-${tile.color} shadow-sm p-3 h-100 bg-white`}
                             style={tile.customColor ? { borderTopColor: tile.customColor } : {}}
                         >
@@ -197,7 +222,7 @@ const ChequeManagementPage = () => {
                             <input
                                 type="text"
                                 className="form-control border-0 bg-transparent shadow-none py-2"
-                                placeholder="Search by cheque number or customer name..."
+                                placeholder={t('sales.cheques.search_placeholder')}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                             />
@@ -209,9 +234,9 @@ const ChequeManagementPage = () => {
             {/* Tabs (Styled like company-items page tabs) */}
             <div className="d-flex flex-wrap gap-2 mb-4">
                 {[
-                    { key: 'Pending', label: 'Pending', count: summary.pending?.count || 0 },
-                    { key: 'Cleared', label: 'Cleared', count: summary.cleared?.count || 0 },
-                    { key: 'Bounced', label: 'Bounced', count: summary.bounced?.count || 0 }
+                    { key: 'Pending', label: t('sales.cheques.pending'), count: summary.pending?.count || 0 },
+                    { key: 'Cleared', label: t('sales.cheques.cleared'), count: summary.cleared?.count || 0 },
+                    { key: 'Bounced', label: t('sales.cheques.bounced'), count: summary.bounced?.count || 0 }
                 ].map(tab => (
                     <button
                         key={tab.key}
@@ -231,14 +256,16 @@ const ChequeManagementPage = () => {
             {/* Table */}
             <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
                 <div className="card-header bg-white border-0 py-3 px-4">
-                    <h6 className="fw-bold text-dark mb-0">{pagination.total} {activeTab} Cheques</h6>
+                    <h6 className="fw-bold text-dark mb-0">
+                        {pagination.total} {t(`sales.cheques.${activeTab.toLowerCase()}`)} {t('sales.cheques.expired_title').replace('Expired Cheques', 'Cheques').replace('කල් ඉකුත් වූ චෙක්පත්', 'චෙක්පත්').replace('காலாவதியான காசோலைகள்', 'காசோலைகள்')}
+                    </h6>
                 </div>
                 <div className="table-responsive">
                     <table className="table table-hover align-middle mb-0">
                         <thead className="bg-light">
                             <tr>
                                 {['Cheque #', 'Bank / Branch', 'Customer', 'Amount', 'Cheque Date', 'Days to Expire', 'Linked Invoice(s)', 'Status', ...(activeTab === 'Pending' ? ['Actions'] : [])].map(h => (
-                                    <th key={h} className="py-3 text-uppercase small fw-bold text-muted" style={{ fontSize: '10px' }}>{h}</th>
+                                    <th key={h} className="py-3 text-uppercase small fw-bold text-muted" style={{ fontSize: '10px' }}>{getTableHeaderLabel(h)}</th>
                                 ))}
                             </tr>
                         </thead>
@@ -250,7 +277,9 @@ const ChequeManagementPage = () => {
                                     <td colSpan={9} className="text-center py-5">
                                         <div className="text-muted">
                                             <CheckCircle size={32} className="mb-2 opacity-25" />
-                                            <p className="small mb-0">No {activeTab.toLowerCase()} cheques</p>
+                                            <p className="small mb-0">
+                                                {(t('sales.cheques.no_cheques') || 'No {status} cheques').replace('{status}', t(`sales.cheques.${activeTab.toLowerCase()}`))}
+                                            </p>
                                         </div>
                                     </td>
                                 </tr>
@@ -289,13 +318,15 @@ const ChequeManagementPage = () => {
                                         <td>
                                             {/* Days to Expire column logic */}
                                             {days < 0 ? (
-                                                <span className="text-danger fw-bold small">Expired ({Math.abs(days)}d ago)</span>
+                                                <span className="text-danger fw-bold small">
+                                                    {t('sales.cheques.expired_ago').replace('{days}', Math.abs(days))}
+                                                </span>
                                             ) : days === 0 ? (
-                                                <span className="text-warning fw-bold small">Expires Today</span>
-                                            ) : days <= 5 ? (
-                                                <span className="text-warning fw-bold small">{days}d left</span>
+                                                <span className="text-warning fw-bold small">{t('sales.cheques.expires_today')}</span>
                                             ) : (
-                                                <span className="text-dark small">{days}d left</span>
+                                                <span className={days <= 5 ? "text-warning fw-bold small" : "text-dark small"}>
+                                                    {t('sales.cheques.days_left').replace('{days}', days)}
+                                                </span>
                                             )}
                                         </td>
                                         <td>
@@ -325,7 +356,7 @@ const ChequeManagementPage = () => {
                                                         id={`clear-cheque-${ch.Cheque_ID}`}
                                                     >
                                                         <CheckCircle size={13} className="text-success" />
-                                                        <span style={{ fontSize: '11px' }} className="text-success fw-bold">Cash</span>
+                                                        <span style={{ fontSize: '11px' }} className="text-success fw-bold">{t('sales.cheques.cash')}</span>
                                                     </button>
                                                     <button
                                                         className="btn btn-sm btn-white px-2 d-flex align-items-center gap-1"
@@ -334,7 +365,7 @@ const ChequeManagementPage = () => {
                                                         id={`bounce-cheque-${ch.Cheque_ID}`}
                                                     >
                                                         <XCircle size={13} className="text-danger" />
-                                                        <span style={{ fontSize: '11px' }} className="text-danger fw-bold">Reject</span>
+                                                        <span style={{ fontSize: '11px' }} className="text-danger fw-bold">{t('sales.cheques.reject')}</span>
                                                     </button>
                                                 </div>
                                             </td>
@@ -350,7 +381,7 @@ const ChequeManagementPage = () => {
                 {pagination.pages > 1 && (
                     <div className="card-footer bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center border-top">
                         <span className="text-muted small">
-                            Page {pagination.page} of {pagination.pages} · {pagination.total} total
+                            {t('sales.cheques.page_info').replace('{page}', pagination.page).replace('{pages}', pagination.pages).replace('{total}', pagination.total)}
                         </span>
                         <nav>
                             <ul className="pagination pagination-sm mb-0 gap-1">
@@ -369,21 +400,21 @@ const ChequeManagementPage = () => {
             {/* Confirm Modals */}
             <ConfirmModal
                 show={confirmState.show && confirmState.type === 'clear'}
-                title="✅ Confirm Cheque Clearance"
-                message={`Mark cheque ${confirmState.cheque?.Cheque_No} (Rs.${parseFloat(confirmState.cheque?.Amount || 0).toLocaleString()}) as Cleared? This indicates the cheque has been cashed at the bank.`}
-                confirmLabel="Mark as Cleared"
+                title={t('sales.cheques.confirm_clear_title')}
+                message={t('sales.cheques.confirm_clear_msg').replace('{no}', confirmState.cheque?.Cheque_No || '').replace('{amt}', parseFloat(confirmState.cheque?.Amount || 0).toLocaleString())}
+                confirmLabel={t('sales.cheques.mark_cleared')}
                 confirmColor="success"
                 onConfirm={handleConfirm}
                 onCancel={() => setConfirmState({ show: false, type: '', cheque: null })}
             />
             <ConfirmModal
                 show={confirmState.show && confirmState.type === 'bounce'}
-                title="❌ Record Cheque Bounce"
-                message={`Record cheque ${confirmState.cheque?.Cheque_No} (Rs.${parseFloat(confirmState.cheque?.Amount || 0).toLocaleString()}) as Bounced? This will reopen affected invoices and restore the customer's outstanding balance.`}
-                confirmLabel="Record Bounce"
+                title={t('sales.cheques.confirm_bounce_title')}
+                message={t('sales.cheques.confirm_bounce_msg').replace('{no}', confirmState.cheque?.Cheque_No || '').replace('{amt}', parseFloat(confirmState.cheque?.Amount || 0).toLocaleString())}
+                confirmLabel={t('sales.cheques.record_bounce')}
                 confirmColor="danger"
                 requireReason
-                reasonLabel="Bounce Reason"
+                reasonLabel={t('sales.cheques.bounce_reason')}
                 onConfirm={handleConfirm}
                 onCancel={() => setConfirmState({ show: false, type: '', cheque: null })}
             />

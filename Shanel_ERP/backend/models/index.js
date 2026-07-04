@@ -74,7 +74,7 @@ hrAssociations();
 
 // ===== FINANCE MODELS & ASSOCIATIONS =====
 const FinanceAssociations = require('./finance/associations');
-const { AccountChart, BankAccount, BankTransaction, JournalEntry, JournalEntryLine, Expense, Income } = FinanceAssociations;
+const { AccountChart, BankAccount, BankTransaction, JournalEntry, JournalEntryLine, Expense, Income, FiscalPeriod } = FinanceAssociations;
 
 
 module.exports = {
@@ -115,6 +115,7 @@ module.exports = {
     JournalEntryLine,
     Expense,
     Income,
+    FiscalPeriod,
     SupplierTransaction,
     Bank,
     Branch

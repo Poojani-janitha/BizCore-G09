@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 import {
     TrendingUp, Package, Award, AlertCircle, Users,
     DollarSign, CreditCard, CheckCircle, Download, Calendar, Filter
@@ -7,6 +8,7 @@ import {
 import { generatePDF } from "../../services/reportGenerator";
 
 const SalesReport = () => {
+    const { t } = useTranslation();
     const [selectedReport, setSelectedReport] = useState(null);
     const [reportData, setReportData] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +27,7 @@ const SalesReport = () => {
         if (!reportData) return [];
         if (customerSearchQuery.trim()) {
             const query = customerSearchQuery.toLowerCase();
-            return reportData.filter(row => 
+            return reportData.filter(row =>
                 (row.Customer_Name && row.Customer_Name.toLowerCase().includes(query)) ||
                 (row.Customer_Code && row.Customer_Code.toLowerCase().includes(query))
             );
@@ -36,8 +38,8 @@ const SalesReport = () => {
     const reportCards = [
         // Sales Reports
         {
-            title: "Daily / Monthly / Annual Sales",
-            desc: "Aggregate sales summary excluding cancelled sales.",
+            title: t("sales.reports.daily_monthly_annual_title"),
+            desc: t("sales.reports.daily_monthly_annual_desc"),
             icon: <TrendingUp size={20} className="text-primary" />,
             key: "sales-summary",
             endpoint: "/api/sales-management/reports/summary",
@@ -46,8 +48,8 @@ const SalesReport = () => {
         },
         // Product Reports
         {
-            title: "Product-wise Sales",
-            desc: "Revenue and quantity sold filterable by product type.",
+            title: t("sales.reports.product_wise_title"),
+            desc: t("sales.reports.product_wise_desc"),
             icon: <Package size={20} className="text-success" />,
             key: "product-wise",
             endpoint: "/api/sales-management/reports/product-wise",
@@ -55,8 +57,8 @@ const SalesReport = () => {
             columns: ["P_Code", "P_Name", "P_Type", "Purchased_Unit", "Total_Qty_Sold", "Total_Revenue"]
         },
         {
-            title: "Top Selling Products",
-            desc: "Fastest moving items ranked by total units sold.",
+            title: t("sales.reports.top_selling_title"),
+            desc: t("sales.reports.top_selling_desc"),
             icon: <Award size={20} className="text-warning" />,
             key: "top-selling",
             endpoint: "/api/sales-management/reports/top-selling",
@@ -64,8 +66,8 @@ const SalesReport = () => {
             columns: ["P_Code", "P_Name", "P_Type", "Purchased_Unit", "Total_Qty_Sold", "Total_Revenue"]
         },
         {
-            title: "Slow Moving Products",
-            desc: "Identifies items with low sales count (potential overstock).",
+            title: t("sales.reports.slow_moving_title"),
+            desc: t("sales.reports.slow_moving_desc"),
             icon: <AlertCircle size={20} className="text-danger" />,
             key: "slow-moving",
             borderColor: "border-danger",
@@ -74,8 +76,8 @@ const SalesReport = () => {
         },
         // Customer Reports
         {
-            title: "Customer-wise Sales",
-            desc: "Revenue, average order value, and invoice counts.",
+            title: t("sales.reports.customer_wise_title"),
+            desc: t("sales.reports.customer_wise_desc"),
             icon: <Users size={20} className="text-info" />,
             key: "customer-wise",
             endpoint: "/api/sales-management/reports/customer-wise",
@@ -83,8 +85,8 @@ const SalesReport = () => {
             columns: ["Customer_Code", "Customer_Name", "Invoice_Count", "Total_Revenue", "Avg_Order_Value"]
         },
         {
-            title: "Outstanding Customer Balances",
-            desc: "Consolidated outstanding balances with aging buckets.",
+            title: t("sales.reports.outstanding_balances_title"),
+            desc: t("sales.reports.outstanding_balances_desc"),
             icon: <DollarSign size={20} className="text-danger" />,
             key: "outstanding-balances",
             endpoint: "/api/sales-management/reports/outstanding-balances",
@@ -93,8 +95,8 @@ const SalesReport = () => {
         },
         // Payment Reports
         {
-            title: "Payment Method Report",
-            desc: "Collections split across cash, bank transfer, and cheque.",
+            title: t("sales.reports.payment_method_title"),
+            desc: t("sales.reports.payment_method_desc"),
             icon: <CreditCard size={20} className="text-secondary" />,
             key: "payment-method",
             endpoint: "/api/sales-management/reports/payment-method",
@@ -102,8 +104,8 @@ const SalesReport = () => {
             columns: ["Period", "Cash_Collections", "Bank_Collections", "Cheque_Collections", "Credit_Generated", "Total_Collections"]
         },
         {
-            title: "Due Collection Report",
-            desc: "Collections made against previously outstanding balances.",
+            title: t("sales.reports.due_collection_title"),
+            desc: t("sales.reports.due_collection_desc"),
             icon: <CheckCircle size={20} className="text-success" />,
             key: "due-collection",
             endpoint: "/api/sales-management/reports/due-collection",
@@ -116,7 +118,7 @@ const SalesReport = () => {
         setIsLoading(true);
         try {
             const params = new URLSearchParams();
-            
+
             // Apply report-specific filters
             if (report.key === "sales-summary") {
                 params.append("type", periodType);
@@ -173,18 +175,18 @@ const SalesReport = () => {
     const formatColValue = (col, val) => {
         if (val === null || val === undefined) return "—";
 
-        const isCurrency = (col.toLowerCase().includes("revenue") || 
-                           col.toLowerCase().includes("amount") || 
-                           col.toLowerCase().includes("outstanding") || 
-                           col.toLowerCase() === "current" || 
-                           col.toLowerCase().includes("overdue") || 
-                           col.toLowerCase().includes("collections") || 
-                           col.toLowerCase().includes("generated") || 
-                           col.toLowerCase().includes("collected") || 
-                           col.toLowerCase().includes("discount") || 
-                           col.toLowerCase().includes("tax") || 
-                           col.toLowerCase().includes("value")) &&
-                           !col.toLowerCase().includes("stock");
+        const isCurrency = (col.toLowerCase().includes("revenue") ||
+            col.toLowerCase().includes("amount") ||
+            col.toLowerCase().includes("outstanding") ||
+            col.toLowerCase() === "current" ||
+            col.toLowerCase().includes("overdue") ||
+            col.toLowerCase().includes("collections") ||
+            col.toLowerCase().includes("generated") ||
+            col.toLowerCase().includes("collected") ||
+            col.toLowerCase().includes("discount") ||
+            col.toLowerCase().includes("tax") ||
+            col.toLowerCase().includes("value")) &&
+            !col.toLowerCase().includes("stock");
 
         if (isCurrency && typeof val === 'number') {
             return `Rs.${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -193,11 +195,44 @@ const SalesReport = () => {
             return val.toLocaleString();
         }
         return String(val);
+    };    const getColHeaderLabel = (col) => {
+        const mappings = {
+            "period": t("sales.date") || "Period",
+            "total_orders": t("sales.dashboard.number_of_sales") || "Total Orders",
+            "total_revenue": t("sales.dashboard.gross_revenue") || "Total Revenue",
+            "total_discount": t("sales.reports.discount") || "Total Discount",
+            "total_tax": t("sales.tax") || "Total Tax",
+            "p_code": t("sales.customer_list.col_code") || "Product Code",
+            "p_name": t("itemTable.item") || "Product Name",
+            "p_type": t("sales.type") || "Product Type",
+            "purchased_unit": t("itemTable.unit") || "Unit",
+            "total_qty_sold": t("sales.reports.qty_sold") || "Qty Sold",
+            "qty_sold_last_n_days": t("sales.reports.qty_sold") || "Qty Sold",
+            "current_stock": t("sales.reports.current_stock") || "Current Stock",
+            "customer_code": t("sales.customer_list.col_code") || "Customer Code",
+            "customer_name": t("sales.customer_name") || "Customer Name",
+            "invoice_count": t("sales.customer_detail.invoices_count") || "Invoices",
+            "avg_order_value": t("sales.reports.avg_order") || "Avg Order Value",
+            "contact_info": t("sales.details.customer_info") || "Contact Info",
+            "total_outstanding": t("sales.customer_list.outstanding_balance") || "Total Outstanding",
+            "cash_collections": t("sales.cash_rcvd") || "Cash Collections",
+            "bank_collections": t("sales.bank_rcvd") || "Bank Collections",
+            "cheque_collections": t("sales.cheque_rcvd") || "Cheque Collections",
+            "credit_generated": t("sales.reports.credit_generated") || "Credit Generated",
+            "total_collections": t("sales.collection_summary") || "Total Collections",
+            "payment_date": t("sales.date") || "Payment Date",
+            "receipt_no": t("sales.reports.receipt_no") || "Receipt No",
+            "invoice_no": t("sales.invoice_no") || "Invoice No",
+            "original_sale_date": t("sales.reports.original_date") || "Original Date",
+            "payment_method": t("sales.reports.payment_method") || "Payment Method",
+            "amount_collected": t("sales.reports.amount_collected") || "Amount Collected"
+        };
+        return mappings[col.toLowerCase()] || col.replace(/_/g, " ");
     };
 
     return (
         <div className="container-fluid p-4 bg-light min-vh-100" style={{ fontFamily: "'Outfit', 'Inter', sans-serif", fontSize: "13px" }}>
-            
+
             {/* Reports Grid Layout matching Inventory style */}
             <div className="row g-3 mb-4 d-print-none">
                 {reportCards.map((card, i) => {
@@ -245,14 +280,14 @@ const SalesReport = () => {
                     <div className="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white d-print-none">
                         <div className="d-flex align-items-center gap-2 mb-3">
                             <Filter size={16} className="text-primary" />
-                            <span className="fw-bold text-dark">Report Filters</span>
+                            <span className="fw-bold text-dark">{t('sales.reports.report_filters')}</span>
                         </div>
                         <div className="row g-3 align-items-end">
                             {/* Date range filter for support endpoints */}
                             {selectedReport.key !== "slow-moving" && selectedReport.key !== "outstanding-balances" && (
                                 <>
                                     <div className="col-md-3">
-                                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Start Date</label>
+                                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.reports.start_date')}</label>
                                         <input
                                             type="date"
                                             className="form-control form-control-sm rounded-3 shadow-none border"
@@ -261,7 +296,7 @@ const SalesReport = () => {
                                         />
                                     </div>
                                     <div className="col-md-3">
-                                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>End Date</label>
+                                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.reports.end_date')}</label>
                                         <input
                                             type="date"
                                             className="form-control form-control-sm rounded-3 shadow-none border"
@@ -275,15 +310,15 @@ const SalesReport = () => {
                             {/* Sales summary period type toggle */}
                             {selectedReport.key === "sales-summary" && (
                                 <div className="col-md-3">
-                                    <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Period Type</label>
+                                    <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.reports.period_type')}</label>
                                     <select
                                         className="form-select form-select-sm rounded-3 shadow-none border"
                                         value={periodType}
                                         onChange={e => setPeriodType(e.target.value)}
                                     >
-                                        <option value="daily">Daily</option>
-                                        <option value="monthly">Monthly</option>
-                                        <option value="annual">Annual</option>
+                                        <option value="daily">{t('sales.reports.daily')}</option>
+                                        <option value="monthly">{t('sales.reports.monthly')}</option>
+                                        <option value="annual">{t('sales.reports.annual')}</option>
                                     </select>
                                 </div>
                             )}
@@ -291,16 +326,16 @@ const SalesReport = () => {
                             {/* Product type filter for product wise sales */}
                             {selectedReport.key === "product-wise" && (
                                 <div className="col-md-3">
-                                    <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Product Type</label>
+                                    <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.reports.product_type')}</label>
                                     <select
                                         className="form-select form-select-sm rounded-3 shadow-none border"
                                         value={productType}
                                         onChange={e => setProductType(e.target.value)}
                                     >
-                                        <option value="all">All Items</option>
-                                        <option value="Company">Company Products</option>
-                                        <option value="Other">Other Items</option>
-                                        <option value="Raw">Raw Materials</option>
+                                        <option value="all">{t('sales.reports.all_items')}</option>
+                                        <option value="Company">{t('sales.reports.company_products')}</option>
+                                        <option value="Other">{t('sales.reports.other_items')}</option>
+                                        <option value="Raw">{t('sales.reports.raw_materials')}</option>
                                     </select>
                                 </div>
                             )}
@@ -308,7 +343,7 @@ const SalesReport = () => {
                             {/* Slow moving days filter input */}
                             {selectedReport.key === "slow-moving" && (
                                 <div className="col-md-3">
-                                    <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Activity Period (Days)</label>
+                                    <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.reports.activity_period')}</label>
                                     <input
                                         type="number"
                                         className="form-control form-control-sm rounded-3 shadow-none border"
@@ -322,11 +357,11 @@ const SalesReport = () => {
                             {/* Search Customer filter */}
                             {(selectedReport.key === "customer-wise" || selectedReport.key === "outstanding-balances") && (
                                 <div className="col-md-3">
-                                    <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Search Customer</label>
+                                    <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('sales.reports.search_customer')}</label>
                                     <input
                                         type="text"
                                         className="form-control form-control-sm rounded-3 shadow-none border"
-                                        placeholder="Search by name or code..."
+                                        placeholder={t('sales.customer_list.search_placeholder')}
                                         value={customerSearchQuery}
                                         onChange={e => setCustomerSearchQuery(e.target.value)}
                                     />
@@ -338,7 +373,7 @@ const SalesReport = () => {
                                     className="btn btn-primary btn-sm rounded-3 px-4 shadow-sm w-100 fw-bold"
                                     onClick={handleApplyFilters}
                                 >
-                                    Apply Filters
+                                    {t('sales.reports.apply_filters')}
                                 </button>
                             </div>
                         </div>
@@ -347,14 +382,14 @@ const SalesReport = () => {
                     {/* Report Table Header */}
                     <div className="d-flex justify-content-between align-items-center mb-3">
                         <h6 className="fw-bold text-dark mb-0">
-                            {selectedReport.title} Data ({displayData.length === reportData.length ? reportData.length : `${displayData.length} of ${reportData.length}`} records)
+                            {selectedReport.title} {t('sales.reports.records_found').replace('records', 'Data')} ({displayData.length === reportData.length ? reportData.length : `${displayData.length} of ${reportData.length}`} {t('sales.reports.records_found')})
                         </h6>
                         <button
                             className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm d-print-none rounded-3 fw-bold"
                             onClick={handleExportPDF}
                             disabled={displayData.length === 0}
                         >
-                            <Download size={14} /> Export PDF
+                            <Download size={14} /> {t('sales.reports.export_pdf')}
                         </button>
                     </div>
 
@@ -368,7 +403,7 @@ const SalesReport = () => {
                             </div>
                         ) : displayData.length === 0 ? (
                             <div className="text-center p-5 text-muted fw-bold">
-                                No records found for the selected filter criteria.
+                                {t('sales.reports.no_records_found')}
                             </div>
                         ) : (
                             <div className="table-responsive">
@@ -388,7 +423,7 @@ const SalesReport = () => {
                                                         borderBottom: "2px solid rgba(255,255,255,0.15)"
                                                     }}
                                                 >
-                                                    {col.replace(/_/g, " ")}
+                                                    {getColHeaderLabel(col)}
                                                 </th>
                                             ))}
                                         </tr>
@@ -402,12 +437,11 @@ const SalesReport = () => {
                                                     return (
                                                         <td
                                                             key={col}
-                                                            className={`${idx === 0 ? "ps-4" : ""} ${
-                                                                col.toLowerCase().includes("total") ||
-                                                                col.toLowerCase().includes("revenue")
+                                                            className={`${idx === 0 ? "ps-4" : ""} ${col.toLowerCase().includes("total") ||
+                                                                    col.toLowerCase().includes("revenue")
                                                                     ? "fw-bold"
                                                                     : ""
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {displayVal}
                                                         </td>

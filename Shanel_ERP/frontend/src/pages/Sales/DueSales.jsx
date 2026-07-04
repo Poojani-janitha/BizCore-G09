@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
     AlertCircle, DollarSign, Search, RefreshCw,
     ChevronLeft, ChevronRight, Clock, AlertTriangle
 } from "react-feather";
 
 const PaymentBadge = ({ status }) => {
+    const { t } = useTranslation();
     const map = {
         Paid: 'bg-success-subtle text-success',
         Partially_Paid: 'bg-warning-subtle text-warning',
@@ -14,12 +16,13 @@ const PaymentBadge = ({ status }) => {
     };
     return (
         <span className={`badge rounded-pill px-2 py-1 ${map[status] || 'bg-secondary-subtle text-secondary'}`} style={{ fontSize: '10px' }}>
-            {status?.replace('_', ' ')}
+            {status === 'Paid' ? t('sales.paid') : status === 'Unpaid' ? t('sales.unpaid') : status === 'Partially_Paid' ? t('sales.partially_paid') : status?.replace('_', ' ')}
         </span>
     );
 };
 
 const DueSales = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [sales, setSales] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -59,11 +62,9 @@ const DueSales = () => {
                 <div className="d-flex align-items-center gap-3">
                     <div className="bg-warning p-2 rounded-circle text-white shadow-sm"><AlertCircle size={18} /></div>
                     <div>
-                        <span className="fw-bold text-dark d-block">Collection Summary</span>
+                        <span className="fw-bold text-dark d-block">{t('sales.collection_summary')}</span>
                         <span className="text-muted small">
-                            You have <span className="text-danger fw-bold">{pagination.total}</span> invoices with pending balances.
-                            {overdueCount > 0 && <> <span className="text-warning fw-bold">{overdueCount} are past their due date</span> and need urgent attention.</>}
-                            {' '}Oldest dues are shown first.
+                            {t('sales.due_sales')}: <span className="text-danger fw-bold">{pagination.total}</span>
                         </span>
                     </div>
                 </div>
@@ -72,12 +73,12 @@ const DueSales = () => {
                 <div className="d-flex align-items-center gap-4 pe-2">
                     {overdueCount > 0 && (
                         <div className="border-end pe-4 text-end">
-                            <small className="text-muted fw-bold text-uppercase d-block" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>Overdue Invoices</small>
+                            <small className="text-muted fw-bold text-uppercase d-block" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>{t('sales.overdue')}</small>
                             <span className="fw-bold text-warning" style={{ fontSize: '16px' }}>{overdueCount}</span>
                         </div>
                     )}
                     <div className="text-end">
-                        <small className="text-muted fw-bold text-uppercase d-block" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>Total Pending</small>
+                        <small className="text-muted fw-bold text-uppercase d-block" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>{t('sales.due_amount')}</small>
                         <span className="fw-bold text-danger" style={{ fontSize: '16px' }}>Rs.{totalDue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                     </div>
                 </div>
@@ -87,13 +88,13 @@ const DueSales = () => {
             <div className="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
                 <div className="row g-3 align-items-end">
                     <div className="col-md-6">
-                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Search</label>
+                        <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>{t('header.search')}</label>
                         <div className="input-group input-group-sm border rounded-3 overflow-hidden shadow-sm">
                             <span className="input-group-text bg-white border-0"><Search size={14} className="text-muted" /></span>
                             <input
                                 type="text"
                                 className="form-control border-0 ps-0"
-                                placeholder="Invoice number or customer name..."
+                                placeholder={t('sales.search_customer')}
                                 value={query}
                                 onChange={e => { setQuery(e.target.value); setPage(1); }}
                             />
@@ -101,7 +102,7 @@ const DueSales = () => {
                     </div>
                     <div className="col-md-2">
                         <button className="btn btn-light btn-sm w-100 rounded-3 border d-flex align-items-center justify-content-center gap-2" onClick={fetchDueSales}>
-                            <RefreshCw size={14} /> Refresh
+                            <RefreshCw size={14} /> {t('sales.refresh')}
                         </button>
                     </div>
                 </div>
@@ -110,10 +111,10 @@ const DueSales = () => {
             {/* Table */}
             <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
                 <div className="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
-                    <h6 className="fw-bold text-dark mb-0">{pagination.total} Outstanding Invoices</h6>
+                    <h6 className="fw-bold text-dark mb-0">{pagination.total} {t('sales.due_sales_title')}</h6>
                     {overdueCount > 0 && (
                         <span className="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3">
-                            <AlertTriangle size={11} className="me-1" />{overdueCount} Overdue
+                            <AlertTriangle size={11} className="me-1" />{overdueCount} {t('sales.overdue')}
                         </span>
                     )}
                 </div>
@@ -121,7 +122,7 @@ const DueSales = () => {
                     <table className="table table-hover align-middle mb-0">
                         <thead className="bg-light">
                             <tr>
-                                {['Invoice #', 'Customer', 'Total', 'Balance Due', 'Cash Rcvd', 'Bank Rcvd', 'Cheque Rcvd', 'Status', 'Action'].map(h => (
+                                {[t('sales.invoice_no'), t('sales.customer'), t('sales.total'), t('sales.balance_due'), t('sales.cash_rcvd'), t('sales.bank_rcvd'), t('sales.cheque_rcvd'), t('sales.status'), t('itemTable.action')].map(h => (
                                     <th key={h} className="py-3 text-uppercase small fw-bold text-muted" style={{ fontSize: '10px' }}>{h}</th>
                                 ))}
                             </tr>
@@ -134,7 +135,7 @@ const DueSales = () => {
                                     <td colSpan={9} className="text-center py-5">
                                         <div className="text-muted">
                                             <DollarSign size={32} className="mb-2 opacity-25" />
-                                            <p className="small mb-0">No outstanding invoices found</p>
+                                            <p className="small mb-0">{t('sales.no_transactions')}</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -148,7 +149,7 @@ const DueSales = () => {
                                 >
                                     <td>
                                         <div className="d-flex align-items-center gap-2">
-                                            {sale.isOverdue && <AlertTriangle size={12} className="text-danger" title="Overdue" />}
+                                            {sale.isOverdue && <AlertTriangle size={12} className="text-danger" title={t('sales.overdue')} />}
                                             <span className="fw-bold text-primary small">{sale.Invoice_No}</span>
                                         </div>
                                     </td>
@@ -169,9 +170,9 @@ const DueSales = () => {
                                             className="btn btn-sm btn-primary px-3 rounded-3 fw-bold"
                                             style={{ fontSize: '11px' }}
                                             onClick={() => navigate('/sales/collection')}
-                                            title="Record Payment"
+                                            title={t('sales.add_payment')}
                                         >
-                                            Make Payment
+                                            {t('sales.add_payment')}
                                         </button>
                                     </td>
                                 </tr>
@@ -184,7 +185,7 @@ const DueSales = () => {
                 {pagination.pages > 1 && (
                     <div className="card-footer bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center border-top">
                         <span className="text-muted small">
-                            Page {pagination.page} of {pagination.pages} · {pagination.total} invoices
+                            Page {pagination.page} of {pagination.pages} · {pagination.total} {t('sales.due_sales_title').toLowerCase()}
                         </span>
                         <nav>
                             <ul className="pagination pagination-sm mb-0 gap-1">
