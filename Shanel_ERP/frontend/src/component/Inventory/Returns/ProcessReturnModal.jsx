@@ -205,12 +205,12 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
                                     checked={formData.Return_Type === 'Customer'}
                                     onChange={() => setFormData({ ...formData, Return_Type: 'Customer' })}
                                 />
-                                <Form.Check
+                                {/* <Form.Check
                                     type="radio" label="Supplier Return" name="ReturnType"
                                     id="rtSupplier"
                                     checked={formData.Return_Type === 'Supplier'}
                                     onChange={() => setFormData({ ...formData, Return_Type: 'Supplier' })}
-                                />
+                                /> */}
                             </div>
                         </div>
 
