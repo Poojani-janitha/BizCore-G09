@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Loader, AlertCircle, RefreshCw, Printer, Download, Search, Calendar, ArrowDown, ArrowUp } from 'react-feather';
 import { useTranslation } from 'react-i18next';
+//import { Loader, AlertCircle, RefreshCw, Printer, Download, Search, Calendar } from 'react-feather';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const AccountLedgerPage = () => {
   const navigate = useNavigate();
@@ -26,7 +28,8 @@ const AccountLedgerPage = () => {
       setLoading(true);
       setError(null);
       setCurrentPage(1);
-      const res = await axios.get(`http://localhost:5000/api/accounts/ledger/${accountCode}`);
+      //const res = await axios.get(`http://localhost:5000/api/accounts/ledger/${accountCode}`);
+      const res = await axios.get(API_ENDPOINTS.accounts.ledger(accountCode));
       if (res.data.success) {
         setLedgerData(res.data.data);
       } else {

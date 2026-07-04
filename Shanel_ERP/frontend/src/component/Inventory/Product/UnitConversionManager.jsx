@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2 } from 'react-feather';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const UnitConversionManager = ({ baseUnit, setBaseUnit, units, setUnits }) => {
     const [newUnit, setNewUnit] = useState({ unitName: '', conversionRate: '' });
@@ -17,8 +18,8 @@ const UnitConversionManager = ({ baseUnit, setBaseUnit, units, setUnits }) => {
         const fetchUnits = async () => {
             try {
                 const [baseRes, altRes] = await Promise.all([
-                    axios.get('http://localhost:5000/api/inventory/available-base-units'),
-                    axios.get('http://localhost:5000/api/inventory/available-alternative-units')
+                    axios.get(API_ENDPOINTS.inventory.availableBaseUnits),
+                    axios.get(API_ENDPOINTS.inventory.availableAlternativeUnits)
                 ]);
                 
                 setAvailableBaseUnits(baseRes.data.units || []);

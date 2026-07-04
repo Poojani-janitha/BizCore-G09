@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const EditAdjustmentModal = ({ show, onHide, adjustment, refresh }) => {
     const [products, setProducts] = useState([]);
@@ -15,7 +16,7 @@ const EditAdjustmentModal = ({ show, onHide, adjustment, refresh }) => {
     // Fetch products when modal opens
     useEffect(() => {
         if (show) {
-            axios.get('http://localhost:5000/api/inventory/products')
+            axios.get(API_ENDPOINTS.inventory.products)
                 .then(res => setProducts(res.data))
                 .catch(err => console.error("Error loading products:", err));
         }
@@ -49,7 +50,7 @@ const EditAdjustmentModal = ({ show, onHide, adjustment, refresh }) => {
         
         try {
             const response = await axios.put(
-                `http://localhost:5000/api/inventory/adjustments/${adjustment.Adjustment_ID}`,
+                API_ENDPOINTS.inventory.adjustments.byId(adjustment.Adjustment_ID),
                 formData
             );
             if (response.data.success) {

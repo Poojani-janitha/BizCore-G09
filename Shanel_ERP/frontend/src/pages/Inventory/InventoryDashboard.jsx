@@ -7,6 +7,7 @@ import DistributionPie from "../../component/Inventory/Dashboard/DistributionPie
 import StockAlerts from "../../component/Inventory/Dashboard/StockAlerts";
 import StockTransfers from "../../component/Inventory/Dashboard/StockTransfers";
 import InventoryMetrics from "../../component/Inventory/Dashboard/InventoryMetrics";
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 import { useTranslation } from "react-i18next";
 
 const InventoryDashboard = () => {
@@ -26,13 +27,19 @@ const InventoryDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [dashRes, prodRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/inventory/dashboard-stats"),
-        axios.get("http://localhost:5000/api/inventory/products")
-      ]);
+      const res = await axios.get(API_ENDPOINTS.inventory.dashboardStats);
+      if (res.data.success) {
+        setData(res.data);
+
+      // const [dashRes, prodRes] = await Promise.all([
+      //   axios.get("http://localhost:5000/api/inventory/dashboard-stats"),
+      //   axios.get("http://localhost:5000/api/inventory/products")
+      // ]);
       
-      if (dashRes.data.success) {
-        setData(dashRes.data);
+      // if (dashRes.data.success) {
+      //   setData(dashRes.data);
+
+
         setError(null);
       }
 

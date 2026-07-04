@@ -8,6 +8,7 @@ import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import ChartOfAccountsPage from './ChartOfAccountsPage';
 import FiscalPeriodModal from './FiscalPeriodModal';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const GeneralLedgerPage = () => {
   const navigate = useNavigate();
@@ -60,13 +61,8 @@ const GeneralLedgerPage = () => {
     try {
       if (reset) setLoadingEntries(true);
       else setLoadingMore(true);
-
-      let url = `http://localhost:5000/api/journal-entries?page=${pageNum}&limit=10`;
-      if (jeStart && jeEnd) {
-        url += `&startDate=${jeStart}&endDate=${jeEnd}`;
-      }
-
-      const res = await axios.get(url);
+      
+      const res = await axios.get(API_ENDPOINTS.journalEntries.list(pageNum, 10));
       if (res.data.success) {
         if (reset) {
           setJournalEntries(res.data.data);
@@ -89,7 +85,7 @@ const GeneralLedgerPage = () => {
   const fetchFiscalPeriods = async () => {
     try {
       setLoadingPeriods(true);
-      const res = await axios.get('http://localhost:5000/api/fiscal-periods');
+      const res = await axios.get(API_ENDPOINTS.fiscalPeriods.root);
       if (res.data.success) {
         setFiscalPeriods(res.data.data);
       }
@@ -114,7 +110,7 @@ const GeneralLedgerPage = () => {
     }
 
     try {
-      const res = await axios.put(`http://localhost:5000/api/fiscal-periods/${id}/status`, { status: nextStatus });
+      const res = await axios.put(API_ENDPOINTS.fiscalPeriods.status(id), { status: nextStatus });
       if (res.data.success) {
         fetchFiscalPeriods();
         if (nextStatus === 'CLOSED' && res.data.accountsUpdated > 0) {

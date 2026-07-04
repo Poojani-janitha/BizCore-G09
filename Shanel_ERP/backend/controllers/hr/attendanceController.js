@@ -32,7 +32,7 @@ const getAttendance = async (req, res) => {
                 {
                     model: Employee,
                     as: 'Employee',
-                    attributes: ['Employee_ID', 'Employee_Code', 'Full_Name']
+                    attributes: ['Employee_ID', 'Employee_Code', 'Full_Name', 'Role']
                 }
             ],
             order: [['Attendance_Date', 'DESC']]

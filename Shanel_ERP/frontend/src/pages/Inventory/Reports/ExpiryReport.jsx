@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Download, Printer, AlertTriangle } from 'react-feather';
 import { generatePDF } from '../../../services/reportGenerator';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const ExpiryReport = () => {
     const [reportData, setReportData] = useState([]);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/inventory/reports/expiry')
+        axios.get(API_ENDPOINTS.inventory.reports.expiry)
             .then(res => setReportData(res.data.data))
             .catch(err => console.error(err));
     }, []);

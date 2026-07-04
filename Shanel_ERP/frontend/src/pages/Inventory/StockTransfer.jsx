@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Plus, RefreshCcw, CheckCircle, AlertCircle, XCircle, Edit2, ChevronDown } from 'react-feather';
 import NewTransferModal from '../../component/Inventory/Transfer/NewTransferModal';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 import { useTranslation } from 'react-i18next';
 
 const StockTransfer = () => {
@@ -16,7 +17,7 @@ const StockTransfer = () => {
     const isSinhala = i18n.language?.startsWith('si');
 
     const fetchData = () => {
-        axios.get('http://localhost:5000/api/inventory/transfers/history')
+        axios.get(API_ENDPOINTS.inventory.transfers.history)
             .then(res => {
                 if (res.data && res.data.transfers) {
                     setData(res.data);
@@ -31,7 +32,7 @@ const StockTransfer = () => {
 
     const fetchInventory = async () => {
         try {
-            const productsRes = await axios.get('http://localhost:5000/api/inventory/products');
+            const productsRes = await axios.get(API_ENDPOINTS.inventory.products);
             
             // API returns array directly or wrapped in .products
             const products = Array.isArray(productsRes.data) ? productsRes.data : productsRes.data?.products || [];
@@ -43,7 +44,7 @@ const StockTransfer = () => {
                         try {
                             const productId = product.id;  // API returns 'id', not 'P_ID'
                             const locationRes = await axios.get(
-                                `http://localhost:5000/api/inventory/product/${productId}/locations`
+                                API_ENDPOINTS.inventory.productLocations(productId)
                             );
                             console.log(`Product ${productId} locations:`, locationRes.data);
                             return {

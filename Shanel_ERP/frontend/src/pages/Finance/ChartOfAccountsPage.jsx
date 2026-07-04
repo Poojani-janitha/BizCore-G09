@@ -4,6 +4,7 @@ import { Download, PlusCircle, Loader, RefreshCw } from 'react-feather';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import QuickAccountModal from '../../component/Finance/QuickAccountModal';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const ChartOfAccountsPage = () => {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ const ChartOfAccountsPage = () => {
   const fetchAccounts = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('http://localhost:5000/api/accounts');
+      const res = await axios.get(API_ENDPOINTS.accounts.list);
       if (res.data.success) {
         setAccounts(res.data.data);
       } else {

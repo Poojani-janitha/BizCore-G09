@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { AlertTriangle, Bell, AlertCircle, TrendingDown, Phone, ExternalLink } from "react-feather";
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 import { useTranslation } from 'react-i18next';
 
 const formatStock = (value) => {
@@ -28,7 +29,7 @@ const AlertsPage = () => {
   const fetchAlerts = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:5000/api/inventory/dashboard-stats");
+      const res = await axios.get(API_ENDPOINTS.inventory.dashboardStats);
       if (res.data.success && res.data.alerts) {
         setAlerts(res.data.alerts);
       }
@@ -41,7 +42,7 @@ const AlertsPage = () => {
 
   const fetchExpiryAlerts = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/production/stock-overview");
+      const res = await axios.get(API_ENDPOINTS.production.stockOverview);
       if (res.data.success && res.data.wip) {
         // Filter approved batches that are expiring soon (within 60 days)
         const expiringSoon = res.data.wip

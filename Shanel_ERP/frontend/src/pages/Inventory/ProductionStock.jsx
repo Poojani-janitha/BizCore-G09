@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Play, Trash2, CheckCircle, Loader } from 'react-feather';
 import ProductionModal from '../../component/Inventory/Production/ProductionModal';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 import { useTranslation } from 'react-i18next';
 
 const formatStock = (value) => {
@@ -40,7 +41,7 @@ const ProductionStock = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:5000/api/production/stock-overview');
+            const res = await axios.get(API_ENDPOINTS.production.stockOverview);
             if (res.data.success) setWip(res.data.wip);
         } catch (error) { console.error(error); }
         setLoading(false);
@@ -49,13 +50,13 @@ const ProductionStock = () => {
     useEffect(() => { fetchData(); }, []);
 
     const handleStatusUpdate = async (id, status) => {
-        await axios.put(`http://localhost:5000/api/production/update/${id}`, { status });
+        await axios.put(API_ENDPOINTS.production.update(id), { status });
         fetchData();
     };
 
     const handleDelete = async (id) => {
         if (window.confirm('Delete this batch?')) {
-            await axios.delete(`http://localhost:5000/api/production/${id}`);
+            await axios.delete(API_ENDPOINTS.production.byId(id));
             fetchData();
         }
     };

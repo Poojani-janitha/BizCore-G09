@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, X } from 'lucide-react';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const RecentSale = () => {
     const [recentSales, setRecentSales] = useState([]);
@@ -9,7 +10,7 @@ const RecentSale = () => {
     const fetchRecentSales = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/sales/all');
+            const res = await fetch(API_ENDPOINTS.sales.all);
             const data = await res.json();
             if (data.success) {
                 setRecentSales(data.data);

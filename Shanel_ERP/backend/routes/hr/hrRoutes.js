@@ -17,7 +17,8 @@ const {
     createEmployee,
     updateEmployee,
     updateEmployeeStatus,
-    deleteEmployee
+    deleteEmployee,
+    uploadNicCopy
 } = require('../../controllers/hr/employeeController');
 
 const {
@@ -47,10 +48,11 @@ router.post('/employees', createEmployee);
 router.put('/employees/:employeeId', updateEmployee);
 router.patch('/employees/:employeeId/status', updateEmployeeStatus);
 router.delete('/employees/:employeeId', deleteEmployee);
+router.post('/employees/:employeeId/nic-copy', uploadHrDocument.single('nicCopy'), uploadNicCopy);
 
 // --- Leave ---
 router.get('/leaves', getLeaves);
-router.post('/leaves', createLeave);
+router.post('/leaves', uploadHrDocument.single('Document'), createLeave);
 router.patch('/leaves/:leaveId/approve', approveLeave);
 router.patch('/leaves/:leaveId/reject', rejectLeave);
 

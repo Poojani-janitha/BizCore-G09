@@ -1,6 +1,7 @@
 import React from 'react'
 import { useEffect } from 'react';
 import { useState } from 'react'
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const TodayMatrix = () => {
   const [todayMatrixData, setTodayMatrixData] = useState({

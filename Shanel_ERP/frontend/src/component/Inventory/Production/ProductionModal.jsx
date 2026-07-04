@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, InputGroup } from 'react-bootstrap';
 import axios from 'axios';
 import { Package, Calendar, Layers, Hash } from 'react-feather';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const ProductionModal = ({ show, onHide, refreshData }) => {
     const [products, setProducts] = useState([]);
@@ -15,11 +16,11 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
     };
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/inventory/products').then(res => {
+        axios.get(API_ENDPOINTS.inventory.products).then(res => {
             setProducts(res.data.filter(p => p.type === 'Company' && !isIsharaProduct(p)));
         });
         // Fetch existing batches for duplicate check
-        axios.get('http://localhost:5000/api/production/stock-overview').then(res => {
+        axios.get(API_ENDPOINTS.production.stockOverview).then(res => {
             if (res.data.success && res.data.wip) {
                 setExistingBatches(res.data.wip.map(item => item.Batch_No));
             }
@@ -59,7 +60,7 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
 
         try {
             setErrors({});
-            await axios.post('http://localhost:5000/api/production/start', { ...formData, Batch_No: batchNo });
+            await axios.post(API_ENDPOINTS.production.start, { ...formData, Batch_No: batchNo });
             refreshData();
             onHide();
             setFormData({ P_ID: '', Batch_No: '', Total_Qty_Produced: '', Production_Date: '', Exp_Date: '' });
