@@ -249,7 +249,7 @@ class FinanceReportController {
                 }],
                 where: {
                     Account_ID: {
-                        [Op.in]: Sequelize.literal('(SELECT Account_ID FROM ACCOUNT_CHART WHERE Type_ID = 4 AND Is_Active = true)')
+                        [Op.in]: Sequelize.literal('(SELECT Account_ID FROM account_chart WHERE Type_ID = 4 AND Is_Active = true)')
                     }
                 }
             });
@@ -266,7 +266,7 @@ class FinanceReportController {
                 }],
                 where: {
                     Account_ID: {
-                        [Op.in]: Sequelize.literal('(SELECT Account_ID FROM ACCOUNT_CHART WHERE Type_ID = 5 AND Is_Active = true)')
+                        [Op.in]: Sequelize.literal('(SELECT Account_ID FROM account_chart WHERE Type_ID = 5 AND Is_Active = true)')
                     }
                 }
             });
