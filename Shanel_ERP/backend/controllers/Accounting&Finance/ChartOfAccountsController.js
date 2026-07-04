@@ -43,7 +43,7 @@ class ChartOfAccountsController {
             // 3. Map balances to accounts and handle account-type specific logic
             const accountsWithBalances = accounts.map(account => {
                 let netBalance = balanceMap[account.Account_ID] || 0;
-                
+
                 // Adjust sign based on account type
                 // Liabilities, Equity, and Revenue accounts are credit-normal (Credit - Debit)
                 if (['Liability', 'Equity', 'Revenue'].includes(account.Account_Type)) {
@@ -131,7 +131,7 @@ class ChartOfAccountsController {
         try {
             const { code } = req.params;
             const account = await AccountChart.findOne({ where: { Account_Code: code } });
-            
+
             if (!account) {
                 return res.status(404).json({
                     success: false,
@@ -155,7 +155,7 @@ class ChartOfAccountsController {
     async getNextAccountCode(req, res) {
         try {
             const { type } = req.params;
-            
+
             // Define ranges based on typical accounting standards
             const ranges = {
                 'Asset': { min: 1000, max: 1999 },
@@ -197,8 +197,8 @@ class ChartOfAccountsController {
             const { startDate, endDate } = req.query;
 
             // 1. Get the account
-            const account = await AccountChart.findOne({ 
-                where: { Account_Code: code } 
+            const account = await AccountChart.findOne({
+                where: { Account_Code: code }
             });
 
             if (!account) {
@@ -208,35 +208,35 @@ class ChartOfAccountsController {
                 });
             }
 
-            // 2. Find the latest CLOSED fiscal period to determine the cutoff date
+            // 2. Find the latest CLOSED fiscal period (for UI info) and the currently OPEN fiscal period (for filtering)
             const FiscalPeriod = require('../../models/finance/FiscalPeriod');
             const latestClosedPeriod = await FiscalPeriod.findOne({
                 where: { Status: 'CLOSED' },
                 order: [['End_Date', 'DESC']]
+            });
+            const openPeriod = await FiscalPeriod.findOne({
+                where: { Status: 'OPEN' }
             });
 
             // 3. Build transaction where clause
             const lineWhere = { Account_ID: account.Account_ID };
             const entryWhere = { Status: 'Posted' };
 
-            // If a fiscal period has been closed, only show transactions AFTER it
-            if (latestClosedPeriod) {
-                entryWhere.Entry_Date = {
-                    [Op.gt]: latestClosedPeriod.End_Date
-                };
-            }
-
-            // If user also specifies custom date range, merge it
-            if (startDate && endDate) {
-                if (entryWhere.Entry_Date) {
-                    // Combine: after closed period AND within user range
+            // Only show journal entries that belong to the opened fiscal period
+            if (openPeriod) {
+                if (startDate && endDate) {
+                    const finalStart = startDate > openPeriod.Start_Date ? startDate : openPeriod.Start_Date;
+                    const finalEnd = endDate < openPeriod.End_Date ? endDate : openPeriod.End_Date;
                     entryWhere.Entry_Date = {
-                        [Op.and]: [
-                            { [Op.gt]: latestClosedPeriod.End_Date },
-                            { [Op.between]: [startDate, endDate] }
-                        ]
+                        [Op.between]: [finalStart, finalEnd]
                     };
                 } else {
+                    entryWhere.Entry_Date = {
+                        [Op.between]: [openPeriod.Start_Date, openPeriod.End_Date]
+                    };
+                }
+            } else {
+                if (startDate && endDate) {
                     entryWhere.Entry_Date = {
                         [Op.between]: [startDate, endDate]
                     };
@@ -258,17 +258,15 @@ class ChartOfAccountsController {
                 ]
             });
 
-            // 5. Use Balance_Brought_Forward as initial balance if a period has been closed
-            const balanceBroughtForward = latestClosedPeriod
-                ? parseFloat(account.Balance_Brought_Forward) || 0
-                : 0;
+            // 5. Use the account's Balance_Brought_Forward as the ledger's starting running balance directly (do not set to 0 when latestClosedPeriod is null)
+            const balanceBroughtForward = parseFloat(account.Balance_Brought_Forward) || 0;
 
             // 6. Calculate totals and running balance starting from BF
             let runningBalance = balanceBroughtForward;
             const transactions = ledgerLines.map(line => {
                 const debit = parseFloat(line.Debit_Amount) || 0;
                 const credit = parseFloat(line.Credit_Amount) || 0;
-                
+
                 if (['Asset', 'Expense'].includes(account.Account_Type)) {
                     runningBalance += (debit - credit);
                 } else {

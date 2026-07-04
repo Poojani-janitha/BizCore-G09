@@ -7,6 +7,8 @@ const AccountChart = require('../../models/finance/AccountChart');
 const Customer = require('../../models/customer/customer');
 const CreditTransaction = require('../../models/customer/CreditTranscation');
 const Payment = require('../../models/sales/Payment');
+const PaymentAllocation = require('../../models/sales/PaymentAllocation');
+const Cheque = require('../../models/sales/Cheque');
 const { ACCOUNTS } = require('../../constants/Accounting/AccConstants');
 
 // Helper: Get today's date in local timezone as YYYY-MM-DD
@@ -29,8 +31,6 @@ class CreditPaymentController {
                 customerId,
                 amount,
                 paymentMethod,
-                referenceNo,    // Invoice number
-                creditTransId,  // Unique ID of the Credit_Taken transaction
                 paymentDate,
                 notes,
                 // Bank Deposit fields
@@ -45,10 +45,10 @@ class CreditPaymentController {
             } = req.body;
 
             // ── Validate required fields ──
-            if (!customerId || !amount || !paymentMethod || !creditTransId) {
+            if (!customerId || !amount || !paymentMethod) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Missing required fields: customerId, amount, paymentMethod, creditTransId'
+                    message: 'Missing required fields: customerId, amount, paymentMethod'
                 });
             }
 
@@ -84,61 +84,165 @@ class CreditPaymentController {
                 });
             }
 
-            // ── Validate referenceNo matches a Credit_Taken transaction ──
-            // If creditTransId is provided, use it for exact lookup; otherwise fallback to Reference_No
-            const creditTakenRecord = await CreditTransaction.findOne({
-                where: creditTransId ? {
-                    Credit_Trans_ID: creditTransId,
-                    Transaction_Type: 'Credit_Taken'
-                } : {
+            // ── FIFO Allocation ──
+            // 1. Get all Credit_Taken transactions for this customer
+            const creditTaken = await CreditTransaction.findAll({
+                where: {
                     Customer_ID: customerId,
-                    Reference_No: referenceNo,
                     Transaction_Type: 'Credit_Taken'
+                },
+                order: [['Transaction_Date', 'ASC'], ['Credit_Trans_ID', 'ASC']],
+                transaction
+            });
+
+            // 2. Get all Credit_Paid transactions to calculate remaining amounts
+            const creditPaid = await CreditTransaction.findAll({
+                where: {
+                    Customer_ID: customerId,
+                    Transaction_Type: 'Credit_Paid'
                 },
                 transaction
             });
 
-            if (!creditTakenRecord) {
-                return res.status(404).json({
+            // Calculate paid amounts per invoice Reference_No
+            const paidByInvoice = {};
+            creditPaid.forEach(payment => {
+                const ref = payment.Reference_No;
+                if (ref) {
+                    paidByInvoice[ref] = (paidByInvoice[ref] || 0) + parseFloat(payment.Amount);
+                }
+            });
+
+            // Filter outstanding ones
+            const outstandingInvoices = creditTaken
+                .map(ct => {
+                    const totalAmount = parseFloat(ct.Amount);
+                    const paidAmount = paidByInvoice[ct.Reference_No] || 0;
+                    const remainingAmount = totalAmount - paidAmount;
+
+                    return {
+                        creditTransId: ct.Credit_Trans_ID,
+                        referenceNo: ct.Reference_No,
+                        totalAmount: totalAmount,
+                        paidAmount: paidAmount,
+                        remainingAmount: remainingAmount,
+                        transactionDate: ct.Transaction_Date,
+                        notes: ct.Notes,
+                        Sale_ID: ct.Sale_ID,
+                        record: ct
+                    };
+                })
+                .filter(invoice => invoice.remainingAmount > 0);
+
+            if (outstandingInvoices.length === 0) {
+                return res.status(400).json({
                     success: false,
-                    message: creditTransId 
-                        ? `No credit transaction found with ID: ${creditTransId}`
-                        : `No credit transaction found with invoice number: ${referenceNo} for this customer`
+                    message: 'No outstanding bills found matching this customer credit'
                 });
             }
 
-            // ── Calculate new running balance ──
-            const newBalance = currentBalance - paymentAmount;
+            let remainingPaymentAmount = paymentAmount;
+            let tempCustomerBalance = currentBalance;
+            const allocatedRecords = [];
+            let firstPaymentId = null;
 
-            // ── Build detailed notes with payment method info ──
-            let detailedNotes = notes || `Credit payment received for invoice ${referenceNo}`;
-            if (paymentMethod === 'Bank_Deposit' && bankName) {
-                detailedNotes += ` | Bank: ${bankName}, Slip: ${depositSlipNo || 'N/A'}, Date: ${depositDate || 'N/A'}`;
-            } else if (paymentMethod === 'Cheque' && chequeNo) {
-                detailedNotes += ` | Cheque: ${chequeNo}, Bank: ${chequeBank || 'N/A'}, Date: ${chequeDate || 'N/A'}`;
+            // Loop through outstanding invoices and allocate
+            for (const invoice of outstandingInvoices) {
+                if (remainingPaymentAmount <= 0) break;
+
+                const allocateAmount = Math.min(remainingPaymentAmount, invoice.remainingAmount);
+                tempCustomerBalance -= allocateAmount;
+
+                // Create the Payment record in payment table
+                const uniqueReceiptNo = `RCPT-CR-${invoice.Sale_ID || 'GEN'}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                const paymentRecord = await Payment.create({
+                    Sale_ID: invoice.Sale_ID || 0,
+                    Payment_Date: paymentDate || getLocalDateString(),
+                    Payment_Time: new Date().toTimeString().split(' ')[0],
+                    Receipt_No: uniqueReceiptNo,
+                    Status: 'Active',
+                    Payment_Amount: allocateAmount,
+                    Payment_Method: paymentMethod,
+                    Invoice_Total: invoice.totalAmount,
+                    // If cheque
+                    Cheque_No: paymentMethod === 'Cheque' ? chequeNo : null,
+                    Cheque_Date: paymentMethod === 'Cheque' ? chequeDate : null,
+                    Cheque_Bank: paymentMethod === 'Cheque' ? chequeBank : null,
+                    Cheque_Amount: paymentMethod === 'Cheque' ? allocateAmount : null,
+                    Cheque_Status: paymentMethod === 'Cheque' ? 'Pending' : null,
+                    // If bank transfer
+                    Bank_Name: paymentMethod === 'Bank_Deposit' ? bankName : null,
+                    Bank_Ref: paymentMethod === 'Bank_Deposit' ? depositSlipNo : null,
+                    Bank_Transfer_Amount: paymentMethod === 'Bank_Deposit' ? allocateAmount : null,
+                    Notes: notes || `FIFO Credit payment for ${invoice.referenceNo}`
+                }, { transaction });
+
+                if (!firstPaymentId) {
+                    firstPaymentId = paymentRecord.Pay_ID;
+                }
+
+                // Create PaymentAllocation record
+                await PaymentAllocation.create({
+                    Pay_ID: paymentRecord.Pay_ID,
+                    Sale_ID: invoice.Sale_ID || 0,
+                    Allocated_Amount: allocateAmount,
+                    Allocation_Type: 'FIFO'
+                }, { transaction });
+
+                // Build detailed notes with payment method info
+                let detailedNotes = notes || `Credit payment received for invoice ${invoice.referenceNo}`;
+                if (paymentMethod === 'Bank_Deposit' && bankName) {
+                    detailedNotes += ` | Bank: ${bankName}, Slip: ${depositSlipNo || 'N/A'}, Date: ${depositDate || 'N/A'}`;
+                } else if (paymentMethod === 'Cheque' && chequeNo) {
+                    detailedNotes += ` | Cheque: ${chequeNo}, Bank: ${chequeBank || 'N/A'}, Date: ${chequeDate || 'N/A'}`;
+                }
+
+                // Create Credit_Paid record in credit_transactions
+                const creditPaidRecord = await CreditTransaction.create({
+                    Customer_ID: customerId,
+                    Sale_ID: invoice.Sale_ID || null,
+                    Pay_ID: paymentRecord.Pay_ID,
+                    Transaction_Date: paymentDate || getLocalDateString(),
+                    Transaction_Type: 'Credit_Paid',
+                    Amount: allocateAmount,
+                    Running_Balance: tempCustomerBalance,
+                    Reference_No: invoice.referenceNo,
+                    Notes: detailedNotes,
+                    Created_By: null
+                }, { transaction });
+
+                allocatedRecords.push({
+                    invoiceNo: invoice.referenceNo,
+                    allocated: allocateAmount,
+                    transId: creditPaidRecord.Credit_Trans_ID
+                });
+
+                remainingPaymentAmount -= allocateAmount;
             }
 
-            // ── 1. Create Credit_Paid record in credit_transactions ──
-            const creditPaidRecord = await CreditTransaction.create({
-                Customer_ID: customerId,
-                Sale_ID: creditTakenRecord.Sale_ID || null,
-                Pay_ID: null,
-                Transaction_Date: paymentDate || getLocalDateString(),
-                Transaction_Type: 'Credit_Paid',
-                Amount: paymentAmount,
-                Running_Balance: newBalance,
-                Reference_No: referenceNo,
-                Notes: detailedNotes,
-                Created_By: null
-            }, { transaction });
+            // If the payment method is Cheque, create the single Cheque entity record
+            if (paymentMethod === 'Cheque' && chequeNo && firstPaymentId) {
+                await Cheque.create({
+                    Pay_ID: firstPaymentId,
+                    C_ID: customerId,
+                    Cheque_No: chequeNo,
+                    Bank: chequeBank || 'N/A',
+                    Branch: 'N/A',
+                    Cheque_Date: chequeDate || (paymentDate || getLocalDateString()),
+                    Amount: paymentAmount,
+                    Cheque_Status: 'Pending',
+                    Notes: `FIFO Credit payment cheque for ${allocatedRecords.map(r => r.invoiceNo).join(', ')}`
+                }, { transaction });
+            }
 
-            // ── 2. Update customer's Current_Balance ──
+            // ── Update customer's Current_Balance ──
+            const newBalance = currentBalance - paymentAmount;
             await Customer.update(
                 { Current_Balance: newBalance },
                 { where: { C_ID: customerId }, transaction }
             );
 
-            // ── 3. Get accounting accounts for double-entry ──
+            // ── Get accounting accounts for double-entry ──
             // DEBIT account: Cash/Bank/Cheque (based on payment method)
             const debitAccount = await this.getDebitAccount(paymentMethod, transaction);
 
@@ -154,20 +258,30 @@ class CreditPaymentController {
                 );
             }
 
-            // ── 4. Create Income record ──
+            // Build list of allocated invoice numbers for reporting description
+            const allocatedRefs = allocatedRecords.map(r => r.invoiceNo).join(', ');
+
+            let finalNotes = notes || `Credit payment received for invoices: ${allocatedRefs}`;
+            if (paymentMethod === 'Bank_Deposit' && bankName) {
+                finalNotes += ` | Bank: ${bankName}, Slip: ${depositSlipNo || 'N/A'}`;
+            } else if (paymentMethod === 'Cheque' && chequeNo) {
+                finalNotes += ` | Cheque: ${chequeNo}, Bank: ${chequeBank || 'N/A'}`;
+            }
+
+            // ── Create Income record ──
             const income = await Income.create({
                 Income_Date: paymentDate || getLocalDateString(),
                 Income_Category: 'Sales',
                 Amount: paymentAmount,
                 Source: customer.C_Name,
-                Description: detailedNotes, // Use the detailed notes including bank/cheque info
-                Receipt_No: referenceNo,
+                Description: finalNotes,
+                Receipt_No: allocatedRefs.substring(0, 100),
                 Account_ID: arAccount.Account_ID,
                 Created_By: null,
                 Created_At: new Date()
             }, { transaction });
 
-            // ── 5. Create Journal Entry (double-entry) ──
+            // ── Create Journal Entry (double-entry) ──
             const journalResult = await this.createCreditPaymentJournalEntry(
                 income,
                 customer,
@@ -175,7 +289,7 @@ class CreditPaymentController {
                 arAccount,
                 paymentAmount,
                 paymentMethod,
-                referenceNo,
+                allocatedRefs,
                 transaction
             );
 
@@ -183,15 +297,9 @@ class CreditPaymentController {
 
             return res.status(201).json({
                 success: true,
-                message: `Credit payment of Rs. ${paymentAmount.toFixed(2)} received successfully`,
+                message: `Credit payment of Rs. ${paymentAmount.toFixed(2)} received and allocated via FIFO successfully`,
                 data: {
-                    creditTransaction: {
-                        id: creditPaidRecord.Credit_Trans_ID,
-                        type: 'Credit_Paid',
-                        amount: paymentAmount,
-                        newBalance: newBalance,
-                        referenceNo: referenceNo
-                    },
+                    allocations: allocatedRecords,
                     income: {
                         id: income.Income_ID,
                         amount: paymentAmount,

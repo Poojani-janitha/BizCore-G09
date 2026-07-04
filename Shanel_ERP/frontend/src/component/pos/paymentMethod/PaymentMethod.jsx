@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { getBanks, getBranches } from '../../../services/bankService';
 import { calculatePayment } from '../../../utils/paymentCalculator';
 
-const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, customerData }) => {
+const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, customerData, priceLevel }) => {
     const { t } = useTranslation();
     const toNumber = (value) => parseFloat(value) || 0;
 
@@ -162,7 +162,13 @@ const PaymentMethod = ({ paymentData, setPaymentData, totalDue, setError, custom
                             <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.cheque')}</label>
                             <input min='0' type="number" className="form-control form-control-sm fw-bold border-primary shadow-sm"
                                 style={{ background: '#eff6ff' }}
-                                value={payments.cheque} onChange={(e) => setPayments({ ...payments, cheque: e.target.value })} />
+                                value={payments.cheque} 
+                                onChange={(e) => setPayments({ ...payments, cheque: e.target.value })}
+                                onFocus={() => {
+                                    if (priceLevel === 'Retail') {
+                                        setError({ field: 'general', message: 'cheque is not available for retail bill' });
+                                    }
+                                }} />
                         </div>
                         <div className="col-6">
                             <label className="form-label small fw-bold text-muted mb-1 text-uppercase">{t('paymentMethod.bankTransfer')}</label>
