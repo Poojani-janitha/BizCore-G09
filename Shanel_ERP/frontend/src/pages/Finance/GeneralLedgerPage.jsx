@@ -22,7 +22,7 @@ const GeneralLedgerPage = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalEntries, setTotalEntries] = useState(0);
-  
+
   // Modal state
   const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
   const [isDeleteAuthModalOpen, setIsDeleteAuthModalOpen] = useState(false);
@@ -60,12 +60,12 @@ const GeneralLedgerPage = () => {
     try {
       if (reset) setLoadingEntries(true);
       else setLoadingMore(true);
-      
+
       let url = `http://localhost:5000/api/journal-entries?page=${pageNum}&limit=10`;
       if (jeStart && jeEnd) {
         url += `&startDate=${jeStart}&endDate=${jeEnd}`;
       }
-      
+
       const res = await axios.get(url);
       if (res.data.success) {
         if (reset) {
@@ -103,7 +103,7 @@ const GeneralLedgerPage = () => {
 
   const handleStatusChange = async (id, currentStatus) => {
     const nextStatus = currentStatus === 'OPEN' ? 'CLOSED' : 'OPEN';
-    
+
     // Confirm before closing — this triggers Balance Brought Forward calculation
     if (nextStatus === 'CLOSED') {
       const confirmed = window.confirm(t('finance.fiscal.confirm_close'));
@@ -145,13 +145,13 @@ const GeneralLedgerPage = () => {
 
     try {
       // 1. Authenticate with password
-      const res = await axios.post(`http://localhost:5000/api/fiscal-periods/${periodToDelete.Period_ID}/authenticate-delete`, { 
-        password: deleteAuthPassword 
+      const res = await axios.post(`http://localhost:5000/api/fiscal-periods/${periodToDelete.Period_ID}/authenticate-delete`, {
+        password: deleteAuthPassword
       });
-      
+
       if (res.data.success) {
         const { periodName, startDate, endDate, transactions } = res.data.data;
-        
+
         // Close authentication modal cleanly
         setIsDeleteAuthModalOpen(false);
         setDeleteAuthPassword('');
@@ -168,7 +168,7 @@ const GeneralLedgerPage = () => {
         // 3. Confirm deletion
         setTimeout(async () => {
           const confirmed = window.confirm(`Transactions report downloaded successfully.\n\nAre you sure you want to permanently DELETE the fiscal period "${periodName}"?\nThis action is irreversible and will delete the period record.`);
-          
+
           if (confirmed) {
             // 4. Send DELETE request to DB
             const deleteRes = await axios.delete(`http://localhost:5000/api/fiscal-periods/${periodToDelete.Period_ID}`);
@@ -290,7 +290,7 @@ const GeneralLedgerPage = () => {
                 {t('finance.journal.showing', { current: journalEntries.length, total: totalEntries })}
               </p>
               {hasMore && (
-                <button 
+                <button
                   onClick={handleSeeMore}
                   disabled={loadingMore}
                   className="flex items-center gap-2 px-6 py-2 bg-white border border-gray-200 rounded-full text-sm font-bold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-50"
@@ -308,7 +308,7 @@ const GeneralLedgerPage = () => {
 
   const renderFiscalPeriods = () => {
     const currentPeriod = fiscalPeriods.find(p => p.Status === 'OPEN') || { Period_Name: 'None', Status: 'All Closed' };
-    
+
     return (
       <div className="w-full pt-4 flex flex-col gap-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -331,15 +331,15 @@ const GeneralLedgerPage = () => {
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           {loadingPeriods ? (
-             <div className="flex flex-col items-center justify-center py-20">
-                <Loader className="animate-spin text-orange-500" size={32} />
-             </div>
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader className="animate-spin text-orange-500" size={32} />
+            </div>
           ) : fiscalPeriods.length === 0 ? (
-             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                <Calendar size={48} className="mb-4 opacity-20" />
-                <p>{t('finance.fiscal.no_periods')}</p>
-                <button onClick={() => setIsPeriodModalOpen(true)} className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg font-bold text-sm">{t('finance.fiscal.initialize')}</button>
-             </div>
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+              <Calendar size={48} className="mb-4 opacity-20" />
+              <p>{t('finance.fiscal.no_periods')}</p>
+              <button onClick={() => setIsPeriodModalOpen(true)} className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg font-bold text-sm">{t('finance.fiscal.initialize')}</button>
+            </div>
           ) : (
             <table className="w-full text-left">
               <thead className="bg-gray-50 border-b border-gray-100">
@@ -355,7 +355,7 @@ const GeneralLedgerPage = () => {
                 {fiscalPeriods.map((row) => {
                   let statusColor = 'text-green-700 bg-green-50';
                   if (row.Status === 'CLOSED') statusColor = 'text-orange-700 bg-orange-50';
-                  
+
                   return (
                     <tr key={row.Period_ID} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 font-semibold text-teal-950">{row.Period_Name}</td>
@@ -367,14 +367,14 @@ const GeneralLedgerPage = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right flex items-center justify-end gap-3">
-                        <button 
+                        <button
                           onClick={() => handleStatusChange(row.Period_ID, row.Status)}
                           className="text-orange-600 font-bold hover:text-orange-700 transition"
                         >
                           {t('finance.fiscal.change_status')}
                         </button>
                         <span className="text-gray-300">|</span>
-                        <button 
+                        <button
                           onClick={() => handlePeriodDelete(row)}
                           className="text-red-600 font-bold hover:text-red-700 transition"
                         >
@@ -394,14 +394,14 @@ const GeneralLedgerPage = () => {
 
   return (
     <div className="w-full min-h-screen bg-[#f8fafc] p-6 flex flex-col gap-6 font-['Inter']">
-      
+
       {/* Header Section */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-teal-950 tracking-tight">{t('finance.general_ledger')}</h1>
           <p className="text-gray-500 mt-1">{t('finance.subtitle')}</p>
         </div>
-        
+
         <div className="flex gap-3">
           {activeTab === 'journal_entries' && (
             <button className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold shadow-lg shadow-orange-200 hover:bg-orange-700 transition-all hover:scale-105 active:scale-95">
@@ -410,7 +410,7 @@ const GeneralLedgerPage = () => {
           )}
           {activeTab === 'chart_of_accounts' && null}
           {activeTab === 'fiscal_periods' && (
-            <button 
+            <button
               onClick={() => setIsPeriodModalOpen(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold shadow-lg shadow-orange-200 hover:bg-orange-700 transition-all hover:scale-105 active:scale-95"
             >
@@ -428,11 +428,10 @@ const GeneralLedgerPage = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${
-                isActive 
-                  ? 'border-orange-600 text-orange-600 bg-orange-50/50 rounded-t-xl' 
+              className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${isActive
+                  ? 'border-orange-600 text-orange-600 bg-orange-50/50 rounded-t-xl'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
+                }`}
             >
               {tab.icon(isActive ? '#ea580c' : '#6b7280')}
               {tab.label}
@@ -449,41 +448,41 @@ const GeneralLedgerPage = () => {
       </div>
 
       {/* Modal */}
-      <FiscalPeriodModal 
-        isOpen={isPeriodModalOpen} 
-        onClose={() => setIsPeriodModalOpen(false)} 
-        onRefresh={fetchFiscalPeriods} 
+      <FiscalPeriodModal
+        isOpen={isPeriodModalOpen}
+        onClose={() => setIsPeriodModalOpen(false)}
+        onRefresh={fetchFiscalPeriods}
       />
 
       {/* Password Authentication Modal for Period Deletion */}
       {isDeleteAuthModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            
+
             {/* Modal Header */}
-            <div className="bg-red-950 p-5 flex justify-between items-center">
+            <div className="bg-teal-950 p-6 flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white">
                   <Shield size={20} />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-white">Confirm Deletion</h2>
-                  <p className="text-red-200 text-[10px]">Administrative Authentication Required</p>
+                  <h2 className="text-lg font-bold text-white">Confirm Deletion</h2>
+                  <p className="text-teal-200 text-xs">Administrative Authentication Required</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => {
                   setIsDeleteAuthModalOpen(false);
                   setDeleteAuthPassword('');
                   setDeleteAuthError(null);
-                }} 
-                className="text-red-200 hover:text-white transition-colors"
+                }}
+                className="text-teal-200 hover:text-white transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleDeleteSubmit} className="p-6 flex flex-col gap-4">
+            <form onSubmit={handleDeleteSubmit} className="p-6 flex flex-col gap-5">
               <p className="text-xs text-gray-500 leading-relaxed">
                 Deleting the fiscal period <strong>"{periodToDelete?.Period_Name}"</strong> requires admin password verification.
               </p>
@@ -495,28 +494,28 @@ const GeneralLedgerPage = () => {
               )}
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest ml-1">Admin Password</label>
-                <input 
-                  type="password" 
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Admin Password</label>
+                <input
+                  type="password"
                   placeholder="Enter admin password..."
                   required
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all"
                   value={deleteAuthPassword}
                   onChange={(e) => setDeleteAuthPassword(e.target.value)}
                 />
               </div>
 
-              <div className="flex flex-col gap-2 mt-2">
-                <button 
-                  type="submit" 
+              <div className="flex flex-col gap-3 mt-4">
+                <button
+                  type="submit"
                   disabled={deleteAuthLoading}
-                  className="w-full py-3 bg-red-700 hover:bg-red-800 text-white rounded-xl font-bold shadow-lg shadow-red-200 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                  className="w-full py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl font-bold shadow-lg shadow-orange-200 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
                 >
                   {deleteAuthLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <CheckCircle size={16} />}
                   Authenticate & Delete
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => {
                     setIsDeleteAuthModalOpen(false);
                     setDeleteAuthPassword('');
