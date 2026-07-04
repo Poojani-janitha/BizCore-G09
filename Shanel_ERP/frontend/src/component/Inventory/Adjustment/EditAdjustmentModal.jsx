@@ -125,6 +125,7 @@ const EditAdjustmentModal = ({ show, onHide, adjustment, refresh }) => {
                                 <Form.Control 
                                     type="number" 
                                     step="0.01"
+                                    min="0"
                                     placeholder="Enter new quantity" 
                                     required 
                                     className="bg-light border-0 py-2 shadow-none"

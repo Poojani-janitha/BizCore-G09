@@ -65,11 +65,11 @@ const TransactionTable = ({ transactions = [], title = "Recent Activity", subtit
   };
 
   return (
-    <div style={cardStyle} className="animate-fadeIn">
+    <div className="card border-0 shadow-sm rounded-3 bg-white animate-fadeIn">
       {/* Header */}
-      <div className="p-4 border-bottom d-flex justify-content-between align-items-center bg-white">
+      <div className="pt-4 px-4 pb-3 border-bottom d-flex justify-content-between align-items-center">
         <div>
-          <h5 className="mb-0 fw-bold" style={{ color: '#1e293b' }}>{title}</h5>
+          <h5 className="mb-0 fw-bold text-dark">{title}</h5>
           <p className="mb-0 text-muted small">{subtitle}</p>
         </div>
       </div>

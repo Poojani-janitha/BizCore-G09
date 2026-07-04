@@ -101,7 +101,7 @@ const SupplierModal = ({ show, onHide, onSupplierAdded }) => {
     if (!show) return null;
 
     return (
-        <div className="modal d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1060 }}>
+        <div className="modal d-block centered-modal" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1060 }}>
             <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div className="modal-content border-0 shadow-lg rounded-4">
                     {/* Header */}
@@ -273,6 +273,18 @@ const SupplierModal = ({ show, onHide, onSupplierAdded }) => {
                 .hover-shadow-sm:hover {
                     box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important;
                 }
+                /* Scoped centering for this supplier modal */
+                .modal.centered-modal {
+                    display: flex !important;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 1rem;
+                    min-height: 100vh;
+                }
+                .modal.centered-modal .modal-dialog { margin: 0; }
+                .modal.centered-modal .modal-dialog.modal-md { max-width: 720px; }
+                .modal.centered-modal .modal-dialog.modal-lg { max-width: 980px; }
+                .modal.centered-modal .modal-content { max-height: calc(100vh - 120px); overflow-y: auto; }
             `}</style>
         </div>
     );

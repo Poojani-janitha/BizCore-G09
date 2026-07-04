@@ -1,6 +1,8 @@
 const sequelize = require('../../config/db');
-const { Product, UnitConversion, Sale, Inventory, Customer, Payment, SaleItem, CreditTranscation, StockMovement } = require('../../models/index');
+const { Product, UnitConversion, Sale, Inventory, Customer, Payment, SaleItem, CreditTranscation, StockMovement, Cheque, PaymentAllocation } = require('../../models/index');
 const { Op, where } = require('sequelize');
+const SalesAccountController = require('../Accounting&Finance/SalesAccountController');
+const salesAccountController = new SalesAccountController();
 
 const searchProducts = async (req, res) => {
 
@@ -79,7 +81,8 @@ const searchProducts = async (req, res) => {
             where: {
                 [Op.or]: [
                     { P_Name: { [Op.like]: `${searchTerm}%` } },
-                    { P_Code: { [Op.like]: `${searchTerm}%` } }
+                    { P_Code: { [Op.like]: `${searchTerm}%` } },
+                    { Barcode: { [Op.like]: `${searchTerm}%` } }
                 ]
             }, attributes: [
                 'P_ID',
@@ -93,7 +96,8 @@ const searchProducts = async (req, res) => {
                 'Wholesale_Price',
                 'Min_Stock',
                 'Tax_Rate',
-                'Image_Path'
+                'Image_Path',
+                'Barcode'
 
             ], limit: parseFloat(Limit),
             order: [['P_Name', 'ASC']]
@@ -116,7 +120,8 @@ const searchProducts = async (req, res) => {
                 wholesale_price: parseFloat(p.Wholesale_Price),
                 min_stock: parseFloat(p.Min_Stock),
                 tax_rate: parseFloat(p.Tax_Rate),
-                image_path: p.Image_Path
+                image_path: p.Image_Path,
+                barcode: p.Barcode
             }
         })
 
@@ -372,6 +377,32 @@ const postSalesData = async (req, res) => {
             Cheque_Delivered_By: paymentDetails?.Cheque_Delivered_By || ''
         }, { transaction: t });
 
+        // Save detailed cheque info to Decoupled Cheques table if a cheque was received
+        const chequeAmount = parseFloat(paymentDetails?.Cheque_Amount || 0);
+        if (chequeAmount > 0) {
+            await Cheque.create({
+                Pay_ID: payment.Pay_ID,
+                C_ID: customerReq.c_id,
+                Cheque_No: paymentDetails?.Cheque_No || '',
+                Bank: paymentDetails?.Cheque_Bank || '',
+                Branch: paymentDetails?.Cheque_Branch || '',
+                Cheque_Date: paymentDetails?.Cheque_Date || saleDate,
+                Amount: chequeAmount,
+                Cheque_Status: 'Pending',
+                Notes: `POS sale cheque payment for invoice ${sale.Invoice_No}`
+            }, { transaction: t });
+        }
+
+        // Save allocation record to PaymentAllocations table for audit and FIFO logic compatibility
+        if (paymentAmount > 0) {
+            await PaymentAllocation.create({
+                Pay_ID: payment.Pay_ID,
+                Sale_ID: sale.Sale_Id,
+                Allocated_Amount: Math.min(paymentAmount, invoiceTotal),
+                Allocation_Type: 'FIFO'
+            }, { transaction: t });
+        }
+
         // 3. Update Customer Balance and Credit Transactions
         const customer = await Customer.findByPk(customerReq.c_id, { transaction: t });
         if (!customer) throw new Error("Customer profile not found");
@@ -413,11 +444,16 @@ const postSalesData = async (req, res) => {
             }, { transaction: t });
         }
 
-        // Update the final customer balance
-        await customer.update({ Current_Balance: currentCustomerBalance }, { transaction: t });
+        // Update the final customer balance, total purchases history, and last purchase date
+        const newTotalPurchases = parseFloat(customer.Total_Purchases || 0) + invoiceTotal;
+        await customer.update({ 
+            Current_Balance: currentCustomerBalance,
+            Last_Purchase_Date: saleDate,
+            Total_Purchases: newTotalPurchases
+        }, { transaction: t });
 
         // 4. Process Sale Items and Inventory
-        const saleItemsData = await Promise.all(items.map(async (item) => {
+        const processedItems = await Promise.all(items.map(async (item) => {
             const qty = parseFloat(item.quntity ?? item.quantity ?? 0);
             
             // Find correct unit for conversion
@@ -501,13 +537,28 @@ const postSalesData = async (req, res) => {
                 Created_By: createdBy
             }, { transaction: t });
 
+            // Fetch product cost price for COGS calculation
+            const product = await Product.findByPk(item.p_id, { transaction: t });
+            const costPrice = parseFloat(product?.Cost_Price || 0);
+            const itemCOGS = baseUnitQty * costPrice;
 
-
-            return saleItem;
+            return { saleItem, itemCOGS };
         }));
+
+        const saleItemsData = processedItems.map(p => p.saleItem);
+        const totalCOGS = processedItems.reduce((sum, p) => sum + p.itemCOGS, 0);
 
         // Bulk create SaleItems
         await SaleItem.bulkCreate(saleItemsData, { transaction: t });
+
+        // Create Journal Entry
+        sale.Customer = customer;
+        await salesAccountController.createSaleJournalEntry(
+            sale,
+            totalCOGS,
+            paymentDetails?.Payment_Method || 'Cash',
+            t
+        );
 
         // 5. Commit Transaction
         await t.commit();
@@ -604,7 +655,8 @@ const getAllSales = async (req, res) => {
                 'Sale_Time',
                 'Total_Amount',
                 'Paid_Amount',
-                'Payment_Status'
+                'Payment_Status',
+                'Sale_Type'
             ], include: [{
                 model: Customer,
                 attributes: ['C_Name']
@@ -622,7 +674,8 @@ const getAllSales = async (req, res) => {
                 sale_time: s.Sale_Time,
                 total_amount: parseFloat(s.Total_Amount),
                 balance: parseFloat(s.Total_Amount) - parseFloat(s.Paid_Amount),
-                payment_status: s.Payment_Status
+                payment_status: s.Payment_Status,
+                sale_type: s.Sale_Type
             }
         }
         );

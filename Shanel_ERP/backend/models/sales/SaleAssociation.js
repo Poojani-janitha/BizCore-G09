@@ -7,6 +7,8 @@ const SalesSummaryDaily = require('../sales/SalesSummaryDaily');
 const User = require('../user/User');
 const Product = require('../inventory/Product');
 const UnitConversion = require('../inventory/UnitConversion');
+const Cheque = require('../sales/Cheque');
+const PaymentAllocation = require('../sales/PaymentAllocation');
 
 // const Production = require('../production/Production');
 
@@ -54,4 +56,20 @@ module.exports = () =>{
 
     // ProductReturn is handled by the Inventory module
     // See models/inventory/ProductReturn.js
+
+    // Payment (Receipt) → Cheque
+    Payment.hasMany(Cheque, { foreignKey: 'Pay_ID', as: 'Cheques' });
+    Cheque.belongsTo(Payment, { foreignKey: 'Pay_ID', as: 'Payment' });
+
+    // Customer → Cheque
+    Customer.hasMany(Cheque, { foreignKey: 'C_ID', as: 'Cheques' });
+    Cheque.belongsTo(Customer, { foreignKey: 'C_ID', as: 'Customer' });
+
+    // Payment (Receipt) → PaymentAllocation
+    Payment.hasMany(PaymentAllocation, { foreignKey: 'Pay_ID', as: 'Allocations' });
+    PaymentAllocation.belongsTo(Payment, { foreignKey: 'Pay_ID', as: 'Payment' });
+
+    // Sale → PaymentAllocation
+    Sale.hasMany(PaymentAllocation, { foreignKey: 'Sale_ID', as: 'Allocations' });
+    PaymentAllocation.belongsTo(Sale, { foreignKey: 'Sale_ID', as: 'Sale' });
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import {
     Home, ShoppingCart, Package, DollarSign, Users,
     ChevronRight, ChevronDown, Box, Archive, Menu,
@@ -13,7 +14,26 @@ const SlideBar = () => {
     const [headerHover, setHeaderHover] = useState(false);
     const [openMenus, setOpenMenus] = useState({});
     const [permittedMenus, setPermittedMenus] = useState([]);
+    const [alertCount, setAlertCount] = useState(0);
     const location = useLocation();
+
+    // Fetch alert count for sidebar badge
+    useEffect(() => {
+        const fetchAlertCount = async () => {
+            try {
+                const res = await axios.get('http://localhost:5000/api/inventory/dashboard-stats');
+                if (res.data.success && res.data.alerts) {
+                    setAlertCount(res.data.alerts.length);
+                }
+            } catch (err) {
+                // silently fail — badge just won't show
+            }
+        };
+        fetchAlertCount();
+        // refresh count every 5 minutes
+        const interval = setInterval(fetchAlertCount, 5 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     const menuConfig = [
         { label: 'Home', icon: <Home size={18} />, to: '/home' }, // Public or always available
@@ -26,9 +46,7 @@ const SlideBar = () => {
                 { label: 'Dashboard', to: '/inventory', icon: <BarChart2 size={14} /> },
                 { label: 'Company Items', to: '/inventory/company-items', icon: <Package size={14} /> },
                 { label: 'Other Items', to: '/inventory/other-items', icon: <Box size={14} /> },
-                { label: 'Raw Materials', to: '/inventory/raw-materials', icon: <Archive size={14} /> },
                 { label: 'Production Stock', to: '/inventory/production-stock', icon: <Truck size={14} /> },
-                { label: 'Sales Stock', to: '/inventory/salesStock', icon: <ShoppingCart size={14} /> },
                 { label: 'Stock Transfer', to: '/inventory/stock-transfers', icon: <RefreshCw size={14} /> },
                 { label: 'Stock Adjustments', to: '/inventory/stock-adjustments', icon: <Sliders size={14} /> },
                 { label: 'Returns', to: '/inventory/returns', icon: <CornerUpLeft size={14} /> },
@@ -44,13 +62,12 @@ const SlideBar = () => {
             moduleKey: 'sales',
             subItems: [
                 { label: 'Dashboard', to: '/sales', icon: <PieChart size={14} /> },
-                { label: 'Performance', to: '/sales/performance', icon: <BarChart2 size={14} /> },
                 { label: 'History', to: '/sales/history', icon: <FileText size={14} /> },
-                { label: 'Payment Collection', to: '/sales/collection', icon: <AlertCircle size={14} /> },
-                { label: 'Company Items Report', to: '/sales/reports/company', icon: <FileText size={14} /> },
-                { label: 'Other Items Report', to: '/sales/reports/other', icon: <FileText size={14} /> },
-                { label: 'Location Report', to: '/sales/reports/location', icon: <BarChart2 size={14} /> },
+                { label: 'Customers', to: '/sales/customers', icon: <Users size={14} /> },
+                { label: 'Due Sales', to: '/sales/due', icon: <AlertCircle size={14} /> },
+                { label: 'Cheque Management', to: '/sales/cheques', icon: <DollarSign size={14} /> },
                 { label: 'Reports', to: '/sales/reports', icon: <BarChart2 size={14} /> },
+
             ]
         },
         {
@@ -188,9 +205,29 @@ const SlideBar = () => {
                                     {openMenus[item.label] && !isCollapsed && (
                                         <ul className="nav flex-column ms-4 mt-1 border-start gap-1" style={{ borderColor: colors.borderLine }}>
                                             {item.subItems.map(sub => (
-                                                <NavLink key={sub.label} to={sub.to} className="nav-link py-1 d-flex align-items-center gap-2"
+                                                <NavLink key={sub.label} to={sub.to} className="nav-link py-1 d-flex align-items-center justify-content-between gap-2"
                                                     style={({ isActive }) => ({ color: isActive ? colors.activeAccent : colors.textMuted, fontSize: '13px' })}>
-                                                    {sub.icon} {sub.label}
+                                                    <span className="d-flex align-items-center gap-2">
+                                                        {sub.icon} {sub.label}
+                                                    </span>
+                                                    {sub.to === '/inventory/alerts' && alertCount > 0 && (
+                                                        <span
+                                                            style={{
+                                                                background: '#ef4444',
+                                                                color: '#fff',
+                                                                borderRadius: '10px',
+                                                                fontSize: '10px',
+                                                                fontWeight: 700,
+                                                                padding: '1px 6px',
+                                                                lineHeight: '16px',
+                                                                minWidth: '18px',
+                                                                textAlign: 'center',
+                                                                flexShrink: 0,
+                                                            }}
+                                                        >
+                                                            {alertCount}
+                                                        </span>
+                                                    )}
                                                 </NavLink>
                                             ))}
                                         </ul>

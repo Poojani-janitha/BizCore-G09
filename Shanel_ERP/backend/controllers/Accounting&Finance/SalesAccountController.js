@@ -11,8 +11,12 @@ const { ACCOUNTS, PAYMENT_METHODS } = require('../../constants/Accounting/AccCon
 
 
 //register associations
+// Sale.belongsTo(Customer, { foreignKey: 'C_ID' });
+// SaleItem.belongsTo(Sale, { foreignKey: 'P_ID' });
 Sale.belongsTo(Customer, { foreignKey: 'C_ID' });
-SaleItem.belongsTo(Sale, { foreignKey: 'P_ID' });
+SaleItem.belongsTo(Sale, { foreignKey: 'Sale_ID' });
+SaleItem.belongsTo(Product, { foreignKey: 'P_ID' });
+
 
 class SalesAccountController {
     async createSaleEntry(req, res) {
@@ -256,10 +260,10 @@ class SalesAccountController {
 
 
         //Link journal to sale 
-        await Sale.update(
-            { Journal_ID: journalEntry.Journal_ID },
-            { where: { Sale_ID: saleData.Sale_ID }, transaction }
-        );
+        // await Sale.update(
+        //     { Journal_ID: journalEntry.Journal_ID },
+        //     { where: { Sale_ID: saleData.Sale_ID }, transaction }
+        // );
 
 
         return {

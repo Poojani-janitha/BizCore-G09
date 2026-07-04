@@ -10,7 +10,6 @@ import Reports from './pages/HR/Reports.jsx';
 import Header from './component/Header/Header';
 import ProductPage from './pages/Inventory/ProductPage.jsx';
 import ProductionStock from './pages/Inventory/ProductionStock.jsx';
-import SalesStock from './pages/Inventory/SalesStock.jsx';
 import StockTransfer from './pages/Inventory/StockTransfer.jsx';
 import StockAdjustment from './pages/Inventory/StockAdjustment.jsx';
 import ReturnsManagement from './pages/Inventory/ReturnsManagement.jsx';
@@ -39,11 +38,10 @@ import SalesDashboard from './pages/Sales/SalesDashboard.jsx';
 import SalesHistory from './pages/Sales/SalesHistory.jsx';
 import DueSales from './pages/Sales/DueSales.jsx';
 import SalesReport from './pages/Sales/SalesReport.jsx';
-import SalesPerformancePage from './pages/Sales/SalesPerformancePage.jsx';
-import CompanyItemsReportPage from './pages/Sales/CompanyItemsReportPage.jsx';
-import OtherItemsReportPage from './pages/Sales/OtherItemsReportPage.jsx';
-import LocationWiseReportPage from './pages/Sales/LocationWiseReportPage.jsx';
-import PaymentCollectionPage from './pages/Sales/PaymentCollectionPage.jsx';
+// Sales Management Module — new pages
+import CustomerListPage from './pages/Sales/CustomerListPage.jsx';
+import CustomerDetailPage from './pages/Sales/CustomerDetailPage.jsx';
+import ChequeManagementPage from './pages/Sales/ChequeManagementPage.jsx';
 import AdminHome from './pages/Home/AdminHome.jsx';
 import ManagerHome from './pages/Home/ManagerHome.jsx';
 import CashierHome from './pages/Home/CashierHome.jsx';
@@ -85,9 +83,7 @@ const App = () => {
             <Route path="/inventory"                          element={<ProtectedRoute allowedRoles={['Admin','Manager']}><Inventory_Dashboard /></ProtectedRoute>} />
             <Route path="/inventory/company-items"            element={<ProtectedRoute allowedRoles={['Admin','Manager']}><ProductPage pageTitle="Company Items" typeFilter="Company" /></ProtectedRoute>} />
             <Route path="/inventory/other-items"              element={<ProtectedRoute allowedRoles={['Admin','Manager']}><ProductPage pageTitle="Other Items" typeFilter="Other" /></ProtectedRoute>} />
-            <Route path="/inventory/raw-materials"            element={<ProtectedRoute allowedRoles={['Admin','Manager']}><ProductPage pageTitle="Raw Materials" typeFilter="Raw" /></ProtectedRoute>} />
             <Route path="/inventory/production-stock"         element={<ProtectedRoute allowedRoles={['Admin','Manager']}><ProductionStock /></ProtectedRoute>} />
-            <Route path="/inventory/salesStock"               element={<ProtectedRoute allowedRoles={['Admin','Manager']}><SalesStock /></ProtectedRoute>} />
             <Route path="/inventory/stock-transfers"          element={<ProtectedRoute allowedRoles={['Admin','Manager']}><StockTransfer /></ProtectedRoute>} />
             <Route path="/inventory/stock-adjustments"        element={<ProtectedRoute allowedRoles={['Admin','Manager']}><StockAdjustment /></ProtectedRoute>} />
             <Route path="/inventory/returns"                  element={<ProtectedRoute allowedRoles={['Admin','Manager']}><ReturnsManagement /></ProtectedRoute>} />
@@ -147,11 +143,10 @@ const App = () => {
             <Route path="/sales/history" element={<SalesHistory />} />
             <Route path="/sales/due" element={<DueSales />} />
             <Route path="/sales/reports" element={<SalesReport />} />
-            <Route path="/sales/performance" element={<SalesPerformancePage />} />
-            <Route path="/sales/collection" element={<PaymentCollectionPage />} />
-            <Route path="/sales/reports/company" element={<CompanyItemsReportPage />} />
-            <Route path="/sales/reports/other" element={<OtherItemsReportPage />} />
-            <Route path="/sales/reports/location" element={<LocationWiseReportPage />} />
+            {/* Sales Management Module — new pages */}
+            <Route path="/sales/customers" element={<CustomerListPage />} />
+            <Route path="/sales/customers/:id" element={<CustomerDetailPage />} />
+            <Route path="/sales/cheques" element={<ChequeManagementPage />} />
             
             <Route path="/user-management" element={<UserDashboard />} />
             

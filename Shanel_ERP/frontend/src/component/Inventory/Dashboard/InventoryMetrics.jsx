@@ -42,7 +42,7 @@ const InventoryMetrics = ({ metrics = {} }) => {
             icon: <Store className="text-warning" size={20} />,
             color: 'border-warning',
             trend: metrics?.salesTrend || 0,
-            onClick: () => navigate('/inventory/salesStock')
+            onClick: () => navigate('/inventory/reports/current-stock')
         },
         {
             title: t('inventory.dashboard.metrics.alerts'),

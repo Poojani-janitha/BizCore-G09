@@ -85,6 +85,7 @@ export const API_ENDPOINTS = {
   },
   journalEntries: {
     list: (pageNum, limit = 10) => `${API_URL}/journal-entries?page=${pageNum}&limit=${limit}`,
+    create: `${API_URL}/journal-entries/create`,
     correctionsList: (pageNum, limit = 10) => `${API_URL}/journal-entries/correction/list?page=${pageNum}&limit=${limit}`,
     correctionsSubmit: `${API_URL}/journal-entries/correction/submit`,
   },

@@ -3,6 +3,8 @@ import axios from "axios";
 import { AlertTriangle, Bell, AlertCircle, TrendingDown, Phone, ExternalLink } from "react-feather";
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
+import Pagination from '../../component/common/Pagination';
 
 const formatStock = (value) => {
     const num = parseFloat(value) || 0;
@@ -12,17 +14,29 @@ const formatStock = (value) => {
 const AlertsPage = () => {
   const [alerts, setAlerts] = useState([]);
   const [expiryAlerts, setExpiryAlerts] = useState([]);
-  // const [productExpiryAlerts, setProductExpiryAlerts] = useState([]);
   const [outOfStockProducts, setOutOfStockProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("low");
+  const [alertsPage, setAlertsPage] = useState(1);
+  const [alertsPageSize, setAlertsPageSize] = useState(25);
+  const PAGE_SIZE = alertsPageSize;
   const { t, i18n } = useTranslation();
   const isSinhala = i18n.language?.startsWith('si');
+  const location = useLocation();
+
+  // Read ?tab= from URL on mount and whenever URL changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+      setAlertsPage(1);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     fetchAlerts();
     fetchExpiryAlerts();
-    // fetchProductExpiryAlerts();
     fetchOutOfStockProducts();
   }, []);
 
@@ -109,18 +123,19 @@ const AlertsPage = () => {
   // Remove out of stock items from the main alerts display (they go only to the dedicated tab)
   const filteredMainAlerts = alerts.filter(a => a.current > 0);
   const activeAlerts = lowStockAlerts.length;
-  // const totalAlerts = filteredMainAlerts.length + expiryAlerts.length + productExpiryAlerts.length + outOfStockProducts.length;
+  const productionAlerts = alerts.filter(a => a.type === 'Company');
   const totalAlerts = filteredMainAlerts.length + expiryAlerts.length + outOfStockProducts.length;
 
   const getFilteredAlerts = () => {
     if (activeTab === "low") return lowStockAlerts;
     if (activeTab === "expiry") return expiryAlerts;
-    // if (activeTab === "product-expiry") return productExpiryAlerts;
     if (activeTab === "out-of-stock") return outOfStockProducts;
+    if (activeTab === "production") return productionAlerts;
     return [];
   };
 
   const filteredAlerts = getFilteredAlerts();
+  const pagedAlerts = filteredAlerts.slice((alertsPage - 1) * PAGE_SIZE, alertsPage * PAGE_SIZE);
 
   const MetricCard = ({ title, value, subtitle, icon, borderColor }) => (
     <div className={`card border-0 border-top border-4 border-${borderColor} shadow-sm rounded-3 overflow-hidden`} style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
@@ -200,7 +215,7 @@ const AlertsPage = () => {
                   ? "border-bottom border-primary text-primary"
                   : "text-muted"
                 } rounded-0 pb-2`}
-              onClick={() => setActiveTab("low")}
+              onClick={() => { setActiveTab("low"); setAlertsPage(1); }}
               style={{ borderBottom: activeTab === "low" ? "3px solid #0d6efd" : "none" }}
             >
               {t('inventory.pages.alerts.tab_low')} ({lowStockAlerts.length})
@@ -210,10 +225,20 @@ const AlertsPage = () => {
                   ? "border-bottom border-primary text-primary"
                   : "text-muted"
                 } rounded-0 pb-2 ms-3`}
-              onClick={() => setActiveTab("expiry")}
+              onClick={() => { setActiveTab("expiry"); setAlertsPage(1); }}
               style={{ borderBottom: activeTab === "expiry" ? "3px solid #0d6efd" : "none" }}
             >
               {t('inventory.pages.alerts.tab_expiry')} ({expiryAlerts.length})
+            </button>
+            <button
+              className={`btn btn-sm border-0 fw-semibold ${activeTab === "production"
+                  ? "border-bottom border-primary text-primary"
+                  : "text-muted"
+                } rounded-0 pb-2 ms-3`}
+              onClick={() => { setActiveTab("production"); setAlertsPage(1); }}
+              style={{ borderBottom: activeTab === "production" ? "3px solid #0d6efd" : "none" }}
+            >
+              Production Stock ({productionAlerts.length})
             </button>
             {/* <button
               className={`btn btn-sm border-0 fw-semibold ${activeTab === "product-expiry"
@@ -230,7 +255,7 @@ const AlertsPage = () => {
                   ? "border-bottom border-primary text-primary"
                   : "text-muted"
                 } rounded-0 pb-2 ms-3`}
-              onClick={() => setActiveTab("out-of-stock")}
+              onClick={() => { setActiveTab("out-of-stock"); setAlertsPage(1); }}
               style={{ borderBottom: activeTab === "out-of-stock" ? "3px solid #0d6efd" : "none" }}
             >
               Out of Stock ({outOfStockProducts.length})
@@ -245,10 +270,10 @@ const AlertsPage = () => {
               </div>
             </div>
           ) : filteredAlerts.length > 0 ? (
+            <>
             <div className="table-responsive">
               <table className="table table-hover align-middle mb-0 small">
-                <thead>
-                  <tr style={{ background: '#f8fafc' }}>
+                <thead>                  <tr style={{ background: '#f8fafc' }}>
                     {activeTab === "expiry" ? (
                       <>
                         <th className="fw-semibold text-dark ps-3">{t('inventory.pages.alerts.col_batch')}</th>
@@ -269,6 +294,15 @@ const AlertsPage = () => {
                         <th className="fw-semibold text-dark text-end">Min. Stock</th>
                         <th className="fw-semibold text-dark">{t('inventory.pages.alerts.col_status')}</th>
                       </>
+                    ) : activeTab === "production" ? (
+                      <>
+                        <th className="fw-semibold text-dark ps-3">PRODUCT</th>
+                        <th className="fw-semibold text-dark">CURRENT STOCK</th>
+                        <th className="fw-semibold text-dark text-end">MIN. STOCK</th>
+                        <th className="fw-semibold text-dark text-end">SHORTAGE</th>
+                        <th className="fw-semibold text-dark">SEVERITY</th>
+                        <th className="fw-semibold text-dark">SUPPLIER</th>
+                      </>
                     ) : (
                       <>
                         <th className="fw-semibold text-dark ps-3">{t('inventory.pages.alerts.col_alert_type')}</th>
@@ -284,7 +318,7 @@ const AlertsPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAlerts.map((alert, index) => {
+                  {pagedAlerts.map((alert, index) => {
                     if (activeTab === "product-expiry") {
                       // Product expiry alerts table row
                       return (
@@ -360,6 +394,43 @@ const AlertsPage = () => {
                           </td>
                         </tr>
                       );
+                    } else if (activeTab === "production") {
+                      // Production stock alerts row
+                      const shortage = Math.max(0, alert.min - alert.current);
+                      const isCritical = alert.current <= 0;
+                      const isLow = alert.current > 0 && alert.current < alert.min;
+                      return (
+                        <tr key={index} className="border-bottom">
+                          <td className="ps-3 fw-semibold text-dark">
+                            {(isSinhala && alert.nameSinhala) ? alert.nameSinhala : alert.name}
+                          </td>
+                          <td>
+                            <span className={isCritical ? 'text-danger fw-bold' : 'text-warning fw-bold'}>
+                              {formatStock(alert.current)} {alert.baseUnit}
+                            </span>
+                          </td>
+                          <td className="text-end">{formatStock(alert.min)} {alert.baseUnit}</td>
+                          <td className="text-end fw-bold text-danger">{formatStock(shortage)} {alert.baseUnit}</td>
+                          <td>
+                            {isCritical
+                              ? <span className="badge bg-danger fw-bold">🔴 OUT OF STOCK</span>
+                              : <span className="badge bg-warning text-dark fw-bold">🟡 LOW STOCK</span>
+                            }
+                          </td>
+                          <td>
+                            {alert.supplierName ? (
+                              <a href={alert.supplierPhone ? `tel:${alert.supplierPhone}` : '#'} className="text-primary small d-flex flex-column text-decoration-none">
+                                <span className="fw-bold d-flex align-items-center gap-1">
+                                  <Phone size={12} /> {alert.supplierName}
+                                </span>
+                                {alert.supplierPhone && <small className="text-muted" style={{ marginLeft: '16px', fontSize: '11px' }}>{alert.supplierPhone}</small>}
+                              </a>
+                            ) : (
+                              <small className="text-muted">No supplier</small>
+                            )}
+                          </td>
+                        </tr>
+                      );
                     } else {
                       // Stock alerts table row
                       const shortage = Math.max(0, alert.min - alert.current);
@@ -406,6 +477,14 @@ const AlertsPage = () => {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              currentPage={alertsPage}
+              totalItems={filteredAlerts.length}
+              pageSize={PAGE_SIZE}
+              onPageChange={setAlertsPage}
+              onPageSizeChange={(size) => { setAlertsPageSize(size); setAlertsPage(1); }}
+            />
+            </>
           ) : (
             <div className="text-center py-5">
               <AlertCircle size={48} className="text-success mb-2" />

@@ -48,9 +48,7 @@ const Header = () => {
         if (path.includes('/inventory/company-items')) return t('inventory.company_items', 'Company Items');
         if (path.includes('/inventory/other-items')) return t('inventory.other_items', 'Other Items');
         if (path.includes('/inventory/products')) return t('inventory.product_mgmt', 'Products Management');
-        if (path.includes('/inventory/raw-materials')) return t('inventory.raw_materials', 'Raw Materials');
         if (path.includes('/inventory/production-stock')) return t('inventory.production_stock', 'Production Stock');
-        if (path.includes('/inventory/salesStock')) return t('inventory.sales_stock', 'Sales Stock');
         if (path.includes('/inventory/stock-transfers')) return t('inventory.stock_transfer', 'Stock Transfer');
         if (path.includes('/inventory/stock-adjustments')) return t('inventory.stock_adjustments', 'Stock Adjustments');
         if (path.includes('/inventory/returns')) return t('inventory.returns', 'Returns Management');
@@ -69,6 +67,14 @@ const Header = () => {
         if (path.includes('/finance/general-ledger')) return t('header.general_ledger', 'General Ledger');
         if (path.includes('/finance/payments')) return t('header.payments', 'Payments');
         if (path.includes('/finance/reports')) return t('header.finance_reports', 'Finance Reports');
+        if (path.includes('/finance/edit-transactions')) return t('header.edit_transactions', 'Transaction Correction');
+        if (path === '/sales') return 'Sales Dashboard';
+        if (path === '/sales/history') return 'Sales History';
+        if (path === '/sales/customers') return 'Customer List';
+        if (path.includes('/sales/customers/')) return 'Customer Detail';
+        if (path === '/sales/cheques') return 'Cheque Management';
+        if (path === '/sales/due') return 'Due Sales';
+        if (path === '/sales/reports') return 'Sales Reports';
         if (path === '/logout') return t('header.logout', 'Logout');
         return t('header.dashboard', 'Dashboard');
     };
