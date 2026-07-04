@@ -3,6 +3,8 @@ const {
 } = require('../../models/index');
 const { Op } = require('sequelize');
 const { findEmployeeByParam } = require('../../utils/hrEmployeeLookup');
+const path = require('path');
+const fs = require('fs');
 
 //Retrieves a list of employees with optional filters for  Name search.
 const getEmployees = async (req, res) => {
@@ -10,7 +12,13 @@ const getEmployees = async (req, res) => {
         const { department, status, search } = req.query;
         const where = {};
         if (department) where.Department = department;
-        if (status) where.Status = status;
+        if (status) {
+            if (status === 'Inactive') {
+                where.Status = { [Op.ne]: 'Active' };
+            } else {
+                where.Status = status;
+            }
+        }
         if (search && String(search).trim()) {
             const q = `%${String(search).trim()}%`;
             where[Op.or] = [
@@ -375,10 +383,54 @@ const deleteEmployee = async (req, res) => {
     }
 };
 
+/**
+ * NIC COPY UPLOAD:
+ * Stores the uploaded NIC document file path on the employee record (NIC_Copy_Path).
+ * Falls back gracefully if the column doesn't exist yet.
+ */
+const uploadNicCopy = async (req, res) => {
+    try {
+        const employee = await findEmployeeByParam(req.params.employeeId);
+        if (!employee) {
+            return res.status(404).json({ success: false, message: 'Employee not found' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No file uploaded' });
+        }
+
+        const filePath = `uploads/hr-documents/${req.file.filename}`;
+
+        // Store in Notes field as a fallback (prefixed so it can be parsed out later)
+        // If NIC_Copy_Path column is added to model, switch to that
+        const currentNotes = employee.Notes || '';
+        const nicTag = `[NIC_COPY:${filePath}]`;
+        const updatedNotes = currentNotes.includes('[NIC_COPY:')
+            ? currentNotes.replace(/\[NIC_COPY:[^\]]*\]/, nicTag)
+            : (currentNotes ? currentNotes + '\n' + nicTag : nicTag);
+
+        await employee.update({ Notes: updatedNotes });
+
+        return res.status(200).json({
+            success: true,
+            message: 'NIC copy uploaded successfully',
+            filePath
+        });
+    } catch (error) {
+        console.error('uploadNicCopy error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to upload NIC copy',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     getEmployees,
     createEmployee,
     updateEmployee,
     updateEmployeeStatus,
-    deleteEmployee
+    deleteEmployee,
+    uploadNicCopy
 };
