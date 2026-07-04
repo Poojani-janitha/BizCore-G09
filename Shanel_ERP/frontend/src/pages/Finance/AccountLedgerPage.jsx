@@ -133,17 +133,55 @@ const AccountLedgerPage = () => {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-1">
-          <span className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">{t('finance.ledger.initial_state')}</span>
-          <span className="text-teal-950 text-2xl font-black">LKR {fmt(account.balanceBroughtForward)}</span>
+        {/* Card 1: Initial Balance */}
+        <div className="p-5 bg-white border border-gray-200 border-t-4 border-blue-600 rounded-2xl shadow-sm flex flex-col justify-between h-32 transition-all hover:-translate-y-1 hover:shadow-md">
+          <div className="flex justify-between items-start w-full">
+            <small className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+              {t('finance.ledger.initial_state')}
+            </small>
+            <div className="opacity-75">
+              <ArrowUp size={20} className="text-blue-600" />
+            </div>
+          </div>
+          <div>
+            <h5 className="text-2xl font-black text-slate-800 leading-tight">
+              LKR {fmt(account.balanceBroughtForward)}
+            </h5>
+          </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-1">
-          <span className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">{t('finance.ledger.activity_level')}</span>
-          <span className="text-blue-600 text-2xl font-black">{transactions.length} {t('finance.ledger.transactions')}</span>
+
+        {/* Card 2: Transactions Count */}
+        <div className="p-5 bg-white border border-gray-200 border-t-4 border-yellow-500 rounded-2xl shadow-sm flex flex-col justify-between h-32 transition-all hover:-translate-y-1 hover:shadow-md">
+          <div className="flex justify-between items-start w-full">
+            <small className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+              {t('finance.ledger.activity_level')}
+            </small>
+            <div className="opacity-75">
+              <RefreshCw size={20} className="text-yellow-500" />
+            </div>
+          </div>
+          <div>
+            <h5 className="text-2xl font-black text-slate-800 leading-tight">
+              {transactions.length} {t('finance.ledger.transactions')}
+            </h5>
+          </div>
         </div>
-        <div className="bg-orange-600 p-6 rounded-2xl shadow-lg shadow-orange-100 flex flex-col gap-1">
-          <span className="text-orange-100 text-[10px] font-bold uppercase tracking-[0.2em]">{t('finance.ledger.current_balance')}</span>
-          <span className="text-white text-2xl font-black">LKR {fmt(account.currentBalance)}</span>
+
+        {/* Card 3: Current Balance */}
+        <div className="p-5 bg-white border border-gray-200 border-t-4 border-green-600 rounded-2xl shadow-sm flex flex-col justify-between h-32 transition-all hover:-translate-y-1 hover:shadow-md">
+          <div className="flex justify-between items-start w-full">
+            <small className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+              {t('finance.ledger.current_balance')}
+            </small>
+            <div className="opacity-75">
+              <ArrowDown size={20} className="text-green-600" />
+            </div>
+          </div>
+          <div>
+            <h5 className="text-2xl font-black text-slate-800 leading-tight">
+              LKR {fmt(account.currentBalance)}
+            </h5>
+          </div>
         </div>
       </div>
 

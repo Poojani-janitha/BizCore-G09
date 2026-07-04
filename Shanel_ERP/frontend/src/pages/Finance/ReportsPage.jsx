@@ -17,15 +17,15 @@ const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).
 
 // ── Reusable Line Row ─────────────────────────────────────────────────────────
 const LineRow = ({ label, value, bold = false, color = 'text-gray-900' }) => (
-  <div className={`flex justify-between items-center text-sm py-1.5`}>
-    <span className={`${bold ? 'font-bold text-gray-900' : 'text-gray-600'} flex-1 pr-4`}>{label}</span>
+  <div className={`flex justify-between items-center text-[13px] py-1`}>
+    <span className={`${bold ? 'font-bold text-gray-800' : 'text-gray-600'} flex-1 pr-4`}>{label}</span>
     <span className={`font-semibold ${color} text-right whitespace-nowrap`}>{fmt(value)}</span>
   </div>
 );
 
 // ── Section Header ─────────────────────────────────────────────────────────────
 const SectionHeader = ({ title }) => (
-  <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest pt-5 pb-2 border-t border-gray-100 first:border-0 first:pt-0">{title}</p>
+  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider pt-3 pb-1 border-t border-gray-100 first:border-0 first:pt-0">{title}</p>
 );
 
 // ── Summary Highlight Box ─────────────────────────────────────────────────────
@@ -37,75 +37,90 @@ const SummaryBox = ({ label, value, bgColor, borderColor, textColor }) => (
 );
 
 // ── Report Type Card ──────────────────────────────────────────────────────────
-const ReportCard = ({ title, description, period, lastGenerated, icon, iconBg, onClick, active, onDownload, disabled }) => (
-  <div
-    onClick={onClick}
-    className={`bg-white rounded-2xl border-2 p-6 flex flex-col gap-5 cursor-pointer transition-all hover:shadow-lg ${
-      active ? 'border-orange-400 shadow-md shadow-orange-50' : 'border-gray-200 hover:border-gray-300'
-    }`}
-  >
-    <div className={`w-12 h-12 ${iconBg} rounded-xl flex items-center justify-center flex-shrink-0`}>
-      {icon}
-    </div>
-    <div className="flex flex-col gap-1 flex-1">
-      <h3 className="text-base font-bold text-gray-900 leading-snug">{title}</h3>
-      <p className="text-sm text-gray-500">{description}</p>
-      <div className="flex flex-col gap-0.5 mt-2">
-        <p className="text-xs text-gray-400 flex items-center gap-1.5">
-          <Calendar size={11} /> {period}
-        </p>
-        <p className="text-xs text-gray-400">Last: {lastGenerated}</p>
-      </div>
-    </div>
-    <button 
-      disabled={disabled}
-      onClick={(e) => { 
-        e.preventDefault();
-        e.stopPropagation(); 
-        console.log("Download button clicked for:", title);
-        if (onDownload) onDownload(); 
+const ReportCard = ({ title, description, period, lastGenerated, icon, colorClass, onClick, active, onDownload, disabled }) => (
+  <div 
+      className={`card border-0 border-top border-4 ${colorClass} shadow-sm p-3 h-100`}
+      style={{ 
+          cursor: 'pointer', 
+          transition: 'all 0.3s ease'
       }}
-      className={`w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${disabled ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
-    >
-      <Download size={15} /> Download PDF
-    </button>
+      onClick={onClick}
+      role="button"
+      tabIndex="0"
+      onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-6px)';
+          e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+      }}
+      onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '';
+      }}
+  >
+      <div className="d-flex justify-content-between align-items-start mb-2">
+          <small className="text-muted fw-bold text-uppercase" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
+              {title}
+          </small>
+          <div className="opacity-75">
+              {icon}
+          </div>
+      </div>
+      
+      <div className="flex flex-col gap-1 flex-1 mt-2">
+          <p className="text-sm text-gray-500 mb-1">{description}</p>
+          <div className="flex flex-col gap-0.5">
+              <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                  <Calendar size={11} /> {period}
+              </p>
+              <p className="text-xs text-gray-400">Last: {lastGenerated}</p>
+          </div>
+      </div>
+      
+      <button 
+          disabled={disabled}
+          onClick={(e) => { 
+              e.preventDefault();
+              e.stopPropagation(); 
+              if (onDownload) onDownload(); 
+          }}
+          className={`mt-3 w-full py-2 bg-light text-secondary rounded font-bold text-sm transition-all flex items-center justify-center gap-2 border ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover-bg-gray-200'}`}
+      >
+          <Download size={15} /> Download PDF
+      </button>
   </div>
 );
 
 // ── Date Filter Row ────────────────────────────────────────────────────────────
 const DateInput = ({ label, value, onChange }) => (
-  <div className="flex items-center gap-2">
-    <span className="text-xs text-gray-400 font-medium whitespace-nowrap">{label}</span>
+  <div className="flex items-center gap-1.5">
+    <span className="text-[11px] text-gray-500 font-medium whitespace-nowrap">{label}</span>
     <input
       type="date"
       value={value}
       onChange={e => onChange(e.target.value)}
-      className="text-xs border border-gray-200 rounded-lg px-3 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white"
+      className="text-xs border border-gray-200 rounded px-2 py-1.5 text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
     />
   </div>
 );
 
 // ── Panel Shell ───────────────────────────────────────────────────────────────
 const Panel = ({ title, subtitle, filters, loading, children }) => (
-  <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col min-h-0">
+  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col min-h-0">
     {/* Header */}
-    <div className="px-6 py-5 bg-gray-50 border-b border-gray-200 flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-          <p className="text-xs text-gray-400 mt-1">{subtitle}</p>
-        </div>
+    <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 className="text-[15px] font-bold text-gray-800">{title}</h2>
+        {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-4 flex-wrap pt-2 border-t border-gray-100">
+      <div className="flex items-center gap-3">
         {filters}
       </div>
     </div>
 
     {/* Body */}
-    <div className="p-6 flex flex-col gap-1 overflow-y-auto max-h-[600px]">
+    <div className="p-4 flex flex-col gap-1 overflow-y-auto max-h-[600px]">
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader size={28} className="animate-spin text-orange-500" />
+        <div className="flex items-center justify-center py-10">
+          <Loader size={24} className="animate-spin text-blue-500" />
         </div>
       ) : children}
     </div>
@@ -152,8 +167,8 @@ const ReportsPage = () => {
       description: 'Income and expenses summary',   
       period: `${plStart} → ${plEnd}`,  
       lastGenerated: today, 
-      icon: <TrendingUp size={20} className="text-blue-600" />, 
-      iconBg: 'bg-blue-50',
+      icon: <TrendingUp size={20} className="text-primary" />, 
+      colorClass: 'border-primary',
       onDownload: () => plData && downloadProfitLossPDF(plData, `${plStart} to ${plEnd}`),
       disabled: !plData
     },
@@ -163,8 +178,8 @@ const ReportsPage = () => {
       description: 'Assets, liabilities, equity',   
       period: `As of: ${bsDate}`,        
       lastGenerated: today, 
-      icon: <Briefcase  size={20} className="text-green-600"  />, 
-      iconBg: 'bg-green-50',
+      icon: <Briefcase  size={20} className="text-success"  />, 
+      colorClass: 'border-success',
       onDownload: () => bsData && downloadBalanceSheetPDF(bsData, bsDate),
       disabled: !bsData
     },
@@ -174,11 +189,6 @@ const ReportsPage = () => {
     <div className="w-full min-h-screen bg-white p-6 md:p-8 font-['Inter']">
       <div className="max-w-[1400px] mx-auto flex flex-col gap-8">
 
-        {/* Page Header */}
-        <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Financial Reports</h1>
-          <p className="text-gray-600 text-base">Generate and view financial statements and reports</p>
-        </div>
 
         {/* Report Type Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-3xl">

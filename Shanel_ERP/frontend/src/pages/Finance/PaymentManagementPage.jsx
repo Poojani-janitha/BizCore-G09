@@ -86,7 +86,7 @@ const PaymentManagementPage = () => {
             amount={summaryData.received.amount}
             count="Income & Credits"
             percentage={summaryData.received.percentage}
-            icon={<ArrowDownCircle color="#059669" />}
+            icon={<ArrowDownCircle className="text-success" />}
             bgColor="#ecfdf5"
           />
         </div>
@@ -96,7 +96,7 @@ const PaymentManagementPage = () => {
             amount={summaryData.paid.amount}
             count="Expenses & Payables"
             percentage={summaryData.paid.percentage}
-            icon={<ArrowUpCircle color="#dc2626" />}
+            icon={<ArrowUpCircle className="text-danger" />}
             bgColor="#fef2f2"
           />
         </div>
@@ -106,7 +106,7 @@ const PaymentManagementPage = () => {
             amount={summaryData.net.amount}
             count="Net Performance"
             percentage={summaryData.net.percentage}
-            icon={<TrendingUp color="#3b82f6" />}
+            icon={<TrendingUp className="text-primary" />}
             bgColor="#eff6ff"
             isNet={true}
           />
@@ -117,20 +117,22 @@ const PaymentManagementPage = () => {
       <div className="row g-4">
         {/* Cash Flow Chart */}
         <div className="col-lg-8">
-          <div style={cardStyle}>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h6 className="fw-bold mb-0 d-flex align-items-center gap-2" style={{ color: '#1e293b' }}>
-                <Activity size={18} color="#0d9488" />
-                Cash Flow Trend (Last 6 Months)
-              </h6>
-              <div className="d-flex gap-2">
-                <span className="badge" style={{ backgroundColor: '#ecfdf5', color: '#059669', fontSize: '10px' }}>INCOME</span>
-                <span className="badge" style={{ backgroundColor: '#fef2f2', color: '#dc2626', fontSize: '10px' }}>EXPENSE</span>
+          <div className="card border-0 shadow-sm rounded-3 h-100 bg-white">
+            <div className="pt-4 px-4">
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                <h6 className="fw-bold mb-0 d-flex align-items-center gap-2 text-dark">
+                  <Activity size={18} className="text-primary" />
+                  Cash Flow Trend (Last 6 Months)
+                </h6>
+                <div className="d-flex gap-2">
+                  <span className="badge bg-success bg-opacity-10 text-success" style={{ fontSize: '10px' }}>INCOME</span>
+                  <span className="badge bg-danger bg-opacity-10 text-danger" style={{ fontSize: '10px' }}>EXPENSE</span>
+                </div>
               </div>
             </div>
-            <div style={{ height: '320px', width: '100%' }}>
+            <div className="px-3 pb-3" style={{ height: '320px', width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={cashFlow}>
+                <BarChart data={cashFlow} margin={{ bottom: 10, left: 0, right: 0, top: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11}} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11}} />
@@ -138,9 +140,9 @@ const PaymentManagementPage = () => {
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                     cursor={{fill: '#f8fafc'}}
                   />
-                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '11px' }} />
-                  <Bar dataKey="income" name="Income" fill="#0d9488" radius={[4, 4, 0, 0]} barSize={20} />
-                  <Bar dataKey="expense" name="Expense" fill="#dc2626" radius={[4, 4, 0, 0]} barSize={20} />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px', fontSize: '11px' }} />
+                  <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                  <Bar dataKey="expense" name="Expense" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -149,12 +151,14 @@ const PaymentManagementPage = () => {
 
         {/* Distribution Chart */}
         <div className="col-lg-4">
-          <div style={cardStyle}>
-            <h6 className="fw-bold mb-4 d-flex align-items-center gap-2" style={{ color: '#1e293b' }}>
-              <Layers size={18} color="#ea580c" />
-              Expense Distribution
-            </h6>
-            <div style={{ height: '320px', width: '100%' }}>
+          <div className="card border-0 shadow-sm rounded-3 h-100 bg-white">
+            <div className="pt-4 px-4 mb-2">
+              <h6 className="fw-bold mb-0 d-flex align-items-center gap-2 text-dark">
+                <Layers size={18} className="text-warning" />
+                Expense Distribution
+              </h6>
+            </div>
+            <div className="pb-3 px-3" style={{ height: '320px', width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -174,7 +178,7 @@ const PaymentManagementPage = () => {
                   <Tooltip 
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                   />
-                  <Legend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '20px' }} />
+                  <Legend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -192,15 +196,29 @@ const PaymentManagementPage = () => {
   );
 
   return (
-    <div style={{ width: '100%', minHeight: '100%', backgroundColor: '#f8fafc', padding: '24px' }}>
+    <div className="min-vh-100 bg-light p-4">
       <div className="container-fluid p-0">
         
-        {/* Header Section */}
+        {/* Action Bar: Tabs & Buttons */}
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-          <div>
-            <h3 className="fw-bold mb-1" style={{ color: '#0f172a', letterSpacing: '-0.02em', fontWeight: 900 }}>Finance Overview</h3>
-            <p className="text-muted small mb-0">Real-time health of your business finances and payment tracking</p>
+          {/* Tab Selection */}
+          <div className="d-flex p-1 bg-white shadow-sm border" style={{ borderRadius: '14px', width: 'fit-content' }}>
+            {[
+              { id: 'overview', label: 'Overview', icon: <Briefcase size={14} /> },
+              { id: 'received', label: 'Payments In', icon: <ArrowDownCircle size={14} /> },
+              { id: 'paid', label: 'Payments Out', icon: <ArrowUpCircle size={14} /> }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`btn btn-sm px-4 py-2 d-flex align-items-center gap-2 transition-all ${activeTab === tab.id ? 'bg-dark text-white fw-bold shadow-sm' : 'text-muted border-0'}`}
+                style={{ borderRadius: '10px', fontSize: '13px', border: 'none' }}>
+                {tab.icon} {tab.label}
+              </button>
+            ))}
           </div>
+          
+          {/* Action Buttons */}
           <div className="d-flex gap-2">
             <button 
               onClick={() => navigate('/finance/receive-payment')}
@@ -215,23 +233,6 @@ const PaymentManagementPage = () => {
               <DollarSign size={16} /> Make Payment
             </button>
           </div>
-        </div>
-
-        {/* Tab Selection */}
-        <div className="d-flex p-1 bg-white mb-4 shadow-sm border" style={{ borderRadius: '14px', width: 'fit-content' }}>
-          {[
-            { id: 'overview', label: 'Overview', icon: <Briefcase size={14} /> },
-            { id: 'received', label: 'Payments In', icon: <ArrowDownCircle size={14} /> },
-            { id: 'paid', label: 'Payments Out', icon: <ArrowUpCircle size={14} /> }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`btn btn-sm px-4 py-2 d-flex align-items-center gap-2 transition-all ${activeTab === tab.id ? 'bg-dark text-white fw-bold shadow-sm' : 'text-muted border-0'}`}
-              style={{ borderRadius: '10px', fontSize: '13px', border: 'none' }}>
-              {tab.icon} {tab.label}
-            </button>
-          ))}
         </div>
 
         {error && (

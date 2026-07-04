@@ -185,8 +185,8 @@ const MakePaymentPage = () => {
         setAlert(null);
 
         if (paymentType === 'credit') {
-            if (!selectedSupplier || !selectedBill || !amount || !paymentMethod) {
-                setAlert({ type: 'danger', msg: 'Please select Supplier, Bill, Amount, and Payment Method.' });
+            if (!selectedSupplier || !amount || !paymentMethod) {
+                setAlert({ type: 'danger', msg: 'Please select Supplier, Amount, and Payment Method.' });
                 return;
             }
         } else {
@@ -224,7 +224,6 @@ const MakePaymentPage = () => {
                     ...commonPayload,
                     supplierId: selectedSupplier.S_ID,
                     referenceNo: receiptNo,
-                    supplierTransId: selectedBill.supplierTransId,
                     paymentDate: expenseDate,
                     notes: description
                 };
@@ -387,22 +386,30 @@ const MakePaymentPage = () => {
                                     )}
                                 </div>
 
-                                {/* Bill Selection */}
-                                <div className="col-md-4">
-                                    <label style={labelStyle}>Select Outstanding Bill <span className="text-danger">*</span></label>
-                                    <select 
-                                        className="form-select" 
-                                        style={inputStyle}
-                                        value={selectedBill?.supplierTransId || ''}
-                                        onChange={(e) => handleSelectBill(outstandingBills.find(b => b.supplierTransId === parseInt(e.target.value)))}
-                                        disabled={!selectedSupplier}>
-                                        <option value="">{loadingBills ? 'Loading bills...' : 'Select a bill...'}</option>
-                                        {outstandingBills.map(bill => (
-                                            <option key={bill.supplierTransId} value={bill.supplierTransId}>
-                                                {bill.referenceNo} ({bill.transactionDate}) - Rs. {fmt(bill.remainingAmount)}
-                                            </option>
-                                        ))}
-                                    </select>
+                                {/* Balance Display */}
+                                <div className="col-md-2">
+                                    <label style={labelStyle}>Current Balance</label>
+                                    <div className="form-control bg-light text-danger fw-bold" style={inputStyle}>
+                                        {selectedSupplier ? `Rs. ${fmt(selectedSupplier.Current_Balance)}` : 'Rs. 0.00'}
+                                    </div>
+                                </div>
+
+                                {/* Amount Input */}
+                                <div className="col-md-2">
+                                    <label style={labelStyle}>Amount to Pay <span className="text-danger">*</span></label>
+                                    <input 
+                                        type="number" 
+                                        step="0.01" 
+                                        min="0.01" 
+                                        max={selectedSupplier ? selectedSupplier.Current_Balance : ""}
+                                        value={amount} 
+                                        onChange={e => setAmount(e.target.value)}
+                                        placeholder="0.00" 
+                                        className="form-control fw-bold text-success" 
+                                        style={inputStyle} 
+                                        required 
+                                        disabled={!selectedSupplier}
+                                    />
                                 </div>
 
                                 <div className="col-md-3">
@@ -454,7 +461,7 @@ const MakePaymentPage = () => {
                             <div className="col-md-4">
                                 <label style={labelStyle}>{paymentType === 'credit' ? 'Bill Number' : 'Receipt No'}</label>
                                 <input type="text" value={receiptNo} onChange={e => setReceiptNo(e.target.value)}
-                                    placeholder="Receipt or invoice number" className="form-control" style={inputStyle} readOnly={paymentType === 'credit'} />
+                                    placeholder="Receipt or invoice number" className="form-control" style={inputStyle} />
                             </div>
                             <div className="col-md-4">
                                 <label style={labelStyle}>Description</label>

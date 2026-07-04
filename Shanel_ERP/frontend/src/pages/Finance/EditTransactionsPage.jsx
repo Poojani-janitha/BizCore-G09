@@ -161,18 +161,14 @@ const EditTransactionsPage = () => {
     return (
         <div className="container-fluid p-0" style={{ fontFamily: "'Inter', sans-serif", backgroundColor: '#f8fafc', minHeight: '100%' }}>
             
-            {/* Header */}
-            <div className="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center">
-                <div>
-                    <h4 className="mb-0 fw-bold" style={{ color: '#0f172a' }}>Transaction Correction</h4>
-                    <p className="text-muted small mb-0">Review and correct journal entries with a full audit trail</p>
-                </div>
-                {isEditing && (
+            {/* Header / Action Bar */}
+            {isEditing && (
+                <div className="bg-white border-bottom px-4 py-3 d-flex justify-content-end align-items-center">
                     <button onClick={() => setIsEditing(false)} className="btn btn-outline-secondary d-flex align-items-center gap-2">
                         <X size={18} /> Cancel Edit
                     </button>
-                )}
-            </div>
+                </div>
+            )}
 
             {alert && (
                 <div className={`alert alert-${alert.type} mx-4 mt-3 mb-0 shadow-sm border-0 d-flex align-items-center`} role="alert">

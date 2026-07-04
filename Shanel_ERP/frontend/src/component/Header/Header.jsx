@@ -69,6 +69,7 @@ const Header = () => {
         if (path.includes('/finance/general-ledger')) return t('header.general_ledger', 'General Ledger');
         if (path.includes('/finance/payments')) return t('header.payments', 'Payments');
         if (path.includes('/finance/reports')) return t('header.finance_reports', 'Finance Reports');
+        if (path.includes('/finance/edit-transactions')) return t('header.edit_transactions', 'Transaction Correction');
         if (path === '/logout') return t('header.logout', 'Logout');
         return t('header.dashboard', 'Dashboard');
     };
