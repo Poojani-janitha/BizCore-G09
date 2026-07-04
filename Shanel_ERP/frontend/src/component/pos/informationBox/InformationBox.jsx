@@ -146,8 +146,8 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation, 
                     </label>
                 </div>
 
-                {/* Production Option */}
-                <div 
+                {/* Production Option commented out as per request */}
+                {/* <div 
                     onClick={() => handleLocationChange('Production')}
                     style={{ 
                         display: 'flex', 
@@ -180,7 +180,7 @@ const InformationBox = ({ customerData, selectedProduct, location, setLocation, 
                     >
                         {t('informationBox.production')}
                     </label>
-                </div>
+                </div> */}
 
                 <style>{`
                     .shop-label:hover, .production-label:hover {

@@ -57,7 +57,7 @@ class FiscalPeriodController {
         try {
             const { id } = req.params;
             const { status } = req.body;
-            
+
             const period = await FiscalPeriod.findByPk(id, { transaction });
             if (!period) {
                 await transaction.rollback();
@@ -516,8 +516,42 @@ class FiscalPeriodController {
                 });
             }
 
+            // Delete closing journal entries associated with the deleted period, if any
+            const existingClosing = await JournalEntry.findOne({
+                where: {
+                    Entry_Type: 'Closing',
+                    Reference_Type: 'FiscalPeriod',
+                    Reference_ID: period.Period_ID
+                },
+                transaction
+            });
+            if (existingClosing) {
+                await JournalEntryLine.destroy({
+                    where: { Journal_ID: existingClosing.Journal_ID },
+                    transaction
+                });
+                await existingClosing.destroy({ transaction });
+            }
+
             // Delete the period itself
             await period.destroy({ transaction });
+
+            // Find the new latest CLOSED fiscal period to recalculate Balance_Brought_Forward
+            const newLatestClosedPeriod = await FiscalPeriod.findOne({
+                where: { Status: 'CLOSED' },
+                order: [['End_Date', 'DESC']],
+                transaction
+            });
+
+            if (newLatestClosedPeriod) {
+                await this._calculateBalanceBroughtForward(newLatestClosedPeriod, transaction);
+            } else {
+                // If no closed periods remain, reset all Balance_Brought_Forward to 0.00
+                await AccountChart.update(
+                    { Balance_Brought_Forward: 0.00 },
+                    { where: {}, transaction }
+                );
+            }
 
             await transaction.commit();
             return res.status(200).json({

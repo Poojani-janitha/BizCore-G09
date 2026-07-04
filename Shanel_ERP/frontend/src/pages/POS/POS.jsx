@@ -40,7 +40,7 @@ const POS = () => {
   const [loading, setLoading] = useState(false);//for display resent sales component after payment, also can be used for loading state in future
   const [holdInvoices, setHoldInvoices] = useState([]);//for storing multiple hold invoice data in local storage
   const [isHoldOpen, setIsHoldOpen] = useState(false);
-  const[information, setInformation] = useState({});//for storing product information to display in InformationBox component
+  const [information, setInformation] = useState({});//for storing product information to display in InformationBox component
   const [priceLevel, setPriceLevel] = useState('Retail'); // Toggle between Retail and Wholesale
   const [location, setLocation] = useState('Shop'); // toggle between  shop and production
   const [selectedProduct, setSelectedProduct] = useState(null); // Store the currently selected product for which we want to show information in InformationBox
@@ -322,7 +322,7 @@ const POS = () => {
         });
       };
 
-    
+
 
       try {
         let response;
@@ -790,12 +790,13 @@ const POS = () => {
 
       {/* Section 3: Payment Method (Full Width) */}
       <div className='card border-0 shadow-sm p-4 mb-3'>
-        <PaymentMethod 
-          paymentData={paymentData} 
-          setPaymentData={setPaymentData} 
-          totalDue={invoiceData?.finalTotal || 0} 
-          setError={setError} 
-          customerData={customerData} 
+        <PaymentMethod
+          paymentData={paymentData}
+          setPaymentData={setPaymentData}
+          totalDue={invoiceData?.finalTotal || 0}
+          setError={setError}
+          customerData={customerData}
+          priceLevel={priceLevel}
         />
       </div>
 
@@ -803,16 +804,16 @@ const POS = () => {
       <div className='card border-0 shadow-sm p-4 mb-4'>
         <div className='row g-4'>
           <div className='col-lg-6 border-end'>
-            <InvoiceTotal 
-              cartItems={cartItems} 
-              onChangeInvoiceData={handleInvoiceDataChange} 
-              setError={setError} 
+            <InvoiceTotal
+              cartItems={cartItems}
+              onChangeInvoiceData={handleInvoiceDataChange}
+              setError={setError}
             />
           </div>
           <div className='col-lg-6'>
-            <ActionButtons 
-              setAction={setAction} 
-              setError={setError} 
+            <ActionButtons
+              setAction={setAction}
+              setError={setError}
             />
           </div>
         </div>

@@ -33,8 +33,8 @@ const corsOptions = {
 const corsMiddleware = cors(corsOptions); //allow frontend to access backend
 
 // ─── BODY PARSERS ─────────────────────────────────────────────────────────────
-const jsonParser    = express.json();    //Convert JSON request body into a JavaScript object -- req.body.name
-const urlencodedParser = express.urlencoded({ extended: true }); //Parse URL-encoded data (from forms) into req.body  -- name=John&age=20
+const jsonParser    = express.json({ limit: '20mb' });    //Convert JSON request body into a JavaScript object -- req.body.name
+const urlencodedParser = express.urlencoded({ extended: true, limit: '20mb' }); //Parse URL-encoded data (from forms) into req.body  -- name=John&age=20
 
 
 // ─── REQUEST LOGGER (dev only) ────────────────────────────────────────────────

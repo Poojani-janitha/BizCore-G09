@@ -83,19 +83,14 @@ class SalesAccountController {
 
     //create journal entry for the sale
     async createSaleJournalEntry(saleData, totalCOGS, paymentMethod, transaction) {
-
-        //get debit account based on payment method
-        const debitAccount = await this.getDebitAccount(paymentMethod, transaction);
-
-
-        //get credit account based on sale type
+        //credit account based on sale type
         const revenueAccountCode = saleData.Sale_Type === 'Retail'
             ? ACCOUNTS.SALES_REVENUE_RETAIL
             : ACCOUNTS.SALES_REVENUE_WHOLESALE;
 
-
         const revenueAccount = await AccountChart.findOne({
-            where: { Account_Code: revenueAccountCode }
+            where: { Account_Code: revenueAccountCode },
+            transaction
         });
         if (!revenueAccount) {
             throw new Error(`Revenue account not found! ` +
@@ -104,24 +99,23 @@ class SalesAccountController {
                 `Please ensure account exists in ACCOUNT_CHART table.`);
         }
 
-
         // Fetch all other accounts needed
         const discountAccount = await AccountChart.findOne({
-            where: { Account_Code: ACCOUNTS.DISCOUNT_GIVEN }
+            where: { Account_Code: ACCOUNTS.DISCOUNT_GIVEN },
+            transaction
         });
-
 
         //get COGS 
         const cogsAccount = await AccountChart.findOne({
-            where: { Account_Code: ACCOUNTS.COGS }
+            where: { Account_Code: ACCOUNTS.COGS },
+            transaction
         });
 
         //get inventory account
         const inventoryAccount = await AccountChart.findOne({
-            where: { Account_Code: ACCOUNTS.INVENTORY }
+            where: { Account_Code: ACCOUNTS.INVENTORY },
+            transaction
         });
-
-
 
         if (!discountAccount) {
             throw new Error(`Discount account (${ACCOUNTS.DISCOUNT_GIVEN}) not found in ACCOUNT_CHART`);
@@ -139,14 +133,9 @@ class SalesAccountController {
         const subtotalAmount = parseFloat(saleData.Subtotal); //before discount
         const cogs = parseFloat(totalCOGS); //cost of goods sold
 
-
-
-
         //calculate totals 
         const totalDebit = totalAmount + cogs + discountAmount; //what customer pays + cost of goods sold
         const totalCredit = subtotalAmount + cogs; //sales revenue + COGS
-
-
 
         //verify balanced
         if (Math.abs(totalDebit - totalCredit) > 0.01) {
@@ -155,16 +144,12 @@ class SalesAccountController {
                 `Difference: ${Math.abs(totalDebit - totalCredit)}`);
         }
 
-
-
         //generate a journal number 
         const journalNumber = await this.generateJournalNumber('SALE-JE-');
-
 
         //prepare journal description
         const customerName = saleData.Customer ? saleData.Customer.C_Name : 'Unknown Customer';
         const description = `${paymentMethod} ${saleData.Sale_Type} sale to ${customerName} - ${saleData.Invoice_No}`;
-
 
         //create journal entry
         const journalEntry = await JournalEntry.create({
@@ -180,73 +165,139 @@ class SalesAccountController {
             Posted_By: null,
             Posted_Date: new Date(),
             Created_By: null
-
         }, { transaction });
         console.log('✓ Journal Entry created with ID:', journalEntry.Journal_ID);
 
-
-
-        //build journal entry lines
+        //build journal entry lines dynamically to handle single or mixed payment options
         const journalLines = [];
+        let currentLineNumber = 1;
 
-        //Line 1: Debit - Cash/Bank/Receivable
-        journalLines.push({
-            Journal_ID: journalEntry.Journal_ID,
-            Account_ID: debitAccount.Account_ID,
-            Line_Number: 1,
-            Debit_Amount: totalAmount,
-            Credit_Amount: 0,
-            Description: `${paymentMethod} received from ${customerName}`,
-        });
+        if (paymentMethod === 'Mixed') {
+            const Payment = require('../../models/sales/Payment');
+            const paymentRecord = await Payment.findOne({
+                where: { Sale_ID: saleData.Sale_ID },
+                transaction
+            });
 
-        //Line 2: Debit - Discount Given (if applicable)
+            if (paymentRecord) {
+                const cashAmt = parseFloat(paymentRecord.Cash_Amount || 0);
+                const chequeAmt = parseFloat(paymentRecord.Cheque_Amount || 0);
+                const bankAmt = parseFloat(paymentRecord.Bank_Transfer_Amount || 0);
+                const creditAmt = parseFloat(paymentRecord.Credit_Amount || 0);
+
+                if (cashAmt > 0) {
+                    const cashAcc = await this.getDebitAccount('Cash', transaction);
+                    journalLines.push({
+                        Journal_ID: journalEntry.Journal_ID,
+                        Account_ID: cashAcc.Account_ID,
+                        Line_Number: currentLineNumber++,
+                        Debit_Amount: cashAmt,
+                        Credit_Amount: 0,
+                        Description: `Cash portion of Mixed payment received from ${customerName}`,
+                    });
+                }
+                if (chequeAmt > 0) {
+                    const chequeAcc = await this.getDebitAccount('Cheque', transaction);
+                    journalLines.push({
+                        Journal_ID: journalEntry.Journal_ID,
+                        Account_ID: chequeAcc.Account_ID,
+                        Line_Number: currentLineNumber++,
+                        Debit_Amount: chequeAmt,
+                        Credit_Amount: 0,
+                        Description: `Cheque portion of Mixed payment received from ${customerName}`,
+                    });
+                }
+                if (bankAmt > 0) {
+                    const bankAcc = await this.getDebitAccount('Bank_Transfer', transaction);
+                    journalLines.push({
+                        Journal_ID: journalEntry.Journal_ID,
+                        Account_ID: bankAcc.Account_ID,
+                        Line_Number: currentLineNumber++,
+                        Debit_Amount: bankAmt,
+                        Credit_Amount: 0,
+                        Description: `Bank Transfer portion of Mixed payment received from ${customerName}`,
+                    });
+                }
+                if (creditAmt > 0) {
+                    const creditAcc = await this.getDebitAccount('Credit', transaction);
+                    journalLines.push({
+                        Journal_ID: journalEntry.Journal_ID,
+                        Account_ID: creditAcc.Account_ID,
+                        Line_Number: currentLineNumber++,
+                        Debit_Amount: creditAmt,
+                        Credit_Amount: 0,
+                        Description: `Credit portion of Mixed payment from ${customerName}`,
+                    });
+                }
+            } else {
+                // Fallback to cash account if no detailed record found
+                const cashAcc = await this.getDebitAccount('Cash', transaction);
+                journalLines.push({
+                    Journal_ID: journalEntry.Journal_ID,
+                    Account_ID: cashAcc.Account_ID,
+                    Line_Number: currentLineNumber++,
+                    Debit_Amount: totalAmount,
+                    Credit_Amount: 0,
+                    Description: `Mixed payment (fallback) received from ${customerName}`,
+                });
+            }
+        } else {
+            // Standard single payment method
+            const debitAccount = await this.getDebitAccount(paymentMethod, transaction);
+            journalLines.push({
+                Journal_ID: journalEntry.Journal_ID,
+                Account_ID: debitAccount.Account_ID,
+                Line_Number: currentLineNumber++,
+                Debit_Amount: totalAmount,
+                Credit_Amount: 0,
+                Description: `${paymentMethod} received from ${customerName}`,
+            });
+        }
+
+        // Debit - Discount Given (if applicable)
         if (discountAmount > 0) {
             journalLines.push({
                 Journal_ID: journalEntry.Journal_ID,
                 Account_ID: discountAccount.Account_ID,
-                Line_Number: 2,
+                Line_Number: currentLineNumber++,
                 Debit_Amount: discountAmount,
                 Credit_Amount: 0,
-                Description: `${saleData.Discount_percentage}% Discount given to ${customerName} `
+                Description: `${saleData.Discount_percentage || saleData.Discount_Percentage || 0}% Discount given to ${customerName} `
             });
         }
 
-        //Line 3: Credit - Sales Revenue
-        const lineNumber = discountAmount > 0 ? 3 : 2; //adjust line number if discount line exists
+        // Credit - Sales Revenue
         journalLines.push({
             Journal_ID: journalEntry.Journal_ID,
             Account_ID: revenueAccount.Account_ID,
-            Line_Number: lineNumber,
+            Line_Number: currentLineNumber++,
             Debit_Amount: 0,
             Credit_Amount: subtotalAmount,
             Description: `Sales revenue for ${customerName}`
         });
 
-        //Line 4: Debit - COGS
+        // Debit - COGS
         journalLines.push({
             Journal_ID: journalEntry.Journal_ID,
             Account_ID: cogsAccount.Account_ID,
-            Line_Number: lineNumber + 1,
+            Line_Number: currentLineNumber++,
             Debit_Amount: cogs,
             Credit_Amount: 0,
             Description: `Cost of goods sold for ${customerName}`
         });
 
-        //Line 5: Credit - Inventory (to reduce inventory)
+        // Credit - Inventory (to reduce inventory)
         journalLines.push({
             Journal_ID: journalEntry.Journal_ID,
             Account_ID: inventoryAccount.Account_ID,
-            Line_Number: lineNumber + 2,
+            Line_Number: currentLineNumber++,
             Debit_Amount: 0,
             Credit_Amount: cogs,
             Description: `Reduce inventory for ${customerName}`
         });
 
-
-
         //Insert all journal lines
         await JournalEntryLine.bulkCreate(journalLines, { transaction });
-
 
         //update account balances
         for (const line of journalLines) {
@@ -257,14 +308,6 @@ class SalesAccountController {
                 transaction
             );
         }
-
-
-        //Link journal to sale 
-        // await Sale.update(
-        //     { Journal_ID: journalEntry.Journal_ID },
-        //     { where: { Sale_ID: saleData.Sale_ID }, transaction }
-        // );
-
 
         return {
             journalId: journalEntry.Journal_ID,
@@ -381,7 +424,12 @@ class SalesAccountController {
             [PAYMENT_METHODS.CHEQUE]: ACCOUNTS.CHEQUES_IN_HAND,
             [PAYMENT_METHODS.CARD]: ACCOUNTS.BANK_ACCOUNT_BOC,
             'Cash': ACCOUNTS.CASH_IN_HAND,
-            'Bank': ACCOUNTS.BANK_ACCOUNT_BOC
+            'Bank': ACCOUNTS.BANK_ACCOUNT_BOC,
+            'Bank_transfer': ACCOUNTS.BANK_ACCOUNT_BOC,
+            'Bank_Transfer': ACCOUNTS.BANK_ACCOUNT_BOC,
+            'bank_transfer': ACCOUNTS.BANK_ACCOUNT_BOC,
+            'Bank Transfer': ACCOUNTS.BANK_ACCOUNT_BOC,
+            'Mixed': ACCOUNTS.CASH_IN_HAND
         };
 
         const accountCode = debitAccountMap[normalizedMethod] || debitAccountMap[paymentMethod];
@@ -395,7 +443,7 @@ class SalesAccountController {
         });
 
         if (!account) {
-            throw new Error(`Account Code ${accountId} not found in database for payment method: ${paymentMethod}. Please ensure all required accounts are created in AccountChart table.`);
+            throw new Error(`Account Code ${accountCode} not found in database for payment method: ${paymentMethod}. Please ensure all required accounts are created in AccountChart table.`);
         }
 
         return account;
