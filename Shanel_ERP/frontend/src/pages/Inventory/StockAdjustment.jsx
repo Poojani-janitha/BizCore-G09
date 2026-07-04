@@ -4,6 +4,9 @@ import { Plus, AlertTriangle, ShieldOff, Archive, Package, Edit2, Trash2 } from 
 import { useTranslation } from 'react-i18next';
 import AdjustmentModal from '../../component/Inventory/Adjustment/AdjustmentModal';
 import EditAdjustmentModal from '../../component/Inventory/Adjustment/EditAdjustmentModal';
+import Pagination from '../../component/common/Pagination';
+
+const PAGE_SIZE = 25;
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const StockAdjustment = () => {
@@ -12,6 +15,8 @@ const StockAdjustment = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedAdjustment, setSelectedAdjustment] = useState(null);
     const [cardTotals, setCardTotals] = useState({ Expired: 0, Damage: 0, Theft: 0 });
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(PAGE_SIZE);
     const { t, i18n } = useTranslation();
     const isSinhala = i18n.language?.startsWith('si');
 
@@ -34,6 +39,13 @@ const StockAdjustment = () => {
     };
 
     useEffect(() => { fetchLogs(); }, []);
+
+    useEffect(() => {
+        setPage(1);
+    }, [logs.length]);
+
+    const totalPages = Math.max(1, Math.ceil(logs.length / pageSize));
+    const pagedLogs = logs.slice((page - 1) * pageSize, page * pageSize);
 
     const handleEdit = (adjustment) => {
         setSelectedAdjustment(adjustment);
@@ -85,7 +97,7 @@ const StockAdjustment = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {logs.map(log => (
+                            {pagedLogs.map(log => (
                                 <tr key={log.Adjustment_ID}>
                                     <td className='ps-4'>{log.Adjustment_Date}</td>
                                     <td>
@@ -130,6 +142,14 @@ const StockAdjustment = () => {
                         </tbody>
                     </table>
                 </div>
+
+            <Pagination
+                currentPage={page}
+                totalItems={logs.length}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+            />
             </div>
 
             <AdjustmentModal show={showModal} onHide={() => setShowModal(false)} refresh={fetchLogs} />

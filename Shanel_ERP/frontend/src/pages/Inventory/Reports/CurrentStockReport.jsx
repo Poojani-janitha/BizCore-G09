@@ -1,17 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { FileText, Download, Printer } from 'react-feather';
 import { generatePDF } from '../../../services/reportGenerator';
+import Pagination from '../../../component/common/Pagination';
 import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const CurrentStockReport = () => {
     const [reportData, setReportData] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
 
     useEffect(() => {
-        // We use the view 'v_current_stock' from your DB dump
         axios.get(API_ENDPOINTS.inventory.reports.currentStock)
             .then(res => setReportData(res.data.data));
     }, []);
+
+    const pagedData = useMemo(
+        () => reportData.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+        [reportData, currentPage, pageSize]
+    );
 
     const handleExportPDF = () => {
         const columns = ["Item ID", "Item Name", "Prod. Stock", "Sales Stock", "Total", "Status"];
@@ -26,16 +33,12 @@ const CurrentStockReport = () => {
         generatePDF("Current Stock Report", columns, data, "Current_Stock_Report");
     };
 
-    const handlePrint = () => {
-        window.print();
-    };
-
     return (
         <div className='p-4 bg-light min-vh-100 no-print' style={{ fontSize: '13px' }}>
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h6 className='fw-bold text-dark mb-0'>Current Stock Report</h6>
                 <div className="d-flex gap-2">
-                    <button className="btn btn-outline-secondary btn-sm rounded-3" onClick={handlePrint}>
+                    <button className="btn btn-outline-secondary btn-sm rounded-3" onClick={() => window.print()}>
                         <Printer size={14} className="me-1"/> Print
                     </button>
                     <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm" onClick={handleExportPDF}>
@@ -58,7 +61,7 @@ const CurrentStockReport = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {reportData.map((item, i) => (
+                            {pagedData.map((item, i) => (
                                 <tr key={i}>
                                     <td className="fw-bold ps-4">{item.P_Code || `P-${item.P_ID}`}</td>
                                     <td>{item.P_Name}</td>
@@ -74,6 +77,15 @@ const CurrentStockReport = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+                <div className="px-3">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={reportData.length}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                    />
                 </div>
             </div>
         </div>
