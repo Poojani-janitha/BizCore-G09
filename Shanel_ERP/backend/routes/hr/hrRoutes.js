@@ -37,7 +37,8 @@ const {
     getPayrolls,
     createPayroll,
     updatePayroll,
-    mailPayrollToBank
+    mailPayrollToBank,
+    testEmailConfig
 } = require('../../controllers/hr/payrollController');
 
 router.get('/health', getHrDbHealth);
@@ -62,6 +63,7 @@ router.post('/attendance/bulk', bulkAttendance);
 
 
 // --- Payroll ---
+router.get('/payroll/test-email', testEmailConfig);
 router.post('/payroll/mail-to-bank', mailPayrollToBank);
 router.get('/payroll', getPayrolls);
 router.post('/payroll', createPayroll);
