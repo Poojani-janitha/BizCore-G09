@@ -438,7 +438,10 @@ const getSaleDetails = async (req, res) => {
                 {
                     model: Payment,
                     as: 'Payments',
-                    attributes: ['Pay_ID', 'Payment_Method', 'Payment_Amount', 'Payment_Date', 'Payment_Time', 'Status']
+                    attributes: [
+                        'Pay_ID', 'Payment_Method', 'Payment_Amount', 'Payment_Date', 'Payment_Time', 'Status',
+                        'Cash_Amount', 'Cheque_Amount', 'Bank_Transfer_Amount', 'Credit_Amount'
+                    ]
                 }
             ]
         });

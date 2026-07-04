@@ -200,7 +200,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         if (isDuplicate) {
             setError({
                 field: 'general',
-                message: `Item "${tempItem.p_name}" (${tempItem.p_unit}) is already in the cart. Please update the existing quantity instead.`
+                message: "Item is already in the cart."
             });
             return;
         }
@@ -222,8 +222,8 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
             setError({
                 field: 'general',
                 message: totalInCartBaseUnit > 0
-                    ? `Your cart already has ${totalInCartBaseUnit} ${baseUnitName} of ${tempItem.p_name}. You entered ${tempItem.quntity} ${tempItem.p_unit} (${newItemQtyInBaseUnit} ${baseUnitName}), but only ${remainingQty} ${baseUnitName} is still available in ${location}.`
-                    : `Only ${availableQuantity} ${baseUnitName} available in ${location}. You entered ${tempItem.quntity} ${tempItem.p_unit} (${newItemQtyInBaseUnit} ${baseUnitName}).`
+                    ? `Stock limit exceeded. Only ${remainingQty} ${baseUnitName} is remaining in ${location}.`
+                    : `Only ${availableQuantity} ${baseUnitName} is available in ${location}.`
             });
             return;
         }
@@ -259,8 +259,8 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                 setError({
                     field: 'general',
                     message: otherCartBaseQty > 0
-                        ? `Your cart already has ${otherCartBaseQty} ${baseUnitName} of ${item.p_name}. You entered ${numQty} ${item.p_unit} (${convertedQty} ${baseUnitName}), but only ${remainingQty} ${baseUnitName} is still available in ${location}.`
-                        : `Only ${availableQuantity} ${baseUnitName} available in ${location}. You entered ${numQty} ${item.p_unit} (${convertedQty} ${baseUnitName}).`
+                        ? `Stock limit exceeded. Only ${remainingQty} ${baseUnitName} is remaining in ${location}.`
+                        : `Only ${availableQuantity} ${baseUnitName} is available in ${location}.`
                 });
                 // Reset to 0 to prevent bypassing validation
                 updatedCart[index][field] = 0;
@@ -409,8 +409,8 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                 setError({
                     field: 'general',
                     message: alreadyInCartBaseQty > 0
-                        ? `Your cart already has ${alreadyInCartBaseQty} ${baseUnitName} of ${prev.p_name || 'this item'}. You entered ${numQty} ${prev.p_unit || 'unit'} (${convertedQty} ${baseUnitName}), but only ${remainingQty} ${baseUnitName} is still available in ${location}.`
-                        : `Only ${availableQuantity} ${baseUnitName} available in ${location}. You entered ${numQty} ${prev.p_unit || 'unit'} (${convertedQty} ${baseUnitName}).`
+                        ? `Stock limit exceeded. Only ${remainingQty} ${baseUnitName} is remaining in ${location}.`
+                        : `Only ${availableQuantity} ${baseUnitName} is available in ${location}.`
                 });
                 return { ...prev, quntity: 0 };
             } else {
@@ -429,14 +429,14 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
     const handleOnFocusDiscount = () => {
         if (!tempItem.discount_allowed) {
             setTempItem((prev) => ({ ...prev, discount: 0 }));
-            setError({ field: 'general', message: 'Discount not allowed for this product, Discount only for Company and price level is Wholesale' });
+            setError({ field: 'general', message: 'Discount not allowed for this product.' });
         }
     };
 
     //display error when user tries to edit discount on cart item if discount is not allowed
     const handleOnFocusCartItemDiscount = (item) => {
         if (!item.discount_allowed) {
-            setError({ field: 'general', message: 'Discount not allowed for this product, Discount only for Company and price level is Wholesale' });
+            setError({ field: 'general', message: 'Discount not allowed for this product.' });
         }
     };
 

@@ -5,6 +5,7 @@ const JournalEntry      = require('./JournalEntry');
 const JournalEntryLine  = require('./JournalEntryLine');
 const Expense           = require('./Expense');
 const Income            = require('./Income');
+const FiscalPeriod      = require('./FiscalPeriod');
 const Supplier          = require('../supplier/Supplier');
 const SupplierTransaction = require('../supplier/SupplierTransaction');
 
@@ -106,6 +107,7 @@ module.exports = {
     JournalEntryLine,
     Expense,
     Income,
+    FiscalPeriod,
     Supplier,
     SupplierTransaction
 };
