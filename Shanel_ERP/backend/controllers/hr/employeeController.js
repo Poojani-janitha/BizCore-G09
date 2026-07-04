@@ -323,7 +323,7 @@ const updateEmployeeStatus = async (req, res) => {
 
         // Force update using raw SQL with explicit ID to bypass any Sequelize instance issues
         await Employee.sequelize.query(
-            'UPDATE EMPLOYEE SET Status = :status, Updated_At = :now WHERE Employee_ID = :id',
+            'UPDATE `EMPLOYEE` SET Status = :status, Updated_At = :now WHERE Employee_ID = :id',
             {
                 replacements: {
                     status: Status,
@@ -362,7 +362,7 @@ const deleteEmployee = async (req, res) => {
 
         // Force update using raw query to ensure persistence
         await Employee.sequelize.query(
-            'UPDATE EMPLOYEE SET Status = "Inactive", Updated_At = NOW() WHERE Employee_ID = :id',
+            'UPDATE `EMPLOYEE` SET Status = "Inactive", Updated_At = NOW() WHERE Employee_ID = :id',
             {
                 replacements: { id: employee.Employee_ID },
                 type: Employee.sequelize.QueryTypes.UPDATE
