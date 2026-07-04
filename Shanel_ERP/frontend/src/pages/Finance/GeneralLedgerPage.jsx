@@ -62,7 +62,13 @@ const GeneralLedgerPage = () => {
       if (reset) setLoadingEntries(true);
       else setLoadingMore(true);
       
-      const res = await axios.get(API_ENDPOINTS.journalEntries.list(pageNum, 10));
+      const params = {};
+      if (jeStart && jeEnd) {
+        params.startDate = jeStart;
+        params.endDate = jeEnd;
+      }
+      
+      const res = await axios.get(API_ENDPOINTS.journalEntries.list(pageNum, 10), { params });
       if (res.data.success) {
         if (reset) {
           setJournalEntries(res.data.data);
