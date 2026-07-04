@@ -28,7 +28,7 @@ const Attendance = sequelize.define(
         Created_By: { type: DataTypes.INTEGER, allowNull: true }
     },
     {
-        tableName: 'ATTENDANCE',
+        tableName: 'attendance',
         ...hrOpts,
         timestamps: true,
         createdAt: 'Created_At',

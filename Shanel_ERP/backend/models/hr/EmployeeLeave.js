@@ -27,7 +27,7 @@ const EmployeeLeave = sequelize.define(
         Document_Path: { type: DataTypes.STRING, allowNull: true }
     },
     {
-        tableName: 'EMPLOYEE_LEAVE',
+        tableName: 'employee_leave',
         ...hrOpts,
         timestamps: true,
         createdAt: 'Created_At',

@@ -21,7 +21,7 @@ const AttendanceSummary = sequelize.define(
         Summary_Date: { type: DataTypes.DATEONLY, allowNull: false }
     },
     {
-        tableName: 'ATTENDANCE_SUMMARY',
+        tableName: 'attendance_summary',
         ...hrOpts,
         timestamps: true,
         createdAt: 'Created_At',

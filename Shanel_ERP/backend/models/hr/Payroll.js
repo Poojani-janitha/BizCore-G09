@@ -45,7 +45,7 @@ const Payroll = sequelize.define(
         Approved_By: { type: DataTypes.INTEGER, allowNull: true }
     },
     {
-        tableName: 'PAYROLL',
+        tableName: 'payroll',
         ...hrOpts,
         timestamps: true,
         createdAt: 'Generated_At',
