@@ -35,7 +35,7 @@ module.exports = {
             // Populate Type_ID from existing Account_Type ENUM values
             await q.query(`
                 UPDATE account_chart ac
-                JOIN account_type at2 ON at2.Type_Name = ac.Account_Type
+                JOIN account_type at2 ON at2.Type_Name COLLATE utf8mb4_unicode_ci = ac.Account_Type COLLATE utf8mb4_unicode_ci
                 SET ac.Type_ID = at2.Type_ID
             `);
             console.log('✅ Populated Type_ID from Account_Type ENUM');
