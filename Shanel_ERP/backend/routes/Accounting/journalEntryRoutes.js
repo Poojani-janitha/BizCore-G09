@@ -6,6 +6,9 @@ const transactionCorrectionController = require('../../controllers/Accounting&Fi
 // Get all journal entries
 router.get('/', (req, res) => journalEntryController.getAllJournalEntries(req, res));
 
+// Create a new journal entry
+router.post('/create', (req, res) => journalEntryController.createJournalEntry(req, res));
+
 // Get transactions for correction (excludes revised ones)
 router.get('/correction/list', (req, res) => transactionCorrectionController.getTransactionsForCorrection(req, res));
 

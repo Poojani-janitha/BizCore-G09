@@ -8,6 +8,7 @@ import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import ChartOfAccountsPage from './ChartOfAccountsPage';
 import FiscalPeriodModal from './FiscalPeriodModal';
+import CreateJournalEntryModal from '../../component/Finance/CreateJournalEntryModal';
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const GeneralLedgerPage = () => {
@@ -26,6 +27,7 @@ const GeneralLedgerPage = () => {
 
   // Modal state
   const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
+  const [isJournalModalOpen, setIsJournalModalOpen] = useState(false);
   const [isDeleteAuthModalOpen, setIsDeleteAuthModalOpen] = useState(false);
   const [deleteAuthPassword, setDeleteAuthPassword] = useState('');
   const [periodToDelete, setPeriodToDelete] = useState(null);
@@ -62,7 +64,13 @@ const GeneralLedgerPage = () => {
       if (reset) setLoadingEntries(true);
       else setLoadingMore(true);
       
-      const res = await axios.get(API_ENDPOINTS.journalEntries.list(pageNum, 10));
+      const params = {};
+      if (jeStart && jeEnd) {
+        params.startDate = jeStart;
+        params.endDate = jeEnd;
+      }
+      
+      const res = await axios.get(API_ENDPOINTS.journalEntries.list(pageNum, 10), { params });
       if (res.data.success) {
         if (reset) {
           setJournalEntries(res.data.data);
@@ -309,17 +317,23 @@ const GeneralLedgerPage = () => {
       <div className="w-full pt-4 flex flex-col gap-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { label: t('finance.fiscal.current_period'), value: currentPeriod.Period_Name, color: 'text-green-600', bg: 'bg-green-50', icon: <Calendar size={20} /> },
-            { label: t('finance.fiscal.fiscal_year'), value: 'FY 2026-27', color: 'text-orange-600', bg: 'bg-orange-50', icon: <RefreshCw size={20} /> },
-            { label: t('finance.fiscal.system_status'), value: currentPeriod.Status === 'OPEN' ? t('finance.fiscal.ready_posting') : t('finance.fiscal.closed'), color: 'text-blue-600', bg: 'bg-blue-50', icon: <Shield size={20} /> }
+            { label: t('finance.fiscal.current_period'), value: currentPeriod.Period_Name, color: 'text-green-600', border: 'border-t-4 border-green-600', icon: <Calendar size={20} className="text-green-600" /> },
+            { label: t('finance.fiscal.fiscal_year'), value: 'FY 2026-27', color: 'text-orange-600', border: 'border-t-4 border-orange-600', icon: <RefreshCw size={20} className="text-orange-600" /> },
+            { label: t('finance.fiscal.system_status'), value: currentPeriod.Status === 'OPEN' ? t('finance.fiscal.ready_posting') : t('finance.fiscal.closed'), color: 'text-blue-600', border: 'border-t-4 border-blue-600', icon: <Shield size={20} className="text-blue-600" /> }
           ].map((card, idx) => (
-            <div key={idx} className="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${card.bg} ${card.color}`}>
-                {card.icon}
+            <div key={idx} className={`p-5 bg-white border border-gray-200 ${card.border} rounded-2xl shadow-sm flex flex-col justify-between h-32 transition-all hover:-translate-y-1 hover:shadow-md`}>
+              <div className="flex justify-between items-start w-full">
+                <small className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  {card.label}
+                </small>
+                <div className="opacity-75">
+                  {card.icon}
+                </div>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{card.label}</p>
-                <p className="text-lg font-bold text-teal-950">{card.value}</p>
+                <h5 className="text-2xl font-black text-slate-800 leading-tight">
+                  {card.value}
+                </h5>
               </div>
             </div>
           ))}
@@ -392,15 +406,13 @@ const GeneralLedgerPage = () => {
     <div className="w-full min-h-screen bg-[#f8fafc] p-6 flex flex-col gap-6 font-['Inter']">
 
       {/* Header Section */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-teal-950 tracking-tight">{t('finance.general_ledger')}</h1>
-          <p className="text-gray-500 mt-1">{t('finance.subtitle')}</p>
-        </div>
-
+      <div className="flex justify-end items-center">
         <div className="flex gap-3">
           {activeTab === 'journal_entries' && (
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold shadow-lg shadow-orange-200 hover:bg-orange-700 transition-all hover:scale-105 active:scale-95">
+            <button 
+              onClick={() => setIsJournalModalOpen(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold shadow-lg shadow-orange-200 hover:bg-orange-700 transition-all hover:scale-105 active:scale-95"
+            >
               <PlusCircle size={18} /> {t('finance.journal.create_entry')}
             </button>
           )}
@@ -526,6 +538,13 @@ const GeneralLedgerPage = () => {
           </div>
         </div>
       )}
+
+      {/* Journal Entry Modal */}
+      <CreateJournalEntryModal 
+        isOpen={isJournalModalOpen} 
+        onClose={() => setIsJournalModalOpen(false)} 
+        onEntryCreated={() => fetchJournalEntries(1, true)} 
+      />
     </div>
   );
 };

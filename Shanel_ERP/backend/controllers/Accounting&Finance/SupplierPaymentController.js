@@ -44,10 +44,10 @@ class SupplierPaymentController {
             } = req.body;
 
             // ── Validate required fields ──
-            if (!supplierId || !amount || !paymentMethod || !supplierTransId) {
+            if (!supplierId || !amount || !paymentMethod) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Missing required fields: supplierId, amount, paymentMethod, supplierTransId'
+                    message: 'Missing required fields: supplierId, amount, paymentMethod'
                 });
             }
 
@@ -83,27 +83,28 @@ class SupplierPaymentController {
                 });
             }
 
-            // ── Validate supplierTransId matches a Credit_Taken transaction ──
-            const creditTakenRecord = await SupplierTransaction.findOne({
-                where: {
-                    Supplier_Trans_ID: supplierTransId,
-                    Transaction_Type: 'Credit_Taken'
-                },
-                transaction
-            });
-
-            if (!creditTakenRecord) {
-                return res.status(404).json({
-                    success: false,
-                    message: `No credit transaction found with ID: ${supplierTransId}`
+            let poId = null;
+            if (supplierTransId) {
+                // ── Validate supplierTransId matches a Credit_Taken transaction ──
+                const creditTakenRecord = await SupplierTransaction.findOne({
+                    where: {
+                        Supplier_Trans_ID: supplierTransId,
+                        Transaction_Type: 'Credit_Taken'
+                    },
+                    transaction
                 });
+
+                if (creditTakenRecord) {
+                    poId = creditTakenRecord.PO_ID;
+                }
             }
 
             // ── Calculate new running balance ──
             const newBalance = currentBalance - paymentAmount;
 
             // ── Build detailed notes ──
-            let detailedNotes = notes || `Credit payment to supplier for bill ${referenceNo}`;
+            const refNoText = referenceNo ? ` for reference ${referenceNo}` : '';
+            let detailedNotes = notes || `Credit payment to supplier${refNoText}`;
             if (paymentMethod === 'Bank' && bankName) {
                 detailedNotes += ` | Bank: ${bankName}, Slip: ${depositSlipNo || 'N/A'}, Date: ${depositDate || 'N/A'}`;
             } else if (paymentMethod === 'Cheque' && chequeNo) {
@@ -113,7 +114,7 @@ class SupplierPaymentController {
             // ── 1. Create Credit_Paid record ──
             const creditPaidRecord = await SupplierTransaction.create({
                 Supplier_ID: supplierId,
-                PO_ID: creditTakenRecord.PO_ID || null,
+                PO_ID: poId,
                 Payment_ID: null,
                 Transaction_Date: paymentDate || getLocalDateString(),
                 Transaction_Type: 'Credit_Paid',
@@ -279,7 +280,8 @@ class SupplierPaymentController {
     // ─── HELPER: Create journal entry ─────────────────────────────────────────
     async createSupplierPaymentJournalEntry(expense, supplier, apAccount, creditAccount, amount, paymentMethod, referenceNo, transaction) {
         const journalNumber = await this.generateJournalNumber('SPP-JE');
-        const description = `Credit payment to ${supplier.S_Name} - Bill ${referenceNo} - ${paymentMethod}`;
+        const refText = referenceNo ? ` - Ref ${referenceNo}` : '';
+        const description = `Credit payment to ${supplier.S_Name}${refText} - ${paymentMethod}`;
 
         const journalEntry = await JournalEntry.create({
             Journal_No: journalNumber,
@@ -304,7 +306,7 @@ class SupplierPaymentController {
                 Line_Number: 1,
                 Debit_Amount: amount,
                 Credit_Amount: 0,
-                Description: `Accounts Payable cleared for bill ${referenceNo} to ${supplier.S_Name}`
+                Description: `Accounts Payable cleared for ${supplier.S_Name}${refText}`
             },
             {
                 // CREDIT: Cash/Bank (Asset decreases)
@@ -313,7 +315,7 @@ class SupplierPaymentController {
                 Line_Number: 2,
                 Debit_Amount: 0,
                 Credit_Amount: amount,
-                Description: `${paymentMethod} payment to ${supplier.S_Name} for bill ${referenceNo}`
+                Description: `${paymentMethod} payment to ${supplier.S_Name}${refText}`
             }
         ];
 

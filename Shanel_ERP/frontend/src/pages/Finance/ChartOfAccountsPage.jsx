@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, PlusCircle, Loader, RefreshCw } from 'react-feather';
+import { Download, PlusCircle, Loader, RefreshCw, Search } from 'react-feather';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import QuickAccountModal from '../../component/Finance/QuickAccountModal';
@@ -12,6 +12,10 @@ const ChartOfAccountsPage = () => {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchType, setSearchType] = useState('All');
   
   // Modal state
   const [modalData, setModalData] = useState({ isOpen: false, type: 'Asset', category: '' });
@@ -47,6 +51,14 @@ const ChartOfAccountsPage = () => {
     }
   };
 
+  // Filter accounts based on search
+  const filteredAccounts = accounts.filter(a => {
+    const matchesSearch = a.Account_Name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          a.Account_Code.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = searchType === 'All' || a.Account_Type === searchType;
+    return matchesSearch && matchesType;
+  });
+
   // Group accounts by type
   const categoryTitleMap = {
     Assets: t('finance.accounts.assets'),
@@ -57,12 +69,17 @@ const ChartOfAccountsPage = () => {
   };
 
   const groupedAccounts = [
-    { key: 'Assets', title: categoryTitleMap.Assets, accounts: accounts.filter(a => a.Account_Type === 'Asset') },
-    { key: 'Liabilities', title: categoryTitleMap.Liabilities, accounts: accounts.filter(a => a.Account_Type === 'Liability') },
-    { key: 'Equity', title: categoryTitleMap.Equity, accounts: accounts.filter(a => a.Account_Type === 'Equity') },
-    { key: 'Revenue', title: categoryTitleMap.Revenue, accounts: accounts.filter(a => a.Account_Type === 'Revenue') },
-    { key: 'Expenses', title: categoryTitleMap.Expenses, accounts: accounts.filter(a => a.Account_Type === 'Expense') }
+    { key: 'Assets', title: categoryTitleMap.Assets, accounts: filteredAccounts.filter(a => a.Account_Type === 'Asset') },
+    { key: 'Liabilities', title: categoryTitleMap.Liabilities, accounts: filteredAccounts.filter(a => a.Account_Type === 'Liability') },
+    { key: 'Equity', title: categoryTitleMap.Equity, accounts: filteredAccounts.filter(a => a.Account_Type === 'Equity') },
+    { key: 'Revenue', title: categoryTitleMap.Revenue, accounts: filteredAccounts.filter(a => a.Account_Type === 'Revenue') },
+    { key: 'Expenses', title: categoryTitleMap.Expenses, accounts: filteredAccounts.filter(a => a.Account_Type === 'Expense') }
   ];
+
+  // If search is active, only show groups with matching accounts
+  const visibleGroups = (searchTerm || searchType !== 'All') 
+    ? groupedAccounts.filter(g => g.accounts.length > 0)
+    : groupedAccounts;
 
   const handleQuickAdd = (type) => {
     // Determine a default category label based on the type
@@ -99,8 +116,43 @@ const ChartOfAccountsPage = () => {
         </div>
       )}
 
+      {/* Search Bar */}
+      <div className="w-full bg-white p-4 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center mb-4">
+        <div className="flex-1 relative w-full">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={16} className="text-gray-400" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-orange-300 focus:border-orange-300 sm:text-sm transition-all"
+            placeholder={t('finance.accounts.search_placeholder', 'Search accounts by code or name...')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="w-full md:w-64">
+          <select
+            value={searchType}
+            onChange={(e) => setSearchType(e.target.value)}
+            className="block w-full pl-3 pr-10 py-2 text-base text-gray-700 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 sm:text-sm rounded-xl bg-gray-50 cursor-pointer"
+          >
+            <option className="text-gray-900 bg-white" value="All">{t('finance.accounts.all_types', 'All Account Types')}</option>
+            <option className="text-gray-900 bg-white" value="Asset">{t('finance.accounts.assets', 'Assets')}</option>
+            <option className="text-gray-900 bg-white" value="Liability">{t('finance.accounts.liabilities', 'Liabilities')}</option>
+            <option className="text-gray-900 bg-white" value="Equity">{t('finance.accounts.equity', 'Equity')}</option>
+            <option className="text-gray-900 bg-white" value="Revenue">{t('finance.accounts.revenue', 'Revenue')}</option>
+            <option className="text-gray-900 bg-white" value="Expense">{t('finance.accounts.expenses', 'Expenses')}</option>
+          </select>
+        </div>
+      </div>
+
       <div className="self-stretch flex flex-col gap-8 pb-10 w-full">
-        {groupedAccounts.map((category, catIdx) => (
+        {visibleGroups.length === 0 && (
+          <div className="py-10 px-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200 text-center">
+            <p className="text-sm text-gray-500 font-medium">No accounts found matching your search.</p>
+          </div>
+        )}
+        {visibleGroups.map((category, catIdx) => (
           <div key={catIdx} className="self-stretch flex flex-col gap-4">
             <div className="flex items-center gap-4">
               <h2 className="text-sm font-bold text-cyan-950 uppercase tracking-wider">{category.title}</h2>
