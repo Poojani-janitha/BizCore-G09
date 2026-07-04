@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Users, Calendar, Clipboard, Briefcase, DollarSign } from 'react-feather';
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const Reports = () => {
@@ -555,13 +556,13 @@ useEffect(() => {
   const Stat = ({ title, value, subtitle, color }) => (
     <div style={{
       background: '#fff',
-      borderRadius: '12px',
-      border: '1px solid #e8e8e8',
+      borderRadius: '14px',
+      border: '1px solid #e2e8f0',
       borderTop: `3px solid ${color}`,
       padding: '16px 18px',
       minWidth: '160px',
       flex: '1 1 180px',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+      boxShadow: '0 8px 20px rgba(15, 23, 42, 0.05)',
       display: 'flex',
       flexDirection: 'column',
       gap: '6px',
@@ -572,12 +573,21 @@ useEffect(() => {
     </div>
   );
 
+  const reportCards = [
+    { id: 'employees', title: 'Employee Details', desc: 'Active employee roster and contact info', color: '#0d9488', bg: '#f0fdfa', borderColor: 'border-success', icon: <Users size={16} className="text-success" /> },
+    { id: 'daily', title: 'Daily Attendance', desc: 'Daily attendance snapshot and OT', color: '#059669', bg: '#ecfdf5', borderColor: 'border-info', icon: <Calendar size={16} className="text-info" /> },
+    { id: 'monthly', title: 'Monthly Attendance', desc: 'Monthly summary with attendance trends', color: '#0d9488', bg: '#f0fdfa', borderColor: 'border-primary', icon: <Clipboard size={16} className="text-primary" /> },
+    { id: 'leave', title: 'Leave Report', desc: 'Approved leave records by date', color: '#ea580c', bg: '#fff7ed', borderColor: 'border-warning', icon: <Briefcase size={16} className="text-warning" /> },
+    { id: 'payments', title: 'Monthly Payments', desc: 'Payroll totals and payment status', color: '#8b5cf6', bg: '#f5f3ff', borderColor: 'border-purple', icon: <DollarSign size={16} className="text-purple" /> },
+  ];
+
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#f5f6fa',
-      padding: '28px 32px',
+      background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
+      padding: '24px 28px',
       fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
+      fontSize: '13px',
     }}>
       <div style={{ marginBottom: '18px' }}>
 
@@ -585,53 +595,44 @@ useEffect(() => {
 
       {activeReport === null && (
         <div style={{
-          background: '#fff',
-          borderRadius: '12px',
-          border: '1px solid #e8e8e8',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-          padding: '18px 20px',
+          padding: '10px 0 20px',
           marginBottom: '20px',
         }}>
-          <div style={{ fontSize: '20px', fontWeight: 900, color: '#1a1a2e', marginBottom: '10px' }}>
+          <div style={{ fontSize: '20px', fontWeight: 900, color: '#1a1a2e', marginBottom: '16px' }}>
             Choose a report
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-            {[
-              { id: 'employees', label: 'Employee Details', color: '#0d9488', bg: '#f0fdfa' },
-              { id: 'daily', label: 'Daily Attendance', color: '#059669', bg: '#ecfdf5' },
-              { id: 'monthly', label: 'Monthly Attendance', color: '#0d9488', bg: '#f0fdfa' },
-              { id: 'leave', label: 'Leave Report', color: '#ea580c', bg: '#fff7ed' },
-              { id: 'payments', label: 'Monthly Payments', color: '#8b5cf6', bg: '#f5f3ff' },
-            ].map(r => (
-              <button
-                key={r.id}
-                onClick={() => {
-                  setActiveReport(r.id);
-                  setEmployeeSearch('');
-                  setDailySearch('');
-                }}
-                style={{
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  border: `1px solid ${r.color}25`,
-                  background: r.bg,
-                  color: r.color,
-                  fontWeight: 900,
-                  fontSize: '15px',
-                  cursor: 'pointer',
-                  flex: '1 1 220px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: '10px',
-                }}
-              >
-                <span>{r.label}</span>
-                <span style={{ fontSize: '16px' }}>→</span>
-              </button>
+          <div className="row g-3 mb-5 d-print-none">
+            {reportCards.map((card, idx) => (
+              <div key={card.id} className="col-lg-2 col-md-4 col-sm-6 col-12">
+                <div
+                  className={`card border-0 border-top border-4 ${activeReport === card.id ? card.borderColor : 'border-transparent'} shadow-sm p-3 h-100`}
+                  onClick={() => {
+                    setActiveReport(card.id);
+                    setEmployeeSearch('');
+                    setDailySearch('');
+                  }}
+                  style={{
+                    cursor: 'pointer',
+                    backgroundColor: activeReport === card.id ? card.bg : 'white',
+                    transition: 'all 0.2s ease',
+                    minHeight: '120px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div className="d-flex justify-content-between align-items-start mb-2">
+                    <small className="text-muted fw-bold text-uppercase" style={{ fontSize: '11px' }}>{card.title}</small>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '10px', background: 'rgba(15, 23, 42, 0.04)' }}>
+                      {card.icon}
+                    </div>
+                  </div>
+                  <p className="text-muted mb-0" style={{ fontSize: '12px', lineHeight: '1.5' }}>{card.desc}</p>
+                </div>
+              </div>
             ))}
           </div>
-          <div style={{ marginTop: '10px', color: '#64748b', fontSize: '12px' }}>
+          <div style={{ marginTop: '6px', color: '#64748b', fontSize: '12px' }}>
             Tip: Open a report only when you need it, then use the Print button inside that report.
           </div>
         </div>
@@ -660,9 +661,9 @@ useEffect(() => {
       {activeReport === 'employees' && (
       <div id="employee-details-report" style={{
         background: '#fff',
-        borderRadius: '12px',
-        border: '1px solid #e8e8e8',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        borderRadius: '16px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
         overflow: 'hidden',
         marginBottom: '20px',
       }}>
@@ -673,6 +674,7 @@ useEffect(() => {
           flexWrap: 'wrap',
           gap: '12px',
           alignItems: 'center',
+          background: 'linear-gradient(90deg, rgba(240,253,250,0.8) 0%, #ffffff 100%)',
         }}>
           <div style={{ fontSize: '14px', fontWeight: 900, color: '#1a1a2e' }}>Employee Details Report</div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -742,8 +744,8 @@ useEffect(() => {
         <div style={{
           display: 'grid',
           gridTemplateColumns: '50px 1.8fr 1.2fr 1.4fr 1.2fr 2fr',
-          background: '#f8fafc',
-          borderBottom: '2px solid #e8e8e8',
+          background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)',
+          borderBottom: '2px solid rgba(255,255,255,0.15)',
           padding: '12px 20px',
           gap: '12px',
           alignItems: 'center',
@@ -760,12 +762,11 @@ useEffect(() => {
               fontSize: '11px',
               fontWeight: 700,
               textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#0d9488',
-              background: '#f0fdfa',
+              letterSpacing: '0.08em',
+              color: '#fff',
+              background: 'transparent',
               padding: '8px 10px',
               borderRadius: '8px',
-              border: '1px solid #ccfbf1',
               textAlign: h.align
             }}>
               {h.label}
@@ -854,11 +855,11 @@ useEffect(() => {
       <div id="daily-report">
       <div style={{
         background: '#fff',
-        borderRadius: '12px',
-        border: '1px solid #e8e8e8',
+        borderRadius: '16px',
+        border: '1px solid #e2e8f0',
         padding: '16px 20px',
         marginBottom: '14px',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
       }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px' }}>
           <div style={{ fontSize: '14px', fontWeight: 800, color: '#1a1a2e' }}>Daily Report</div>
@@ -904,17 +905,17 @@ useEffect(() => {
 
       <div style={{
         background: '#fff',
-        borderRadius: '12px',
-        border: '1px solid #e8e8e8',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        borderRadius: '16px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
         overflow: 'hidden',
         marginBottom: '20px',
       }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: '60px 1.5fr 1fr 120px 110px 110px 100px',
-          background: '#f8fafc',
-          borderBottom: '2px solid #e8e8e8',
+          background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)',
+          borderBottom: '2px solid rgba(255,255,255,0.15)',
           padding: '12px 20px',
           gap: '12px',
           alignItems: 'center',
@@ -924,12 +925,11 @@ useEffect(() => {
               fontSize: '11px',
               fontWeight: 700,
               textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#0d9488',
-              background: '#f0fdfa',
+              letterSpacing: '0.08em',
+              color: '#fff',
+              background: 'transparent',
               padding: '8px 10px',
               borderRadius: '8px',
-              border: '1px solid #ccfbf1',
             }}>
               {h}
             </div>
@@ -1026,11 +1026,11 @@ useEffect(() => {
       <div id="monthly-report">
       <div style={{
         background: '#fff',
-        borderRadius: '12px',
-        border: '1px solid #e8e8e8',
+        borderRadius: '16px',
+        border: '1px solid #e2e8f0',
         padding: '16px 20px',
         marginBottom: '14px',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
       }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px' }}>
           <div style={{ fontSize: '14px', fontWeight: 800, color: '#1a1a2e' }}>Monthly Report</div>
@@ -1068,16 +1068,16 @@ useEffect(() => {
 
       <div style={{
         background: '#fff',
-        borderRadius: '12px',
-        border: '1px solid #e8e8e8',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        borderRadius: '16px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
         overflow: 'hidden',
       }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: '60px 1.2fr 1.2fr 100px 100px 100px 100px 80px',
-          background: '#f8fafc',
-          borderBottom: '2px solid #e8e8e8',
+          background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)',
+          borderBottom: '2px solid rgba(255,255,255,0.15)',
           padding: '12px 20px',
           gap: '12px',
           alignItems: 'center',
@@ -1087,12 +1087,11 @@ useEffect(() => {
               fontSize: '11px',
               fontWeight: 700,
               textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#1e40af',
-              background: 'rgba(59,130,246,0.12)',
+              letterSpacing: '0.08em',
+              color: '#fff',
+              background: 'transparent',
               padding: '8px 10px',
               borderRadius: '8px',
-              border: '1px solid rgba(59,130,246,0.3)',
               textAlign: i >= 3 ? 'center' : 'left',
             }}>
               {h}
@@ -1238,17 +1237,17 @@ useEffect(() => {
 
       <div id="leave-report" style={{
         background: '#fff',
-        borderRadius: '12px',
-        border: '1px solid #e8e8e8',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        borderRadius: '16px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
         overflow: 'hidden',
         marginBottom: '20px',
       }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: '60px 1.5fr 1fr 1.8fr 1.2fr 1.5fr',
-          background: '#f8fafc',
-          borderBottom: '2px solid #e8e8e8',
+          background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)',
+          borderBottom: '2px solid rgba(255,255,255,0.15)',
           padding: '12px 20px',
           gap: '12px',
           alignItems: 'center',
@@ -1266,11 +1265,10 @@ useEffect(() => {
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
-              color: '#1e40af',
-              background: 'rgba(59,130,246,0.12)',
+              color: '#fff',
+              background: 'transparent',
               padding: '8px 10px',
               borderRadius: '8px',
-              border: '1px solid rgba(59,130,246,0.3)',
               textAlign: h.align
             }}>
               {h.label}
@@ -1383,12 +1381,12 @@ useEffect(() => {
 
       <div id="payment-report" style={{
         background: '#fff',
-        borderRadius: '12px',
-        border: '1px solid #e8e8e8',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        borderRadius: '16px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
         overflow: 'hidden',
       }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid #eef2f7', display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid #eef2f7', display: 'flex', gap: '14px', flexWrap: 'wrap', background: 'linear-gradient(90deg, rgba(245,243,255,0.85) 0%, #ffffff 100%)' }}>
           <div style={{ fontSize: '12px', fontWeight: 900, color: '#059669' }}>Total Gross: Rs {paymentReport.totals.gross.toLocaleString()}</div>
           <div style={{ fontSize: '12px', fontWeight: 900, color: '#b45309' }}>Total Deductions: Rs {paymentReport.totals.deductions.toLocaleString()}</div>
           <div style={{ fontSize: '12px', fontWeight: 900, color: '#7c3aed' }}>Total Net: Rs {paymentReport.totals.net.toLocaleString()}</div>
@@ -1400,8 +1398,8 @@ useEffect(() => {
         <div style={{
           display: 'grid',
           gridTemplateColumns: '90px 1fr 140px 140px 140px 140px 120px',
-          background: '#f8fafc',
-          borderBottom: '2px solid #e8e8e8',
+          background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)',
+          borderBottom: '2px solid rgba(255,255,255,0.15)',
           padding: '12px 20px',
           gap: '12px',
           alignItems: 'center',
@@ -1411,12 +1409,11 @@ useEffect(() => {
               fontSize: '11px',
               fontWeight: 700,
               textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#1e40af',
-              background: 'rgba(59,130,246,0.12)',
+              letterSpacing: '0.08em',
+              color: '#fff',
+              background: 'transparent',
               padding: '8px 10px',
               borderRadius: '8px',
-              border: '1px solid rgba(59,130,246,0.3)',
             }}>
               {h}
             </div>
@@ -1512,11 +1509,11 @@ useEffect(() => {
       <div id="individual-report">
       <div style={{
         background: '#fff',
-        borderRadius: '12px',
-        border: '1px solid #e8e8e8',
+        borderRadius: '16px',
+        border: '1px solid #e2e8f0',
         padding: '16px 20px',
         marginBottom: '14px',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
       }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px' }}>
           <div style={{ fontSize: '14px', fontWeight: 800, color: '#1a1a2e' }}>Individual Attendance Report</div>
@@ -1571,16 +1568,16 @@ useEffect(() => {
 
       <div style={{
         background: '#fff',
-        borderRadius: '12px',
-        border: '1px solid #e8e8e8',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        borderRadius: '16px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
         overflow: 'hidden',
       }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: '120px 80px 100px 1fr 1fr 100px',
-          background: '#f8fafc',
-          borderBottom: '2px solid #e8e8e8',
+          background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)',
+          borderBottom: '2px solid rgba(255,255,255,0.15)',
           padding: '12px 20px',
           gap: '12px',
           alignItems: 'center',
@@ -1598,11 +1595,10 @@ useEffect(() => {
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
-              color: '#1e40af',
-              background: 'rgba(59,130,246,0.12)',
+              color: '#fff',
+              background: 'transparent',
               padding: '8px 10px',
               borderRadius: '8px',
-              border: '1px solid rgba(59,130,246,0.3)',
               textAlign: h.align
             }}>
               {h.label}

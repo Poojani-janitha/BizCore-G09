@@ -961,19 +961,19 @@ export default function Payroll() {
       <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e5e7eb' }}>
-                <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Employee</th>
-                <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Role</th>
-                <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Days</th>
-                <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Cards Made</th>
-                <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Base Pay</th>
-                <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>OT Pay</th>
-                <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Bonus</th>
-                <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Tea Allw.</th>
-                <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Net Salary</th>
-                <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Status</th>
-                <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Action</th>
+            <thead style={{ background: 'linear-gradient(135deg, #004445 0%, #2c7873 100%)' }}>
+              <tr>
+                <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '0.75rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.08em', background: 'transparent', borderBottom: '2px solid rgba(255,255,255,0.15)' }}>Employee</th>
+                <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '0.75rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.08em', background: 'transparent', borderBottom: '2px solid rgba(255,255,255,0.15)' }}>Role</th>
+                <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '0.75rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.08em', background: 'transparent', borderBottom: '2px solid rgba(255,255,255,0.15)' }}>Days</th>
+                <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '0.75rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.08em', background: 'transparent', borderBottom: '2px solid rgba(255,255,255,0.15)' }}>Cards Made</th>
+                <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: '0.75rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.08em', background: 'transparent', borderBottom: '2px solid rgba(255,255,255,0.15)' }}>Base Pay</th>
+                <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: '0.75rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.08em', background: 'transparent', borderBottom: '2px solid rgba(255,255,255,0.15)' }}>OT Pay</th>
+                <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: '0.75rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.08em', background: 'transparent', borderBottom: '2px solid rgba(255,255,255,0.15)' }}>Bonus</th>
+                <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: '0.75rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.08em', background: 'transparent', borderBottom: '2px solid rgba(255,255,255,0.15)' }}>Tea Allw.</th>
+                <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: '0.75rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.08em', background: 'transparent', borderBottom: '2px solid rgba(255,255,255,0.15)' }}>Net Salary</th>
+                <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '0.75rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.08em', background: 'transparent', borderBottom: '2px solid rgba(255,255,255,0.15)' }}>Status</th>
+                <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '0.75rem', fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.08em', background: 'transparent', borderBottom: '2px solid rgba(255,255,255,0.15)' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -1087,11 +1087,11 @@ export default function Payroll() {
 
       {/* Daily Cards Modal */}
       {showCardsModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'white', borderRadius: '20px', padding: '32px', width: '95%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '32px', width: '95%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#1e293b' }}>Daily Card Production</h2>
+                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#1e3a5f' }}>Daily Card Production</h2>
                 <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>{selectedEmpForCards?.employeeName} - {selectedMonth}</p>
               </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -1099,7 +1099,7 @@ export default function Payroll() {
                   type="month" 
                   value={modalMonth}
                   onChange={(e) => setModalMonth(e.target.value)}
-                  style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 600, color: '#1e3a5f', outline: 'none' }}
+                  style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '13px', fontWeight: 600, color: '#1e3a5f', outline: 'none' }}
                 />
                 {!showHistory && (
                   <button 
@@ -1113,7 +1113,7 @@ export default function Payroll() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: showHistory ? 'repeat(auto-fill, minmax(120px, 1fr))' : '1fr', gap: '12px', marginBottom: '32px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: showHistory ? 'repeat(auto-fill, minmax(120px, 1fr))' : '1fr', gap: '12px', marginBottom: '24px' }}>
               {!showHistory && !dailyCardsData.some(d => d.date === new Date().toISOString().split('T')[0]) && (
                 <div style={{ padding: '32px', textAlign: 'center', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
                   <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>Today's date is not in the selected month ({selectedMonth}).</p>
@@ -1218,9 +1218,9 @@ export default function Payroll() {
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '32px' }}>
-              <button onClick={() => setShowCardsModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #d1d5db', background: 'white', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-              <button onClick={saveDailyCards} style={{ padding: '12px 32px', borderRadius: '12px', border: 'none', background: '#0d9488', color: 'white', fontWeight: 700, cursor: 'pointer' }}>Save Production Data</button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+              <button onClick={() => setShowCardsModal(false)} style={{ padding: '12px 24px', borderRadius: '10px', border: '1px solid #d1d5db', background: 'white', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={saveDailyCards} style={{ padding: '12px 24px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)', color: 'white', fontWeight: 700, cursor: 'pointer' }}>Save Production Data</button>
             </div>
           </div>
         </div>
@@ -1228,17 +1228,17 @@ export default function Payroll() {
 
       {/* Adjustments Modal */}
       {showAdjModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'white', borderRadius: '20px', padding: '32px', width: '95%', maxWidth: '500px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '32px', width: '95%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#1e293b' }}>Deductions & Adjustments</h2>
+                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#1e3a5f' }}>Deductions & Adjustments</h2>
                 <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>{selectedEmpForAdj?.employeeName}</p>
               </div>
               <button onClick={() => setShowAdjModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={24} /></button>
             </div>
 
-            <div style={{ display: 'grid', gap: '16px', marginBottom: '32px' }}>
+            <div style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Advance Deduction (Rs.)</label>
                 <input
@@ -1356,8 +1356,8 @@ export default function Payroll() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button onClick={() => setShowAdjModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #d1d5db', background: 'white', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-              <button onClick={saveAdjustments} style={{ padding: '12px 32px', borderRadius: '12px', border: 'none', background: '#0d9488', color: 'white', fontWeight: 700, cursor: 'pointer' }}>Apply Adjustments</button>
+              <button onClick={() => setShowAdjModal(false)} style={{ padding: '12px 24px', borderRadius: '10px', border: '1px solid #d1d5db', background: 'white', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={saveAdjustments} style={{ padding: '12px 24px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #1e3a5f, #3b82f6)', color: 'white', fontWeight: 700, cursor: 'pointer' }}>Apply Adjustments</button>
             </div>
           </div>
         </div>
@@ -1365,17 +1365,17 @@ export default function Payroll() {
 
       {/* Bank Mailing Modal */}
       {showBankModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'white', borderRadius: '20px', padding: '32px', width: '95%', maxWidth: '500px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '32px', width: '95%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#1e293b' }}>Mail Paysheet to Bank</h2>
+                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#1e3a5f' }}>Mail Paysheet to Bank</h2>
                 <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>Send monthly breakdown to bank for processing</p>
               </div>
               <button onClick={() => setShowBankModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={24} /></button>
             </div>
 
-            <div style={{ display: 'grid', gap: '16px', marginBottom: '32px' }}>
+            <div style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Bank Name</label>
                 <input
@@ -1409,15 +1409,15 @@ export default function Payroll() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button onClick={() => setShowBankModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #d1d5db', background: 'white', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => setShowBankModal(false)} style={{ padding: '12px 24px', borderRadius: '10px', border: '1px solid #d1d5db', background: 'white', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
               <button
                 onClick={handleMailToBank}
                 disabled={loading}
                 style={{
-                  padding: '12px 32px',
-                  borderRadius: '12px',
+                  padding: '12px 24px',
+                  borderRadius: '10px',
                   border: 'none',
-                  background: loading ? '#94a3b8' : '#1e3a5f',
+                  background: loading ? '#94a3b8' : 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
                   color: 'white',
                   fontWeight: 700,
                   cursor: loading ? 'not-allowed' : 'pointer',
@@ -1435,11 +1435,11 @@ export default function Payroll() {
 
       {/* View Breakdown Modal */}
       {showViewModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'white', borderRadius: '20px', padding: '32px', width: '95%', maxWidth: '600px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '32px', width: '95%', maxWidth: '600px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>Salary Breakdown</h2>
+                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 900, color: '#1e3a5f', letterSpacing: '-0.02em' }}>Salary Breakdown</h2>
                 <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>{selectedEmpForView?.employeeName} ({selectedEmpForView?.employeeRole})</p>
               </div>
               <button onClick={() => setShowViewModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={24} /></button>

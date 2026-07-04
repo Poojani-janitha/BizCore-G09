@@ -456,210 +456,231 @@ const EmployeesPage = () => {
       </div>
 
       {showAddForm && (
-        <div
-          onClick={cancelAdd}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.4)',
-            backdropFilter: 'blur(8px)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: 'min(900px, 95%)',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              background: '#fff',
-              borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-              padding: '28px',
-            }}
-          >
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a' }}>Add New Employee</h4>
-              <button className="btn btn-sm btn-outline-secondary" onClick={cancelAdd}>Close</button>
-            </div>
-
-            <div className="row g-3">
-              <div className="col-12 col-md-8">
-                <label className="form-label small mb-1 fw-semibold text-secondary" style={{ color: errors.Full_Name ? '#dc2626' : 'inherit' }}>
-                  Full Name * {errors.Full_Name && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Full_Name})</span>}
-                </label>
-                <input className="form-control form-control-sm" style={{ borderColor: errors.Full_Name ? '#dc2626' : '#ced4da' }} placeholder="Full name" value={addForm.Full_Name} onChange={e => updateAddFormField('Full_Name', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary" style={{ color: errors.NIC ? '#dc2626' : 'inherit' }}>
-                  NIC * {errors.NIC && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.NIC})</span>}
-                </label>
-                <input className="form-control form-control-sm" style={{ borderColor: errors.NIC ? '#dc2626' : '#ced4da' }} placeholder="NIC number" value={addForm.NIC} onChange={e => updateAddFormField('NIC', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Date Of Birth</label>
-                <input type="date" className="form-control form-control-sm" value={addForm.Date_Of_Birth} onChange={e => updateAddFormField('Date_Of_Birth', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Gender</label>
-                <select className="form-select form-select-sm" value={addForm.Gender} onChange={e => updateAddFormField('Gender', e.target.value)}>
-                  <option value="">Select</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Marital Status</label>
-                <select className="form-select form-select-sm" value={addForm.Marital_Status} onChange={e => updateAddFormField('Marital_Status', e.target.value)}>
-                  <option value="">Select</option>
-                  <option value="Single">Single</option>
-                  <option value="Married">Married</option>
-                  <option value="Divorced">Divorced</option>
-                  <option value="Widowed">Widowed</option>
-                </select>
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary" style={{ color: errors.Contact_Phone ? '#dc2626' : 'inherit' }}>
-                  Contact Phone * {errors.Contact_Phone && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Contact_Phone})</span>}
-                </label>
-                <input className="form-control form-control-sm" style={{ borderColor: errors.Contact_Phone ? '#dc2626' : '#ced4da' }} placeholder="+94-71-555-1234" value={addForm.Contact_Phone} onChange={e => updateAddFormField('Contact_Phone', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Contact Phone 2</label>
-                <input className="form-control form-control-sm" placeholder="Alternative phone" value={addForm.Contact_Phone_2} onChange={e => updateAddFormField('Contact_Phone_2', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary" style={{ color: errors.Email ? '#dc2626' : 'inherit' }}>
-                  Email {errors.Email && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Email})</span>}
-                </label>
-                <input type="email" className="form-control form-control-sm" style={{ borderColor: errors.Email ? '#dc2626' : '#ced4da' }} placeholder="email@example.com" value={addForm.Email} onChange={e => updateAddFormField('Email', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary">City</label>
-                <input className="form-control form-control-sm" placeholder="City" value={addForm.City} onChange={e => updateAddFormField('City', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Role</label>
-                <select className="form-select form-select-sm" value={addForm.Role} onChange={e => updateAddFormField('Role', e.target.value)}>
-                  <option value="Staff">Staff</option>
-                  <option value="Cashier">Cashier</option>
-                  <option value="Staff (Production)">Staff (Production)</option>
-                  <option value="Manager">Manager</option>
-                </select>
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Salary Category</label>
-                <select className="form-select form-select-sm" value={addForm.Salary_Category} onChange={e => updateAddFormField('Salary_Category', e.target.value)}>
-                  <option value="Monthly_Fixed">Monthly Fixed</option>
-                  <option value="Production_Based">Production Based</option>
-                </select>
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Employee Type</label>
-                <select className="form-select form-select-sm" value={addForm.Employee_Type} onChange={e => updateAddFormField('Employee_Type', e.target.value)}>
-                  <option value="Permanent">Permanent</option>
-                  <option value="Casual">Casual</option>
-                  <option value="Contract">Contract</option>
-                </select>
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary" style={{ color: errors.Hire_Date ? '#dc2626' : 'inherit' }}>
-                  Hire Date * {errors.Hire_Date && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Hire_Date})</span>}
-                </label>
-                <input type="date" className="form-control form-control-sm" style={{ borderColor: errors.Hire_Date ? '#dc2626' : '#ced4da' }} value={addForm.Hire_Date} onChange={e => updateAddFormField('Hire_Date', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Status</label>
-                <select className="form-select form-select-sm" value={addForm.Status} onChange={e => updateAddFormField('Status', e.target.value)}>
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                  <option value="Terminated">Terminated</option>
-                  <option value="Resigned">Resigned</option>
-                </select>
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Emergency Contact Name</label>
-                <input className="form-control form-control-sm" placeholder="Emergency Contact" value={addForm.Emergency_Contact_Name} onChange={e => updateAddFormField('Emergency_Contact_Name', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Emergency Contact Phone</label>
-                <input className="form-control form-control-sm" placeholder="Emergency Phone" value={addForm.Emergency_Contact_Phone} onChange={e => updateAddFormField('Emergency_Contact_Phone', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Emergency Contact Relationship</label>
-                <input className="form-control form-control-sm" placeholder="Relationship" value={addForm.Emergency_Contact_Relationship} onChange={e => updateAddFormField('Emergency_Contact_Relationship', e.target.value)} />
-              </div>
-              <div className="col-12">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Current Address</label>
-                <textarea className="form-control form-control-sm" placeholder="Current Address" value={addForm.Current_Address} onChange={e => updateAddFormField('Current_Address', e.target.value)} rows={2} />
-              </div>
-
-              {/* NIC Copy Upload */}
-              <div className="col-12">
-                <label className="form-label small mb-1 fw-semibold text-secondary">NIC Copy Upload</label>
-                <div
-                  onClick={() => nicFileInputRef.current?.click()}
-                  style={{
-                    border: nicCopyFile ? '2px solid #0d9488' : '2px dashed #cbd5e1',
-                    borderRadius: '10px',
-                    padding: '16px',
-                    cursor: 'pointer',
-                    background: nicCopyFile ? '#f0fdfa' : '#f8fafc',
-                    textAlign: 'center',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {nicCopyPreview ? (
-                    <div>
-                      <img src={nicCopyPreview} alt="NIC Preview" style={{ maxHeight: 120, maxWidth: '100%', borderRadius: 6, marginBottom: 8 }} />
-                      <div style={{ fontSize: 12, color: '#0d9488', fontWeight: 600 }}>✓ {nicCopyFile.name}</div>
-                      <div style={{ fontSize: 11, color: '#64748b' }}>Click to change</div>
-                    </div>
-                  ) : nicCopyFile ? (
-                    <div>
-                      <div style={{ fontSize: 28, marginBottom: 4 }}>📄</div>
-                      <div style={{ fontSize: 12, color: '#0d9488', fontWeight: 600 }}>✓ {nicCopyFile.name}</div>
-                      <div style={{ fontSize: 11, color: '#64748b' }}>Click to change</div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ fontSize: 28, marginBottom: 4 }}>📎</div>
-                      <div style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Click to upload NIC copy</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>JPG, PNG, PDF accepted (max 15MB)</div>
-                    </div>
-                  )}
+        <div className="modal d-block" onClick={cancelAdd} style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)', zIndex: 1050 }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+              <div className="modal-header bg-white border-0 px-4 pt-4 pb-0">
+                <div>
+                  <h6 className="modal-title fw-bold text-dark" style={{ fontSize: '14px' }}>Add New Employee</h6>
+                  <p className="text-muted small mb-0">Enter employee details below</p>
                 </div>
-                <input
-                  ref={nicFileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,application/pdf"
-                  style={{ display: 'none' }}
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    setNicCopyFile(file);
-                    if (file.type.startsWith('image/')) {
-                      const reader = new FileReader();
-                      reader.onload = () => setNicCopyPreview(reader.result);
-                      reader.readAsDataURL(file);
-                    } else {
-                      setNicCopyPreview(null);
-                    }
-                    e.target.value = '';
-                  }}
-                />
+                <button type="button" className="btn-close shadow-none" onClick={cancelAdd}></button>
+              </div>
+
+              <div className="modal-body px-4 py-3" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+                <div className="row g-3">
+              <div className="col-12">
+                <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+                  <div className="mb-3">
+                    <h6 style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>Personal Information</h6>
+                    <small className="text-muted">Basic employee profile details</small>
+                  </div>
+                  <div className="row g-3">
+                    <div className="col-12 col-md-8">
+                      <label className="form-label small mb-1 fw-semibold text-secondary" style={{ color: errors.Full_Name ? '#dc2626' : 'inherit' }}>
+                        Full Name * {errors.Full_Name && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Full_Name})</span>}
+                      </label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: errors.Full_Name ? '1px solid #dc2626' : '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} placeholder="Full name" value={addForm.Full_Name} onChange={e => updateAddFormField('Full_Name', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary" style={{ color: errors.NIC ? '#dc2626' : 'inherit' }}>
+                        NIC * {errors.NIC && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.NIC})</span>}
+                      </label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: errors.NIC ? '1px solid #dc2626' : '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} placeholder="NIC number" value={addForm.NIC} onChange={e => updateAddFormField('NIC', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Date Of Birth</label>
+                      <input type="date" className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={addForm.Date_Of_Birth} onChange={e => updateAddFormField('Date_Of_Birth', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Gender</label>
+                      <select className="form-select form-select-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={addForm.Gender} onChange={e => updateAddFormField('Gender', e.target.value)}>
+                        <option value="">Select</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Marital Status</label>
+                      <select className="form-select form-select-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={addForm.Marital_Status} onChange={e => updateAddFormField('Marital_Status', e.target.value)}>
+                        <option value="">Select</option>
+                        <option value="Single">Single</option>
+                        <option value="Married">Married</option>
+                        <option value="Divorced">Divorced</option>
+                        <option value="Widowed">Widowed</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="col-12">
+                <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+                  <div className="mb-3">
+                    <h6 style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>Contact & Employment</h6>
+                    <small className="text-muted">Phone, email, role, and job details</small>
+                  </div>
+                  <div className="row g-3">
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary" style={{ color: errors.Contact_Phone ? '#dc2626' : 'inherit' }}>
+                        Contact Phone * {errors.Contact_Phone && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Contact_Phone})</span>}
+                      </label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: errors.Contact_Phone ? '1px solid #dc2626' : '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} placeholder="+94-71-555-1234" value={addForm.Contact_Phone} onChange={e => updateAddFormField('Contact_Phone', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Contact Phone 2</label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} placeholder="Alternative phone" value={addForm.Contact_Phone_2} onChange={e => updateAddFormField('Contact_Phone_2', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary" style={{ color: errors.Email ? '#dc2626' : 'inherit' }}>
+                        Email {errors.Email && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Email})</span>}
+                      </label>
+                      <input type="email" className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: errors.Email ? '1px solid #dc2626' : '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} placeholder="email@example.com" value={addForm.Email} onChange={e => updateAddFormField('Email', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">City</label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} placeholder="City" value={addForm.City} onChange={e => updateAddFormField('City', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Role</label>
+                      <select className="form-select form-select-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={addForm.Role} onChange={e => updateAddFormField('Role', e.target.value)}>
+                        <option value="Staff">Staff</option>
+                        <option value="Cashier">Cashier</option>
+                        <option value="Staff (Production)">Staff (Production)</option>
+                        <option value="Manager">Manager</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Salary Category</label>
+                      <select className="form-select form-select-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={addForm.Salary_Category} onChange={e => updateAddFormField('Salary_Category', e.target.value)}>
+                        <option value="Monthly_Fixed">Monthly Fixed</option>
+                        <option value="Production_Based">Production Based</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Employee Type</label>
+                      <select className="form-select form-select-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={addForm.Employee_Type} onChange={e => updateAddFormField('Employee_Type', e.target.value)}>
+                        <option value="Permanent">Permanent</option>
+                        <option value="Casual">Casual</option>
+                        <option value="Contract">Contract</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary" style={{ color: errors.Hire_Date ? '#dc2626' : 'inherit' }}>
+                        Hire Date * {errors.Hire_Date && <span style={{ fontSize: '10px', fontWeight: 700 }}>({errors.Hire_Date})</span>}
+                      </label>
+                      <input type="date" className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: errors.Hire_Date ? '1px solid #dc2626' : '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={addForm.Hire_Date} onChange={e => updateAddFormField('Hire_Date', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Status</label>
+                      <select className="form-select form-select-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={addForm.Status} onChange={e => updateAddFormField('Status', e.target.value)}>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Terminated">Terminated</option>
+                        <option value="Resigned">Resigned</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="col-12">
+                <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+                  <div className="mb-3">
+                    <h6 style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>Address & Emergency</h6>
+                    <small className="text-muted">Residence and emergency contact information</small>
+                  </div>
+                  <div className="row g-3">
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Emergency Contact Name</label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} placeholder="Emergency Contact" value={addForm.Emergency_Contact_Name} onChange={e => updateAddFormField('Emergency_Contact_Name', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Emergency Contact Phone</label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} placeholder="Emergency Phone" value={addForm.Emergency_Contact_Phone} onChange={e => updateAddFormField('Emergency_Contact_Phone', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Emergency Contact Relationship</label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} placeholder="Relationship" value={addForm.Emergency_Contact_Relationship} onChange={e => updateAddFormField('Emergency_Contact_Relationship', e.target.value)} />
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Current Address</label>
+                      <textarea className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', minHeight: '90px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} placeholder="Current Address" value={addForm.Current_Address} onChange={e => updateAddFormField('Current_Address', e.target.value)} rows={2} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="col-12">
+                <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+                  <div className="mb-3">
+                    <h6 style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>Documents & Upload</h6>
+                    <small className="text-muted">Upload required employee documents</small>
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label small mb-1 fw-semibold text-secondary">NIC Copy Upload</label>
+                    <div
+                      onClick={() => nicFileInputRef.current?.click()}
+                      style={{
+                        border: nicCopyFile ? '2px solid #0d9488' : '2px dashed #cbd5e1',
+                        borderRadius: '10px',
+                        padding: '16px',
+                        cursor: 'pointer',
+                        background: nicCopyFile ? '#f0fdfa' : '#f8fafc',
+                        textAlign: 'center',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {nicCopyPreview ? (
+                        <div>
+                          <img src={nicCopyPreview} alt="NIC Preview" style={{ maxHeight: 120, maxWidth: '100%', borderRadius: 6, marginBottom: 8 }} />
+                          <div style={{ fontSize: 12, color: '#0d9488', fontWeight: 600 }}>✓ {nicCopyFile.name}</div>
+                          <div style={{ fontSize: 11, color: '#64748b' }}>Click to change</div>
+                        </div>
+                      ) : nicCopyFile ? (
+                        <div>
+                          <div style={{ fontSize: 28, marginBottom: 4 }}>📄</div>
+                          <div style={{ fontSize: 12, color: '#0d9488', fontWeight: 600 }}>✓ {nicCopyFile.name}</div>
+                          <div style={{ fontSize: 11, color: '#64748b' }}>Click to change</div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ fontSize: 28, marginBottom: 4 }}>📎</div>
+                          <div style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Click to upload NIC copy</div>
+                          <div style={{ fontSize: 11, color: '#94a3b8' }}>JPG, PNG, PDF accepted (max 15MB)</div>
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      ref={nicFileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      style={{ display: 'none' }}
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setNicCopyFile(file);
+                        if (file.type.startsWith('image/')) {
+                          const reader = new FileReader();
+                          reader.onload = () => setNicCopyPreview(reader.result);
+                          reader.readAsDataURL(file);
+                        } else {
+                          setNicCopyPreview(null);
+                        }
+                        e.target.value = '';
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div className="d-flex gap-2 mt-4 pt-3 border-top justify-content-end">
-              <button className="btn btn-secondary btn-sm px-4" onClick={cancelAdd}>Cancel</button>
-              <button className="btn btn-primary btn-sm px-4" onClick={addEmployee} style={{ background: '#0d9488', borderColor: '#0d9488' }}>Save Employee</button>
+          <div className="modal-footer border-0 p-4 pt-2">
+                <button type="button" className="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm fw-bold me-auto" onClick={cancelAdd}>Cancel</button>
+                <button type="button" className="btn btn-dark px-3 py-2 rounded-3 shadow-sm fw-bold" onClick={addEmployee}>Save Employee</button>
+              </div>
             </div>
           </div>
         </div>
@@ -797,166 +818,172 @@ const EmployeesPage = () => {
       </div>
 
       {editingId && (
-        <div
-          onClick={cancelEdit}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.4)',
-            backdropFilter: 'blur(8px)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: 'min(900px, 95%)',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              background: '#fff',
-              borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-              padding: '28px',
-            }}
-          >
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a' }}>Edit Employee Details</h4>
-              <button className="btn btn-sm btn-outline-secondary" onClick={cancelEdit}>Close</button>
-            </div>
-
-            <div className="row g-3">
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Name</label>
-                <input className="form-control form-control-sm" value={editForm.name} onChange={e => updateEditField('name', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Role</label>
-                <select className="form-select form-select-sm" value={editForm.role} onChange={e => updateEditField('role', e.target.value)}>
-                  <option value="Staff">Staff</option>
-                  <option value="Cashier">Cashier</option>
-                  <option value="Staff (Production)">Staff (Production)</option>
-                  <option value="Manager">Manager</option>
-                </select>
-              </div>
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Email</label>
-                <input className="form-control form-control-sm" type="email" value={editForm.email} onChange={e => updateEditField('email', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Phone</label>
-                <input className="form-control form-control-sm" value={editForm.phone} onChange={e => updateEditField('phone', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Employee Type</label>
-                <select className="form-select form-select-sm" value={editForm.employeeType} onChange={e => updateEditField('employeeType', e.target.value)}>
-                  <option value="Permanent">Permanent</option>
-                  <option value="Casual">Casual</option>
-                  <option value="Contract">Contract</option>
-                </select>
-              </div>
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Confirmation Date</label>
-                <input className="form-control form-control-sm" type="date" value={editForm.confirmationDate} onChange={e => updateEditField('confirmationDate', e.target.value)} />
-              </div>
-              
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1 fw-semibold text-secondary">EPF Eligible</label>
-                <select className="form-select form-select-sm" value={editForm.epfEligible} onChange={e => updateEditField('epfEligible', e.target.value)}>
-                  <option value="Yes">Yes</option>
-                  <option value="No">No</option>
-                </select>
-              </div>
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1 fw-semibold text-secondary">EPF Number</label>
-                <input className="form-control form-control-sm" value={editForm.epfNumber} onChange={e => updateEditField('epfNumber', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1 fw-semibold text-secondary">ETF Eligible</label>
-                <select className="form-select form-select-sm" value={editForm.etfEligible} onChange={e => updateEditField('etfEligible', e.target.value)}>
-                  <option value="Yes">Yes</option>
-                  <option value="No">No</option>
-                </select>
-              </div>
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1 fw-semibold text-secondary">ETF Number</label>
-                <input className="form-control form-control-sm" value={editForm.etfNumber} onChange={e => updateEditField('etfNumber', e.target.value)} />
-              </div>
-              
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Bank Name</label>
-                <select className="form-select form-select-sm" value={editForm.bankName} onChange={e => updateEditField('bankName', e.target.value)}>
-                  <option value="">Select Bank</option>
-                  <option value="Bank of Ceylon">Bank of Ceylon</option>
-                  <option value="People's Bank">People's Bank</option>
-                  <option value="Commercial Bank">Commercial Bank</option>
-                  <option value="Hatton National Bank">Hatton National Bank</option>
-                  <option value="Sampath Bank">Sampath Bank</option>
-                  <option value="Seylan Bank">Seylan Bank</option>
-                  <option value="Nations Trust Bank">Nations Trust Bank</option>
-                  <option value="DFCC Bank">DFCC Bank</option>
-                  <option value="Pan Asia Bank">Pan Asia Bank</option>
-                  <option value="Union Bank">Union Bank</option>
-                  <option value="NDB Bank">NDB Bank</option>
-                  <option value="RDB Bank">RDB Bank</option>
-                </select>
-              </div>
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Bank Account No</label>
-                <input className="form-control form-control-sm" value={editForm.bankAccountNo} onChange={e => updateEditField('bankAccountNo', e.target.value)} />
-              </div>
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Bank Branch</label>
-                <select className="form-select form-select-sm" value={editForm.bankBranch} onChange={e => updateEditField('bankBranch', e.target.value)}>
-                  <option value="">Select Branch</option>
-                  <option value="Balangoda">Balangoda</option>
-                  <option value="Pallebedda">Pallebedda</option>
-                  <option value="Kahawatta">Kahawatta</option>
-                  <option value="Pelmadulla">Pelmadulla</option>
-                  <option value="Embilipitiya">Embilipitiya</option>
-                  <option value="Kiriella">Kiriella</option>
-                  <option value="Erathna">Erathna</option>
-                </select>
-              </div>
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Bank Account Name</label>
-                <input className="form-control form-control-sm" value={editForm.bankAccountName} onChange={e => updateEditField('bankAccountName', e.target.value)} />
+        <div className="modal d-block" onClick={cancelEdit} style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)', zIndex: 1050 }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+              <div className="modal-header bg-white border-0 px-4 pt-4 pb-0">
+                <div>
+                  <h6 className="modal-title fw-bold text-dark" style={{ fontSize: '14px' }}>Edit Employee Details</h6>
+                  <p className="text-muted small mb-0">Update employee information below</p>
+                </div>
+                <button type="button" className="btn-close shadow-none" onClick={cancelEdit}></button>
               </div>
 
+              <div className="modal-body px-4 py-3" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+                <div className="row g-3">
               <div className="col-12">
-                <label className="form-label small mb-1 fw-semibold text-secondary">Profile photo</label>
-                <div className="d-flex align-items-center gap-3">
-                  <div onClick={e => triggerImagePick(editingId, e)} style={{ cursor: 'pointer' }} title="Click to change">
-                    <div style={{
-                      width: 64, height: 64, borderRadius: '50%', overflow: 'hidden',
-                      background: 'linear-gradient(135deg, rgb(13, 148, 136), rgb(15, 23, 42))', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#fff', fontSize: '20px', fontWeight: 700, border: '2px solid #e8e8e8',
-                    }}>
-                      {editForm.image ? (
-                        <img src={editForm.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        getInitials(editForm.name)
-                      )}
-                    </div>
+                <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+                  <div className="mb-3">
+                    <h6 style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>Basic Details</h6>
+                    <small className="text-muted">Core employee information</small>
                   </div>
-                  <div>
-                    <button type="button" className="btn btn-outline-secondary btn-sm" onClick={e => triggerImagePick(editingId, e)}>Change Photo</button>
+                  <div className="row g-3">
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Name</label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={editForm.name} onChange={e => updateEditField('name', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Role</label>
+                      <select className="form-select form-select-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={editForm.role} onChange={e => updateEditField('role', e.target.value)}>
+                        <option value="Staff">Staff</option>
+                        <option value="Cashier">Cashier</option>
+                        <option value="Staff (Production)">Staff (Production)</option>
+                        <option value="Manager">Manager</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Email</label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} type="email" value={editForm.email} onChange={e => updateEditField('email', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Phone</label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={editForm.phone} onChange={e => updateEditField('phone', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Employee Type</label>
+                      <select className="form-select form-select-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={editForm.employeeType} onChange={e => updateEditField('employeeType', e.target.value)}>
+                        <option value="Permanent">Permanent</option>
+                        <option value="Casual">Casual</option>
+                        <option value="Contract">Contract</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Confirmation Date</label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} type="date" value={editForm.confirmationDate} onChange={e => updateEditField('confirmationDate', e.target.value)} />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="d-flex gap-2 mt-4 pt-3 border-top justify-content-end">
-              <button className="btn btn-secondary btn-sm px-4" onClick={cancelEdit}>Cancel</button>
-              <button className="btn btn-danger btn-sm px-4" onClick={(e) => {
-                const emp = employees.find(x => x.id === editingId);
-                if (emp) deleteEmployee(emp, e);
-              }}>Delete Employee</button>
-              <button className="btn btn-primary btn-sm px-4" onClick={saveEdit} style={{ background: '#0d9488', borderColor: '#0d9488' }}>Save Changes</button>
+              <div className="col-12">
+                <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+                  <div className="mb-3">
+                    <h6 style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>EPF / ETF & Bank Details</h6>
+                    <small className="text-muted">Salary and banking information</small>
+                  </div>
+                  <div className="row g-3">
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">EPF Eligible</label>
+                      <select className="form-select form-select-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={editForm.epfEligible} onChange={e => updateEditField('epfEligible', e.target.value)}>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">EPF Number</label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={editForm.epfNumber} onChange={e => updateEditField('epfNumber', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">ETF Eligible</label>
+                      <select className="form-select form-select-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={editForm.etfEligible} onChange={e => updateEditField('etfEligible', e.target.value)}>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">ETF Number</label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={editForm.etfNumber} onChange={e => updateEditField('etfNumber', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Bank Name</label>
+                      <select className="form-select form-select-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={editForm.bankName} onChange={e => updateEditField('bankName', e.target.value)}>
+                        <option value="">Select Bank</option>
+                        <option value="Bank of Ceylon">Bank of Ceylon</option>
+                        <option value="People's Bank">People's Bank</option>
+                        <option value="Commercial Bank">Commercial Bank</option>
+                        <option value="Hatton National Bank">Hatton National Bank</option>
+                        <option value="Sampath Bank">Sampath Bank</option>
+                        <option value="Seylan Bank">Seylan Bank</option>
+                        <option value="Nations Trust Bank">Nations Trust Bank</option>
+                        <option value="DFCC Bank">DFCC Bank</option>
+                        <option value="Pan Asia Bank">Pan Asia Bank</option>
+                        <option value="Union Bank">Union Bank</option>
+                        <option value="NDB Bank">NDB Bank</option>
+                        <option value="RDB Bank">RDB Bank</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Bank Account No</label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={editForm.bankAccountNo} onChange={e => updateEditField('bankAccountNo', e.target.value)} />
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Bank Branch</label>
+                      <select className="form-select form-select-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={editForm.bankBranch} onChange={e => updateEditField('bankBranch', e.target.value)}>
+                        <option value="">Select Branch</option>
+                        <option value="Balangoda">Balangoda</option>
+                        <option value="Pallebedda">Pallebedda</option>
+                        <option value="Kahawatta">Kahawatta</option>
+                        <option value="Pelmadulla">Pelmadulla</option>
+                        <option value="Embilipitiya">Embilipitiya</option>
+                        <option value="Kiriella">Kiriella</option>
+                        <option value="Erathna">Erathna</option>
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Bank Account Name</label>
+                      <input className="form-control form-control-sm shadow-none" style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }} value={editForm.bankAccountName} onChange={e => updateEditField('bankAccountName', e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="col-12">
+                <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+                  <div className="mb-3">
+                    <h6 style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>Profile Photo</h6>
+                    <small className="text-muted">Update employee profile image</small>
+                  </div>
+                  <div className="d-flex align-items-center gap-3">
+                    <div onClick={e => triggerImagePick(editingId, e)} style={{ cursor: 'pointer' }} title="Click to change">
+                      <div style={{
+                        width: 64, height: 64, borderRadius: '50%', overflow: 'hidden',
+                        background: 'linear-gradient(135deg, rgb(13, 148, 136), rgb(15, 23, 42))', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: '#fff', fontSize: '20px', fontWeight: 700, border: '2px solid #e8e8e8',
+                      }}>
+                        {editForm.image ? (
+                          <img src={editForm.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          getInitials(editForm.name)
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <button type="button" className="btn btn-outline-secondary btn-sm" onClick={e => triggerImagePick(editingId, e)}>Change Photo</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+                </div>
+              </div>
+
+              <div className="modal-footer border-0 p-4 pt-2">
+                <button type="button" className="btn btn-outline-secondary px-4 py-2 rounded-3 shadow-sm fw-bold me-auto" onClick={cancelEdit}>Cancel</button>
+                <button type="button" className="btn btn-outline-danger px-3 py-2 rounded-3 shadow-sm fw-bold" onClick={(e) => {
+                  const emp = employees.find(x => x.id === editingId);
+                  if (emp) deleteEmployee(emp, e);
+                }}>Delete Employee</button>
+                <button type="button" className="btn btn-dark px-3 py-2 rounded-3 shadow-sm fw-bold" onClick={saveEdit}>Save Changes</button>
+              </div>
             </div>
           </div>
         </div>
@@ -989,46 +1016,184 @@ const EmployeesPage = () => {
               padding: '20px'
             }}
           >
-            {/*Display employee details.*/}
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h4 style={{ margin: 0 }}>Employee Details</h4>
-              <button className="btn btn-sm btn-outline-secondary" onClick={() => setViewingEmployee(null)}>Close</button>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h4 style={{ margin: 0, fontWeight: 800, color: '#0f172a' }}>Employee Details</h4>
+                <p className="text-muted small mb-0">Complete employee profile information</p>
+              </div>
+              <button className="btn btn-sm btn-outline-secondary rounded-3" onClick={() => setViewingEmployee(null)}>Close</button>
             </div>
 
-            <div className="row g-2">
-              <div className="col-12 col-md-6"><strong>Employee ID:</strong> {renderDetailValue(viewingEmployee.raw?.Employee_ID)}</div>
-              <div className="col-12 col-md-6"><strong>Employee Code:</strong> {renderDetailValue(viewingEmployee.raw?.Employee_Code)}</div>
-              <div className="col-12 col-md-6"><strong>Full Name:</strong> {renderDetailValue(viewingEmployee.raw?.Full_Name)}</div>
-              <div className="col-12 col-md-6"><strong>Name With Initials:</strong> {renderDetailValue(viewingEmployee.raw?.Name_With_Initials)}</div>
-              <div className="col-12 col-md-6"><strong>NIC:</strong> {renderDetailValue(viewingEmployee.raw?.NIC)}</div>
-              <div className="col-12 col-md-6"><strong>Date Of Birth:</strong> {renderDetailValue(viewingEmployee.raw?.Date_Of_Birth)}</div>
-              <div className="col-12 col-md-6"><strong>Gender:</strong> {renderDetailValue(viewingEmployee.raw?.Gender)}</div>
-              <div className="col-12 col-md-6"><strong>Marital Status:</strong> {renderDetailValue(viewingEmployee.raw?.Marital_Status)}</div>
-              <div className="col-12 col-md-6"><strong>Contact Phone:</strong> {renderDetailValue(viewingEmployee.raw?.Contact_Phone)}</div>
-              <div className="col-12 col-md-6"><strong>Contact Phone 2:</strong> {renderDetailValue(viewingEmployee.raw?.Contact_Phone_2)}</div>
-              <div className="col-12 col-md-6"><strong>Email:</strong> {renderDetailValue(viewingEmployee.raw?.Email)}</div>
-              <div className="col-12 col-md-6"><strong>City:</strong> {renderDetailValue(viewingEmployee.raw?.City)}</div>
-              <div className="col-12 col-md-6"><strong>Department:</strong> {renderDetailValue(viewingEmployee.raw?.Department)}</div>
-              <div className="col-12 col-md-6"><strong>Role:</strong> {renderDetailValue(viewingEmployee.raw?.Role)}</div>
-              <div className="col-12 col-md-6"><strong>Salary Category:</strong> {renderDetailValue(viewingEmployee.raw?.Salary_Category)}</div>
-              <div className="col-12 col-md-6"><strong>Employee Type:</strong> {renderDetailValue(viewingEmployee.raw?.Employee_Type)}</div>
-              <div className="col-12 col-md-6"><strong>Hire Date:</strong> {renderDetailValue(viewingEmployee.raw?.Hire_Date)}</div>
-              <div className="col-12 col-md-6"><strong>Confirmation Date:</strong> {renderDetailValue(viewingEmployee.raw?.Confirmation_Date)}</div>
-              <div className="col-12 col-md-6"><strong>Status:</strong> {renderDetailValue(viewingEmployee.raw?.Status)}</div>
-              <div className="col-12 col-md-6"><strong>EPF Eligible:</strong> {renderDetailValue(viewingEmployee.raw?.EPF_Eligible)}</div>
-              <div className="col-12 col-md-6"><strong>ETF Eligible:</strong> {renderDetailValue(viewingEmployee.raw?.ETF_Eligible)}</div>
-              <div className="col-12 col-md-6"><strong>EPF Number:</strong> {renderDetailValue(viewingEmployee.raw?.EPF_Number)}</div>
-              <div className="col-12 col-md-6"><strong>ETF Number:</strong> {renderDetailValue(viewingEmployee.raw?.ETF_Number)}</div>
-              <div className="col-12 col-md-6"><strong>Bank Name:</strong> {renderDetailValue(viewingEmployee.raw?.Bank_Name)}</div>
-              <div className="col-12 col-md-6"><strong>Bank Account No:</strong> {renderDetailValue(viewingEmployee.raw?.Bank_Account_No)}</div>
-              <div className="col-12 col-md-6"><strong>Bank Branch:</strong> {renderDetailValue(viewingEmployee.raw?.Bank_Branch)}</div>
-              <div className="col-12 col-md-6"><strong>Bank Account Name:</strong> {renderDetailValue(viewingEmployee.raw?.Bank_Account_Name)}</div>
-              <div className="col-12"><strong>Permanent Address:</strong> {renderDetailValue(viewingEmployee.raw?.Permanent_Address)}</div>
-              <div className="col-12"><strong>Current Address:</strong> {renderDetailValue(viewingEmployee.raw?.Current_Address)}</div>
-              <div className="col-12"><strong>Emergency Contact Name:</strong> {renderDetailValue(viewingEmployee.raw?.Emergency_Contact_Name)}</div>
-              <div className="col-12"><strong>Emergency Contact Phone:</strong> {renderDetailValue(viewingEmployee.raw?.Emergency_Contact_Phone)}</div>
-              <div className="col-12"><strong>Emergency Contact Relationship:</strong> {renderDetailValue(viewingEmployee.raw?.Emergency_Contact_Relationship)}</div>
-              <div className="col-12"><strong>Notes:</strong> {renderDetailValue(viewingEmployee.raw?.Notes)}</div>
+            <div className="row g-3">
+              <div className="col-12">
+                <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+                  <div className="d-flex align-items-center gap-3">
+                    <div style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      background: 'linear-gradient(135deg, rgb(13, 148, 136), rgb(15, 23, 42))',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#fff',
+                      fontSize: '20px',
+                      fontWeight: 700,
+                      border: '2px solid #e8e8e8',
+                      flexShrink: 0,
+                    }}>
+                      {viewingEmployee.image ? (
+                        <img src={viewingEmployee.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        getInitials(viewingEmployee.name || viewingEmployee.raw?.Full_Name)
+                      )}
+                    </div>
+                    <div>
+                      <h6 style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>{renderDetailValue(viewingEmployee.name || viewingEmployee.raw?.Full_Name)}</h6>
+                      <div className="text-muted small">{renderDetailValue(viewingEmployee.role || viewingEmployee.raw?.Role)}</div>
+                      <div className="text-muted small">{renderDetailValue(viewingEmployee.email || viewingEmployee.raw?.Email)}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="col-12">
+                <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+                  <div className="mb-3">
+                    <h6 style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>Basic Details</h6>
+                    <small className="text-muted">Core employee information</small>
+                  </div>
+                  <div className="row g-3">
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Employee ID</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Employee_ID)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Employee Code</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Employee_Code)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Full Name</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Full_Name)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Name With Initials</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Name_With_Initials)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Role</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Role)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Department</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Department)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Employee Type</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Employee_Type)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Status</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Status)}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="col-12">
+                <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+                  <div className="mb-3">
+                    <h6 style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>EPF / ETF & Bank Details</h6>
+                    <small className="text-muted">Salary and banking information</small>
+                  </div>
+                  <div className="row g-3">
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">EPF Eligible</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.EPF_Eligible)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">EPF Number</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.EPF_Number)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">ETF Eligible</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.ETF_Eligible)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">ETF Number</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.ETF_Number)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Bank Name</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Bank_Name)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Bank Account No</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Bank_Account_No)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Bank Branch</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Bank_Branch)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Bank Account Name</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Bank_Account_Name)}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="col-12">
+                <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+                  <div className="mb-3">
+                    <h6 style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>Contact & Address</h6>
+                    <small className="text-muted">Personal and emergency information</small>
+                  </div>
+                  <div className="row g-3">
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Email</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Email)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Contact Phone</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Contact_Phone)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Contact Phone 2</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Contact_Phone_2)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">City</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.City)}</div>
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Permanent Address</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Permanent_Address)}</div>
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Current Address</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Current_Address)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Emergency Contact Name</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Emergency_Contact_Name)}</div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Emergency Contact Phone</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Emergency_Contact_Phone)}</div>
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Emergency Contact Relationship</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Emergency_Contact_Relationship)}</div>
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label small mb-1 fw-semibold text-secondary">Notes</label>
+                      <div style={{ backgroundColor: '#ffffff', border: '1px solid #d1d5db', padding: '10px 12px', borderRadius: '10px', color: '#0f172a' }}>{renderDetailValue(viewingEmployee.raw?.Notes)}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
