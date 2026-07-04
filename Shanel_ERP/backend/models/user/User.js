@@ -58,7 +58,7 @@ const User = sequelize.define('User', {
         comment: 'Lock expiry after 5 failed attempts'
     }
 }, {
-    tableName: 'USER',
+    tableName: 'user',
     timestamps: true,
     createdAt: 'Created_At',
     updatedAt: 'Updated_At'

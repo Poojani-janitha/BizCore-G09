@@ -18,9 +18,22 @@ AccountChart.init({
         type: Sequelize.STRING(200),
         allowNull: false
     },
-    Account_Type: {
-        type: Sequelize.ENUM('Asset', 'Liability', 'Equity', 'Revenue', 'Expense'),
+    Type_ID: {
+        type: Sequelize.INTEGER,
         allowNull: false
+    },
+    Account_Type: {
+        type: Sequelize.VIRTUAL,
+        get() {
+            const types = {
+                1: 'Asset',
+                2: 'Liability',
+                3: 'Equity',
+                4: 'Revenue',
+                5: 'Expense'
+            };
+            return types[this.Type_ID];
+        }
     },
     Account_Category: {
         type: Sequelize.STRING(100),
@@ -45,6 +58,16 @@ AccountChart.init({
     Updated_At: {
         type: Sequelize.DATE,
         defaultValue: Sequelize.NOW
+    },
+    Current_Balance: {
+        type: Sequelize.DECIMAL(15, 2),
+        allowNull: true,
+        defaultValue: 0.00
+    },
+    Balance_Brought_Forward: {
+        type: Sequelize.DECIMAL(15, 2),
+        allowNull: true,
+        defaultValue: 0.00
     }
 }, {
     sequelize: databaseCon,

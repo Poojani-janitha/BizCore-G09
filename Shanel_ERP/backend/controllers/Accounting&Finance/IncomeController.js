@@ -72,7 +72,7 @@ class IncomeController {
                 revenueAccount = await AccountChart.findOne({
                     where: { 
                         Account_Name: incomeCategory,
-                        Account_Type: 'Revenue',
+                        Type_ID: 4,
                         Is_Active: true
                     },
                     transaction
@@ -244,7 +244,7 @@ class IncomeController {
         try {
             const accounts = await AccountChart.findAll({
                 where: {
-                    Account_Type: 'Revenue',
+                    Type_ID: 4,
                     Is_Active: true
                 },
                 attributes: ['Account_ID', 'Account_Code', 'Account_Name'],

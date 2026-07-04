@@ -3,6 +3,7 @@ import axios from 'axios';
 import { FileText, Download, Printer } from 'react-feather';
 import { generatePDF } from '../../../services/reportGenerator';
 import Pagination from '../../../component/common/Pagination';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const CurrentStockReport = () => {
     const [reportData, setReportData] = useState([]);
@@ -10,7 +11,7 @@ const CurrentStockReport = () => {
     const [pageSize, setPageSize] = useState(25);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/inventory/reports/current-stock')
+        axios.get(API_ENDPOINTS.inventory.reports.currentStock)
             .then(res => setReportData(res.data.data));
     }, []);
 

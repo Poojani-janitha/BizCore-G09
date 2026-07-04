@@ -38,11 +38,10 @@ import SalesDashboard from './pages/Sales/SalesDashboard.jsx';
 import SalesHistory from './pages/Sales/SalesHistory.jsx';
 import DueSales from './pages/Sales/DueSales.jsx';
 import SalesReport from './pages/Sales/SalesReport.jsx';
-import SalesPerformancePage from './pages/Sales/SalesPerformancePage.jsx';
-import CompanyItemsReportPage from './pages/Sales/CompanyItemsReportPage.jsx';
-import OtherItemsReportPage from './pages/Sales/OtherItemsReportPage.jsx';
-import LocationWiseReportPage from './pages/Sales/LocationWiseReportPage.jsx';
-import PaymentCollectionPage from './pages/Sales/PaymentCollectionPage.jsx';
+// Sales Management Module — new pages
+import CustomerListPage from './pages/Sales/CustomerListPage.jsx';
+import CustomerDetailPage from './pages/Sales/CustomerDetailPage.jsx';
+import ChequeManagementPage from './pages/Sales/ChequeManagementPage.jsx';
 import AdminHome from './pages/Home/AdminHome.jsx';
 import ManagerHome from './pages/Home/ManagerHome.jsx';
 import CashierHome from './pages/Home/CashierHome.jsx';
@@ -144,11 +143,10 @@ const App = () => {
             <Route path="/sales/history" element={<SalesHistory />} />
             <Route path="/sales/due" element={<DueSales />} />
             <Route path="/sales/reports" element={<SalesReport />} />
-            <Route path="/sales/performance" element={<SalesPerformancePage />} />
-            <Route path="/sales/collection" element={<PaymentCollectionPage />} />
-            <Route path="/sales/reports/company" element={<CompanyItemsReportPage />} />
-            <Route path="/sales/reports/other" element={<OtherItemsReportPage />} />
-            <Route path="/sales/reports/location" element={<LocationWiseReportPage />} />
+            {/* Sales Management Module — new pages */}
+            <Route path="/sales/customers" element={<CustomerListPage />} />
+            <Route path="/sales/customers/:id" element={<CustomerDetailPage />} />
+            <Route path="/sales/cheques" element={<ChequeManagementPage />} />
             
             <Route path="/user-management" element={<UserDashboard />} />
             

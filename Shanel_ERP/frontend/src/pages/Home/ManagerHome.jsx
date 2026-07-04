@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { getFullName } from '../../utils/auth';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const COLORS = ['#004445', '#2c7873', '#41b883', '#6ab04c', '#f9ca24'];
 
@@ -71,8 +72,8 @@ const ManagerHome = () => {
         const fetchAll = async () => {
             try {
                 const [invRes, hrRes] = await Promise.allSettled([
-                    axios.get('http://localhost:5000/api/inventory/dashboard-stats'),
-                    axios.get('http://localhost:5000/api/hr/employees'),
+                    axios.get(API_ENDPOINTS.inventory.dashboardStats),
+                    axios.get(API_ENDPOINTS.hr.employees),
                 ]);
                 if (invRes.status === 'fulfilled' && invRes.value.data.success) setInv(invRes.value.data);
                 if (hrRes.status === 'fulfilled') {

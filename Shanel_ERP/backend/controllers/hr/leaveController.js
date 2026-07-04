@@ -66,6 +66,8 @@ const createLeave = async (req, res) => {
             Notes
         } = req.body;
 
+        const Document_Path = req.file ? req.file.filename : null;
+
         let empId = Employee_ID;
         if (!empId && employeeCode) {
             const emp = await findEmployeeByParam(employeeCode);
@@ -91,6 +93,7 @@ const createLeave = async (req, res) => {
             Reason,
             Applied_Date,
             Notes,
+            Document_Path,
             Status: 'Pending'
         });
 

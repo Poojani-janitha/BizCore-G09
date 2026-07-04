@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import './itemTable.css';
 import Portal from './Portal';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const EMPTY_ITEM = {
     p_id: '',
@@ -45,7 +46,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
             }
 
             try {
-                const res = await axios.get(`http://localhost:5000/api/sales/units?productId=${tempItem.p_id}`);
+                const res = await axios.get(API_ENDPOINTS.sales.units(tempItem.p_id));
                 console.log('Units API Response:', res.data);
                 if (res.data.success) {
                     const units = res.data.units || [];
@@ -108,7 +109,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         }
 
         try {
-            const res = await axios.get(`http://localhost:5000/api/sales/search?q=${value}`);
+            const res = await axios.get(API_ENDPOINTS.sales.search(value));
             if (res.data.success) {
 
                 setSearchResults(res.data.products || []);
@@ -118,7 +119,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         }
     };
 
-    // const res = await axios.get('http://localhost:5000/api/inventory/sales/search', {
+    // const res = await axios.get(API_ENDPOINTS.inventory.sales.search, {
     //     params: { q: term }
     // });
 
@@ -281,7 +282,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
     //fuction to get availabale quntity of the product in inventory when user select the product from search result
     const fetchProductQuantity = async (productId) => {
         try {
-            const res = await axios.get(`http://localhost:5000/api/sales/product-quantity/${productId}`);
+            const res = await axios.get(API_ENDPOINTS.sales.productQuantity(productId));
             console.log('Product Quantity Response:', res.data);
             if (res.data.success) {
                 const shopQty = toNumber(res.data.shopQty);
@@ -323,7 +324,25 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
         }
     }, [tempItem.p_id, selectedProduct?.p_id, location]);
 
+    // Global keydown listener to focus the product search input field when user starts typing/scanning
+    useEffect(() => {
+        const handleGlobalKeyDown = (e) => {
+            const activeEl = document.activeElement;
+            if (activeEl && ['input', 'textarea', 'select'].includes(activeEl.tagName.toLowerCase())) {
+                return;
+            }
 
+            // Capture only single printable characters, avoiding action/modifier keys
+            if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                if (searchInputRef.current) {
+                    searchInputRef.current.focus();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleGlobalKeyDown);
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    }, []);
 
     // Monitor error state changes
     useEffect(() => {
@@ -341,7 +360,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
             // Fetch the full product details to get both retail and wholesale prices
             const fetchProductPrices = async () => {
                 try {
-                    const res = await axios.get(`http://localhost:5000/api/sales/search?q=${tempItem.p_code}`);
+                    const res = await axios.get(API_ENDPOINTS.sales.search(tempItem.p_code));
                     if (res.data.success && res.data.products.length > 0) {
                         const product = res.data.products[0];
                         const newPrice = priceLevel === "Retail" ? toNumber(product.retail_price) : toNumber(product.wholesale_price);
@@ -529,6 +548,14 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                                     placeholder={t('itemTable.searchPlaceholder')}
                                     value={query}
                                     onChange={(e) => handleSearch(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            if (searchResults.length > 0) {
+                                                selectProduct(searchResults[0]);
+                                            }
+                                        }
+                                    }}
                                     style={{ width: '100%' }}
                                 />
                                 {searchResults.length > 0 && (
@@ -542,7 +569,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
                                                 >
                                                     <div className='fw-bold' style={{ color: product.p_type === 'Company' ? '#0d6efd' : '#198754' }}>{product.p_name}</div>
                                                     <div className='text-muted' style={{ fontSize: '12px' }}>
-                                                        {product.image_path && <img src={`http://localhost:5000${product.image_path}`} style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '10px' }} />}
+                                                        {product.image_path && <img src={`${product.image_path}`} style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '10px' }} />}
                                                         Code: {product.p_code} | Price: {priceLevel == "Retail" ? toNumber(product.retail_price).toFixed(2) : toNumber(product.wholesale_price).toFixed(2)} | Tax: {toNumber(product.tax_rate).toFixed(2)}% |<br /> Type : {product.p_type}
                                                     </div>
                                                 </li>

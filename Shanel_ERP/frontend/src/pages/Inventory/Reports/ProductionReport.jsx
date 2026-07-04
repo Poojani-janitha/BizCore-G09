@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Download, Printer } from 'react-feather';
 import { generatePDF } from '../../../services/reportGenerator';
 import Pagination from '../../../component/common/Pagination';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const ProductionReport = () => {
     const [reportData, setReportData] = useState([]);
@@ -10,7 +11,7 @@ const ProductionReport = () => {
     const [pageSize, setPageSize] = useState(25);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/inventory/reports/production')
+        axios.get(API_ENDPOINTS.inventory.reports.production)
             .then(res => setReportData(res.data.data))
             .catch(err => console.error(err));
     }, []);

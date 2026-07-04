@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Play, Trash2, Loader, Edit2, Search } from 'react-feather';
 import ProductionModal from '../../component/Inventory/Production/ProductionModal';
 import EditProductionModal from '../../component/Inventory/Production/EditProductionModal';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 import { useTranslation } from 'react-i18next';
 import Pagination from '../../component/common/Pagination';
 
@@ -89,7 +90,7 @@ const ProductionStock = () => {
                 fetchSection('approved', approvedPage, approvedLimit, filters, setApprovedItems, setApprovedPagination)
             ]);
 
-            const productRes = await axios.get('http://localhost:5000/api/inventory/products');
+            const productRes = await axios.get(API_ENDPOINTS.inventory.products);
             if (Array.isArray(productRes.data)) {
                 setProducts(productRes.data.filter((p) => p.type === 'Company').map((p) => ({ id: p.id, name: p.name })));
             }
@@ -130,14 +131,14 @@ const ProductionStock = () => {
     };
 
     const handleStatusUpdate = async (id, status) => {
-        await axios.put(`http://localhost:5000/api/production/update/${id}`, { status });
-        fetchData(false);
+        await axios.put(API_ENDPOINTS.production.update(id), { status });
+        fetchData();
     };
 
     const handleDelete = async (id) => {
         if (window.confirm('Delete this batch?')) {
-            await axios.delete(`http://localhost:5000/api/production/${id}`);
-            fetchData(false);
+            await axios.delete(API_ENDPOINTS.production.byId(id));
+            fetchData();
         }
     };
 

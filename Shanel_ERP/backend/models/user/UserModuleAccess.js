@@ -38,7 +38,7 @@ const UserModuleAccess = sequelize.define('UserModuleAccess', {
         allowNull: false
     }
 }, {
-    tableName: 'USER_MODULE_ACCESS',
+    tableName: 'user_module_access',
     timestamps: false,
     indexes: [
         {

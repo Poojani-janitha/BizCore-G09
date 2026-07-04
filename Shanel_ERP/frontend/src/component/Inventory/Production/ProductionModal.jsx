@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Modal, Button, Form, Row, Col, InputGroup } from 'react-bootstrap';
 import axios from 'axios';
 import { Package, Calendar, Layers, Hash, Search, X } from 'react-feather';
+// import { Package, Calendar, Layers, Hash } from 'react-feather';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const ProductionModal = ({ show, onHide, refreshData }) => {
     const getFallbackBatchNo = () => {
@@ -36,7 +38,7 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
 
     const fetchNextBatchNo = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/production/next-batch-number');
+            const res = await axios.get(API_ENDPOINTS.production.byId('next-batch-number'));
             const nextBatchNo = res?.data?.batchNo || getFallbackBatchNo();
             setFormData(prev => ({ ...prev, Batch_No: nextBatchNo }));
         } catch (error) {
@@ -50,17 +52,20 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
     };
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/inventory/products').then(res => {
+        axios.get(API_ENDPOINTS.inventory.products).then(res => {
             setProducts(res.data.filter(p => p.type === 'Company' && !isIsharaProduct(p)));
         });
         // Fetch existing batches for duplicate check
-        axios.get('http://localhost:5000/api/production/stock-overview').then(res => {
-            if (res.data.success) {
-                const allBatches = [
-                    ...(res.data.wip || []),
-                    ...(res.data.approved || [])
-                ].map(item => item.Batch_No);
-                setExistingBatches(allBatches);
+        // axios.get('http://localhost:5000/api/production/stock-overview').then(res => {
+        //     if (res.data.success) {
+        //         const allBatches = [
+        //             ...(res.data.wip || []),
+        //             ...(res.data.approved || [])
+        //         ].map(item => item.Batch_No);
+        //         setExistingBatches(allBatches);
+        axios.get(API_ENDPOINTS.production.stockOverview).then(res => {
+            if (res.data.success && res.data.wip) {
+                setExistingBatches(res.data.wip.map(item => item.Batch_No));
             }
         });
     }, []);
@@ -166,7 +171,9 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
 
         try {
             setErrors({});
-            await axios.post('http://localhost:5000/api/production/start', { ...formData, Batch_No: batchNo });
+            // await axios.post('http://localhost:5000/api/production/start', { ...formData, Batch_No: batchNo });
+            
+            await axios.post(API_ENDPOINTS.production.start, { ...formData, Batch_No: batchNo });
             setExistingBatches([...existingBatches, batchNo]);
             refreshData();
             onHide();

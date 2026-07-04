@@ -9,8 +9,18 @@ class JournalEntryController {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 10;
             const offset = (page - 1) * limit;
+            const { startDate, endDate } = req.query;
+
+            const whereClause = {};
+            if (startDate && endDate) {
+                const { Op } = require('sequelize');
+                whereClause.Entry_Date = {
+                    [Op.between]: [startDate, endDate]
+                };
+            }
 
             const { count, rows } = await JournalEntry.findAndCountAll({
+                where: whereClause,
                 order: [['Entry_Date', 'DESC'], ['Journal_ID', 'DESC']],
                 limit: limit,
                 offset: offset

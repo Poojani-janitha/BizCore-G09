@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Save, XCircle, Info, ChevronDown, PlusCircle, Layers } from 'react-feather';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const CreateAccountPage = () => {
   const navigate = useNavigate();
@@ -39,7 +40,7 @@ const CreateAccountPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/api/accounts/create', {
+      const res = await axios.post(API_ENDPOINTS.accounts.create, {
         accountCode: formData.accountCode,
         accountName: formData.accountName,
         accountType: formData.accountType,

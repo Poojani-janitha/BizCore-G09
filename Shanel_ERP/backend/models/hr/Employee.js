@@ -47,7 +47,7 @@ const Employee = sequelize.define(
         Bank_Branch: { type: DataTypes.STRING(100), allowNull: true },
         Bank_Account_Name: { type: DataTypes.STRING(200), allowNull: true },
         Status: {
-            type: DataTypes.STRING(50),
+            type: DataTypes.ENUM('Active', 'Inactive', 'On_Leave', 'Suspended', 'Resigned', 'Terminated'),
             defaultValue: 'Active'
         },
         Resignation_Date: { type: DataTypes.DATEONLY, allowNull: true },

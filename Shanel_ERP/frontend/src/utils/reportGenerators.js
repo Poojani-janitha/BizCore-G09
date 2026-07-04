@@ -24,14 +24,22 @@ export const downloadProfitLossPDF = (data, period) => {
 
     let finalY = 40;
 
-    // 1. Operating Revenue
+    // 1. Revenue (Operating + Other Income)
+    const revenueBody = [
+      ...data.operatingRevenue.map(r => [r.account_name, fmt(r.amount)])
+    ];
+    if (data.otherIncome && data.otherIncome.length > 0) {
+      revenueBody.push([{ content: 'Other Income', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, '']);
+      data.otherIncome.forEach(r => {
+        revenueBody.push([`  ${r.account_name}`, fmt(r.amount)]);
+      });
+    }
+    revenueBody.push([{ content: 'Total Revenue', styles: { fontStyle: 'bold' } }, { content: fmt(data.totals.totalRevenue), styles: { fontStyle: 'bold' } }]);
+
     autoTable(doc, {
       startY: finalY,
-      head: [['Operating Revenue', 'Amount']],
-      body: [
-        ...data.operatingRevenue.map(r => [r.account_name, fmt(r.amount)]),
-        [{ content: 'Total Operating Revenue', styles: { fontStyle: 'bold' } }, { content: fmt(data.totals.totalOperatingRevenue), styles: { fontStyle: 'bold' } }]
-      ],
+      head: [['Revenue', 'Amount']],
+      body: revenueBody,
       theme: 'striped',
       headStyles: { fillColor: [41, 128, 185] }
     });
@@ -73,6 +81,21 @@ export const downloadProfitLossPDF = (data, period) => {
       headStyles: { fillColor: [243, 156, 18] }
     });
     finalY = doc.lastAutoTable.finalY + 5;
+
+    // 4. Discounts & Returns (Contra Revenue)
+    if (data.contraRevenue && data.contraRevenue.length > 0) {
+      autoTable(doc, {
+        startY: finalY,
+        head: [['Discounts & Returns', 'Amount']],
+        body: [
+          ...data.contraRevenue.map(c => [c.account_name, fmt(c.amount)]),
+          [{ content: 'Total Discounts & Returns', styles: { fontStyle: 'bold' } }, { content: fmt(data.totals.totalContraRevenue), styles: { fontStyle: 'bold' } }]
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [236, 72, 153] } // Pink
+      });
+      finalY = doc.lastAutoTable.finalY + 5;
+    }
 
     // Net Profit Box
     const isProfit = data.totals.netProfit >= 0;
@@ -198,6 +221,70 @@ export const downloadBalanceSheetPDF = (data, date) => {
     console.log("Balance Sheet PDF Saved Successfully");
   } catch (err) {
     console.error("PDF Generation Error (Balance Sheet):", err);
+    alert("Failed to generate PDF. Please check the console for details.");
+  }
+};
+
+export const downloadPeriodTransactionsPDF = (data) => {
+  try {
+    const { periodName, startDate, endDate, transactions } = data;
+    console.log(`Starting PDF generation for period ${periodName} transactions...`, transactions);
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Header
+    doc.setFontSize(18);
+    doc.text(businessName, pageWidth / 2, 15, { align: 'center' });
+    doc.setFontSize(14);
+    doc.text(`Transactions Report - Period: ${periodName}`, pageWidth / 2, 25, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text(`Date Range: ${startDate} to ${endDate}`, pageWidth / 2, 32, { align: 'center' });
+
+    let finalY = 40;
+
+    // Prepare table lines
+    const rows = [];
+    transactions.forEach(entry => {
+      entry.Lines.forEach((line, idx) => {
+        rows.push([
+          idx === 0 ? entry.Entry_Date : '',
+          idx === 0 ? entry.Journal_No : '',
+          idx === 0 ? entry.Description : '',
+          `${line.Account?.Account_Name} (${line.Account?.Account_Code})`,
+          parseFloat(line.Debit_Amount) > 0 ? fmt(line.Debit_Amount) : '—',
+          parseFloat(line.Credit_Amount) > 0 ? fmt(line.Credit_Amount) : '—',
+        ]);
+      });
+    });
+
+    if (rows.length === 0) {
+      rows.push([
+        { content: 'No transactions found in this period.', colSpan: 6, styles: { halign: 'center', fontStyle: 'italic' } }
+      ]);
+    }
+
+    autoTable(doc, {
+      startY: finalY,
+      head: [['Date', 'JE Number', 'Description', 'Account', 'Debit', 'Credit']],
+      body: rows,
+      theme: 'grid',
+      headStyles: { fillColor: [41, 128, 185] },
+      styles: { fontSize: 8 },
+      columnStyles: {
+        0: { cellWidth: 20 },
+        1: { cellWidth: 28 },
+        2: { cellWidth: 40 },
+        3: { cellWidth: 50 },
+        4: { cellWidth: 25, halign: 'right' },
+        5: { cellWidth: 25, halign: 'right' }
+      }
+    });
+
+    doc.save(`Period_${periodName}_Transactions.pdf`);
+    console.log("Period transactions PDF saved successfully");
+  } catch (err) {
+    console.error("PDF Generation Error (Period Transactions):", err);
     alert("Failed to generate PDF. Please check the console for details.");
   }
 };

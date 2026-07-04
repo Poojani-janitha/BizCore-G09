@@ -6,10 +6,11 @@ import {
   AlertCircle, Search, Plus, X
 } from 'react-feather';
 import QuickAccountModal from '../../component/Finance/QuickAccountModal';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
-const API_BASE = 'http://localhost:5000/api/incomes';
-const CUSTOMER_API = 'http://localhost:5000/api/customer';
-const CREDIT_API = 'http://localhost:5000/api/credit-payments';
+const API_BASE = API_ENDPOINTS.incomes.root;
+const CUSTOMER_API = API_ENDPOINTS.customer.root;
+const CREDIT_API = API_ENDPOINTS.creditPayments.root;
 
 const PAYMENT_METHODS = [
   { id: 'Cash', label: 'Cash', icon: '💵' },
@@ -73,7 +74,7 @@ const ReceivePaymentPage = () => {
     try {
       setLoadingCategories(true);
       // Only fetch Revenue (Income) accounts for the income category dropdown
-      const res = await axios.get('http://localhost:5000/api/accounts?active=true&type=Revenue');
+      const res = await axios.get(API_ENDPOINTS.accounts.activeRevenue);
       if (res.data.success) {
         // Store full account objects to filter by type later if needed
         const accounts = res.data.data;

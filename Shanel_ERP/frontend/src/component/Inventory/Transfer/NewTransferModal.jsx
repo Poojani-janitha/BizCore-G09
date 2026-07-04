@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import { Search, X } from 'react-feather';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const LOCATION_OPTIONS = ['Production', 'Shop'];
 
@@ -36,7 +37,7 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
 
     useEffect(() => {
         if (show) {
-            axios.get('http://localhost:5000/api/inventory/products').then(res => setProducts(res.data));
+            axios.get(API_ENDPOINTS.inventory.products).then(res => setProducts(res.data));
             const userId = localStorage.getItem('userId');
 
             if (editTransfer) {
@@ -53,9 +54,13 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
 
                 if (editTransfer.P_ID) {
                     const product = products.find(p => p.id === editTransfer.P_ID);
-                    if (product) { setSelectedProduct(product); setProductSearch(product.name); }
-                    axios.get(`http://localhost:5000/api/inventory/product/${editTransfer.P_ID}/locations`)
-                        .then(res => setLocationInventory(res.data || {})).catch(() => {});
+                    if (product) {
+                        setSelectedProduct(product);
+                    }
+                    
+                    axios.get(API_ENDPOINTS.inventory.productLocations(editTransfer.P_ID))
+                        .then(res => setLocationInventory(res.data || {}))
+                        .catch(err => console.log('Failed to fetch location inventory'));
                 }
             } else {
                 setIsEditing(false);
@@ -149,7 +154,7 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
         setDisplayQty('');
         setSelectedUnitIndex(0);
         setShowDropdown(false);
-        axios.get(`http://localhost:5000/api/inventory/product/${product.id}/locations`)
+        axios.get(API_ENDPOINTS.inventory.productLocations(product.id))
             .then(res => setLocationInventory(res.data || {})).catch(() => {});
     };
 
@@ -201,9 +206,11 @@ const NewTransferModal = ({ show, onHide, refreshData, editTransfer }) => {
                 Display_Unit: selectedUnit.label || selectedProduct?.baseUnit || 'Unit'
             };
             if (isEditing && editTransfer) {
-                await axios.put(`http://localhost:5000/api/inventory/transfers/${editTransfer.ST_ID}`, payload);
+                // Update existing transfer
+                await axios.put(API_ENDPOINTS.inventory.transfers.byId(editTransfer.ST_ID), formData);
             } else {
-                await axios.post('http://localhost:5000/api/inventory/transfers/create', payload);
+                // Create new transfer
+                await axios.post(API_ENDPOINTS.inventory.transfers.create, formData);
             }
             refreshData();
             onHide();

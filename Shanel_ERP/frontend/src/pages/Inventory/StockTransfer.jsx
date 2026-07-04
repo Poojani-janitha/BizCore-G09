@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { Plus, RefreshCcw, CheckCircle, AlertCircle, XCircle, Edit2, X } from 'react-feather';
 import NewTransferModal from '../../component/Inventory/Transfer/NewTransferModal';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Pagination from '../../component/common/Pagination';
@@ -40,7 +41,7 @@ const StockTransfer = () => {
     const navigate    = useNavigate();
 
     const fetchData = () => {
-        axios.get('http://localhost:5000/api/inventory/transfers/history')
+        axios.get(API_ENDPOINTS.inventory.transfers.history)
             .then(res => {
                 if (res.data?.transfers) setData(res.data);
                 setLoading(false);
@@ -53,12 +54,14 @@ const StockTransfer = () => {
 
     const fetchInventory = async () => {
         try {
-            const productsRes = await axios.get('http://localhost:5000/api/inventory/products');
+            const productsRes = await axios.get(API_ENDPOINTS.inventory.products);
+            
+            // API returns array directly or wrapped in .products
             const products = Array.isArray(productsRes.data) ? productsRes.data : productsRes.data?.products || [];
             if (products.length > 0) {
                 const withLoc = await Promise.all(products.map(async (product) => {
                     try {
-                        const locRes = await axios.get(`http://localhost:5000/api/inventory/product/${product.id}/locations`);
+                        const locRes = await axios.get(API_ENDPOINTS.inventory.productLocations(product.id));
                         return { ...product, locationInventory: locRes.data || { Shop: 0, Production: 0 } };
                     } catch {
                         return { ...product, locationInventory: { Shop: 0, Production: 0 } };

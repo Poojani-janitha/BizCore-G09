@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, X } from 'lucide-react';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const RecentSale = () => {
     const [recentSales, setRecentSales] = useState([]);
@@ -9,7 +10,7 @@ const RecentSale = () => {
     const fetchRecentSales = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/sales/all');
+            const res = await fetch(API_ENDPOINTS.sales.all);
             const data = await res.json();
             if (data.success) {
                 setRecentSales(data.data);
@@ -157,9 +158,22 @@ const RecentSale = () => {
                                             }}
                                         >
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                <span style={{ fontWeight: '600', color: '#1a1a2e', fontSize: '15px' }}>
-                                                    {sale.invoice_no}
-                                                </span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span style={{ fontWeight: '600', color: '#1a1a2e', fontSize: '15px' }}>
+                                                        {sale.invoice_no}
+                                                    </span>
+                                                    <span style={{
+                                                        padding: '2px 8px',
+                                                        backgroundColor: sale.sale_type === 'Wholesale' ? '#e8f4fd' : '#f1f3f5',
+                                                        color: sale.sale_type === 'Wholesale' ? '#0d6efd' : '#495057',
+                                                        borderRadius: '4px',
+                                                        fontSize: '11px',
+                                                        fontWeight: '600',
+                                                        textTransform: 'uppercase'
+                                                    }}>
+                                                        {sale.sale_type || 'Retail'}
+                                                    </span>
+                                                </div>
                                                 <span style={{
                                                     padding: '3px 10px',
                                                     backgroundColor: sale.payment_status === 'Paid' ? '#d4edda' : '#fff3cd',

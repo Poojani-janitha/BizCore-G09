@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText, Box, Calendar, Layers,
-  PlusCircle, Loader, RefreshCw, AlertCircle, ChevronDown, CheckCircle, Lock, Shield
+  PlusCircle, Loader, RefreshCw, AlertCircle, ChevronDown, CheckCircle, Lock, Shield, X
 } from 'react-feather';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import ChartOfAccountsPage from './ChartOfAccountsPage';
 import FiscalPeriodModal from './FiscalPeriodModal';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const GeneralLedgerPage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('chart_of_accounts');
   const [journalEntries, setJournalEntries] = useState([]);
   const [fiscalPeriods, setFiscalPeriods] = useState([]);
@@ -20,15 +23,23 @@ const GeneralLedgerPage = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalEntries, setTotalEntries] = useState(0);
-  
+
   // Modal state
   const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
+  const [isDeleteAuthModalOpen, setIsDeleteAuthModalOpen] = useState(false);
+  const [deleteAuthPassword, setDeleteAuthPassword] = useState('');
+  const [periodToDelete, setPeriodToDelete] = useState(null);
+  const [deleteAuthError, setDeleteAuthError] = useState(null);
+  const [deleteAuthLoading, setDeleteAuthLoading] = useState(false);
+
+  // Journal entries date filters
+  const [jeStart, setJeStart] = useState('');
+  const [jeEnd, setJeEnd] = useState('');
 
   const tabs = [
-    { id: 'chart_of_accounts', label: 'Chart of Accounts', icon: (color) => <Box size={18} color={color} /> },
-    { id: 'journal_entries', label: 'Journal Entries', icon: (color) => <FileText size={18} color={color} /> },
-    { id: 'fiscal_periods', label: 'Fiscal Periods', icon: (color) => <Calendar size={18} color={color} /> },
-    { id: 'subledger_integration', label: 'Subledger Integration', icon: (color) => <Layers size={18} color={color} /> }
+    { id: 'chart_of_accounts', label: t('finance.tabs.chart_of_accounts'), icon: (color) => <Box size={18} color={color} /> },
+    { id: 'journal_entries', label: t('finance.tabs.journal_entries'), icon: (color) => <FileText size={18} color={color} /> },
+    { id: 'fiscal_periods', label: t('finance.tabs.fiscal_periods'), icon: (color) => <Calendar size={18} color={color} /> },
   ];
 
   useEffect(() => {
@@ -40,12 +51,18 @@ const GeneralLedgerPage = () => {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    if (activeTab === 'journal_entries') {
+      fetchJournalEntries(1, true);
+    }
+  }, [jeStart, jeEnd]);
+
   const fetchJournalEntries = async (pageNum, reset = false) => {
     try {
       if (reset) setLoadingEntries(true);
       else setLoadingMore(true);
       
-      const res = await axios.get(`http://localhost:5000/api/journal-entries?page=${pageNum}&limit=10`);
+      const res = await axios.get(API_ENDPOINTS.journalEntries.list(pageNum, 10));
       if (res.data.success) {
         if (reset) {
           setJournalEntries(res.data.data);
@@ -68,7 +85,7 @@ const GeneralLedgerPage = () => {
   const fetchFiscalPeriods = async () => {
     try {
       setLoadingPeriods(true);
-      const res = await axios.get('http://localhost:5000/api/fiscal-periods');
+      const res = await axios.get(API_ENDPOINTS.fiscalPeriods.root);
       if (res.data.success) {
         setFiscalPeriods(res.data.data);
       }
@@ -81,17 +98,88 @@ const GeneralLedgerPage = () => {
   };
 
   const handleStatusChange = async (id, currentStatus) => {
-    const statuses = ['OPEN', 'CLOSED', 'LOCKED'];
-    const nextStatus = statuses[(statuses.indexOf(currentStatus) + 1) % statuses.length];
-    
+    const nextStatus = currentStatus === 'OPEN' ? 'CLOSED' : 'OPEN';
+
+    // Confirm before closing — this triggers Balance Brought Forward calculation
+    if (nextStatus === 'CLOSED') {
+      const confirmed = window.confirm(t('finance.fiscal.confirm_close'));
+      if (!confirmed) return;
+    } else {
+      const confirmed = window.confirm(t('finance.fiscal.confirm_reopen'));
+      if (!confirmed) return;
+    }
+
     try {
-      const res = await axios.put(`http://localhost:5000/api/fiscal-periods/${id}/status`, { status: nextStatus });
+      const res = await axios.put(API_ENDPOINTS.fiscalPeriods.status(id), { status: nextStatus });
       if (res.data.success) {
         fetchFiscalPeriods();
+        if (nextStatus === 'CLOSED' && res.data.accountsUpdated > 0) {
+          alert(`✅ ${t('finance.fiscal.close_success', { count: res.data.accountsUpdated })}`);
+        }
       }
     } catch (err) {
       console.error('Error updating status:', err);
-      alert('Failed to update period status');
+      alert(err.response?.data?.message || 'Failed to update period status');
+    }
+  };
+
+  const handlePeriodDelete = (period) => {
+    if (period.Status === 'OPEN') {
+      alert("Cannot delete an OPEN fiscal period. You must close the period first.");
+      return;
+    }
+    setPeriodToDelete(period);
+    setIsDeleteAuthModalOpen(true);
+    setDeleteAuthPassword('');
+    setDeleteAuthError(null);
+  };
+
+  const handleDeleteSubmit = async (e) => {
+    e.preventDefault();
+    setDeleteAuthLoading(true);
+    setDeleteAuthError(null);
+
+    try {
+      // 1. Authenticate with password
+      const res = await axios.post(`http://localhost:5000/api/fiscal-periods/${periodToDelete.Period_ID}/authenticate-delete`, {
+        password: deleteAuthPassword
+      });
+
+      if (res.data.success) {
+        const { periodName, startDate, endDate, transactions } = res.data.data;
+
+        // Close authentication modal cleanly
+        setIsDeleteAuthModalOpen(false);
+        setDeleteAuthPassword('');
+
+        // 2. Automatically generate and download PDF of all transactions in this period
+        const { downloadPeriodTransactionsPDF } = await import('../../utils/reportGenerators');
+        downloadPeriodTransactionsPDF({
+          periodName,
+          startDate,
+          endDate,
+          transactions
+        });
+
+        // 3. Confirm deletion
+        setTimeout(async () => {
+          const confirmed = window.confirm(`Transactions report downloaded successfully.\n\nAre you sure you want to permanently DELETE the fiscal period "${periodName}"?\nThis action is irreversible and will delete the period record.`);
+
+          if (confirmed) {
+            // 4. Send DELETE request to DB
+            const deleteRes = await axios.delete(`http://localhost:5000/api/fiscal-periods/${periodToDelete.Period_ID}`);
+            if (deleteRes.data.success) {
+              alert(`✅ Fiscal period "${periodName}" deleted successfully.`);
+              fetchFiscalPeriods(); // Reload periods list
+            }
+          }
+        }, 300); // Small timeout to allow browser download to initiate cleanly
+      }
+    } catch (err) {
+      console.error('Error authenticating delete:', err);
+      setDeleteAuthError(err.response?.data?.message || 'Authentication failed');
+    } finally {
+      setDeleteAuthLoading(false);
     }
   };
 
@@ -105,6 +193,39 @@ const GeneralLedgerPage = () => {
 
   const renderJournalEntries = () => (
     <div className="w-full pt-4 flex flex-col gap-4">
+      {/* Date Search Filter */}
+      <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">From Date:</span>
+          <input
+            type="date"
+            value={jeStart}
+            onChange={(e) => setJeStart(e.target.value)}
+            className="text-xs border border-gray-200 rounded-lg px-3 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">To Date:</span>
+          <input
+            type="date"
+            value={jeEnd}
+            onChange={(e) => setJeEnd(e.target.value)}
+            className="text-xs border border-gray-200 rounded-lg px-3 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white"
+          />
+        </div>
+        {(jeStart || jeEnd) && (
+          <button
+            onClick={() => {
+              setJeStart('');
+              setJeEnd('');
+            }}
+            className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg font-bold text-xs transition"
+          >
+            Clear Filters
+          </button>
+        )}
+      </div>
+
       {error && activeTab === 'journal_entries' && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex justify-between items-center mb-4">
           <div className="flex items-center gap-2 text-sm font-medium">
@@ -118,12 +239,12 @@ const GeneralLedgerPage = () => {
         {loadingEntries ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader className="animate-spin text-orange-500 mb-2" size={24} />
-            <p className="text-gray-500 text-sm">Loading journal entries...</p>
+            <p className="text-gray-500 text-sm">{t('finance.journal.loading')}</p>
           </div>
         ) : journalEntries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
             <FileText size={48} strokeWidth={1} className="mb-3 opacity-20" />
-            <p>No journal entries found</p>
+            <p>{t('finance.journal.no_entries')}</p>
           </div>
         ) : (
           <>
@@ -131,13 +252,13 @@ const GeneralLedgerPage = () => {
               <table className="w-full text-left">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
-                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">JE Number</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Description</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Reference</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Total Debit</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Total Credit</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.journal.date')}</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.journal.je_number')}</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.journal.description')}</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.journal.reference')}</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">{t('finance.journal.total_debit')}</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">{t('finance.journal.total_credit')}</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-center">{t('finance.journal.status')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -162,16 +283,16 @@ const GeneralLedgerPage = () => {
 
             <div className="p-4 bg-gray-50 border-t border-gray-100 flex flex-col items-center gap-3">
               <p className="text-xs text-gray-400 font-medium">
-                Showing {journalEntries.length} of {totalEntries} entries
+                {t('finance.journal.showing', { current: journalEntries.length, total: totalEntries })}
               </p>
               {hasMore && (
-                <button 
+                <button
                   onClick={handleSeeMore}
                   disabled={loadingMore}
                   className="flex items-center gap-2 px-6 py-2 bg-white border border-gray-200 rounded-full text-sm font-bold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-50"
                 >
                   {loadingMore ? <Loader size={14} className="animate-spin" /> : <ChevronDown size={14} />}
-                  SEE MORE
+                  {t('finance.journal.see_more')}
                 </button>
               )}
             </div>
@@ -183,14 +304,14 @@ const GeneralLedgerPage = () => {
 
   const renderFiscalPeriods = () => {
     const currentPeriod = fiscalPeriods.find(p => p.Status === 'OPEN') || { Period_Name: 'None', Status: 'All Closed' };
-    
+
     return (
       <div className="w-full pt-4 flex flex-col gap-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { label: 'Current Period', value: currentPeriod.Period_Name, color: 'text-green-600', bg: 'bg-green-50', icon: <Calendar size={20} /> },
-            { label: 'Fiscal Year', value: 'FY 2026-27', color: 'text-orange-600', bg: 'bg-orange-50', icon: <RefreshCw size={20} /> },
-            { label: 'System Status', value: currentPeriod.Status === 'OPEN' ? 'Ready for Posting' : 'System Locked', color: 'text-blue-600', bg: 'bg-blue-50', icon: <Shield size={20} /> }
+            { label: t('finance.fiscal.current_period'), value: currentPeriod.Period_Name, color: 'text-green-600', bg: 'bg-green-50', icon: <Calendar size={20} /> },
+            { label: t('finance.fiscal.fiscal_year'), value: 'FY 2026-27', color: 'text-orange-600', bg: 'bg-orange-50', icon: <RefreshCw size={20} /> },
+            { label: t('finance.fiscal.system_status'), value: currentPeriod.Status === 'OPEN' ? t('finance.fiscal.ready_posting') : t('finance.fiscal.closed'), color: 'text-blue-600', bg: 'bg-blue-50', icon: <Shield size={20} /> }
           ].map((card, idx) => (
             <div key={idx} className="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm flex items-center gap-4">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center ${card.bg} ${card.color}`}>
@@ -206,32 +327,31 @@ const GeneralLedgerPage = () => {
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           {loadingPeriods ? (
-             <div className="flex flex-col items-center justify-center py-20">
-                <Loader className="animate-spin text-orange-500" size={32} />
-             </div>
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader className="animate-spin text-orange-500" size={32} />
+            </div>
           ) : fiscalPeriods.length === 0 ? (
-             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                <Calendar size={48} className="mb-4 opacity-20" />
-                <p>No fiscal periods defined. Please create your first period.</p>
-                <button onClick={() => setIsPeriodModalOpen(true)} className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg font-bold text-sm">Initialize Periods</button>
-             </div>
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+              <Calendar size={48} className="mb-4 opacity-20" />
+              <p>{t('finance.fiscal.no_periods')}</p>
+              <button onClick={() => setIsPeriodModalOpen(true)} className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg font-bold text-sm">{t('finance.fiscal.initialize')}</button>
+            </div>
           ) : (
             <table className="w-full text-left">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Period Name</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Start Date</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">End Date</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.fiscal.period_name')}</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.fiscal.start_date')}</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.fiscal.end_date')}</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('finance.fiscal.status')}</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right">{t('finance.fiscal.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-sm">
                 {fiscalPeriods.map((row) => {
                   let statusColor = 'text-green-700 bg-green-50';
                   if (row.Status === 'CLOSED') statusColor = 'text-orange-700 bg-orange-50';
-                  if (row.Status === 'LOCKED') statusColor = 'text-red-700 bg-red-50';
-                  
+
                   return (
                     <tr key={row.Period_ID} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 font-semibold text-teal-950">{row.Period_Name}</td>
@@ -242,12 +362,19 @@ const GeneralLedgerPage = () => {
                           {row.Status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <button 
+                      <td className="px-6 py-4 text-right flex items-center justify-end gap-3">
+                        <button
                           onClick={() => handleStatusChange(row.Period_ID, row.Status)}
                           className="text-orange-600 font-bold hover:text-orange-700 transition"
                         >
-                          Change Status
+                          {t('finance.fiscal.change_status')}
+                        </button>
+                        <span className="text-gray-300">|</span>
+                        <button
+                          onClick={() => handlePeriodDelete(row)}
+                          className="text-red-600 font-bold hover:text-red-700 transition"
+                        >
+                          Delete
                         </button>
                       </td>
                     </tr>
@@ -263,27 +390,27 @@ const GeneralLedgerPage = () => {
 
   return (
     <div className="w-full min-h-screen bg-[#f8fafc] p-6 flex flex-col gap-6 font-['Inter']">
-      
+
       {/* Header Section */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-teal-950 tracking-tight">General Ledger</h1>
-          <p className="text-gray-500 mt-1">Comprehensive financial control and recording system</p>
+          <h1 className="text-3xl font-bold text-teal-950 tracking-tight">{t('finance.general_ledger')}</h1>
+          <p className="text-gray-500 mt-1">{t('finance.subtitle')}</p>
         </div>
-        
+
         <div className="flex gap-3">
           {activeTab === 'journal_entries' && (
             <button className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold shadow-lg shadow-orange-200 hover:bg-orange-700 transition-all hover:scale-105 active:scale-95">
-              <PlusCircle size={18} /> Create Journal Entry
+              <PlusCircle size={18} /> {t('finance.journal.create_entry')}
             </button>
           )}
           {activeTab === 'chart_of_accounts' && null}
           {activeTab === 'fiscal_periods' && (
-            <button 
+            <button
               onClick={() => setIsPeriodModalOpen(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold shadow-lg shadow-orange-200 hover:bg-orange-700 transition-all hover:scale-105 active:scale-95"
             >
-              <PlusCircle size={18} /> New Fiscal Period
+              <PlusCircle size={18} /> {t('finance.fiscal.new_period')}
             </button>
           )}
         </div>
@@ -297,11 +424,10 @@ const GeneralLedgerPage = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${
-                isActive 
-                  ? 'border-orange-600 text-orange-600 bg-orange-50/50 rounded-t-xl' 
+              className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${isActive
+                  ? 'border-orange-600 text-orange-600 bg-orange-50/50 rounded-t-xl'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
+                }`}
             >
               {tab.icon(isActive ? '#ea580c' : '#6b7280')}
               {tab.label}
@@ -315,22 +441,91 @@ const GeneralLedgerPage = () => {
         {activeTab === 'journal_entries' && renderJournalEntries()}
         {activeTab === 'fiscal_periods' && renderFiscalPeriods()}
         {activeTab === 'chart_of_accounts' && <ChartOfAccountsPage />}
-        {activeTab === 'subledger_integration' && (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-            <Layers size={64} strokeWidth={1} className="mb-4 opacity-20" />
-            <h3 className="text-xl font-bold text-gray-500">Integration Hub</h3>
-            <p className="max-w-xs text-center mt-2">Connect subsidiary ledgers for automated posting and synchronization.</p>
-            <span className="mt-4 px-4 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase tracking-widest">Coming Soon</span>
-          </div>
-        )}
       </div>
 
       {/* Modal */}
-      <FiscalPeriodModal 
-        isOpen={isPeriodModalOpen} 
-        onClose={() => setIsPeriodModalOpen(false)} 
-        onRefresh={fetchFiscalPeriods} 
+      <FiscalPeriodModal
+        isOpen={isPeriodModalOpen}
+        onClose={() => setIsPeriodModalOpen(false)}
+        onRefresh={fetchFiscalPeriods}
       />
+
+      {/* Password Authentication Modal for Period Deletion */}
+      {isDeleteAuthModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+
+            {/* Modal Header */}
+            <div className="bg-teal-950 p-6 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white">
+                  <Shield size={20} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">Confirm Deletion</h2>
+                  <p className="text-teal-200 text-xs">Administrative Authentication Required</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsDeleteAuthModalOpen(false);
+                  setDeleteAuthPassword('');
+                  setDeleteAuthError(null);
+                }}
+                className="text-teal-200 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleDeleteSubmit} className="p-6 flex flex-col gap-5">
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Deleting the fiscal period <strong>"{periodToDelete?.Period_Name}"</strong> requires admin password verification.
+              </p>
+
+              {deleteAuthError && (
+                <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-medium flex items-center gap-2">
+                  <AlertCircle size={14} /> {deleteAuthError}
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Admin Password</label>
+                <input
+                  type="password"
+                  placeholder="Enter admin password..."
+                  required
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all"
+                  value={deleteAuthPassword}
+                  onChange={(e) => setDeleteAuthPassword(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col gap-3 mt-4">
+                <button
+                  type="submit"
+                  disabled={deleteAuthLoading}
+                  className="w-full py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl font-bold shadow-lg shadow-orange-200 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                >
+                  {deleteAuthLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <CheckCircle size={16} />}
+                  Authenticate & Delete
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDeleteAuthModalOpen(false);
+                    setDeleteAuthPassword('');
+                    setDeleteAuthError(null);
+                  }}
+                  className="w-full py-2 text-gray-400 font-semibold hover:text-gray-600 transition-colors text-xs text-center"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

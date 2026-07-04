@@ -24,7 +24,7 @@ async function main() {
     });
 
     await connection.query(`
-        CREATE TABLE IF NOT EXISTS MODULE (
+        CREATE TABLE IF NOT EXISTS module (
             Module_ID INT PRIMARY KEY AUTO_INCREMENT,
             Module_Key VARCHAR(50) NOT NULL UNIQUE,
             Module_Name VARCHAR(100) NOT NULL,
@@ -35,24 +35,24 @@ async function main() {
     `);
 
     await connection.query(`
-        CREATE TABLE IF NOT EXISTS USER_MODULE_ACCESS (
+        CREATE TABLE IF NOT EXISTS user_module_access (
             Access_ID INT PRIMARY KEY AUTO_INCREMENT,
             User_ID INT NOT NULL,
             Module_ID INT NOT NULL,
             Granted_By INT NULL,
             Granted_At DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY unique_user_module (User_ID, Module_ID),
-            CONSTRAINT fk_uma_user FOREIGN KEY (User_ID) REFERENCES USER(User_ID)
+            CONSTRAINT fk_uma_user FOREIGN KEY (User_ID) REFERENCES user(User_ID)
                 ON UPDATE CASCADE ON DELETE CASCADE,
-            CONSTRAINT fk_uma_module FOREIGN KEY (Module_ID) REFERENCES MODULE(Module_ID)
+            CONSTRAINT fk_uma_module FOREIGN KEY (Module_ID) REFERENCES module(Module_ID)
                 ON UPDATE CASCADE ON DELETE CASCADE,
-            CONSTRAINT fk_uma_granter FOREIGN KEY (Granted_By) REFERENCES USER(User_ID)
+            CONSTRAINT fk_uma_granter FOREIGN KEY (Granted_By) REFERENCES user(User_ID)
                 ON UPDATE CASCADE ON DELETE SET NULL
         ) ENGINE=InnoDB
     `);
 
     await connection.query(`
-        CREATE TABLE IF NOT EXISTS USER_TOKEN (
+        CREATE TABLE IF NOT EXISTS user_token (
             Token_ID INT PRIMARY KEY AUTO_INCREMENT,
             User_ID INT NOT NULL,
             Refresh_Token VARCHAR(512) NOT NULL,
@@ -62,14 +62,14 @@ async function main() {
             Revoked BOOLEAN DEFAULT FALSE,
             Revoked_At DATETIME NULL,
             Created_At DATETIME DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT fk_user_token_user FOREIGN KEY (User_ID) REFERENCES USER(User_ID)
+            CONSTRAINT fk_user_token_user FOREIGN KEY (User_ID) REFERENCES user(User_ID)
                 ON UPDATE CASCADE ON DELETE CASCADE
         ) ENGINE=InnoDB
     `);
 
     for (const moduleRow of modules) {
         await connection.execute(
-            `INSERT INTO MODULE (Module_Key, Module_Name, Icon, Sort_Order, Is_Active)
+            `INSERT INTO module (Module_Key, Module_Name, Icon, Sort_Order, Is_Active)
              VALUES (?, ?, ?, ?, TRUE)
              ON DUPLICATE KEY UPDATE
                 Module_Name = VALUES(Module_Name),
@@ -81,14 +81,14 @@ async function main() {
     }
 
     const [adminRows] = await connection.execute(
-        'SELECT User_ID, Password_Hash FROM USER WHERE Username = ?',
+        'SELECT User_ID, Password_Hash FROM user WHERE Username = ?',
         ['admin']
     );
 
     if (adminRows.length === 0) {
         const passwordHash = await bcrypt.hash('admin123', 12);
         await connection.execute(
-            `INSERT INTO USER
+            `INSERT INTO user
                 (Username, Password_Hash, Full_Name, User_Type, Status, Created_At, Updated_At)
              VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
             ['admin', passwordHash, 'System Admin', 'Admin', 'Active']
@@ -96,7 +96,7 @@ async function main() {
     } else {
         const passwordHash = await bcrypt.hash('admin123', 12);
         await connection.execute(
-            `UPDATE USER
+            `UPDATE user
              SET Password_Hash = ?,
                  Failed_Login_Attempts = 0,
                  Account_Locked_Until = NULL,
@@ -108,22 +108,22 @@ async function main() {
     }
 
     const [[admin]] = await connection.execute(
-        'SELECT User_ID FROM USER WHERE Username = ?',
+        'SELECT User_ID FROM user WHERE Username = ?',
         ['admin']
     );
 
     await connection.execute(
-        `INSERT IGNORE INTO USER_MODULE_ACCESS (User_ID, Module_ID, Granted_By)
+        `INSERT IGNORE INTO user_module_access (User_ID, Module_ID, Granted_By)
          SELECT ?, Module_ID, ?
-         FROM MODULE
+         FROM module
          WHERE Is_Active = TRUE`,
         [admin.User_ID, admin.User_ID]
     );
 
     const [accessRows] = await connection.execute(
         `SELECT m.Module_Key
-         FROM USER_MODULE_ACCESS uma
-         JOIN MODULE m ON m.Module_ID = uma.Module_ID
+         FROM user_module_access uma
+         JOIN module m ON m.Module_ID = uma.Module_ID
          WHERE uma.User_ID = ?
          ORDER BY m.Sort_Order`,
         [admin.User_ID]
@@ -141,3 +141,4 @@ main().catch(error => {
     console.error(error.message);
     process.exit(1);
 });
+0

@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { X, Calendar, Info, CheckCircle } from 'react-feather';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const FiscalPeriodModal = ({ isOpen, onClose, onRefresh }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     start: '',
@@ -20,7 +23,7 @@ const FiscalPeriodModal = ({ isOpen, onClose, onRefresh }) => {
       setLoading(true);
       setError(null);
       
-      const res = await axios.post('http://localhost:5000/api/fiscal-periods', formData);
+      const res = await axios.post(API_ENDPOINTS.fiscalPeriods.root, formData);
       if (res.data.success) {
         onRefresh();
         onClose();
@@ -45,7 +48,7 @@ const FiscalPeriodModal = ({ isOpen, onClose, onRefresh }) => {
               <Calendar size={20} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">New Fiscal Period</h2>
+              <h2 className="text-xl font-bold text-white">{t('finance.fiscal.new_period')}</h2>
               <p className="text-teal-200 text-xs">Define a new accounting interval</p>
             </div>
           </div>
@@ -62,7 +65,7 @@ const FiscalPeriodModal = ({ isOpen, onClose, onRefresh }) => {
           )}
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Period Name</label>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">{t('finance.fiscal.period_name')}</label>
             <input 
               type="text" 
               placeholder="e.g., January 2026"
@@ -75,7 +78,7 @@ const FiscalPeriodModal = ({ isOpen, onClose, onRefresh }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Start Date</label>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">{t('finance.fiscal.start_date')}</label>
               <input 
                 type="date" 
                 required
@@ -85,7 +88,7 @@ const FiscalPeriodModal = ({ isOpen, onClose, onRefresh }) => {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">End Date</label>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">{t('finance.fiscal.end_date')}</label>
               <input 
                 type="date" 
                 required
@@ -97,15 +100,14 @@ const FiscalPeriodModal = ({ isOpen, onClose, onRefresh }) => {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Initial Status</label>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">{t('finance.fiscal.initial_status')}</label>
             <select 
               className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all"
               value={formData.status}
               onChange={(e) => setFormData({...formData, status: e.target.value})}
             >
-              <option value="OPEN">Open (Ready for Posting)</option>
-              <option value="CLOSED">Closed (Manual Postings Only)</option>
-              <option value="LOCKED">Locked (No Postings Allowed)</option>
+              <option value="OPEN">{t('finance.fiscal.open_label')}</option>
+              <option value="CLOSED">{t('finance.fiscal.closed_label')}</option>
             </select>
           </div>
 
@@ -116,7 +118,7 @@ const FiscalPeriodModal = ({ isOpen, onClose, onRefresh }) => {
               className="w-full py-4 bg-orange-600 text-white rounded-2xl font-bold shadow-lg shadow-orange-200 hover:bg-orange-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <CheckCircle size={20} />}
-              CREATE PERIOD
+              {loading ? t('finance.fiscal.creating') : t('finance.fiscal.create_period')}
             </button>
             <button 
               type="button" 

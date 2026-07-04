@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import axios from 'axios';
 import { Search, X, ChevronDown } from 'react-feather';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const AdjustmentModal = ({ show, onHide, refresh }) => {
     const [products, setProducts] = useState([]);
@@ -38,7 +39,7 @@ const AdjustmentModal = ({ show, onHide, refresh }) => {
     // Fetch products when modal opens
     useEffect(() => {
         if (show) {
-            axios.get('http://localhost:5000/api/inventory/products')
+            axios.get(API_ENDPOINTS.inventory.products)
                 .then(res => setProducts(res.data))
                 .catch(err => console.error("Error loading products:", err));
 
@@ -66,7 +67,7 @@ const AdjustmentModal = ({ show, onHide, refresh }) => {
         }
 
         try {
-            const res = await axios.get(`http://localhost:5000/api/inventory/product/${productId}/locations`);
+            const res = await axios.get(API_ENDPOINTS.inventory.productLocations(productId));
             setLocationInventory(res.data || {});
         } catch {
             setLocationInventory({});
@@ -157,7 +158,7 @@ const AdjustmentModal = ({ show, onHide, refresh }) => {
         }
         
         try {
-            const response = await axios.post('http://localhost:5000/api/inventory/adjustments/adjust', formData);
+            const response = await axios.post(API_ENDPOINTS.inventory.adjustments.adjust, formData);
             if (response.data.success) {
                 refresh(); // Refresh the log table on the main page
                 onHide();   // Close modal

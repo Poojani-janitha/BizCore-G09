@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Download, Printer } from 'react-feather';
 import { generatePDF } from '../../../services/reportGenerator';
 import Pagination from '../../../component/common/Pagination';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const PurchaseReport = () => {
     const [reportData, setReportData] = useState([]);
@@ -10,8 +11,7 @@ const PurchaseReport = () => {
     const [pageSize, setPageSize] = useState(25);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/inventory/reports/purchases')
-            .then(res => setReportData(res.data.data));
+        axios.get(API_ENDPOINTS.inventory.reports.purchases).then(res => setReportData(res.data.data));
     }, []);
 
     const pagedData = useMemo(

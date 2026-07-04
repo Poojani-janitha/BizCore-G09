@@ -5,6 +5,7 @@ import {
 } from 'react-feather';
 import axios from 'axios';
 import { downloadProfitLossPDF, downloadBalanceSheetPDF } from '../../utils/reportGenerators';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const fmt = (val) => {
   const num = parseFloat(val) || 0;
@@ -126,7 +127,7 @@ const ReportsPage = () => {
   const fetchPL = async () => {
     try {
       setPlLoading(true); setError(null);
-      const res = await axios.get(`http://localhost:5000/api/finance/dashboard/profit-loss?startDate=${plStart}&endDate=${plEnd}`);
+      const res = await axios.get(API_ENDPOINTS.financeDashboard.profitLoss(plStart, plEnd));
       if (res.data.success) setPlData(res.data.data);
     } catch { setError('Failed to load Profit & Loss data'); }
     finally { setPlLoading(false); }
@@ -135,7 +136,7 @@ const ReportsPage = () => {
   const fetchBS = async () => {
     try {
       setBsLoading(true); setError(null);
-      const res = await axios.get(`http://localhost:5000/api/finance/dashboard/balance-sheet?asOfDate=${bsDate}`);
+      const res = await axios.get(API_ENDPOINTS.financeDashboard.balanceSheet(bsDate));
       if (res.data.success) setBsData(res.data.data);
     } catch { setError('Failed to load Balance Sheet data'); }
     finally { setBsLoading(false); }
@@ -167,28 +168,6 @@ const ReportsPage = () => {
       onDownload: () => bsData && downloadBalanceSheetPDF(bsData, bsDate),
       disabled: !bsData
     },
-    { 
-      id: 'cf', 
-      title: 'Cash Flow Statement',     
-      description: 'Cash inflows and outflows',      
-      period: 'Coming Soon',             
-      lastGenerated: '—',   
-      icon: <Activity   size={20} className="text-purple-600" />, 
-      iconBg: 'bg-purple-50',
-      onDownload: () => alert("Cash Flow report is coming soon!"),
-      disabled: true
-    },
-    { 
-      id: 'sr', 
-      title: 'Sales Report',            
-      description: 'Detailed sales analysis',        
-      period: 'Coming Soon',             
-      lastGenerated: '—',   
-      icon: <PieChart   size={20} className="text-orange-600" />, 
-      iconBg: 'bg-orange-50',
-      onDownload: () => alert("Sales report is coming soon!"),
-      disabled: true
-    },
   ];
 
   return (
@@ -202,7 +181,7 @@ const ReportsPage = () => {
         </div>
 
         {/* Report Type Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-3xl">
           {reportCards.map(card => (
             <ReportCard 
               key={card.id} 
