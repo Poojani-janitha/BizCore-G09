@@ -321,17 +321,10 @@ const updateEmployeeStatus = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Employee not found' });
         }
 
-        // Force update using raw SQL with explicit ID to bypass any Sequelize instance issues
-        await Employee.sequelize.query(
-            'UPDATE `EMPLOYEE` SET Status = :status, Updated_At = :now WHERE Employee_ID = :id',
-            {
-                replacements: {
-                    status: Status,
-                    id: employee.Employee_ID,
-                    now: new Date()
-                },
-                type: Employee.sequelize.QueryTypes.UPDATE
-            }
+        // Use Sequelize model update to avoid raw SQL table name case issues on Linux
+        await Employee.update(
+            { Status: Status, Updated_At: new Date() },
+            { where: { Employee_ID: employee.Employee_ID } }
         );
 
         return res.status(200).json({
@@ -360,13 +353,10 @@ const deleteEmployee = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Employee not found' });
         }
 
-        // Force update using raw query to ensure persistence
-        await Employee.sequelize.query(
-            'UPDATE `EMPLOYEE` SET Status = "Inactive", Updated_At = NOW() WHERE Employee_ID = :id',
-            {
-                replacements: { id: employee.Employee_ID },
-                type: Employee.sequelize.QueryTypes.UPDATE
-            }
+        // Use Sequelize model update to avoid raw SQL table name case issues on Linux
+        await Employee.update(
+            { Status: 'Inactive', Updated_At: new Date() },
+            { where: { Employee_ID: employee.Employee_ID } }
         );
 
         return res.status(200).json({
