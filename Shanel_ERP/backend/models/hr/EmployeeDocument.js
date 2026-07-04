@@ -27,7 +27,7 @@ const EmployeeDocument = sequelize.define(
         Uploaded_By: { type: DataTypes.INTEGER, allowNull: true }
     },
     {
-        tableName: 'EMPLOYEE_DOCUMENTS',
+        tableName: 'employee_documents',
         ...hrOpts,
         timestamps: true,
         createdAt: 'Created_At',

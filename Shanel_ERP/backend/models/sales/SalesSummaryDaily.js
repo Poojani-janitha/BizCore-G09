@@ -80,7 +80,7 @@ const SalesSummaryDaily = sequelize.define('SalesSummaryDaily', {
         }
     }
 }, {
-    tableName: 'SALES_SUMMARY_DAILY',
+    tableName: 'sales_summary_daily',
     timestamps: true,
     createdAt: 'Created_At',
     updatedAt: 'Updated_At'

@@ -140,7 +140,7 @@ const Sale = sequelize.define('Sale',{
     }
 
 },{
-    tableName: 'Sales',
+    tableName: 'sales',
     timestamps: true,
     createdAt: 'Created_At',
     updatedAt: 'Updated_At'

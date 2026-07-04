@@ -24,7 +24,7 @@ const AdvanceSalary = sequelize.define(
         Created_By: { type: DataTypes.INTEGER, allowNull: true }
     },
     {
-        tableName: 'ADVANCE_SALARY',
+        tableName: 'advance_salary',
         ...hrOpts,
         timestamps: true,
         createdAt: 'Created_At',

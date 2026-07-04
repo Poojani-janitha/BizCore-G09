@@ -60,7 +60,7 @@ const StockMovement = sequelize.define('StockMovement', {
         allowNull: true
     }
 }, {
-    tableName: 'STOCK_MOVEMENT',
+    tableName: 'stock_movement',
     timestamps: false
 });
 

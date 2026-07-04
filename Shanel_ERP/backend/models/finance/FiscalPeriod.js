@@ -35,7 +35,7 @@ FiscalPeriod.init({
     }
 }, {
     sequelize: databaseCon,
-    tableName: 'FISCAL_PERIOD',
+    tableName: 'fiscal_period',
     timestamps: false
 });
 

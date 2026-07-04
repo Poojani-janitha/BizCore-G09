@@ -112,7 +112,7 @@ const SaleItem = sequelize.define('SaleItem',{
 
     
 },{
-    tableName: 'Sale_Item',
+    tableName: 'sale_item',
     timestamps: true,
     createdAt: 'Created_At',
     updatedAt:false

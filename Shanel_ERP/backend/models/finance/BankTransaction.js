@@ -67,7 +67,7 @@ BankTransaction.init({
     }
 }, {
     sequelize: databaseCon,
-    tableName: 'BANK_TRANSACTION',
+    tableName: 'bank_transaction',
     timestamps: false
 });
 

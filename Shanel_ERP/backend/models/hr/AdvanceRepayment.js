@@ -13,7 +13,7 @@ const AdvanceRepayment = sequelize.define(
         Balance_After: { type: DataTypes.DECIMAL(10, 2), allowNull: false }
     },
     {
-        tableName: 'ADVANCE_REPAYMENT',
+        tableName: 'advance_repayment',
         ...hrOpts,
         timestamps: true,
         createdAt: 'Created_At',

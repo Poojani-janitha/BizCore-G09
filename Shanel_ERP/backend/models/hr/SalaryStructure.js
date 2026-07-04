@@ -24,7 +24,7 @@ const SalaryStructure = sequelize.define(
         Created_By: { type: DataTypes.INTEGER, allowNull: true }
     },
     {
-        tableName: 'SALARY_STRUCTURE',
+        tableName: 'salary_structure',
         ...hrOpts,
         timestamps: true,
         createdAt: 'Created_At',

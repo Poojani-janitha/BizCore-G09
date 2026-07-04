@@ -71,7 +71,7 @@ AccountChart.init({
     }
 }, {
     sequelize: databaseCon,
-    tableName: 'ACCOUNT_CHART',
+    tableName: 'account_chart',
     timestamps: false
 });
 

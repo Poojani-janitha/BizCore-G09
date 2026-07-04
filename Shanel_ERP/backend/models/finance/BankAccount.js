@@ -60,7 +60,7 @@ BankAccount.init({
     }
 }, {
     sequelize: databaseCon,
-    tableName: 'BANK_ACCOUNT',
+    tableName: 'bank_account',
     timestamps: false
 });
 

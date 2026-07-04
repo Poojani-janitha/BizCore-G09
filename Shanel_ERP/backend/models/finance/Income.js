@@ -49,7 +49,7 @@ Income.init(
     },
     {
         sequelize: databaseCon,
-        tableName: 'INCOME',
+        tableName: 'income',
         timestamps: false
     }
 );

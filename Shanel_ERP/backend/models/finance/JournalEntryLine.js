@@ -39,7 +39,7 @@ JournalEntryLine.init({
     }
 }, {
     sequelize: databaseCon,
-    tableName: 'JOURNAL_ENTRY_LINE',
+    tableName: 'journal_entry_line',
     timestamps: false
 });
 
