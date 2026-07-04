@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const Logout = () => {
     const navigate = useNavigate();
@@ -9,7 +10,7 @@ const Logout = () => {
         const accessToken = localStorage.getItem('token');
         const refreshToken = localStorage.getItem('refresh_token');
         if (accessToken && refreshToken) {
-            fetch('http://localhost:5000/api/users/logout', {
+            fetch(API_ENDPOINTS.users.logout, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

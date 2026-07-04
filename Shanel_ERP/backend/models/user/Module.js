@@ -35,7 +35,7 @@ const Module = sequelize.define('Module', {
         comment: 'Soft-disable without deleting'
     }
 }, {
-    tableName: 'MODULE',
+    tableName: 'module',
     timestamps: false
 });
 

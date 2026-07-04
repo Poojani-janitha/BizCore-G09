@@ -342,7 +342,7 @@ const ItemTable = ({ cartItems, setCartItems, priceLevel, setPriceLevel, locatio
             // Fetch the full product details to get both retail and wholesale prices
             const fetchProductPrices = async () => {
                 try {
-                    const res = await axios.get(`http://localhost:5000/api/sales/search?q=${tempItem.p_code}`);
+                    const res = await axios.get(API_ENDPOINTS.sales.search(tempItem.p_code));
                     if (res.data.success && res.data.products.length > 0) {
                         const product = res.data.products[0];
                         const newPrice = priceLevel === "Retail" ? toNumber(product.retail_price) : toNumber(product.wholesale_price);

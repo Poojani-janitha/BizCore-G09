@@ -40,7 +40,7 @@ const ProductModal = ({ show, onHide, typeFilter, refreshData, editData, onProdu
 
     const fetchSuppliers = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/inventory/suppliers');
+            const res = await axios.get(API_ENDPOINTS.inventory.suppliers);
             if (res.data.success) {
                 setSuppliers(res.data.data);
             }

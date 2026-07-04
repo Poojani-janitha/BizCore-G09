@@ -7,8 +7,6 @@ import { Calculator, Send, Download, CheckCircle, AlertCircle, Edit2, Save, X, E
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const API_BASE = 'http://localhost:5000/api/hr';
-
 // Salary configuration based on role
 /**
  * Retrieves salary configuration (base, rates, bonus rules) based on employee role.

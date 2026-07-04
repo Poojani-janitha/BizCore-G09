@@ -48,7 +48,7 @@ const UserToken = sequelize.define('UserToken', {
         defaultValue: DataTypes.NOW
     }
 }, {
-    tableName: 'USER_TOKEN',
+    tableName: 'user_token',
     timestamps: false
 });
 

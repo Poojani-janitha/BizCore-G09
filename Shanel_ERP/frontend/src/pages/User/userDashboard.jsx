@@ -3,6 +3,7 @@ import {
     Plus, Search, User, Mail, Shield, Phone, 
     Edit2, Trash2, X, Check, AlertCircle 
 } from 'lucide-react';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const UserDashboard = () => {
     // Data States
@@ -28,12 +29,9 @@ const UserDashboard = () => {
         modules: []
     });
 
-    const API_BASE = 'http://localhost:5000/api/users';
-
-    // Fetch all users
     const fetchAllUsers = async () => {
         try {
-            const response = await fetch(`${API_BASE}/all`, {
+            const response = await fetch(API_ENDPOINTS.users.all, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await response.json();
@@ -48,7 +46,7 @@ const UserDashboard = () => {
     // Fetch available modules (models)
     const fetchModels = async () => {
         try {
-            const response = await fetch(`${API_BASE}/models`, {
+            const response = await fetch(API_ENDPOINTS.users.models, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await response.json();
@@ -67,7 +65,7 @@ const UserDashboard = () => {
             return;
         }
         try {
-            const response = await fetch(`${API_BASE}/search?q=${query}`, {
+            const response = await fetch(API_ENDPOINTS.users.search(query), {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await response.json();
@@ -110,7 +108,7 @@ const UserDashboard = () => {
     const handleRegister = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch(`${API_BASE}/register`, {
+            const response = await fetch(API_ENDPOINTS.users.register, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -134,7 +132,7 @@ const UserDashboard = () => {
     const handleUpdate = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch(`${API_BASE}/update`, {
+            const response = await fetch(API_ENDPOINTS.users.update, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -156,7 +154,7 @@ const UserDashboard = () => {
     const handleDelete = async (userId) => {
         if (!window.confirm("Are you sure you want to delete this user?")) return;
         try {
-            const response = await fetch(`${API_BASE}/delete`, {
+            const response = await fetch(API_ENDPOINTS.users.delete, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

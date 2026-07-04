@@ -1,4 +1,5 @@
-export const API_URL = 'http://localhost:5000/api'
+export const API_URL = '/api'
+//export const API_URL = 'http://localhost:5000/api'
 
 export const API_ENDPOINTS = {
   root: API_URL,
@@ -37,6 +38,7 @@ export const API_ENDPOINTS = {
   },
   hr: {
     root: `${API_URL}/hr`,
+    employees: `${API_URL}/hr/employees`,
   },
   incomes: {
     root: `${API_URL}/incomes`,
@@ -50,6 +52,7 @@ export const API_ENDPOINTS = {
     invoiceByNo: (invoiceNo) => `${API_URL}/inventory/invoice/${invoiceNo}`,
     invoiceDetails: (saleId) => `${API_URL}/inventory/invoice-details/${saleId}`,
     dashboardStats: `${API_URL}/inventory/dashboard-stats`,
+    suppliers: `${API_URL}/inventory/suppliers`,
     adjustments: {
       root: `${API_URL}/inventory/adjustments`,
       adjust: `${API_URL}/inventory/adjustments/adjust`,
@@ -99,6 +102,16 @@ export const API_ENDPOINTS = {
     productQuantity: (productId) => `${API_URL}/sales/product-quantity/${productId}`,
     search: (value) => `${API_URL}/sales/search?q=${value}`,
     units: (productId) => `${API_URL}/sales/units?productId=${productId}`,
+  },
+  users: {
+    login: `${API_URL}/users/login`,
+    logout: `${API_URL}/users/logout`,
+    all: `${API_URL}/users/all`,
+    register: `${API_URL}/users/register`,
+    update: `${API_URL}/users/update`,
+    delete: `${API_URL}/users/delete`,
+    models: `${API_URL}/users/models`,
+    search: (q) => `${API_URL}/users/search?q=${q}`,
   },
   salesManagement: {
     metricsToday: `${API_URL}/sales-management/metrics/today`,

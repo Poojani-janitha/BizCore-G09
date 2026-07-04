@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 const LoginForm = () => {
     const [username, setUsername] = useState('');
@@ -9,7 +10,7 @@ const LoginForm = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:5000/api/users/login', {
+            const response = await fetch(API_ENDPOINTS.users.login, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

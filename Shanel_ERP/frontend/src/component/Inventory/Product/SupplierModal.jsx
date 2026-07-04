@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Save, User, Phone, Mail, MapPin, Info } from 'react-feather';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const SupplierModal = ({ show, onHide, onSupplierAdded }) => {
     const initialState = {
@@ -76,7 +77,7 @@ const SupplierModal = ({ show, onHide, onSupplierAdded }) => {
 
         setLoading(true);
         try {
-            const response = await axios.post('http://localhost:5000/api/inventory/suppliers', formData);
+            const response = await axios.post(API_ENDPOINTS.inventory.suppliers, formData);
             if (response.data.success) {
                 if (onSupplierAdded) {
                     onSupplierAdded(response.data.data);
