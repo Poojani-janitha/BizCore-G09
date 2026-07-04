@@ -7,6 +7,24 @@ const {
 const { findEmployeeByParam } = require('../../utils/hrEmployeeLookup');
 const nodemailer = require('nodemailer');
 
+// --- Shared transporter (created once, reused for all sends) ---
+// This avoids the overhead of creating a new SMTP connection on every request.
+let _transporter = null;
+const getTransporter = () => {
+    if (!_transporter) {
+        _transporter = nodemailer.createTransport({
+            service: 'gmail',
+            pool: true,          // keep the SMTP connection alive between sends
+            maxConnections: 2,
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+    }
+    return _transporter;
+};
+
 // --- Payroll ---
 /**
  * Fetches a list of payroll records.
@@ -153,14 +171,9 @@ const mailPayrollToBank = async (req, res) => {
             });
         }
 
-        // Use the 'gmail' service shortcut for better reliability
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
+        const pdfContent = pdfBase64.includes('base64,')
+            ? pdfBase64.split('base64,')[1]
+            : pdfBase64;
 
         const mailOptions = {
             from: `"Shanel ERP - HR" <${process.env.EMAIL_USER}>`,
@@ -170,32 +183,85 @@ const mailPayrollToBank = async (req, res) => {
             attachments: [
                 {
                     filename: `Paysheet_${month}_${year}.pdf`,
-                    content: pdfBase64.split('base64,')[1],
+                    content: pdfContent,
                     encoding: 'base64'
                 }
             ]
         };
 
-        await transporter.sendMail(mailOptions);
+        await getTransporter().sendMail(mailOptions);
+        console.log('[mailPayrollToBank] Email sent successfully to', recipientEmail);
 
         return res.status(200).json({
             success: true,
             message: 'Paysheet successfully mailed to the bank'
         });
     } catch (error) {
-        console.error('mailPayrollToBank error:', error);
+        // Reset the cached transporter so next request gets a fresh one
+        _transporter = null;
+
+        console.error('[mailPayrollToBank] Error code:', error.code);
+        console.error('[mailPayrollToBank] Error message:', error.message);
+
         let message = 'Failed to send email. Please check your SMTP configuration.';
-        
         if (error.code === 'EAUTH') {
-            message = 'Authentication failed. Please ensure you have entered a valid Google App Password in the .env file.';
-        } else if (error.code === 'ESOCKET') {
-            message = 'Network error. Could not connect to the email server.';
+            message = 'Gmail authentication failed. Check your App Password in .env.';
+        } else if (error.code === 'ESOCKET' || error.code === 'ECONNECTION') {
+            message = 'Cannot connect to Gmail SMTP. Check your internet connection or firewall (port 587).';
+        } else if (error.code === 'ETIMEDOUT') {
+            message = 'Connection to Gmail timed out. Port 587 may be blocked by your network.';
+        } else if (error.responseCode === 535) {
+            message = 'Gmail rejected the credentials. Use a Google App Password, not your regular password.';
         }
 
         return res.status(500).json({
             success: false,
             message,
+            errorCode: error.code || null,
             error: error.message
+        });
+    }
+};
+
+/**
+ * TEST ENDPOINT: Verifies SMTP connection without sending an email.
+ * Call GET /api/hr/payroll/test-email to diagnose email config issues.
+ */
+const testEmailConfig = async (req, res) => {
+    const emailUser = process.env.EMAIL_USER;
+    const emailPass = process.env.EMAIL_PASS;
+
+    if (!emailUser || !emailPass) {
+        return res.status(500).json({
+            success: false,
+            message: 'EMAIL_USER or EMAIL_PASS is missing in .env',
+            EMAIL_USER: emailUser || null,
+            EMAIL_PASS_SET: !!emailPass
+        });
+    }
+
+    try {
+        // Reset cached transporter so verify always uses latest .env values
+        _transporter = null;
+        await getTransporter().verify();
+
+        return res.status(200).json({
+            success: true,
+            message: 'SMTP connection successful. Email is ready to send.',
+            EMAIL_USER: emailUser
+        });
+    } catch (error) {
+        _transporter = null;
+        return res.status(500).json({
+            success: false,
+            message: 'SMTP connection failed',
+            errorCode: error.code || null,
+            error: error.message,
+            hint: error.code === 'EAUTH'
+                ? 'Check your App Password. Make sure 2-Step Verification is ON in Google Account.'
+                : error.code === 'ESOCKET'
+                ? 'Port 587 may be blocked. Try a different network.'
+                : 'Unknown error — check backend console for full details.'
         });
     }
 };
@@ -204,5 +270,6 @@ module.exports = {
     getPayrolls,
     createPayroll,
     updatePayroll,
-    mailPayrollToBank
+    mailPayrollToBank,
+    testEmailConfig
 };

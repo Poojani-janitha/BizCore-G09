@@ -6,6 +6,7 @@ import { API_ENDPOINTS } from '../../config/apiEndpoints';
 import { Calculator, Send, Download, CheckCircle, AlertCircle, Edit2, Save, X, Eye, Printer, FileText, History } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import shanelHeader from '../../assets/header.png';
 
 // Salary configuration based on role
 /**
@@ -225,8 +226,10 @@ export default function Payroll() {
 
     if (workedHours < 4) return 0;
 
+    // If working past 5 PM → Rs 450 OT allowance only (replaces Rs 60, not added on top)
+    // If leaving at or before 5 PM → standard Rs 60 tea
     const outMinutes = outH * 60 + outM;
-    return outMinutes > (18 * 60) ? 450 : 60;
+    return outMinutes > (17 * 60) ? 450 : 60;
   };
 
   // Fetch employees, payroll, and monthly attendance
@@ -354,6 +357,11 @@ export default function Payroll() {
     } else {
       await axios.post(`${API_BASE}/payroll`, payload);
     }
+
+    // Notify other pages (e.g. Reports) that payroll data has changed
+    window.dispatchEvent(new CustomEvent('payroll-updated', {
+      detail: { month: payload.Pay_Period_Month, year: payload.Pay_Period_Year }
+    }));
   };
   //approves a record.
   const approveRecord = async (id) => {
@@ -502,20 +510,36 @@ export default function Payroll() {
     setTimeout(() => newWindow.print(), 250);
   };
 
-  const savePDF = () => {
+  const savePDF = async () => {
     const doc = new jsPDF();
     const friendlyMonth = getFriendlyMonth(selectedMonth);
+    const pageWidth = doc.internal.pageSize.getWidth();
 
-    // Header
-    doc.setFontSize(22);
-    doc.setTextColor(30, 58, 95);
-    doc.text(`Payroll Report - ${friendlyMonth}`, 14, 22);
+    // Load header.png via Image element (works reliably in Vite/CRA)
+    const headerDataUrl = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = reject;
+      img.src = shanelHeader;
+    });
+    const headerHeight = Math.round(pageWidth / 4);
+    doc.addImage(headerDataUrl, 'PNG', 0, 0, pageWidth, headerHeight);
 
+    const contentY = headerHeight + 8;
     doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
-    doc.text(`Shanel ERP - HR Management System`, 14, 35);
-    doc.line(14, 40, 196, 40);
+    doc.setTextColor(80, 80, 80);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, contentY);
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(14, contentY + 4, pageWidth - 14, contentY + 4);
 
     const tableColumn = ["Emp Code", "Name", "Role", "Days", "Gross", "Deductions", "Net Salary"];
     const tableRows = filteredRecords.map(r => [
@@ -531,11 +555,11 @@ export default function Payroll() {
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 45,
+      startY: contentY + 8,
       theme: 'grid',
       headStyles: { fillColor: [30, 58, 95], textColor: [255, 255, 255] },
       alternateRowStyles: { fillColor: [248, 250, 252] },
-      margin: { top: 45 }
+      margin: { left: 14, right: 14 }
     });
 
     const finalY = doc.lastAutoTable.finalY || 150;
@@ -560,20 +584,45 @@ export default function Payroll() {
       const doc = new jsPDF();
       const friendlyMonth = getFriendlyMonth(selectedMonth);
       const [year, month] = selectedMonth.split('-');
+      const pageWidth = doc.internal.pageSize.getWidth();
 
-      // Generate PDF (Similar to savePDF but for bank)
-      doc.setFontSize(22);
-      doc.setTextColor(30, 58, 95);
-      doc.text(`Monthly Paysheet - ${friendlyMonth}`, 14, 22);
+      // Load header.png (same as savePDF)
+      const headerDataUrl = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = reject;
+        img.src = shanelHeader;
+      });
+      const headerHeight = Math.round(pageWidth / 4);
+      doc.addImage(headerDataUrl, 'PNG', 0, 0, pageWidth, headerHeight);
+
+      const contentY = headerHeight + 8;
+
+      // Sub-header: month title and bank info
       doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(`Bank: ${bankDetails.bankName}`, 14, 30);
-      doc.text(`Shanel ERP - HR Management System`, 14, 35);
-      doc.line(14, 40, 196, 40);
+      doc.setTextColor(30, 58, 95);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Monthly Paysheet — ${friendlyMonth}`, 14, contentY);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80, 80, 80);
+      doc.text(`Bank: ${bankDetails.bankName}`, 14, contentY + 6);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, contentY + 12);
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.line(14, contentY + 16, pageWidth - 14, contentY + 16);
 
-      const tableColumn = ["Employee Name", "Net Salary", "Account Number"];
+      const tableColumn = ["Emp Code", "Employee Name", "Role", "Net Salary", "Account Number"];
       const tableRows = filteredRecords.map(r => [
+        r.employeeCode,
         r.employeeName,
+        r.employeeRole,
         `Rs. ${r.netSalary.toLocaleString()}`,
         r.bankAccountNo || 'N/A'
       ]);
@@ -581,11 +630,18 @@ export default function Payroll() {
       autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
-        startY: 45,
-        styles: { fontSize: 9, cellPadding: 4 },
-        headStyles: { fillColor: [30, 58, 95], textColor: 255 },
-        margin: { top: 45 }
+        startY: contentY + 20,
+        theme: 'grid',
+        headStyles: { fillColor: [30, 58, 95], textColor: [255, 255, 255] },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        margin: { left: 14, right: 14 }
       });
+
+      const finalY = doc.lastAutoTable.finalY || 150;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(30, 58, 95);
+      doc.text(`Total Net Payable: Rs. ${totalNet.toLocaleString()}`, 14, finalY + 15);
 
       const pdfBase64 = doc.output('datauristring');
 

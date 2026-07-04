@@ -3,7 +3,7 @@ const { Op } = require('sequelize');
 const { findEmployeeByParam } = require('../../utils/hrEmployeeLookup');
 
 /**
- * Retrieves daily attendance records.
+ * *Retrieves daily attendance records.
  */
 const getAttendance = async (req, res) => {
     try {
