@@ -489,7 +489,10 @@ const getDueCollectionReport = async (req, res) => {
                 as: 'Sale',
                 where: {
                     Status: 'Active',
-                    Sale_Date: { [Op.lt]: sequelize.col('Payment.Payment_Date') }
+                    [Op.or]: [
+                        { Sale_Date: { [Op.lt]: sequelize.col('Payment.Payment_Date') } },
+                        { '$Payment.Receipt_No$': { [Op.like]: 'RCPT-CR-%' } }
+                    ]
                 },
                 include: [{
                     model: Customer,

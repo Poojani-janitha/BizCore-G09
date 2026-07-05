@@ -9,6 +9,7 @@ const CreditTransaction = require('../../models/customer/CreditTranscation');
 const Payment = require('../../models/sales/Payment');
 const PaymentAllocation = require('../../models/sales/PaymentAllocation');
 const Cheque = require('../../models/sales/Cheque');
+const Sale = require('../../models/sales/Sales');
 const { ACCOUNTS } = require('../../constants/Accounting/AccConstants');
 
 // Helper: Get today's date in local timezone as YYYY-MM-DD
@@ -164,6 +165,9 @@ class CreditPaymentController {
                     Payment_Amount: allocateAmount,
                     Payment_Method: paymentMethod,
                     Invoice_Total: invoice.totalAmount,
+                    Cash_Amount: paymentMethod === 'Cash' ? allocateAmount : null,
+                    Cash_Tendered: paymentMethod === 'Cash' ? allocateAmount : null,
+                    Cash_Change: paymentMethod === 'Cash' ? 0 : null,
                     // If cheque
                     Cheque_No: paymentMethod === 'Cheque' ? chequeNo : null,
                     Cheque_Date: paymentMethod === 'Cheque' ? chequeDate : null,
@@ -188,6 +192,25 @@ class CreditPaymentController {
                     Allocated_Amount: allocateAmount,
                     Allocation_Type: 'FIFO'
                 }, { transaction });
+
+                // Update corresponding Sale record if applicable
+                if (invoice.Sale_ID && invoice.Sale_ID > 0) {
+                    const sale = await Sale.findByPk(invoice.Sale_ID, { transaction });
+                    if (sale) {
+                        const newPaidAmount = parseFloat(sale.Paid_Amount || 0) + allocateAmount;
+                        const newBalanceDue = Math.max(0, parseFloat(sale.Total_Amount || 0) - newPaidAmount);
+                        let newPaymentStatus = 'Paid';
+                        if (newBalanceDue > 0) {
+                            newPaymentStatus = newPaidAmount > 0 ? 'Partially_Paid' : 'Unpaid';
+                        }
+                        
+                        await sale.update({
+                            Paid_Amount: newPaidAmount,
+                            Balance_Due: newBalanceDue,
+                            Payment_Status: newPaymentStatus
+                        }, { transaction });
+                    }
+                }
 
                 // Build detailed notes with payment method info
                 let detailedNotes = notes || `Credit payment received for invoice ${invoice.referenceNo}`;

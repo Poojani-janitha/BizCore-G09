@@ -320,7 +320,10 @@ const postSalesData = async (req, res) => {
         }
 
         const now = new Date();
-        const saleDate = invoiceDetails?.invoiceDate || now.toISOString().split('T')[0];
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const saleDate = invoiceDetails?.invoiceDate || `${year}-${month}-${day}`;
         const saleTime = invoiceDetails?.invoiceTime || now.toTimeString().split(' ')[0];
         
         const invoiceTotal = parseFloat(invoiceDetails?.finalTotal || 0);
@@ -427,7 +430,7 @@ const postSalesData = async (req, res) => {
                 Transaction_Type: 'Credit_Taken',
                 Amount: creditTaken,
                 Running_Balance: currentCustomerBalance,
-                Reference_No: `CR-${sale.Sale_Id}`,
+                Reference_No: sale.Invoice_No,
                 Notes: `Credit taken for invoice ${sale.Invoice_No}`
             }, { transaction: t });
         }
@@ -445,7 +448,7 @@ const postSalesData = async (req, res) => {
                 Transaction_Type: 'Credit_Paid',
                 Amount: overpayment,
                 Running_Balance: currentCustomerBalance,
-                Reference_No: `OVERPAY-${sale.Sale_Id}`,
+                Reference_No: `OVERPAY-${sale.Invoice_No}`,
                 Notes: `Overpayment from invoice ${sale.Invoice_No} kept as customer balance`
             }, { transaction: t });
         }
