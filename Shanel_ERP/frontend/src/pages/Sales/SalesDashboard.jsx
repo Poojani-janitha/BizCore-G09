@@ -38,7 +38,7 @@ const SalesDashboard = () => {
     const [period, setPeriod] = useState('thisMonth');
     const [trendType, setTrendType] = useState('daily');
     const [recentSales, setRecentSales] = useState([]);
-    
+
     // Aggregated Dashboard State
     const [data, setData] = useState({
         today: { totalSales: 0, salesCount: 0, grossRevenue: 0 },
@@ -61,7 +61,7 @@ const SalesDashboard = () => {
             if (res.data.success) {
                 setData(res.data.data);
             }
-            
+
             // Fetch recent sales (last 10)
             const recentRes = await axios.get('/api/sales-management/history?limit=10');
             if (recentRes.data.success) {
@@ -107,6 +107,26 @@ const SalesDashboard = () => {
             color: "border-info",
             onClick: () => navigate('/sales/history')
         },
+        /*
+        {
+            title: t('sales.dashboard.gross_revenue'),
+            value: `Rs.${(data.today?.grossRevenue || 0).toLocaleString()}`,
+            label: t('sales.dashboard.gross_revenue_desc'),
+            icon: <TrendingUp className="text-success" size={20} />,
+            color: "border-success",
+            onClick: () => navigate('/sales/history')
+        },
+        */
+        {
+            title: t('sales.customer_list.outstanding_balance'),
+            title: t('sales.dashboard.gross_revenue'),
+            value: `Rs.${(data.today?.grossRevenue || 0).toLocaleString()}`,
+            label: t('sales.dashboard.gross_revenue_desc'),
+            icon: <TrendingUp className="text-success" size={20} />,
+            color: "border-success",
+            onClick: () => navigate('/sales/history')
+        },
+
         {
             title: t('sales.customer_list.outstanding_balance'),
             value: `Rs.${(data.outstanding?.totalDue || 0).toLocaleString()}`,
@@ -137,17 +157,17 @@ const SalesDashboard = () => {
 
     return (
         <div className="container-fluid p-4" style={{ backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: "'Outfit', 'Inter', sans-serif" }}>
-            
+
             {/* Header Area - Title and Refresh removed for global navbar consistency */}
 
             {/* Top Metric Tiles (Unified flex row layout styled exactly like InventoryMetrics) */}
             <div className="d-flex gap-2 mb-4" style={{ width: '100%' }}>
                 {cardData.map((card, index) => (
                     <div key={index} style={{ flex: 1, minWidth: 0 }}>
-                        <div 
+                        <div
                             className={`card border-0 border-top border-4 ${card.color} shadow-sm p-3 h-100`}
-                            style={{ 
-                                cursor: 'pointer', 
+                            style={{
+                                cursor: 'pointer',
                                 transition: 'all 0.3s ease'
                             }}
                             onClick={card.onClick}
@@ -170,13 +190,13 @@ const SalesDashboard = () => {
                                     {card.icon}
                                 </div>
                             </div>
-                            
+
                             <div className="d-flex align-items-center gap-2 mb-1">
                                 <h5 className="fw-bold mb-0" style={{ fontSize: '24px', color: '#1e293b' }}>
                                     {card.value}
                                 </h5>
                             </div>
-                            
+
                             <small className="text-muted d-block text-truncate" style={{ fontSize: '11px' }}>
                                 {card.label}
                             </small>
@@ -228,38 +248,38 @@ const SalesDashboard = () => {
                                             </linearGradient>
                                         </defs>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                        <XAxis 
-                                            dataKey="date" 
+                                        <XAxis
+                                            dataKey="date"
                                             axisLine={false}
                                             tickLine={false}
                                             tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 500 }}
-                                            tickFormatter={d => trendType === 'daily' ? new Date(d).toLocaleDateString(undefined, {month:'short', day:'numeric'}) : d}
+                                            tickFormatter={d => trendType === 'daily' ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : d}
                                             dy={5}
                                         />
-                                        <YAxis 
+                                        <YAxis
                                             axisLine={false}
                                             tickLine={false}
                                             tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 500 }}
-                                            tickFormatter={v => `Rs.${(v / 1000).toFixed(0)}k`} 
+                                            tickFormatter={v => `Rs.${(v / 1000).toFixed(0)}k`}
                                         />
-                                        <Tooltip 
+                                        <Tooltip
                                             contentStyle={{
                                                 borderRadius: '12px',
                                                 border: 'none',
                                                 boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
                                                 padding: '12px'
                                             }}
-                                            formatter={v => [`Rs. ${v.toLocaleString()}`, t('sales.total')]} 
+                                            formatter={v => [`Rs. ${v.toLocaleString()}`, t('sales.total')]}
                                         />
                                         <Legend />
-                                        <Area 
-                                            type="monotone" 
-                                            dataKey="revenue" 
-                                            stroke="#2c7873" 
-                                            strokeWidth={3} 
+                                        <Area
+                                            type="monotone"
+                                            dataKey="revenue"
+                                            stroke="#2c7873"
+                                            strokeWidth={3}
                                             fillOpacity={1}
                                             fill="url(#salesTrendGradient)"
-                                            name={t('sales.total')} 
+                                            name={t('sales.total')}
                                             animationDuration={1500}
                                         />
                                     </AreaChart>
@@ -280,27 +300,27 @@ const SalesDashboard = () => {
                                 <small className="text-muted">{t('sales.dashboard.top_products_desc')}</small>
                             </div>
                         </div>
-                        
+
                         <div style={{ height: '220px', width: '100%' }} className="my-auto">
                             {pieData.length > 0 ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
-                                        <Pie 
-                                            data={pieData} 
-                                            cx="50%" 
-                                            cy="50%" 
-                                            outerRadius={65} 
-                                            dataKey="value" 
-                                            nameKey="name" 
+                                        <Pie
+                                            data={pieData}
+                                            cx="50%"
+                                            cy="50%"
+                                            outerRadius={65}
+                                            dataKey="value"
+                                            nameKey="name"
                                             startAngle={90}
                                             endAngle={-270}
                                             labelLine={false}
                                             label={({ name, percent }) => `${name.substring(0, 10)} ${(percent * 100).toFixed(0)}%`}
                                         >
                                             {pieData.map((_, i) => (
-                                                <Cell 
-                                                    key={`cell-${i}`} 
-                                                    fill={CHART_COLORS[i % CHART_COLORS.length]} 
+                                                <Cell
+                                                    key={`cell-${i}`}
+                                                    fill={CHART_COLORS[i % CHART_COLORS.length]}
                                                 />
                                             ))}
                                         </Pie>
@@ -325,8 +345,8 @@ const SalesDashboard = () => {
                                 <Users className="text-secondary" size={16} />
                                 <span className="fw-bold text-dark" style={{ fontSize: '13px' }}>{t('sales.dashboard.top_customers')}</span>
                             </div>
-                            <button 
-                                className="btn btn-white btn-xs border text-muted px-2 py-1 rounded shadow-sm bg-white" 
+                            <button
+                                className="btn btn-white btn-xs border text-muted px-2 py-1 rounded shadow-sm bg-white"
                                 style={{ fontSize: '10px', fontWeight: 'bold' }}
                                 onClick={() => navigate('/sales/customers')}
                             >
@@ -363,8 +383,8 @@ const SalesDashboard = () => {
                                 <AlertCircle className="text-danger" size={16} />
                                 <span className="fw-bold text-dark" style={{ fontSize: '13px' }}>{t('sales.dashboard.cheque_risks_title')}</span>
                             </div>
-                            <button 
-                                className="btn btn-white btn-xs border text-muted px-2 py-1 rounded shadow-sm bg-white" 
+                            <button
+                                className="btn btn-white btn-xs border text-muted px-2 py-1 rounded shadow-sm bg-white"
                                 style={{ fontSize: '10px', fontWeight: 'bold' }}
                                 onClick={() => navigate('/sales/cheques')}
                             >
@@ -412,8 +432,8 @@ const SalesDashboard = () => {
                                 <ShoppingBag className="text-secondary" size={16} />
                                 <span className="fw-bold text-dark" style={{ fontSize: '13px' }}>{t('sales.dashboard.recent_sales')}</span>
                             </div>
-                            <button 
-                                className="btn btn-white btn-xs border text-muted px-2 py-1 rounded shadow-sm bg-white" 
+                            <button
+                                className="btn btn-white btn-xs border text-muted px-2 py-1 rounded shadow-sm bg-white"
                                 style={{ fontSize: '10px', fontWeight: 'bold' }}
                                 onClick={() => navigate('/sales/history')}
                             >
@@ -432,11 +452,10 @@ const SalesDashboard = () => {
                                     </div>
                                     <div className="text-end">
                                         <div className="fw-bold text-dark small">Rs.{parseFloat(sale.Total_Amount).toLocaleString()}</div>
-                                        <span className={`badge ${
-                                            sale.Payment_Status === 'Paid' ? 'bg-success-subtle text-success' :
-                                            sale.Payment_Status === 'Partially_Paid' ? 'bg-warning-subtle text-warning' :
-                                            'bg-danger-subtle text-danger'
-                                        } rounded-pill`} style={{ fontSize: '8px' }}>
+                                        <span className={`badge ${sale.Payment_Status === 'Paid' ? 'bg-success-subtle text-success' :
+                                                sale.Payment_Status === 'Partially_Paid' ? 'bg-warning-subtle text-warning' :
+                                                    'bg-danger-subtle text-danger'
+                                            } rounded-pill`} style={{ fontSize: '8px' }}>
                                             {sale.Payment_Status === 'Paid' ? t('sales.paid') : sale.Payment_Status === 'Partially_Paid' ? t('sales.partially_paid') : t('sales.unpaid')}
                                         </span>
                                     </div>
@@ -446,7 +465,7 @@ const SalesDashboard = () => {
                     </div>
                 </div>
             </div>
-            
+
             {/* Embedded styles for spinning icon */}
             <style>
                 {`
