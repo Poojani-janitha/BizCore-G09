@@ -147,15 +147,6 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
         <>
             {/* Inject scoped styles into the page */}
             <style>{`
-                .process-return-modal {
-                    padding-left: 0 !important;
-                }
-                .process-return-modal .modal-dialog {
-                    max-width: 500px !important;
-                    width: calc(100vw - 40px) !important;
-                    margin-left: auto !important;
-                    margin-right: auto !important;
-                }
                 .process-return-modal .modal-content {
                     border-radius: 16px;
                     border: none;
@@ -179,8 +170,8 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
                 onHide={handleClose}
                 centered
                 scrollable
+                size="lg"
                 className="process-return-modal"
-                container={document.body}
             >
                 <Modal.Header
                     closeButton
@@ -290,7 +281,7 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
                                     <div className="px-4 py-3" style={{ background: '#f8fafc', borderBottom: '1px solid #dbe4ef' }}>
                                         <span className="small fw-bold text-secondary">RETURN ITEMS</span>
                                     </div>
-                                    <div style={{ background: '#fff', overflowX: 'auto' }}>
+                                    <div style={{ background: '#fff', overflowX: 'auto', padding: '12px' }}>
                                         <Table hover className="mb-0 return-table" style={{ minWidth: '860px' }}>
                                             <thead>
                                                 <tr>
@@ -299,8 +290,8 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
                                                     <th className="fw-semibold small py-3 px-3 text-center" style={{ background: '#f8fafc', width: '120px' }}>PURCHASED</th>
                                                     <th className="fw-semibold small py-3 px-3 text-center" style={{ background: '#f8fafc', width: '130px' }}>GOOD QTY</th>
                                                     <th className="fw-semibold small py-3 px-3 text-center" style={{ background: '#f8fafc', width: '130px' }}>BAD QTY</th>
-                                                    <th className="fw-semibold small py-3 px-3 text-end" style={{ background: '#f8fafc', width: '130px' }}>UNIT PRICE</th>
-                                                    <th className="fw-semibold small py-3 px-3 text-end" style={{ background: '#f8fafc', width: '150px' }}>REFUND AMOUNT</th>
+                                                    <th className="fw-semibold small py-3 px-4 text-end" style={{ background: '#f8fafc', width: '140px' }}>UNIT PRICE</th>
+                                                    <th className="fw-semibold small py-3 px-4 text-end" style={{ background: '#f8fafc', width: '160px' }}>REFUND AMOUNT</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -334,10 +325,10 @@ const ProcessReturnModal = ({ show, onHide, refresh }) => {
                                                                 style={{ borderRadius: '8px', border: '1px solid #cbd5e1', padding: '8px' }}
                                                             />
                                                         </td>
-                                                        <td className="py-3 px-3 align-middle text-end">
+                                                        <td className="py-3 px-4 align-middle text-end">
                                                             LKR {parseFloat(item.Unit_Price).toFixed(2)}
                                                         </td>
-                                                        <td className="py-3 px-3 align-middle">
+                                                        <td className="py-3 px-4 align-middle">
                                                             <Form.Control
                                                                 type="number" step="0.01" min="0"
                                                                 value={item.Refund_Amount}

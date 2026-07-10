@@ -190,14 +190,14 @@ const ProductionModal = ({ show, onHide, refreshData }) => {
     };
 
     return (
-        <Modal show={show} onHide={() => { setErrors({}); onHide(); }} centered size="md">
+        <Modal show={show} onHide={() => { setErrors({}); onHide(); }} centered size="md" scrollable>
             <Modal.Header closeButton style={{ backgroundColor: '#f8fbff', border: 'none', paddingBottom: '8px' }}>
                 <Modal.Title style={{ fontWeight: '700', color: '#1a3a52', fontSize: '18px' }}>
                      Start New Production Batch
                 </Modal.Title>
             </Modal.Header>
             <Form onSubmit={handleSubmit}>
-                <Modal.Body style={{ backgroundColor: '#f8fbff', borderRadius: '0 0 0 0' }}>
+                <Modal.Body style={{ backgroundColor: '#f8fbff', borderRadius: '0 0 0 0', maxHeight: '60vh', overflowY: 'auto' }}>
                     <div style={{ padding: '20px' }}>
                         {/* Error Alert */}
                         {errors.submit && (

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
 
 const EditProductionModal = ({ show, onHide, refreshData, batch, products }) => {
     const [formData, setFormData] = useState({
@@ -47,7 +48,7 @@ const EditProductionModal = ({ show, onHide, refreshData, batch, products }) => 
 
         try {
             setErrors({});
-            await axios.put(`http://localhost:5000/api/production/${batch.PR_ID}`, formData);
+            await axios.put(API_ENDPOINTS.production.byId(batch.PR_ID), formData);
             refreshData();
             onHide();
         } catch (error) {

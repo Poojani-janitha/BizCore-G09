@@ -7,7 +7,6 @@ import { API_ENDPOINTS } from '../../config/apiEndpoints';
 import { useTranslation } from 'react-i18next';
 import Pagination from '../../component/common/Pagination';
 
-const API_BASE = 'http://localhost:5000/api/production/stock-overview';
 
 const formatStock = (value) => {
     const num = parseFloat(value) || 0;
@@ -71,7 +70,7 @@ const ProductionStock = () => {
             expiryFilter: section === 'approved' ? filters.expiryFilter : undefined
         };
 
-        const res = await axios.get(API_BASE, { params });
+        const res = await axios.get(API_ENDPOINTS.production.stockOverview, { params });
         if (res.data.success) {
             setItems(res.data.data || []);
             setPagination(res.data.pagination || defaultPagination);
