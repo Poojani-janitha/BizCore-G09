@@ -2,6 +2,13 @@ import React from 'react';
 import { X } from 'react-feather';
 import Barcode from 'react-barcode';
 
+const formatQty = (value) => {
+    if (value === undefined || value === null || value === '' || value === 'N/A') return 'N/A';
+    const num = parseFloat(value);
+    if (isNaN(num)) return value;
+    return Number.isInteger(num) ? num : num.toFixed(2);
+};
+
 const ProductViewModal = ({ show, onHide, product }) => {
     if (!show || !product) return null;
 
@@ -151,11 +158,11 @@ const ProductViewModal = ({ show, onHide, product }) => {
                                                             {unit.unitName}
                                                         </td>
                                                         <td className="py-2 px-3 text-center border-0 text-muted">
-                                                            1 {unit.unitName} = {unit.conversionRate} {product.baseUnit}
+                                                            1 {unit.unitName} = {formatQty(unit.conversionRate)} {product.baseUnit}
                                                         </td>
                                                         <td className="py-2 px-3 text-end border-0">
                                                             <span className="badge bg-primary-subtle text-primary border px-2">
-                                                                × {unit.conversionRate}
+                                                                × {formatQty(unit.conversionRate)}
                                                             </span>
                                                         </td>
                                                     </tr>
@@ -183,12 +190,12 @@ const ProductViewModal = ({ show, onHide, product }) => {
                                     </label>
                                     <div className="d-flex flex-wrap gap-2">
                                         <span className="badge bg-dark text-white px-3 py-2" style={{ fontSize: '12px' }}>
-                                            {product.stockCount || 0} {product.baseUnit}
+                                            {formatQty(product.stockCount)} {product.baseUnit}
                                         </span>
                                         {alternativeUnits.map((unit, idx) => (
                                             <span key={idx} className="badge bg-secondary-subtle text-secondary border px-3 py-2" style={{ fontSize: '12px' }}>
                                                 {unit.conversionRate > 0
-                                                    ? (parseFloat(product.stockCount || 0) / unit.conversionRate).toFixed(2)
+                                                    ? formatQty(parseFloat(product.stockCount || 0) / unit.conversionRate)
                                                     : '—'
                                                 } {unit.unitName}
                                             </span>
@@ -221,15 +228,15 @@ const ProductViewModal = ({ show, onHide, product }) => {
                             {/* ── Stock ── */}
                             <SectionTitle>Stock</SectionTitle>
 
-                            <Field label="Current Stock" col={4}>
-                                <strong>{product.stockCount || 0}</strong> {product.baseUnit}
-                            </Field>
-                            <Field label="Min Stock" col={4}>
-                                {product.minStock || 0} {product.baseUnit}
-                            </Field>
-                            <Field label="Reorder Level" col={4}>
-                                {product.reorderLevel || 'N/A'}
-                            </Field>
+                             <Field label="Current Stock" col={4}>
+                                 <strong>{formatQty(product.stockCount)}</strong> {product.baseUnit}
+                             </Field>
+                             <Field label="Min Stock" col={4}>
+                                 {formatQty(product.minStock)} {product.baseUnit}
+                             </Field>
+                             <Field label="Reorder Level" col={4}>
+                                 {formatQty(product.reorderLevel)}
+                             </Field>
 
                             <Field label="Status" col={12}>
                                 <span className={`badge ${product.status === 'In Stock' ? 'bg-success' : 'bg-secondary'}`}>

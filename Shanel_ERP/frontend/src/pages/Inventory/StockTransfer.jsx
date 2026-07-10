@@ -10,6 +10,11 @@ import Pagination from '../../component/common/Pagination';
 const PAGE_SIZE_HISTORY = 25;
 const PAGE_SIZE_STOCK   = 25;
 
+const formatQty = (value) => {
+    const num = parseFloat(value) || 0;
+    return Number.isInteger(num) ? num : num.toFixed(2);
+};
+
 const thStyle = {
     color: '#fff', fontSize: '0.72rem', fontWeight: 700,
     letterSpacing: '0.08em', background: 'transparent',
@@ -268,9 +273,9 @@ const StockTransfer = () => {
                                                             {(isSinhala && item.nameSinhala) ? item.nameSinhala : item.name}
                                                             <span className="ms-2 badge bg-secondary-subtle text-secondary border" style={{ fontSize: '10px' }}>{item.type}</span>
                                                         </td>
-                                                        <td style={{ fontSize: '13px' }}>{production.toFixed(2)} {baseUnit}</td>
-                                                        <td style={{ fontSize: '13px' }}>{shop.toFixed(2)} {baseUnit}</td>
-                                                        <td className="fw-bold" style={{ fontSize: '13px' }}>{total.toFixed(2)} {baseUnit}</td>
+                                                        <td style={{ fontSize: '13px' }}>{formatQty(production)} {baseUnit}</td>
+                                                        <td style={{ fontSize: '13px' }}>{formatQty(shop)} {baseUnit}</td>
+                                                        <td className="fw-bold" style={{ fontSize: '13px' }}>{formatQty(total)} {baseUnit}</td>
                                                     </tr>
                                                 );
                                             })}
@@ -376,7 +381,7 @@ const TransferCard = ({ transfer, inventory, onEdit, isSinhala }) => {
                         {/* Qty — prioritize entered unit/qty and show base as secondary */}
                         <div className="mt-1 d-flex flex-wrap align-items-center gap-2">
                             <span className="badge bg-dark text-white px-2 py-1" style={{ fontSize: '12px' }}>
-                                {Number.isInteger(displayQty) ? displayQty : displayQty.toFixed(2)} {displayUnit}
+                                {formatQty(displayQty)} {displayUnit}
                             </span>
                             <span className="badge bg-secondary-subtle text-secondary border px-2 py-1" style={{ fontSize: '11px' }}>
                                 (= {baseQty} {baseUnit})
