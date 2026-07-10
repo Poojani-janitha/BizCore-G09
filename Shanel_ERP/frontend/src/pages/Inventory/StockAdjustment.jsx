@@ -9,6 +9,11 @@ import Pagination from '../../component/common/Pagination';
 const PAGE_SIZE = 25;
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
+const formatQty = (value) => {
+    const num = parseFloat(value) || 0;
+    return Number.isInteger(num) ? num : num.toFixed(2);
+};
+
 const StockAdjustment = () => {
     const [logs, setLogs] = useState([]);
     const [showModal, setShowModal] = useState(false);
@@ -76,9 +81,9 @@ const StockAdjustment = () => {
 
             {/* Metric Cards */}
             <div className="row g-3 mb-4">
-                <AdjustmentCard title={t('inventory.pages.adjustments.metric_expired')} value={cardTotals.Expired.toFixed(2)} icon={<Archive size={20} className="text-danger"/>} borderColor="border-danger" label={t('inventory.pages.adjustments.metric_expired_label')} />
-                <AdjustmentCard title={t('inventory.pages.adjustments.metric_damaged')} value={cardTotals.Damage.toFixed(2)} icon={<AlertTriangle size={20} className="text-warning"/>} borderColor="border-warning" label={t('inventory.pages.adjustments.metric_damaged_label')} />
-                <AdjustmentCard title={t('inventory.pages.adjustments.metric_stolen')} value={cardTotals.Theft.toFixed(2)} icon={<ShieldOff size={20} className="text-info"/>} borderColor="border-info" label={t('inventory.pages.adjustments.metric_stolen_label')} />
+                <AdjustmentCard title={t('inventory.pages.adjustments.metric_expired')} value={formatQty(cardTotals.Expired)} icon={<Archive size={20} className="text-danger"/>} borderColor="border-danger" label={t('inventory.pages.adjustments.metric_expired_label')} />
+                <AdjustmentCard title={t('inventory.pages.adjustments.metric_damaged')} value={formatQty(cardTotals.Damage)} icon={<AlertTriangle size={20} className="text-warning"/>} borderColor="border-warning" label={t('inventory.pages.adjustments.metric_damaged_label')} />
+                <AdjustmentCard title={t('inventory.pages.adjustments.metric_stolen')} value={formatQty(cardTotals.Theft)} icon={<ShieldOff size={20} className="text-info"/>} borderColor="border-info" label={t('inventory.pages.adjustments.metric_stolen_label')} />
                 <AdjustmentCard title={t('inventory.pages.adjustments.metric_total')} value={logs.length} icon={<Package size={20} className="text-primary"/>} borderColor="border-primary" label={t('inventory.pages.adjustments.metric_total_label')} />
             </div>
 
