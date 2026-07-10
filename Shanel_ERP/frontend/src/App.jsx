@@ -151,7 +151,7 @@ const App = () => {
             <Route path="/user-management" element={<UserDashboard />} />
             
             <Route path="/logout" element={<Logout />} />
-            <Route path="/" element={<Navigate to={isAuthenticated ? '/home' : '/login'} />} />
+            <Route path="/" element={<Navigate to="/login" />} />
           </Routes>
         </main>
       </div>
