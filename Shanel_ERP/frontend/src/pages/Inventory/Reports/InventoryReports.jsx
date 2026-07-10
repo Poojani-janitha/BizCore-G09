@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import axios from 'axios';
 import { Box, Activity, ShoppingCart, RefreshCcw, AlertCircle, Users, Download, ChevronDown } from 'react-feather';
 import { generatePDF } from '../../../services/reportGenerator';
@@ -9,6 +9,10 @@ const InventoryReports = () => {
     const [selectedReport, setSelectedReport] = useState(null);
     const [reportData, setReportData] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
     const { t } = useTranslation();
 
     const reportCards = [
@@ -35,6 +39,10 @@ const InventoryReports = () => {
 
         setIsLoading(true);
         setSelectedReport(report);
+        setSearchTerm('');
+        setStartDate('');
+        setEndDate('');
+        setStatusFilter('');
         try {
             const response = await axios.get(`${report.endpoint}`);
             setReportData(response.data.data || []);
@@ -45,6 +53,65 @@ const InventoryReports = () => {
             setIsLoading(false);
         }
     };
+
+    const uniqueStatuses = useMemo(() => {
+        const statuses = new Set();
+        reportData.forEach(row => {
+            if (row.Status) statuses.add(row.Status);
+            if (row.Payment_Status) statuses.add(row.Payment_Status);
+        });
+        return Array.from(statuses);
+    }, [reportData]);
+
+    const hasDateFilter = useMemo(() => {
+        if (reportData.length === 0) return false;
+        const firstRow = reportData[0];
+        return !!(firstRow.Production_Date || firstRow.PO_Date || firstRow.Transfer_Date || firstRow.Exp_Date);
+    }, [reportData]);
+
+    const filteredReportData = useMemo(() => {
+        if (!selectedReport) return [];
+        return reportData.filter(row => {
+            // Search filter
+            if (searchTerm.trim() !== '') {
+                const searchLower = searchTerm.toLowerCase();
+                const matchesSearch = Object.values(row).some(val => 
+                    val !== null && val !== undefined && String(val).toLowerCase().includes(searchLower)
+                );
+                if (!matchesSearch) return false;
+            }
+
+            // Date filter
+            const dateField = row.Production_Date ? 'Production_Date' :
+                              row.PO_Date ? 'PO_Date' :
+                              row.Transfer_Date ? 'Transfer_Date' :
+                              row.Exp_Date ? 'Exp_Date' : null;
+            if (dateField) {
+                const rowDateStr = row[dateField];
+                if (rowDateStr) {
+                    const rowDate = new Date(rowDateStr);
+                    if (startDate) {
+                        const start = new Date(startDate);
+                        start.setHours(0,0,0,0);
+                        if (rowDate < start) return false;
+                    }
+                    if (endDate) {
+                        const end = new Date(endDate);
+                        end.setHours(23,59,59,999);
+                        if (rowDate > end) return false;
+                    }
+                }
+            }
+
+            // Status filter
+            if (statusFilter) {
+                const rowStatus = (row.Status || row.Payment_Status || '').toLowerCase();
+                if (rowStatus !== statusFilter.toLowerCase()) return false;
+            }
+
+            return true;
+        });
+    }, [selectedReport, reportData, searchTerm, startDate, endDate, statusFilter]);
 
     const getTableColumns = (reportKey) => {
         const columnMap = {
@@ -59,10 +126,10 @@ const InventoryReports = () => {
     };
 
     const handleExportPDF = () => {
-        if (!selectedReport || reportData.length === 0) return;
+        if (!selectedReport || filteredReportData.length === 0) return;
         
         const columns = getTableColumns(selectedReport.key);
-        generatePDF(`${selectedReport.title} Report`, columns, reportData, `${selectedReport.title}_Report`);
+        generatePDF(`${selectedReport.title} Report`, columns, filteredReportData, `${selectedReport.title}_Report`);
     };
 
     return (
@@ -94,12 +161,90 @@ const InventoryReports = () => {
             {/* Report Data Display */}
             {selectedReport && (
                 <>
-                <div className="d-flex justify-content-between align-items-center mb-2">
+                <div className="d-flex justify-content-between align-items-center mb-3">
                     <h6 className="fw-bold text-dark mb-0">{selectedReport.title} {t('inventory.pages.reports.report_suffix')}</h6>
                     <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm d-print-none" onClick={handleExportPDF}>
                         <Download size={14}/> {t('inventory.pages.reports.btn_export')}
                     </button>
                 </div>
+
+                {/* Filters Row - Hide on print */}
+                {!isLoading && reportData.length > 0 && (
+                    <div className="card border-0 shadow-sm rounded-3 p-3 mb-3 d-print-none bg-white border-top border-4 border-primary">
+                        <div className="row g-2 align-items-end">
+                            {/* Search Input */}
+                            <div className="col-md-4">
+                                <label className="form-label fw-semibold text-muted mb-1" style={{ fontSize: '11px' }}>Search Report</label>
+                                <input 
+                                    type="text" 
+                                    className="form-control form-control-sm border" 
+                                    placeholder="Type to search..." 
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+
+                            {/* Date Filters */}
+                            {hasDateFilter && (
+                                <>
+                                    <div className="col-md-2 col-sm-6">
+                                        <label className="form-label fw-semibold text-muted mb-1" style={{ fontSize: '11px' }}>From Date</label>
+                                        <input 
+                                            type="date" 
+                                            className="form-control form-control-sm border" 
+                                            value={startDate}
+                                            onChange={(e) => setStartDate(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="col-md-2 col-sm-6">
+                                        <label className="form-label fw-semibold text-muted mb-1" style={{ fontSize: '11px' }}>To Date</label>
+                                        <input 
+                                            type="date" 
+                                            className="form-control form-control-sm border" 
+                                            value={endDate}
+                                            onChange={(e) => setEndDate(e.target.value)}
+                                        />
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Status Filter */}
+                            {uniqueStatuses.length > 0 && (
+                                <div className="col-md-2">
+                                    <label className="form-label fw-semibold text-muted mb-1" style={{ fontSize: '11px' }}>Status</label>
+                                    <select 
+                                        className="form-select form-select-sm border" 
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                    >
+                                        <option value="">All Statuses</option>
+                                        {uniqueStatuses.map(status => (
+                                            <option key={status} value={status}>{status}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Clear Filters Button */}
+                            {(searchTerm || startDate || endDate || statusFilter) && (
+                                <div className="col-md-2">
+                                    <button 
+                                        className="btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center gap-1"
+                                        onClick={() => {
+                                            setSearchTerm('');
+                                            setStartDate('');
+                                            setEndDate('');
+                                            setStatusFilter('');
+                                        }}
+                                    >
+                                        Clear Filters
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
                     {/* Loading State */}
                     {isLoading ? (
@@ -111,6 +256,10 @@ const InventoryReports = () => {
                     ) : reportData.length === 0 ? (
                         <div className="text-center p-5 text-muted">
                             <p>{t('inventory.pages.reports.no_data')}</p>
+                        </div>
+                    ) : filteredReportData.length === 0 ? (
+                        <div className="text-center p-5 text-muted">
+                            <p>No records match your filters.</p>
                         </div>
                     ) : (
                         <div className="table-responsive">
@@ -125,7 +274,7 @@ const InventoryReports = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {reportData.map((row, i) => (
+                                    {filteredReportData.map((row, i) => (
                                         <tr key={i}>
                                             {getTableColumns(selectedReport.key).map((col, idx) => (
                                                 <td key={col} className={`${idx === 0 ? 'ps-4' : ''} ${col === 'Total_Stock' || col === 'Total_Spent' ? 'fw-bold' : ''}`}>
