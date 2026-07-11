@@ -59,7 +59,7 @@ const LoginForm = () => {
                 width: '100%',
                 maxWidth: '400px'
             }}>
-                <h2 style={{ marginBottom: '24px', textAlign: 'center', color: '#0f172a' }}>Login to BizCore</h2>
+                <h2 style={{ marginBottom: '24px', textAlign: 'center', color: '#0f172a' }}>Login to <br /> Shanel Products </h2>
                 
                 <div style={{ marginBottom: '16px' }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Username</label>
